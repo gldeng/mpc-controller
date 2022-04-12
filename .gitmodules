@@ -1,0 +1,3 @@
+[submodule "mpc-coordinator"]
+	path = mpc-coordinator
+	url = ../mpc-coordinator.git
