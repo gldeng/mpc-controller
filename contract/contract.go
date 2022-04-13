@@ -28,15 +28,15 @@ var (
 	_ = event.NewSubscription
 )
 
-// Struct0 is an auto generated low-level Go binding around an user-defined struct.
-type Struct0 struct {
+// MpcCoordinatorKeyInfo is an auto generated low-level Go binding around an user-defined struct.
+type MpcCoordinatorKeyInfo struct {
 	GroupId   [32]byte
 	Confirmed bool
 }
 
 // MpcCoordinatorMetaData contains all meta data concerning the MpcCoordinator contract.
 var MpcCoordinatorMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"KeyGenerated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"KeygenRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"ParticipantAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"SignRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"SignRequestStarted\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"publicKeys\",\"type\":\"bytes[]\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"createGroup\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"getGroup\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"participants\",\"type\":\"bytes[]\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"getKey\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"confirmed\",\"type\":\"bool\"}],\"internalType\":\"structMpcCoordinator.KeyInfo\",\"name\":\"keyInfo\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"myIndex\",\"type\":\"uint256\"}],\"name\":\"joinSign\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"myIndex\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"generatedPublicKey\",\"type\":\"bytes\"}],\"name\":\"reportGeneratedKey\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"requestKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"requestSign\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"KeyGenerated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"KeygenRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"ParticipantAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"SignRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"SignRequestStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"StakeRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"uint256[]\",\"name\":\"participantIndices\",\"type\":\"uint256[]\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"StakeRequestStarted\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"publicKeys\",\"type\":\"bytes[]\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"createGroup\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"getGroup\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"participants\",\"type\":\"bytes[]\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"getKey\",\"outputs\":[{\"components\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"internalType\":\"bool\",\"name\":\"confirmed\",\"type\":\"bool\"}],\"internalType\":\"structMpcCoordinator.KeyInfo\",\"name\":\"keyInfo\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"myIndex\",\"type\":\"uint256\"}],\"name\":\"joinRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"myIndex\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"generatedPublicKey\",\"type\":\"bytes\"}],\"name\":\"reportGeneratedKey\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"requestKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"name\":\"requestSign\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"requestStake\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // MpcCoordinatorABI is the input ABI used to generate the binding from.
@@ -233,15 +233,15 @@ func (_MpcCoordinator *MpcCoordinatorCallerSession) GetGroup(groupId [32]byte) (
 // GetKey is a free data retrieval call binding the contract method 0x7fed84f2.
 //
 // Solidity: function getKey(bytes publicKey) view returns((bytes32,bool) keyInfo)
-func (_MpcCoordinator *MpcCoordinatorCaller) GetKey(opts *bind.CallOpts, publicKey []byte) (Struct0, error) {
+func (_MpcCoordinator *MpcCoordinatorCaller) GetKey(opts *bind.CallOpts, publicKey []byte) (MpcCoordinatorKeyInfo, error) {
 	var out []interface{}
 	err := _MpcCoordinator.contract.Call(opts, &out, "getKey", publicKey)
 
 	if err != nil {
-		return *new(Struct0), err
+		return *new(MpcCoordinatorKeyInfo), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(Struct0)).(*Struct0)
+	out0 := *abi.ConvertType(out[0], new(MpcCoordinatorKeyInfo)).(*MpcCoordinatorKeyInfo)
 
 	return out0, err
 
@@ -250,14 +250,14 @@ func (_MpcCoordinator *MpcCoordinatorCaller) GetKey(opts *bind.CallOpts, publicK
 // GetKey is a free data retrieval call binding the contract method 0x7fed84f2.
 //
 // Solidity: function getKey(bytes publicKey) view returns((bytes32,bool) keyInfo)
-func (_MpcCoordinator *MpcCoordinatorSession) GetKey(publicKey []byte) (Struct0, error) {
+func (_MpcCoordinator *MpcCoordinatorSession) GetKey(publicKey []byte) (MpcCoordinatorKeyInfo, error) {
 	return _MpcCoordinator.Contract.GetKey(&_MpcCoordinator.CallOpts, publicKey)
 }
 
 // GetKey is a free data retrieval call binding the contract method 0x7fed84f2.
 //
 // Solidity: function getKey(bytes publicKey) view returns((bytes32,bool) keyInfo)
-func (_MpcCoordinator *MpcCoordinatorCallerSession) GetKey(publicKey []byte) (Struct0, error) {
+func (_MpcCoordinator *MpcCoordinatorCallerSession) GetKey(publicKey []byte) (MpcCoordinatorKeyInfo, error) {
 	return _MpcCoordinator.Contract.GetKey(&_MpcCoordinator.CallOpts, publicKey)
 }
 
@@ -282,25 +282,25 @@ func (_MpcCoordinator *MpcCoordinatorTransactorSession) CreateGroup(publicKeys [
 	return _MpcCoordinator.Contract.CreateGroup(&_MpcCoordinator.TransactOpts, publicKeys, threshold)
 }
 
-// JoinSign is a paid mutator transaction binding the contract method 0xf1a40088.
+// JoinRequest is a paid mutator transaction binding the contract method 0x2ed92550.
 //
-// Solidity: function joinSign(uint256 requestId, uint256 myIndex) returns()
-func (_MpcCoordinator *MpcCoordinatorTransactor) JoinSign(opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error) {
-	return _MpcCoordinator.contract.Transact(opts, "joinSign", requestId, myIndex)
+// Solidity: function joinRequest(uint256 requestId, uint256 myIndex) returns()
+func (_MpcCoordinator *MpcCoordinatorTransactor) JoinRequest(opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error) {
+	return _MpcCoordinator.contract.Transact(opts, "joinRequest", requestId, myIndex)
 }
 
-// JoinSign is a paid mutator transaction binding the contract method 0xf1a40088.
+// JoinRequest is a paid mutator transaction binding the contract method 0x2ed92550.
 //
-// Solidity: function joinSign(uint256 requestId, uint256 myIndex) returns()
-func (_MpcCoordinator *MpcCoordinatorSession) JoinSign(requestId *big.Int, myIndex *big.Int) (*types.Transaction, error) {
-	return _MpcCoordinator.Contract.JoinSign(&_MpcCoordinator.TransactOpts, requestId, myIndex)
+// Solidity: function joinRequest(uint256 requestId, uint256 myIndex) returns()
+func (_MpcCoordinator *MpcCoordinatorSession) JoinRequest(requestId *big.Int, myIndex *big.Int) (*types.Transaction, error) {
+	return _MpcCoordinator.Contract.JoinRequest(&_MpcCoordinator.TransactOpts, requestId, myIndex)
 }
 
-// JoinSign is a paid mutator transaction binding the contract method 0xf1a40088.
+// JoinRequest is a paid mutator transaction binding the contract method 0x2ed92550.
 //
-// Solidity: function joinSign(uint256 requestId, uint256 myIndex) returns()
-func (_MpcCoordinator *MpcCoordinatorTransactorSession) JoinSign(requestId *big.Int, myIndex *big.Int) (*types.Transaction, error) {
-	return _MpcCoordinator.Contract.JoinSign(&_MpcCoordinator.TransactOpts, requestId, myIndex)
+// Solidity: function joinRequest(uint256 requestId, uint256 myIndex) returns()
+func (_MpcCoordinator *MpcCoordinatorTransactorSession) JoinRequest(requestId *big.Int, myIndex *big.Int) (*types.Transaction, error) {
+	return _MpcCoordinator.Contract.JoinRequest(&_MpcCoordinator.TransactOpts, requestId, myIndex)
 }
 
 // ReportGeneratedKey is a paid mutator transaction binding the contract method 0xfae3a93c.
@@ -364,6 +364,27 @@ func (_MpcCoordinator *MpcCoordinatorSession) RequestSign(publicKey []byte, mess
 // Solidity: function requestSign(bytes publicKey, bytes message) returns()
 func (_MpcCoordinator *MpcCoordinatorTransactorSession) RequestSign(publicKey []byte, message []byte) (*types.Transaction, error) {
 	return _MpcCoordinator.Contract.RequestSign(&_MpcCoordinator.TransactOpts, publicKey, message)
+}
+
+// RequestStake is a paid mutator transaction binding the contract method 0x2dbf0344.
+//
+// Solidity: function requestStake(bytes publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime) returns()
+func (_MpcCoordinator *MpcCoordinatorTransactor) RequestStake(opts *bind.TransactOpts, publicKey []byte, nodeID string, amount *big.Int, startTime *big.Int, endTime *big.Int) (*types.Transaction, error) {
+	return _MpcCoordinator.contract.Transact(opts, "requestStake", publicKey, nodeID, amount, startTime, endTime)
+}
+
+// RequestStake is a paid mutator transaction binding the contract method 0x2dbf0344.
+//
+// Solidity: function requestStake(bytes publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime) returns()
+func (_MpcCoordinator *MpcCoordinatorSession) RequestStake(publicKey []byte, nodeID string, amount *big.Int, startTime *big.Int, endTime *big.Int) (*types.Transaction, error) {
+	return _MpcCoordinator.Contract.RequestStake(&_MpcCoordinator.TransactOpts, publicKey, nodeID, amount, startTime, endTime)
+}
+
+// RequestStake is a paid mutator transaction binding the contract method 0x2dbf0344.
+//
+// Solidity: function requestStake(bytes publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime) returns()
+func (_MpcCoordinator *MpcCoordinatorTransactorSession) RequestStake(publicKey []byte, nodeID string, amount *big.Int, startTime *big.Int, endTime *big.Int) (*types.Transaction, error) {
+	return _MpcCoordinator.Contract.RequestStake(&_MpcCoordinator.TransactOpts, publicKey, nodeID, amount, startTime, endTime)
 }
 
 // MpcCoordinatorKeyGeneratedIterator is returned from FilterKeyGenerated and is used to iterate over the raw logs and unpacked data for KeyGenerated events raised by the MpcCoordinator contract.
@@ -1087,6 +1108,305 @@ func (_MpcCoordinator *MpcCoordinatorFilterer) WatchSignRequestStarted(opts *bin
 func (_MpcCoordinator *MpcCoordinatorFilterer) ParseSignRequestStarted(log types.Log) (*MpcCoordinatorSignRequestStarted, error) {
 	event := new(MpcCoordinatorSignRequestStarted)
 	if err := _MpcCoordinator.contract.UnpackLog(event, "SignRequestStarted", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MpcCoordinatorStakeRequestAddedIterator is returned from FilterStakeRequestAdded and is used to iterate over the raw logs and unpacked data for StakeRequestAdded events raised by the MpcCoordinator contract.
+type MpcCoordinatorStakeRequestAddedIterator struct {
+	Event *MpcCoordinatorStakeRequestAdded // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MpcCoordinatorStakeRequestAddedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MpcCoordinatorStakeRequestAdded)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MpcCoordinatorStakeRequestAdded)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MpcCoordinatorStakeRequestAddedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MpcCoordinatorStakeRequestAddedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MpcCoordinatorStakeRequestAdded represents a StakeRequestAdded event raised by the MpcCoordinator contract.
+type MpcCoordinatorStakeRequestAdded struct {
+	RequestId *big.Int
+	PublicKey common.Hash
+	NodeID    string
+	Amount    *big.Int
+	StartTime *big.Int
+	EndTime   *big.Int
+	Raw       types.Log // Blockchain specific contextual infos
+}
+
+// FilterStakeRequestAdded is a free log retrieval operation binding the contract event 0x18d59ead2751a952ffa140860eedfe61eefb762649f64d9a222b9c8e2b7bf594.
+//
+// Solidity: event StakeRequestAdded(uint256 requestId, bytes indexed publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+func (_MpcCoordinator *MpcCoordinatorFilterer) FilterStakeRequestAdded(opts *bind.FilterOpts, publicKey [][]byte) (*MpcCoordinatorStakeRequestAddedIterator, error) {
+
+	var publicKeyRule []interface{}
+	for _, publicKeyItem := range publicKey {
+		publicKeyRule = append(publicKeyRule, publicKeyItem)
+	}
+
+	logs, sub, err := _MpcCoordinator.contract.FilterLogs(opts, "StakeRequestAdded", publicKeyRule)
+	if err != nil {
+		return nil, err
+	}
+	return &MpcCoordinatorStakeRequestAddedIterator{contract: _MpcCoordinator.contract, event: "StakeRequestAdded", logs: logs, sub: sub}, nil
+}
+
+// WatchStakeRequestAdded is a free log subscription operation binding the contract event 0x18d59ead2751a952ffa140860eedfe61eefb762649f64d9a222b9c8e2b7bf594.
+//
+// Solidity: event StakeRequestAdded(uint256 requestId, bytes indexed publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+func (_MpcCoordinator *MpcCoordinatorFilterer) WatchStakeRequestAdded(opts *bind.WatchOpts, sink chan<- *MpcCoordinatorStakeRequestAdded, publicKey [][]byte) (event.Subscription, error) {
+
+	var publicKeyRule []interface{}
+	for _, publicKeyItem := range publicKey {
+		publicKeyRule = append(publicKeyRule, publicKeyItem)
+	}
+
+	logs, sub, err := _MpcCoordinator.contract.WatchLogs(opts, "StakeRequestAdded", publicKeyRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MpcCoordinatorStakeRequestAdded)
+				if err := _MpcCoordinator.contract.UnpackLog(event, "StakeRequestAdded", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseStakeRequestAdded is a log parse operation binding the contract event 0x18d59ead2751a952ffa140860eedfe61eefb762649f64d9a222b9c8e2b7bf594.
+//
+// Solidity: event StakeRequestAdded(uint256 requestId, bytes indexed publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+func (_MpcCoordinator *MpcCoordinatorFilterer) ParseStakeRequestAdded(log types.Log) (*MpcCoordinatorStakeRequestAdded, error) {
+	event := new(MpcCoordinatorStakeRequestAdded)
+	if err := _MpcCoordinator.contract.UnpackLog(event, "StakeRequestAdded", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MpcCoordinatorStakeRequestStartedIterator is returned from FilterStakeRequestStarted and is used to iterate over the raw logs and unpacked data for StakeRequestStarted events raised by the MpcCoordinator contract.
+type MpcCoordinatorStakeRequestStartedIterator struct {
+	Event *MpcCoordinatorStakeRequestStarted // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MpcCoordinatorStakeRequestStartedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MpcCoordinatorStakeRequestStarted)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MpcCoordinatorStakeRequestStarted)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MpcCoordinatorStakeRequestStartedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MpcCoordinatorStakeRequestStartedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MpcCoordinatorStakeRequestStarted represents a StakeRequestStarted event raised by the MpcCoordinator contract.
+type MpcCoordinatorStakeRequestStarted struct {
+	RequestId          *big.Int
+	PublicKey          common.Hash
+	ParticipantIndices []*big.Int
+	NodeID             string
+	Amount             *big.Int
+	StartTime          *big.Int
+	EndTime            *big.Int
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterStakeRequestStarted is a free log retrieval operation binding the contract event 0x288b3cb79b7b3694315e9132713d254471d922b469ac4c7f26fee7fe49f30486.
+//
+// Solidity: event StakeRequestStarted(uint256 requestId, bytes indexed publicKey, uint256[] participantIndices, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+func (_MpcCoordinator *MpcCoordinatorFilterer) FilterStakeRequestStarted(opts *bind.FilterOpts, publicKey [][]byte) (*MpcCoordinatorStakeRequestStartedIterator, error) {
+
+	var publicKeyRule []interface{}
+	for _, publicKeyItem := range publicKey {
+		publicKeyRule = append(publicKeyRule, publicKeyItem)
+	}
+
+	logs, sub, err := _MpcCoordinator.contract.FilterLogs(opts, "StakeRequestStarted", publicKeyRule)
+	if err != nil {
+		return nil, err
+	}
+	return &MpcCoordinatorStakeRequestStartedIterator{contract: _MpcCoordinator.contract, event: "StakeRequestStarted", logs: logs, sub: sub}, nil
+}
+
+// WatchStakeRequestStarted is a free log subscription operation binding the contract event 0x288b3cb79b7b3694315e9132713d254471d922b469ac4c7f26fee7fe49f30486.
+//
+// Solidity: event StakeRequestStarted(uint256 requestId, bytes indexed publicKey, uint256[] participantIndices, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+func (_MpcCoordinator *MpcCoordinatorFilterer) WatchStakeRequestStarted(opts *bind.WatchOpts, sink chan<- *MpcCoordinatorStakeRequestStarted, publicKey [][]byte) (event.Subscription, error) {
+
+	var publicKeyRule []interface{}
+	for _, publicKeyItem := range publicKey {
+		publicKeyRule = append(publicKeyRule, publicKeyItem)
+	}
+
+	logs, sub, err := _MpcCoordinator.contract.WatchLogs(opts, "StakeRequestStarted", publicKeyRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MpcCoordinatorStakeRequestStarted)
+				if err := _MpcCoordinator.contract.UnpackLog(event, "StakeRequestStarted", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseStakeRequestStarted is a log parse operation binding the contract event 0x288b3cb79b7b3694315e9132713d254471d922b469ac4c7f26fee7fe49f30486.
+//
+// Solidity: event StakeRequestStarted(uint256 requestId, bytes indexed publicKey, uint256[] participantIndices, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+func (_MpcCoordinator *MpcCoordinatorFilterer) ParseStakeRequestStarted(log types.Log) (*MpcCoordinatorStakeRequestStarted, error) {
+	event := new(MpcCoordinatorStakeRequestStarted)
+	if err := _MpcCoordinator.contract.UnpackLog(event, "StakeRequestStarted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
