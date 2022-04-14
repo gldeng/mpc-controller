@@ -6,11 +6,12 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
-	mpcTask "github.com/avalido/mpc-controller/task"
-	"github.com/ethereum/go-ethereum/ethclient"
-
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	mpcTask "github.com/avalido/mpc-controller/task"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"math/big"
 
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
@@ -27,6 +28,9 @@ const (
 	CCHAIN_ID               = "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU"
 	PROG_NAME               = "mpc-controller"
 	PARAM_URL               = "rpc-url"
+	PARAM_MPC_SERVICE_URL   = "mpc-url"
+	PARAM_COORDINATOR_ADDR  = "coordinator-address"
+	PARAM_PRIVATE_KEY       = "private-key"
 	ADDR_CCHAIN             = "0x8db97c7cece249c2b98bdc0226cc4c2a57bf52fc"
 	ADDR_PCHAIN             = "P-local18jma8ppw3nhx5r4ap8clazz0dps7rv5u00z96u"
 	ADDR_CONTRACT           = "0x5aa01B3b5877255cE50cc55e8986a7a5fe29C70e"
@@ -84,6 +88,7 @@ func testNetworkContext() (*core.NetworkContext, error) {
 	ctx := core.NewNetworkContext(
 		NETWORK_ID,
 		cchainID,
+		big.NewInt(CHAIN_ID),
 		avax.Asset{
 			ID: assetId,
 		},
@@ -118,7 +123,12 @@ func testFlow() error {
 
 	nonce, err := client.NonceAt(context.Background(), cChainAddress, nil)
 
-	task, err := mpcTask.NewStakeTask(*networkCtx, pubkey, nonce, nodeID, nAVAX(40), 500)
+	fiveMins := uint64(5 * 60)
+	twentyOneDays := uint64(21 * 24 * 60 * 60)
+	startTime := uint64(time.Now().Unix()) + fiveMins
+	endTime := startTime + twentyOneDays
+
+	task, err := mpcTask.NewStakeTask(*networkCtx, pubkey, nonce, nodeID, nAVAX(40), startTime, endTime, 500)
 	if err != nil {
 		return err
 	}
@@ -200,8 +210,53 @@ func testFlow() error {
 	return nil
 }
 
+type NullMpcClient struct{}
+
+func (n NullMpcClient) Keygen(request *core.KeygenRequest) error {
+	return nil
+}
+
+func (n NullMpcClient) Sign(request *core.SignRequest) error {
+	return nil
+}
+
+func (n NullMpcClient) CheckResult(requestId string) (*core.Result, error) {
+	return nil, nil
+}
+
+func testManager(c *cli.Context) error {
+
+	networkCtx, err := testNetworkContext()
+	if err != nil {
+		return err
+	}
+
+	sk, err := crypto.HexToECDSA(c.String(PARAM_PRIVATE_KEY))
+	if err != nil {
+		return err
+	}
+
+	mpcClient, err := core.NewMpcClient(c.String(PARAM_MPC_SERVICE_URL))
+	if err != nil {
+		return err
+	}
+	coordinatorAddr := common.HexToAddress(c.String(PARAM_COORDINATOR_ADDR))
+	manager, err := mpcTask.NewTaskManager(
+		*networkCtx, mpcClient, sk, coordinatorAddr,
+	)
+	err = manager.Initialize()
+	if err != nil {
+		return err
+	}
+	manager.Start()
+	return nil
+}
+
 func handler(c *cli.Context) error {
-	err := testFlow()
+
+	//err := testFlow()
+	err := testManager(c)
+
 	if err != nil {
 		panic(err)
 	}
@@ -218,6 +273,21 @@ func main() {
 				Name:     PARAM_URL,
 				Required: true,
 				Usage:    "The avalanche rpc url.",
+			},
+			&cli.StringFlag{
+				Name:     PARAM_MPC_SERVICE_URL,
+				Required: true,
+				Usage:    "The mpc url.",
+			},
+			&cli.StringFlag{
+				Name:     PARAM_PRIVATE_KEY,
+				Required: true,
+				Usage:    "The private key.",
+			},
+			&cli.StringFlag{
+				Name:     PARAM_COORDINATOR_ADDR,
+				Required: true,
+				Usage:    "The contract address of coordinator.",
 			},
 		},
 		Action: handler,

@@ -15,7 +15,6 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"time"
 )
 
 const (
@@ -29,6 +28,8 @@ type StakeTask struct {
 	network            core.NetworkContext
 	nonce              uint64
 	delegateAmt        uint64
+	startTime uint64
+	endTime uint64
 	baseFeeGwei        uint64
 	cChainAddress      common.Address
 	pChainAddress      ids.ShortID
@@ -43,7 +44,9 @@ type StakeTask struct {
 	factory            avaCrypto.FactorySECP256K1R
 }
 
-func NewStakeTask(networkContext core.NetworkContext, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64, baseFeeGwei uint64) (*StakeTask, error) {
+func NewStakeTask(networkContext core.NetworkContext, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64,
+	startTime uint64, endTime uint64,
+	baseFeeGwei uint64) (*StakeTask, error) {
 	addr, err := ids.ToShortID(hashing.PubkeyBytesToAddress(serializeCompresed(&pubkey)))
 	if err != nil {
 		return nil, err
@@ -53,6 +56,8 @@ func NewStakeTask(networkContext core.NetworkContext, pubkey ecdsa.PublicKey, no
 		nonce:         nonce,
 		delegateAmt:   delegateAmt,
 		baseFeeGwei:   baseFeeGwei,
+		startTime: startTime,
+		endTime: endTime,
 		cChainAddress: crypto.PubkeyToAddress(pubkey),
 		pChainAddress: addr,
 		nodeID:        nodeID,
@@ -355,10 +360,7 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 
 	importTx := signedImportTx.UnsignedTx.(*platformvm.UnsignedImportTx)
 
-	fiveMins := uint64(5 * 60)
-	twentyOneDays := uint64(21 * 24 * 60 * 60)
-	startTime := uint64(time.Now().Unix()) + fiveMins
-	endTime := startTime + twentyOneDays
+
 	utxos := importTx.UTXOs()
 	utxo := utxos[0]
 
@@ -376,8 +378,8 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 		}},
 		Validator: platformvm.Validator{
 			NodeID: t.nodeID,
-			Start:  startTime,
-			End:    endTime,
+			Start:  t.startTime,
+			End:    t.endTime,
 			Wght:   utxo.Out.(*secp256k1fx.TransferOutput).Amt,
 		},
 		Stake:        stakedOuts,

@@ -3,9 +3,11 @@ package core
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"math/big"
 )
 
 type NetworkContext struct {
+	chainID *big.Int
 	networkID  uint32
 	cChainID   ids.ID
 	asset      avax.Asset
@@ -17,6 +19,7 @@ type NetworkContext struct {
 
 func NewNetworkContext(networkID uint32,
 	cChainID ids.ID,
+	chainID *big.Int,
 	asset avax.Asset,
 	importFee uint64,
 	gasPerByte uint64,
@@ -25,6 +28,7 @@ func NewNetworkContext(networkID uint32,
 	return NetworkContext{
 		networkID:  networkID,
 		cChainID:   cChainID,
+		chainID: chainID,
 		asset:      asset,
 		importFee:  importFee,
 		gasPerByte: gasPerByte,
@@ -39,6 +43,10 @@ func (c *NetworkContext) NetworkID() uint32 {
 
 func (c *NetworkContext) CChainID() ids.ID {
 	return c.cChainID
+}
+
+func (c *NetworkContext) ChainID() *big.Int{
+	return c.chainID
 }
 
 func (c *NetworkContext) Asset() avax.Asset {
