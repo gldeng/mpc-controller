@@ -649,15 +649,6 @@ func (m *TaskManager) getMyIndexInGroup(groupId [32]byte) (*big.Int, error) {
 	return nil, errors.New("not a member of the group")
 }
 
-func (m *TaskManager) getPariticipantKeys0(keys [][]byte) []string {
-	var out []string
-	for _, k := range keys {
-		pk := common.Bytes2Hex(k)
-		out = append(out, pk)
-	}
-	return out
-}
-
 func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) ([]string, error) {
 
 	k := common.Hex2Bytes(publicKey)
