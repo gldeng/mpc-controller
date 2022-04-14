@@ -19,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"math/big"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -27,6 +28,12 @@ type MpcClient interface {
 	Keygen(request *core.KeygenRequest) error
 	Sign(request *core.SignRequest) error
 	CheckResult(requestId string) (*core.Result, error)
+}
+
+type ReportKeyTx struct {
+	groupId            [32]byte
+	myIndex            *big.Int
+	generatedPublicKey []byte
 }
 
 type SignatureReceived struct {
@@ -82,6 +89,7 @@ type TaskManager struct {
 	pendingRequests       map[string]*core.SignRequest
 	pendingKeygenRequests map[string]*core.KeygenRequest
 	keygenRequestGroups   map[string][32]byte
+	pendingReports        map[common.Hash]*ReportKeyTx
 	//networkID uint32
 	//cchainID  ids.ID
 	////assetID ids.ID
@@ -140,6 +148,7 @@ func NewTaskManager(
 		pendingRequests:       make(map[string]*core.SignRequest),
 		pendingKeygenRequests: make(map[string]*core.KeygenRequest),
 		keygenRequestGroups:   make(map[string][32]byte),
+		pendingReports:        make(map[common.Hash]*ReportKeyTx),
 	}, nil
 }
 
@@ -193,7 +202,7 @@ func (m *TaskManager) Start() error {
 				fmt.Printf("KeygenAdded %v\n", evt)
 				err = m.onKeygenRequestAdded(evt)
 				if err != nil {
-					fmt.Errorf("failed to handle keygen %v", err)
+					fmt.Errorf("failed to handle keygen %v\n", err)
 				}
 			} else {
 				break
@@ -223,6 +232,10 @@ func (m *TaskManager) Start() error {
 }
 
 func (m *TaskManager) tick() error {
+	err := m.checkPendingTransactions()
+	if err != nil {
+		return err
+	}
 	for requestId, _ := range m.pendingKeygenRequests {
 		err := m.checkKeygenResult(requestId)
 		if err != nil {
@@ -238,22 +251,90 @@ func (m *TaskManager) tick() error {
 	return nil
 }
 
+func sample(arr []common.Hash) []common.Hash {
+	var out []common.Hash
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s) // initialize local pseudorandom generator
+
+	for _, txHash := range arr {
+		if r.Intn(1) == 0 {
+			out = append(out, txHash)
+		}
+	}
+	return out
+}
+
+func (m *TaskManager) checkPendingTransactions() error {
+
+	var done []common.Hash
+	var retry []common.Hash
+	for txHash, _ := range m.pendingReports {
+		rcp, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+		if err == nil {
+			if rcp.Status == 1 {
+				done = append(done, txHash)
+			} else {
+				retry = append(retry, txHash)
+			}
+		}
+	}
+	// TODO: Figure out why tx fails
+	// Suspect due to contention between different users, for now make retry random
+	sampledRetry := sample(retry)
+
+	for _, txHash := range sampledRetry {
+		req := m.pendingReports[txHash]
+		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
+		tx, err := m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		m.pendingReports[tx.Hash()] = &ReportKeyTx{
+			groupId:            groupId,
+			myIndex:            ind,
+			generatedPublicKey: pubkey,
+		}
+		if err != nil {
+			return err
+		}
+		fmt.Printf(
+			"Retry reporting key tx:\n  groupId: %v\n  myIndex: %v\n  pubKey: %v\n  txHash: %v\n",
+			common.Bytes2Hex(groupId[:]),
+			ind,
+			common.Bytes2Hex(pubkey),
+			tx.Hash(),
+		)
+	}
+	for _, txHash := range sampledRetry {
+		delete(m.pendingReports, txHash)
+	}
+	for _, txHash := range done {
+		delete(m.pendingReports, txHash)
+	}
+	return nil
+}
+
 func (m *TaskManager) checkKeygenResult(requestId string) error {
 	result, err := m.mpcClient.CheckResult(requestId)
 	if err != nil {
 		return err
 	}
 	if result.RequestStatus == "DONE" {
+		fmt.Printf("Received result %v\n", result)
 		pubkey := common.Hex2Bytes(result.Result)
 		groupId := m.keygenRequestGroups[requestId]
 		ind, err := m.getMyIndexInGroup(groupId)
+		fmt.Printf("My index is %v\n", ind)
 		if err != nil {
 			return err
 		}
-		_, err = m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		tx, err := m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		m.pendingReports[tx.Hash()] = &ReportKeyTx{
+			groupId:            groupId,
+			myIndex:            ind,
+			generatedPublicKey: pubkey,
+		}
 		if err != nil {
 			return err
 		}
+		fmt.Printf("Reported Key tx: %v\n", tx.Hash())
 		delete(m.pendingKeygenRequests, requestId)
 	}
 	return nil
