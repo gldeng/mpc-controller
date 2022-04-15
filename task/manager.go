@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"math/big"
@@ -34,6 +35,11 @@ type ReportKeyTx struct {
 	groupId            [32]byte
 	myIndex            *big.Int
 	generatedPublicKey []byte
+}
+
+type JoinTx struct {
+	requestId *big.Int
+	myIndex   *big.Int
 }
 
 type SignatureReceived struct {
@@ -90,6 +96,7 @@ type TaskManager struct {
 	pendingKeygenRequests map[string]*core.KeygenRequest
 	keygenRequestGroups   map[string][32]byte
 	pendingReports        map[common.Hash]*ReportKeyTx
+	pendingJoins          map[common.Hash]*JoinTx
 	//networkID uint32
 	//cchainID  ids.ID
 	////assetID ids.ID
@@ -149,6 +156,7 @@ func NewTaskManager(
 		pendingKeygenRequests: make(map[string]*core.KeygenRequest),
 		keygenRequestGroups:   make(map[string][32]byte),
 		pendingReports:        make(map[common.Hash]*ReportKeyTx),
+		pendingJoins:          make(map[common.Hash]*JoinTx),
 	}, nil
 }
 
@@ -209,6 +217,10 @@ func (m *TaskManager) Start() error {
 			}
 		case evt, ok := <-m.eventsKG:
 			if ok {
+				err := m.onKeyGenerated(evt)
+				if err != nil {
+					fmt.Errorf("failed to handle key %v\n", err)
+				}
 				fmt.Printf("KeyGenerated %v\n", evt)
 			} else {
 				break
@@ -216,12 +228,20 @@ func (m *TaskManager) Start() error {
 		case evt, ok := <-m.eventsStA:
 			if ok {
 				fmt.Printf("StakeRequestAdded %v\n", evt)
+				err := m.onStakeRequestAdded(evt)
+				if err != nil {
+					fmt.Printf("failed to respond to stake request %v\n", err)
+				}
 			} else {
 				break
 			}
 		case evt, ok := <-m.eventsStS:
 			if ok {
 				fmt.Printf("StakeRequestStarted %v\n", evt)
+				err := m.onStakeRequestStarted(evt)
+				if err != nil {
+					fmt.Printf("failed to handle stake request %v\n", err)
+				}
 			} else {
 				break
 			}
@@ -232,7 +252,11 @@ func (m *TaskManager) Start() error {
 }
 
 func (m *TaskManager) tick() error {
-	err := m.checkPendingTransactions()
+	err := m.checkPendingReports()
+	if err != nil {
+		return err
+	}
+	err = m.checkPendingJoins()
 	if err != nil {
 		return err
 	}
@@ -264,7 +288,7 @@ func sample(arr []common.Hash) []common.Hash {
 	return out
 }
 
-func (m *TaskManager) checkPendingTransactions() error {
+func (m *TaskManager) checkPendingReports() error {
 
 	var done []common.Hash
 	var retry []common.Hash
@@ -307,6 +331,51 @@ func (m *TaskManager) checkPendingTransactions() error {
 	}
 	for _, txHash := range done {
 		delete(m.pendingReports, txHash)
+	}
+	return nil
+}
+
+func (m *TaskManager) checkPendingJoins() error {
+
+	var done []common.Hash
+	var retry []common.Hash
+	for txHash, _ := range m.pendingJoins {
+		rcp, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+		if err == nil {
+			if rcp.Status == 1 {
+				done = append(done, txHash)
+			} else {
+				retry = append(retry, txHash)
+			}
+		}
+	}
+	// TODO: Figure out why tx fails
+	// Suspect due to contention between different users, for now make retry random
+	sampledRetry := sample(retry)
+
+	for _, txHash := range sampledRetry {
+		req := m.pendingJoins[txHash]
+		requestId, myIndex := req.requestId, req.myIndex
+		tx, err := m.instance.JoinRequest(m.transactor, requestId, myIndex)
+		m.pendingJoins[tx.Hash()] = &JoinTx{
+			requestId: requestId,
+			myIndex:            myIndex,
+		}
+		if err != nil {
+			return err
+		}
+		fmt.Printf(
+			"Retry join tx:\n  requestId: %v\n  myIndex: %v\n  txHash: %v\n",
+			requestId,
+			myIndex,
+			tx.Hash(),
+		)
+	}
+	for _, txHash := range sampledRetry {
+		delete(m.pendingJoins, txHash)
+	}
+	for _, txHash := range done {
+		delete(m.pendingJoins, txHash)
 	}
 	return nil
 }
@@ -563,14 +632,37 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeReque
 	if err != nil {
 		return err
 	}
-	_, err = m.instance.JoinRequest(m.transactor, req.RequestId, ind)
+	tx, err := m.instance.JoinRequest(m.transactor, req.RequestId, ind)
 	if err != nil {
+		fmt.Printf("Failed to joined stake request tx hash: %v\n", tx)
 		return err
+	}
+	j:=&JoinTx{
+		requestId: req.RequestId,
+		myIndex: ind,
+	}
+	m.pendingJoins[tx.Hash()] = j
+	fmt.Printf("Joined stake request tx hash: %v\n", tx)
+	return nil
+}
+
+func (m *TaskManager) removePendingJoin(requestId *big.Int) error {
+	var txHash *common.Hash = nil
+	for hash, req:=range m.pendingJoins {
+		if req.requestId.Cmp(requestId) == 0 {
+			txHash = &hash
+			break			
+		}
+	}
+	if txHash != nil {
+		delete(m.pendingJoins, *txHash)	
 	}
 	return nil
 }
 
 func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeRequestStarted) error {
+	m.removePendingJoin(req.RequestId)
+
 	// Request MPC server
 	pubKey := m.getPublicKey(req.PublicKey)
 	myInd, err := m.getMyIndex(pubKey)
@@ -580,10 +672,12 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 
 	var participating bool
 	for _, ind := range req.ParticipantIndices {
-		participating = participating || ind == myInd
+		participating = participating || ind.Cmp(myInd) == 0
 	}
+
 	if !participating {
 		// Not Participating, Ignore
+		fmt.Printf("Not participating to request %v\n", req.RequestId)
 		return nil
 	}
 
@@ -708,7 +802,7 @@ func (m *TaskManager) getMyIndex(publicKey string) (*big.Int, error) {
 	}
 	for i, pkBytes := range group.Participants {
 		pk := common.Bytes2Hex(pkBytes)
-		if publicKey == pk {
+		if m.myPubKey == pk {
 			return big.NewInt(int64(i) + 1), nil
 		}
 	}
@@ -753,7 +847,8 @@ func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) 
 }
 
 func unmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
-	var errInvalidPubkey = errors.New("invalid secp256k1 public key")
+	msg := fmt.Sprintf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
+	var errInvalidPubkey = errors.New(msg)
 	if pub[0] == 4 {
 		x, y := elliptic.Unmarshal(crypto.S256(), pub)
 		if x == nil {
@@ -761,7 +856,7 @@ func unmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 		}
 		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
 	} else {
-		x, y := elliptic.UnmarshalCompressed(crypto.S256(), pub)
+		x, y := secp256k1.DecompressPubkey(pub)
 		if x == nil {
 			return nil, errInvalidPubkey
 		}

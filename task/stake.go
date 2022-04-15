@@ -28,8 +28,8 @@ type StakeTask struct {
 	network            core.NetworkContext
 	nonce              uint64
 	delegateAmt        uint64
-	startTime uint64
-	endTime uint64
+	startTime          uint64
+	endTime            uint64
 	baseFeeGwei        uint64
 	cChainAddress      common.Address
 	pChainAddress      ids.ShortID
@@ -56,8 +56,8 @@ func NewStakeTask(networkContext core.NetworkContext, pubkey ecdsa.PublicKey, no
 		nonce:         nonce,
 		delegateAmt:   delegateAmt,
 		baseFeeGwei:   baseFeeGwei,
-		startTime: startTime,
-		endTime: endTime,
+		startTime:     startTime,
+		endTime:       endTime,
 		cChainAddress: crypto.PubkeyToAddress(pubkey),
 		pChainAddress: addr,
 		nodeID:        nodeID,
@@ -359,7 +359,6 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 	)
 
 	importTx := signedImportTx.UnsignedTx.(*platformvm.UnsignedImportTx)
-
 
 	utxos := importTx.UTXOs()
 	utxo := utxos[0]

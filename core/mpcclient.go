@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -65,6 +66,7 @@ func (c *MpcClient) Keygen(request *KeygenRequest) error {
 
 func (c *MpcClient) Sign(request *SignRequest) error {
 	normalized, err:=normalizePubKeys(request.ParticipantKeys)
+	fmt.Printf("normalized keys %v\n", normalized)
 	if err != nil {
 		return err
 	}
@@ -75,7 +77,17 @@ func (c *MpcClient) Sign(request *SignRequest) error {
 	}
 
 	res, err := http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
 	fmt.Printf("response is %v\n", res)
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	bodyString := string(bodyBytes)
+	fmt.Printf("body is %v\n", bodyString)
 	if err != nil {
 		return err
 	}
