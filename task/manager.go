@@ -839,7 +839,7 @@ func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) 
 	}
 	var out []string
 	for _, ind := range indices {
-		k := group.Participants[ind.Uint64()]
+		k := group.Participants[ind.Uint64()-1]
 		pk := common.Bytes2Hex(k)
 		out = append(out, pk)
 	}
