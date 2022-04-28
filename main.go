@@ -8,6 +8,7 @@ import (
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/avalido/mpc-controller/logger"
 	mpcTask "github.com/avalido/mpc-controller/task"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -265,6 +266,7 @@ func handler(c *cli.Context) error {
 }
 
 func main() {
+	logger.DevMode = true // todo: enable DevMode configurability and delete this line
 	app := &cli.App{
 		Name:  PROG_NAME,
 		Usage: "Handles the MPC operations needed for Avalanche",
