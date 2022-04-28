@@ -22,6 +22,7 @@ func Default() Logger {
 		if DevMode {
 			logConfig = uberZap.NewDevelopmentConfig()
 			logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
+			logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 			logger, _ = logConfig.Build(uberZap.AddCallerSkip(2))
 		} else {
 			logConfig = uberZap.NewProductionConfig()
