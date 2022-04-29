@@ -25,6 +25,8 @@ import (
 	"time"
 )
 
+const sep = "-"
+
 type MpcClient interface {
 	Keygen(request *core.KeygenRequest) error
 	Sign(request *core.SignRequest) error
@@ -70,7 +72,7 @@ type SignResult struct {
 
 func parsePendingRequestId(str string) (*PendingRequestId, error) {
 	var incorrectFormatErr = errors.New("PendingSignRequest is not in correct format")
-	parts := strings.Split(str, "/")
+	parts := strings.Split(str, sep)
 	if len(parts) != 2 {
 		return nil, incorrectFormatErr
 	}
@@ -84,7 +86,7 @@ func parsePendingRequestId(str string) (*PendingRequestId, error) {
 }
 
 func (r *PendingRequestId) ToString() string {
-	return fmt.Sprintf("%v/%v", r.taskId, r.requestNumber)
+	return fmt.Sprintf("%v"+sep+"%v", r.taskId, r.requestNumber)
 }
 
 type TaskManager struct {
@@ -359,7 +361,7 @@ func (m *TaskManager) checkPendingJoins() error {
 		tx, err := m.instance.JoinRequest(m.transactor, requestId, myIndex)
 		m.pendingJoins[tx.Hash()] = &JoinTx{
 			requestId: requestId,
-			myIndex:            myIndex,
+			myIndex:   myIndex,
 		}
 		if err != nil {
 			return err
@@ -637,9 +639,9 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeReque
 		fmt.Printf("Failed to joined stake request tx hash: %v\n", tx)
 		return err
 	}
-	j:=&JoinTx{
+	j := &JoinTx{
 		requestId: req.RequestId,
-		myIndex: ind,
+		myIndex:   ind,
 	}
 	m.pendingJoins[tx.Hash()] = j
 	fmt.Printf("Joined stake request tx hash: %v\n", tx)
@@ -648,14 +650,14 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeReque
 
 func (m *TaskManager) removePendingJoin(requestId *big.Int) error {
 	var txHash *common.Hash = nil
-	for hash, req:=range m.pendingJoins {
+	for hash, req := range m.pendingJoins {
 		if req.requestId.Cmp(requestId) == 0 {
 			txHash = &hash
-			break			
+			break
 		}
 	}
 	if txHash != nil {
-		delete(m.pendingJoins, *txHash)	
+		delete(m.pendingJoins, *txHash)
 	}
 	return nil
 }
@@ -732,7 +734,7 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 		if err != nil {
 			return err
 		}
-		m.pendingRequests[taskId] = request
+		m.pendingRequests[reqId.ToString()] = request
 	}
 	return nil
 }
