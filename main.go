@@ -28,6 +28,7 @@ const (
 	AVAX_ID                 = "2fombhL7aGPwj3KH4bfrmJwW6PVnMobf9Y2fn9GwxiAAJyFDbe"
 	CCHAIN_ID               = "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU"
 	PROG_NAME               = "mpc-controller"
+	MPC_Controller_Num      = "mpc-controller-number"
 	PARAM_URL               = "rpc-url"
 	PARAM_MPC_SERVICE_URL   = "mpc-url"
 	PARAM_COORDINATOR_ADDR  = "coordinator-address"
@@ -243,7 +244,7 @@ func testManager(c *cli.Context) error {
 	}
 	coordinatorAddr := common.HexToAddress(c.String(PARAM_COORDINATOR_ADDR))
 	manager, err := mpcTask.NewTaskManager(
-		*networkCtx, mpcClient, sk, coordinatorAddr,
+		c.Int(MPC_Controller_Num), *networkCtx, mpcClient, sk, coordinatorAddr,
 	)
 	err = manager.Initialize()
 	if err != nil {
@@ -290,6 +291,11 @@ func main() {
 				Name:     PARAM_COORDINATOR_ADDR,
 				Required: true,
 				Usage:    "The contract address of coordinator.",
+			},
+			&cli.IntFlag{
+				Name:     MPC_Controller_Num,
+				Required: true,
+				Usage:    "The mpc-controller number.",
 			},
 		},
 		Action: handler,

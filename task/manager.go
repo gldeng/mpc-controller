@@ -13,14 +13,17 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
+	_errors "github.com/juju/errors"
 	"math/big"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 )
@@ -90,6 +93,7 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type TaskManager struct {
+	taskManagerNum        int
 	networkContext        core.NetworkContext
 	publicKeyCache        map[common.Hash]string
 	myIndicesInGroups     map[string]*big.Int
@@ -130,6 +134,7 @@ type TaskManager struct {
 }
 
 func NewTaskManager(
+	taskManagerNum int,
 	networkContext core.NetworkContext,
 	mpcClient MpcClient,
 	privateKey *ecdsa.PrivateKey,
@@ -137,14 +142,16 @@ func NewTaskManager(
 ) (*TaskManager, error) {
 	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, networkContext.ChainID())
 	if err != nil {
-		return nil, err
+		return nil, _errors.Annotatef(err, "failed to create transaction signer")
 	}
 	//pubKeyBytes := crypto.CompressPubkey(&privateKey.PublicKey)
 	pubKeyBytes := marshalPubkey(&privateKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
 	hash := crypto.Keccak256Hash(pubKeyBytes)
-	fmt.Printf("My PubKey is %v\n", pubKeyHex)
-	fmt.Printf("My PubKey topic is %v\n", hash)
+	logger.Debug("parsed task manager key info",
+		logger.Field{"taskManagerNum", taskManagerNum},
+		logger.Field{"pubKey", pubKeyHex},
+		logger.Field{"pubKeyTopic", hash})
 	return &TaskManager{
 		networkContext:        networkContext,
 		mpcClient:             mpcClient,
@@ -162,21 +169,29 @@ func NewTaskManager(
 	}, nil
 }
 
+// todo: enable urls customizable
 func (m *TaskManager) Initialize() error {
 	//cChainClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
 	cChainClient := evm.NewClient("http://localhost:9650", "C")
 	wsClient, err := ethclient.Dial("ws://127.0.0.1:9650/ext/bc/C/ws")
+	if err != nil {
+		logger.Error("failed to dail ws://127.0.0.1:9650/ext/bc/C/ws", logger.Field{"ERROR", err})
+		os.Exit(1)
+	}
 	ethClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
 	if err != nil {
-		return err
+		logger.Error("failed to dail http://localhost:9650/ext/bc/C/rpc", logger.Field{"ERROR", err})
+		os.Exit(1)
 	}
 	listener, err := contract.NewMpcCoordinator(m.coordinatorAddr, wsClient)
 	if err != nil {
-		return err
+		logger.Error("failed to create ws mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
+		os.Exit(1)
 	}
 	instance, err := contract.NewMpcCoordinator(m.coordinatorAddr, ethClient)
 	if err != nil {
-		return err
+		logger.Error("failed to create mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
+		os.Exit(1)
 	}
 	m.listener = listener
 	m.instance = instance
@@ -194,6 +209,7 @@ func (m *TaskManager) Initialize() error {
 	return nil
 }
 
+// todo: logic to quit for loop
 func (m *TaskManager) Start() error {
 	err := m.subscribeParticipantAdded()
 	if err != nil {
