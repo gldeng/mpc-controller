@@ -6,6 +6,7 @@ require (
 	github.com/ava-labs/avalanchego v1.7.9
 	github.com/ava-labs/coreth v0.8.8-rc.0
 	github.com/ethereum/go-ethereum v1.10.16
+	github.com/go-chi/chi v1.5.4
 	github.com/juju/errors v0.0.0-20220331221717-b38fca44723b
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
