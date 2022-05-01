@@ -103,7 +103,11 @@ func testNetworkContext() (*core.NetworkContext, error) {
 	return &ctx, nil
 }
 
-func testFlow() error {
+type Signer interface {
+	SignHash(hash []byte) ([]byte, error)
+}
+
+func testFlow(signer Signer) error {
 	logger.DevMode = true
 	networkCtx, err := testNetworkContext()
 	if err != nil {
@@ -145,7 +149,7 @@ func testFlow() error {
 
 	sigs := make([][65]byte, 3)
 
-	sig1, err := signers0[0].SignHash(hash1)
+	sig1, err := signer.SignHash(hash1)
 	copy(sigs[0][:], sig1[:])
 
 	err = task.SetExportTxSig(sigs[0])
@@ -158,7 +162,7 @@ func testFlow() error {
 		return errors.WithStack(err)
 	}
 
-	sig2, err := signers0[0].SignHash(hash2)
+	sig2, err := signer.SignHash(hash2)
 	copy(sigs[1][:], sig2[:])
 	err = task.SetImportTxSig(sigs[1])
 	if err != nil {
@@ -170,7 +174,7 @@ func testFlow() error {
 		return errors.WithStack(err)
 	}
 
-	sig3, err := signers0[0].SignHash(hash3)
+	sig3, err := signer.SignHash(hash3)
 	copy(sigs[2][:], sig3[:])
 	err = task.SetAddDelegatorTxSig(sigs[2])
 	if err != nil {

@@ -6,6 +6,9 @@ import (
 )
 
 func TestFlow(t *testing.T) {
-	err := testFlow()
+	signers, err := getSigners(testnetKey)
+	require.Nil(t, err)
+
+	err = testFlow(signers[0])
 	require.Nilf(t, err, "%+v", err)
 }
