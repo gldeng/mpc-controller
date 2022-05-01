@@ -30,12 +30,6 @@ import (
 
 const sep = "-"
 
-type MpcClient interface {
-	Keygen(request *core.KeygenRequest) error
-	Sign(request *core.SignRequest) error
-	CheckResult(requestId string) (*core.Result, error)
-}
-
 type ReportKeyTx struct {
 	groupId            [32]byte
 	myIndex            *big.Int
@@ -121,7 +115,7 @@ type TaskManager struct {
 	ethClient     *ethclient.Client
 	secpFactory   avaCrypto.FactorySECP256K1R
 	chSigReceived chan *SignatureReceived
-	mpcClient     MpcClient
+	mpcClient     core.MPCClient
 	transactor    *bind.TransactOpts
 	myPubKey      string
 	eventsPA      chan *contract.MpcCoordinatorParticipantAdded
@@ -136,7 +130,7 @@ type TaskManager struct {
 func NewTaskManager(
 	taskManagerNum int,
 	networkContext core.NetworkContext,
-	mpcClient MpcClient,
+	mpcClient core.MPCClient,
 	privateKey *ecdsa.PrivateKey,
 	coordinatorAddr common.Address,
 ) (*TaskManager, error) {
@@ -399,7 +393,7 @@ func (m *TaskManager) checkPendingJoins() error {
 }
 
 func (m *TaskManager) checkKeygenResult(requestId string) error {
-	result, err := m.mpcClient.CheckResult(requestId)
+	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
 	if err != nil {
 		return err
 	}
@@ -428,7 +422,7 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 }
 
 func (m *TaskManager) checkResult(requestId string) error {
-	result, err := m.mpcClient.CheckResult(requestId)
+	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
 	if err != nil {
 		return err
 	}
@@ -525,7 +519,7 @@ func (m *TaskManager) onKeygenRequestAdded(evt *contract.MpcCoordinatorKeygenReq
 
 		Threshold: group.Threshold.Uint64(),
 	}
-	err = m.mpcClient.Keygen(request)
+	err = m.mpcClient.Keygen(context.Background(), request) // todo: add shared context to task manager
 	if err != nil {
 		return err
 	}
@@ -746,7 +740,7 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 			ParticipantKeys: pariticipantKeys,
 			Hash:            hash,
 		}
-		err = m.mpcClient.Sign(request)
+		err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
 		if err != nil {
 			return err
 		}

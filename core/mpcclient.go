@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/json"
@@ -35,6 +36,14 @@ type Result struct {
 	RequestStatus string `json:"request_status"`
 }
 
+var _ MPCClient = (*MpcClient)(nil)
+
+type MPCClient interface {
+	Keygen(ctx context.Context, keygenReq *KeygenRequest) error
+	Sign(ctx context.Context, signReq *SignRequest) error
+	Result(ctx context.Context, reqID string) (*Result, error)
+}
+
 type MpcClient struct {
 	url string
 }
@@ -43,8 +52,8 @@ func NewMpcClient(url string) (*MpcClient, error) {
 	return &MpcClient{url: url}, nil
 }
 
-func (c *MpcClient) Keygen(request *KeygenRequest) error {
-	normalized, err:=normalizePubKeys(request.ParticipantKeys)
+func (c *MpcClient) Keygen(ctx context.Context, request *KeygenRequest) error {
+	normalized, err := normalizePubKeys(request.ParticipantKeys)
 	if err != nil {
 		return err
 	}
@@ -64,8 +73,8 @@ func (c *MpcClient) Keygen(request *KeygenRequest) error {
 
 }
 
-func (c *MpcClient) Sign(request *SignRequest) error {
-	normalized, err:=normalizePubKeys(request.ParticipantKeys)
+func (c *MpcClient) Sign(ctx context.Context, request *SignRequest) error {
+	normalized, err := normalizePubKeys(request.ParticipantKeys)
 	fmt.Printf("normalized keys %v\n", normalized)
 	if err != nil {
 		return err
@@ -94,7 +103,7 @@ func (c *MpcClient) Sign(request *SignRequest) error {
 	return nil
 }
 
-func (c *MpcClient) CheckResult(requestId string) (*Result, error) {
+func (c *MpcClient) Result(ctx context.Context, requestId string) (*Result, error) {
 	payload := strings.NewReader("")
 	res, err := http.Post(c.url+"/result/"+requestId, "application/json", payload)
 	if err != nil {
