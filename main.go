@@ -16,10 +16,11 @@ import (
 
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/pkg/errors"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"log"
 	"os"
 )
@@ -103,20 +104,21 @@ func testNetworkContext() (*core.NetworkContext, error) {
 }
 
 func testFlow() error {
+	logger.DevMode = true
 	networkCtx, err := testNetworkContext()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	signers0, err := getSigners(testnetKey)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	nodeID, err := ids.ShortFromPrefixedString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5", constants.NodeIDPrefix)
 
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	pubkey := signers0[0].ToECDSA().PublicKey
@@ -124,6 +126,7 @@ func testFlow() error {
 	client, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
 
 	nonce, err := client.NonceAt(context.Background(), cChainAddress, nil)
+	logger.Debug("get nonce at account", logger.Field{"Address", cChainAddress}, logger.Field{"nonce", nonce})
 
 	fiveMins := uint64(5 * 60)
 	twentyOneDays := uint64(21 * 24 * 60 * 60)
@@ -132,12 +135,12 @@ func testFlow() error {
 
 	task, err := mpcTask.NewStakeTask(*networkCtx, pubkey, nonce, nodeID, nAVAX(40), startTime, endTime, 500)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	hash1, err := task.ExportTxHash()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	sigs := make([][65]byte, 3)
@@ -147,65 +150,65 @@ func testFlow() error {
 
 	err = task.SetExportTxSig(sigs[0])
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	hash2, err := task.ImportTxHash()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	sig2, err := signers0[0].SignHash(hash2)
 	copy(sigs[1][:], sig2[:])
 	err = task.SetImportTxSig(sigs[1])
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	hash3, err := task.AddDelegatorTxHash()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	sig3, err := signers0[0].SignHash(hash3)
 	copy(sigs[2][:], sig3[:])
 	err = task.SetAddDelegatorTxSig(sigs[2])
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	tx1, err := task.GetSignedExportTx()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	cclient := evm.NewClient("http://localhost:9650", "C")
 	txId1, err := cclient.IssueTx(context.Background(), tx1.Bytes())
 
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	fmt.Printf("ExportTx %v\n", txId1)
 	time.Sleep(time.Second * 2)
 	pclient := platformvm.NewClient("http://localhost:9650")
 	tx2, err := task.GetSignedImportTx()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	txId2, err := pclient.IssueTx(context.Background(), tx2.Bytes())
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	fmt.Printf("ImportTx %v\n", txId2)
 	time.Sleep(time.Second * 2)
 	tx3, err := task.GetSignedAddDelegatorTx()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	txId3, err := pclient.IssueTx(context.Background(), tx3.Bytes())
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	fmt.Printf("AddDelegatorTx %v\n", txId3)
 

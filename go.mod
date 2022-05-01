@@ -7,9 +7,10 @@ require (
 	github.com/ava-labs/coreth v0.8.8-rc.0
 	github.com/ethereum/go-ethereum v1.10.16
 	github.com/juju/errors v0.0.0-20220331221717-b38fca44723b
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/urfave/cli/v2 v2.4.0
+	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/zap v1.19.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
