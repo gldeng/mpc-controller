@@ -15,17 +15,17 @@ func (suite *EthclientTestSuite) SetupTest() {}
 func (suite *EthclientTestSuite) TestNew() {
 	require := suite.Require()
 
-	client := New("http://localhost:9650/ext/bc/C/rpc")
+	client := NewEthClient("http://localhost:9650/ext/bc/C/rpc")
 	require.NotNil(client)
 }
 
 func (suite *EthclientTestSuite) TestDefault() {
 	require := suite.Require()
 
-	client1 := Default()
+	client1 := DefaultEthClient()
 	require.NotNil(client1)
 
-	client2 := Default()
+	client2 := DefaultEthClient()
 	require.NotNil(client2)
 
 	require.Equal(client2, client1)

@@ -15,7 +15,7 @@ var DefaultURL = "http://localhost:9650/ext/bc/C/rpc"
 var once = new(sync.Once)
 
 // New return a new object for Ethereum-compatible client.
-func New(url string) *ethclient.Client {
+func NewEthClient(url string) *ethclient.Client {
 	client, err := ethclient.Dial(url)
 	if err != nil {
 		log.Fatalf("%+v", errors.Wrapf(err, "got an error when Dial %q", url))
@@ -24,10 +24,10 @@ func New(url string) *ethclient.Client {
 }
 
 // Default return a singleton object for Ethereum-compatible client.
-func Default() *ethclient.Client {
+func DefaultEthClient() *ethclient.Client {
 	once.Do(func() {
 		if defaultClient == nil {
-			defaultClient = New(DefaultURL)
+			defaultClient = NewEthClient(DefaultURL)
 		}
 	})
 	return defaultClient
