@@ -37,20 +37,37 @@ func NewCoordinator(chainID int64, contractAddress *common.Address, contractBack
 
 // todo: check receipt to see whether a group created successfully or not
 
-func (c *Coordinator) CreateGroup(txSenderPrivKey *ecdsa.PrivateKey, participantPubKeys [][]byte, threshold int64) (groupID string, err error) {
+func (c *Coordinator) CreateGroup_(txSenderPrivKey *ecdsa.PrivateKey, participantPubKeys [][]byte, threshold int64) (groupID []byte, err error) {
 	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, big.NewInt(c.chainID))
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create a transaction signer with private key %q.", txSenderPrivKey)
+		return nil, errors.Wrapf(err, "failed to create a transaction signer with private key %q.", txSenderPrivKey)
 	}
 
-	txn, err := c.MpcCoordinator.CreateGroup(signer, participantPubKeys[:], big.NewInt(threshold))
+	txn, err := c.CreateGroup(signer, participantPubKeys[:], big.NewInt(threshold))
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create group.")
+		return nil, errors.Wrapf(err, "failed to create group.")
 	}
 
 	logger.Debug("Sent a transaction to create group.",
 		logger.Field{"participants", len(participantPubKeys)},
 		logger.Field{"threshold", threshold},
 		logger.Field{"txHashHex", txn.Hash().Hex()})
-	return gofakeit.UUID(), nil // todo: return real created group id, maybe a ethclient is required, see deploy.go as a exmaple.
+	return []byte(gofakeit.UUID()), nil // todo: return real created group id, maybe a ethclient is required, see deploy.go as a exmaple.
+}
+
+func (c *Coordinator) RequestKeygen_(txSenderPrivKey *ecdsa.PrivateKey, groupId []byte) error {
+	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, big.NewInt(c.chainID))
+	if err != nil {
+		return errors.Wrapf(err, "failed to create a transaction signer with private key %q.", txSenderPrivKey)
+	}
+
+	var groupId32 [32]byte
+	copy(groupId32[:], groupId)
+
+	txn, err := c.RequestKeygen(signer, groupId32)
+	if err != nil {
+		return errors.Wrapf(err, "failed to request keygen.")
+	}
+	logger.Debug("Sent a transaction for keygen.", logger.Field{"txHashHex", txn.Hash().Hex()})
+	return nil
 }
