@@ -3,8 +3,10 @@ package crypto
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 )
 
 func ExtractPubKeysForParticipants(keys []string) ([][]byte, error) {
@@ -52,4 +54,25 @@ func PubkeysToAddresses(pubkeys []*ecdsa.PublicKey) []*common.Address {
 		addrs = append(addrs, &addr)
 	}
 	return addrs
+}
+
+func UnmarshalPubKeyHex(pubKeyHex string) (*ecdsa.PublicKey, error) {
+	pubKeyBytes := common.Hex2Bytes(pubKeyHex)
+	return UnmarshalPubkeyBytes(pubKeyBytes)
+}
+
+func UnmarshalPubkeyBytes(pubKeyBytes []byte) (*ecdsa.PublicKey, error) {
+	if pubKeyBytes[0] == 4 {
+		x, y := elliptic.Unmarshal(crypto.S256(), pubKeyBytes)
+		if x == nil {
+			return nil, errors.New("invalid public key")
+		}
+		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
+	} else {
+		x, y := secp256k1.DecompressPubkey(pubKeyBytes)
+		if x == nil {
+			return nil, errors.New("invalid public key")
+		}
+		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
+	}
 }
