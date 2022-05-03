@@ -44,3 +44,12 @@ func MarshalPubkeys(pubs []*ecdsa.PublicKey) [][]byte {
 	}
 	return marshaledPubs
 }
+
+func PubkeysToAddresses(pubkeys []*ecdsa.PublicKey) []*common.Address {
+	var addrs = make([]*common.Address, 0)
+	for _, pubkey := range pubkeys {
+		addr := crypto.PubkeyToAddress(*pubkey)
+		addrs = append(addrs, &addr)
+	}
+	return addrs
+}
