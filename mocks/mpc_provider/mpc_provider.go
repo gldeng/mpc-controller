@@ -145,5 +145,7 @@ listen:
 		}
 	}
 
+	sub.Unsubscribe()
+
 	return groupIDHex, listenErr
 }
