@@ -16,8 +16,7 @@ import (
 var Gas int64 = 8000000
 var BaseFee int64 = 300_000_000_000
 
-func Deploy(chainID int64, client *ethclient.Client, privKey *ecdsa.PrivateKey, bytecodeJSON string) (*common.Address, *common.Hash, error) {
-
+func Deploy(chainID int64, client *ethclient.Client, privKey *ecdsa.PrivateKey, bytecodeJSON string) (*common.Address, *types.Receipt, error) {
 	account := crypto.PubkeyToAddress(privKey.PublicKey)
 	nonce, err := client.NonceAt(context.Background(), account, nil)
 	if err != nil {
@@ -64,5 +63,5 @@ func Deploy(chainID int64, client *ethclient.Client, privKey *ecdsa.PrivateKey, 
 		logger.Field{"txHash", txHash.Hex()},
 		logger.Field{"receipt", rcp})
 
-	return &rcp.ContractAddress, &txHash, nil
+	return &rcp.ContractAddress, rcp, nil
 }
