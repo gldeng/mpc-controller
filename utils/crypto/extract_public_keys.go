@@ -33,6 +33,6 @@ func ExtractPubKeysForParticipantsHex(keys []string) ([]string, error) {
 	return pubKeys, nil
 }
 
-func marshalPubkey(pub *ecdsa.PublicKey) []byte {
+func MarshalPubkey(pub *ecdsa.PublicKey) []byte {
 	return elliptic.Marshal(crypto.S256(), pub.X, pub.Y)
 }
