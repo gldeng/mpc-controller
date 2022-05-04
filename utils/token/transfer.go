@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+// todo: check balance sufficience
+
 func TransferInCChain(client *ethclient.Client, chainId int64, privateKey *ecdsa.PrivateKey, to *common.Address, amount int64) error {
 	nonce, err := client.NonceAt(context.Background(), crypto.PubkeyToAddress(privateKey.PublicKey), nil)
 	if err != nil {

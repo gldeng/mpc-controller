@@ -46,8 +46,8 @@ type signRequestModel struct {
 var keyGenRequestsCache = &sync.Map{}
 var signRequestCache = &sync.Map{}
 
-var pendingKeygenChan = make(chan string)
-var pendingSignChan = make(chan string)
+var keygenTaskQueue = make(chan string, 10)
+var signTaskQueue = make(chan string, 10)
 
 type MPCClient interface {
 	Keygen(ctx context.Context, keygenReq *core.KeygenRequest) error
@@ -65,14 +65,14 @@ func New(parties, threshold int) core.MPCClient {
 	go func() {
 		for {
 			select {
-			case reqId := <-pendingKeygenChan:
+			case reqId := <-keygenTaskQueue:
 				err := m.keygen(reqId)
 				if err != nil {
 					logger.Error("Failed to generate key",
 						logger.Field{"requestId", reqId},
 						logger.Field{"error", err})
 				}
-			case reqId := <-pendingSignChan:
+			case reqId := <-signTaskQueue:
 				err := m.sign(reqId)
 				if err != nil {
 					logger.Error("Failed to sign message",
@@ -86,29 +86,35 @@ func New(parties, threshold int) core.MPCClient {
 }
 
 func (m *MpcClientMock) Keygen(ctx context.Context, keygenReq *core.KeygenRequest) error {
+	// todo: validate input, currently taking assumption that the content will be identical for the same request id
 	reqId := keygenReq.RequestId
-	_, ok := keyGenRequestsCache.Load(reqId)
-	if ok {
-		return errors.Errorf("request id %q had been received, don't repeat call Keygen interface", reqId)
+	lastReqNum := QueryRequestNumber(reqId, TypeKeygen)
+
+	switch {
+	case lastReqNum == 0:
+		keyGenRequestsCache.Store(reqId, &keyGenRequestModel{
+			status:  StatusReceived,
+			payload: keygenReq,
+		})
+		IncreaseRequestNumber(reqId, TypeKeygen)
+	case lastReqNum == 2:
+		IncreaseRequestNumber(reqId, TypeKeygen)
+		keygenTaskQueue <- reqId
+	case lastReqNum == 1 || lastReqNum >= 3:
+		IncreaseRequestNumber(reqId, TypeKeygen)
 	}
 
-	keyGenRequestsCache.Store(keygenReq.RequestId, &keyGenRequestModel{
-		status:  StatusReceived,
-		payload: keygenReq,
-	})
-	logger.Debug("Keygen request RECEIVED.", logger.Field{"requestId", reqId})
-
-	pendingKeygenChan <- reqId
+	logger.Debug("Keygen request RECEIVED.",
+		logger.Field{"requestId", reqId},
+		logger.Field{"requestNum", lastReqNum + 1})
 	return nil
 }
 
 func (m *MpcClientMock) Sign(ctx context.Context, signReq *core.SignRequest) error {
+	// todo: validate input, currently taking assumption that the content will be identical for the same request id
 	reqId := signReq.RequestId
-	_, ok := signRequestCache.Load(reqId)
-	if ok {
-		return errors.Errorf("request id %q had been received, don't repeat call Sign interface", reqId)
-	}
 
+	// make sure sign request can be triggered only after there is corresponding valid signer.
 	value, ok := keyGenRequestsCache.Load(reqId)
 	if !ok {
 		return errors.Errorf("you haven't call Keygen interface for request id %q, thus there's no signer to sign", reqId)
@@ -119,13 +125,26 @@ func (m *MpcClientMock) Sign(ctx context.Context, signReq *core.SignRequest) err
 		return errors.Errorf("request id %q is in keygen process and you should wait for a signer to be available.", reqId)
 	}
 
-	signRequestCache.Store(reqId, &signRequestModel{
-		status:  StatusReceived,
-		payload: signReq})
+	lastReqNum := QueryRequestNumber(reqId, TypeSign)
+	switch {
+	case lastReqNum == 0:
+		signRequestCache.Store(reqId, &signRequestModel{
+			status:  StatusReceived,
+			payload: signReq})
+		IncreaseRequestNumber(reqId, TypeSign)
+	case lastReqNum == 2:
+		IncreaseRequestNumber(reqId, TypeSign)
+		signTaskQueue <- reqId
+	case lastReqNum == 1 || lastReqNum >= 3:
+		IncreaseRequestNumber(reqId, TypeSign)
+	}
 
-	pendingSignChan <- reqId
+	logger.Debug("Sign request RECEIVED.",
+		logger.Field{"requestId", reqId},
+		logger.Field{"requestNum", lastReqNum + 1})
 	return nil
 }
+
 func (m *MpcClientMock) Result(ctx context.Context, reqID string) (*core.Result, error) {
 	value, ok := signRequestCache.Load(reqID)
 	if ok {
@@ -152,51 +171,21 @@ func (m *MpcClientMock) Result(ctx context.Context, reqID string) (*core.Result,
 	return nil, errors.Errorf("not found result concerning request id %q", reqID)
 }
 
-func (m *MpcClientMock) isAllPartiesCalledKeygen() bool {
-	rand.Seed(time.Now().UnixNano())
-	randNun := rand.Intn(m.parties + 1)
-	if randNun == m.parties {
-		return true
-	}
-	return false
-}
-
-func (m *MpcClientMock) isEnoughPartiesCalledSign() bool {
-	rand.Seed(time.Now().UnixNano())
-	randNun := rand.Intn(m.threshold + 2)
-	if randNun == m.threshold+1 {
-		return true
-	}
-	return false
-}
-
 func (m *MpcClientMock) keygen(reqId string) error {
 	// simulate time elapse before process keygen
-	time.Sleep(time.Second)
 	logger.Debug("Keygen request PROCESSING.", logger.Field{"requestId", reqId})
+	value, _ := keyGenRequestsCache.Load(reqId)
+	reqMod := value.(*keyGenRequestModel)
+	reqMod.status = StatusProcessing
+	keyGenRequestsCache.Store(reqId, reqMod)
+	rand.Seed(time.Now().UnixNano())
+	randNun := rand.Intn(m.parties)
+	time.Sleep(time.Second * time.Duration(randNun))
 
-	value, ok := keyGenRequestsCache.Load(reqId)
-	if ok {
-		reqMod := value.(*keyGenRequestModel)
-		if reqMod.status == StatusDone && reqMod.signer != nil {
-			return nil
-		}
-		reqMod.status = StatusProcessing
-		keyGenRequestsCache.Store(reqId, reqMod)
-	} else {
-		return errors.Errorf("request id %q hasn't been received for keygen yet.", reqId)
-	}
-
-	// simulate processing keygen, which may take some time, including waiting for all parties fully call
-	for !m.isAllPartiesCalledKeygen() {
-		time.Sleep(3)
-	}
 	signer, err := crypto.NewSECP256K1RSigner()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	value, _ = keyGenRequestsCache.Load(reqId)
-	reqMod := value.(*keyGenRequestModel)
 	reqMod.signer = signer
 	reqMod.pubKeyHex = common.Bytes2Hex(signer.PublicKey().Bytes())
 	reqMod.status = StatusDone
@@ -211,50 +200,23 @@ func (m *MpcClientMock) keygen(reqId string) error {
 
 func (m *MpcClientMock) sign(reqId string) error {
 	// simulate time elapse before process sign
-	time.Sleep(time.Second)
 	logger.Debug("Sign request PROCESSING.", logger.Field{"requestId", reqId})
-
-	value, ok := signRequestCache.Load(reqId)
-	if ok {
-		signReqMod := value.(*signRequestModel)
-		if signReqMod.status == StatusDone && signReqMod.signature != "" {
-			return errors.Errorf("request id %q hasn't signed before, don't repeat request sign", reqId)
-		}
-
-		value, ok := keyGenRequestsCache.Load(reqId)
-		if !ok {
-			return errors.Errorf("your haven't call keygen for request id %q yet, so there's no signer available", reqId)
-		}
-		keygenMod := value.(*keyGenRequestModel)
-		signer := keygenMod.signer
-		if signer == nil {
-			return errors.Errorf("request id %q has been received but it's signer/key hasn't been generated", reqId)
-		}
-
-		signReqMod.status = StatusProcessing
-		signRequestCache.Store(reqId, signReqMod)
-	} else {
-		return errors.Errorf("you haven't call Sign interface for request id %q, thus no message to sign.", reqId)
-	}
-
-	// simulate processing sign, which may take some time, including waiting for enough parties call
-	for !m.isEnoughPartiesCalledSign() {
-		time.Sleep(3)
-	}
-
-	value, _ = signRequestCache.Load(reqId)
+	value, _ := signRequestCache.Load(reqId)
 	signReqMod := value.(*signRequestModel)
-	message := signReqMod.payload.Hash
+	signReqMod.status = StatusProcessing
+	signRequestCache.Store(reqId, signReqMod)
+	rand.Seed(time.Now().UnixNano())
+	randNun := rand.Intn(m.parties)
+	time.Sleep(time.Second * time.Duration(randNun))
 
+	message := signReqMod.payload.Hash
 	value, _ = keyGenRequestsCache.Load(reqId)
 	keygenMod := value.(*keyGenRequestModel)
 	signer := keygenMod.signer
-
 	sig, err := signer.SignHash([]byte(message))
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
 	signReqMod.signature = string(sig)
 	signReqMod.status = StatusDone
 	signRequestCache.Store(reqId, signReqMod)
