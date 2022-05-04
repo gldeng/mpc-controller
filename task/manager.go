@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	_errors "github.com/juju/errors"
+	pkgErrors "github.com/pkg/errors"
 	"math/big"
 	"math/rand"
 	"os"
@@ -231,9 +232,14 @@ func (m *TaskManager) Start() error {
 			if ok {
 				err := m.onKeyGenerated(evt)
 				if err != nil {
-					fmt.Errorf("failed to handle key %v\n", err)
+					logger.Error("failed to handle key on KeyGenerated",
+						logger.Field{"error", err},
+						logger.Field{"eventType", "KeyGenerated"},
+						logger.Field{"eventValue", evt})
 				}
-				fmt.Printf("KeyGenerated %v\n", evt)
+				logger.Debug("Received coordinator event",
+					logger.Field{"eventType", "KeyGenerated"},
+					logger.Field{"eventValue", evt})
 			} else {
 				break
 			}
@@ -258,7 +264,11 @@ func (m *TaskManager) Start() error {
 				break
 			}
 		case <-time.After(1 * time.Second):
-			m.tick() // TODO: Handle error
+			err := m.tick() // TODO: Handle error
+			if err != nil {
+				logger.Error("Got an tick error", logger.Field{"error", err})
+			}
+			logger.Debug("Tick-----------Tick---------Tick--------")
 		}
 	}
 }
@@ -322,6 +332,14 @@ func (m *TaskManager) checkPendingReports() error {
 		req := m.pendingReports[txHash]
 		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
 		tx, err := m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		// todo: deal with error: "error": "insufficient funds for gas * price + value: address 0x3051bA2d313840932B7091D2e8684672496E9A4B have (2972700000107200) want (5436550000000000)
+		if err != nil {
+			logger.Error("Failed to reported generated key",
+				logger.Field{"error", err},
+				logger.Field{"groupId", groupId},
+				logger.Field{"pubKey", string(pubkey)})
+			return pkgErrors.Wrapf(err, "failed to reported generated key %v for group %v", string(pubkey), groupId)
+		}
 		m.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
 			myIndex:            ind,
@@ -395,6 +413,9 @@ func (m *TaskManager) checkPendingJoins() error {
 func (m *TaskManager) checkKeygenResult(requestId string) error {
 	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
 	if err != nil {
+		logger.Error("Got an error when check key generating result",
+			logger.Field{"requestId", requestId},
+			logger.Field{"error", err})
 		return err
 	}
 	if result.RequestStatus == "DONE" {
@@ -407,6 +428,14 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 			return err
 		}
 		tx, err := m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		// todo: to deal with: "error": "insufficient funds for gas * price + value: address 0x3600323b486F115CE127758ed84F26977628EeaA have (103000) want (3019200000000000)"}
+		if err != nil {
+			logger.Error("Failed to report generated key",
+				logger.Field{"groupId", groupId},
+				logger.Field{"pubKey", result.Result},
+				logger.Field{"error", err})
+			return pkgErrors.Wrapf(err, "failed to report generated key %v for group %v", result.Result, groupId)
+		}
 		m.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
 			myIndex:            ind,
@@ -415,8 +444,17 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Reported Key tx: %v\n", tx.Hash())
+		logger.Info("Reported generated public key",
+			logger.Field{"publicKeyHex", result.Result},
+			logger.Field{"txHashHex", tx.Hash().Hex()})
 		delete(m.pendingKeygenRequests, requestId)
+		return nil
+	} else {
+		logger.Debug("Key hasn't been generated yet",
+			logger.Field{"requestId", requestId},
+			logger.Field{"requestType", result.RequestType},
+			logger.Field{"statusStatus", result.RequestStatus})
+		return nil
 	}
 	return nil
 }
@@ -633,6 +671,7 @@ func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) e
 	pkHex := common.Bytes2Hex(req.PublicKey)
 	m.publicKeyCache[hash] = pkHex
 
+	// todo: only do the following if it's me added.
 	m.subscribeStakeRequestAdded()
 	m.subscribeStakeRequestStarted()
 	return nil
