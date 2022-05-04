@@ -25,10 +25,15 @@ func TestTransferCChain(t *testing.T) {
 		toPrivKey, err := crypto.HexToECDSA(toKey)
 		require.Nil(t, err, "failed to parse secp256k1 private key")
 		toAddress := crypto.PubkeyToAddress(toPrivKey.PublicKey)
-		err = TransferInCChain(ethClient, 43112, privateKey, &toAddress, 100000)
+		err = TransferInCChain(ethClient, 43112, privateKey, &toAddress, 543655000000000000)
 		require.Nil(t, err, "failed to transfer")
 		balance, err := ethClient.BalanceAt(context.Background(), toAddress, nil)
 		require.Nil(t, err, "failed to query balance")
 		fmt.Printf("Balance of %v is %v \n", toAddress, balance)
 	}
+
+	fromAdress := crypto.PubkeyToAddress(privateKey.PublicKey)
+	balance, err := ethClient.BalanceAt(context.Background(), fromAdress, nil)
+	require.Nil(t, err, "failed to query balance")
+	fmt.Printf("Balance of %v is %v \n", fromAdress, balance)
 }
