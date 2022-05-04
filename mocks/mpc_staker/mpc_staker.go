@@ -7,7 +7,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/avalido/mpc-controller/utils/token"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,11 +29,11 @@ type MpcStaker struct {
 	cPrivateKey *ecdsa.PrivateKey
 }
 
-func New(cChainId int64, cPrivateKey, cCoordinatorAddress, cHttpUrl, cWebsocketUrl string) *MpcStaker {
+func New(cChainId int64, cPrivateKey, cCoordinatorAddressHex, cHttpUrl, cWebsocketUrl string) *MpcStaker {
 	cHttpClient := network.NewEthClient(cHttpUrl)
 	cWebsocketClient := network.NewWsEthClient(cWebsocketUrl)
 
-	cCAddress := common.HexToAddress(cCoordinatorAddress)
+	cCAddress := common.HexToAddress(cCoordinatorAddressHex)
 
 	cHttpCoordinator, err := contract.NewCoordinator(cChainId, &cCAddress, cHttpClient)
 	if err != nil {
@@ -120,23 +119,43 @@ func (m *MpcStaker) ensureBalance(stakeAccountAddr *common.Address, transferAmou
 }
 
 func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
+
 	groupId := common.FromHex(groupIdHex)
+
+	type resultT struct {
+		pubKeyHex string
+		err       error
+	}
+	resultChan := make(chan resultT)
+	go func() {
+		logger.Debug("Started watch KeyGenerated event", logger.Field{"groupIdHex", groupIdHex})
+		pubKeyHex, err := m.watchKeyGeneratedEvent(groupId)
+		if err != nil {
+			resultChan <- resultT{"", pkgErrors.WithStack(err)}
+			return
+		}
+		resultChan <- resultT{pubKeyHex, nil}
+
+	}()
+
+	time.Sleep(time.Second * 2)
 	err := m.cHttpCoordinator.RequestKeygen_(m.cPrivateKey, groupId)
 	if err != nil {
 		return "", pkgErrors.WithStack(err)
 	}
 	logger.Info("RequestKeygen sent.", logger.Field{"groupId", groupIdHex})
 
-	publicKeyHex, err := m.watchKeyGeneratedEvent(groupId)
-	if err != nil {
-		return "", pkgErrors.WithStack(err)
-	}
+	result := <-resultChan
+	close(resultChan)
 
+	if result.err != nil {
+		return "", pkgErrors.WithStack(result.err)
+	}
 	logger.Info("KeyGenerated",
 		logger.Field{"groupIdHex", groupIdHex},
-		logger.Field{"pubkeyHex", publicKeyHex})
+		logger.Field{"pubkeyHex", result.pubKeyHex})
 
-	return publicKeyHex, nil
+	return result.pubKeyHex, nil
 }
 
 func (m *MpcStaker) watchKeyGeneratedEvent(groupId []byte) (string, error) {
@@ -145,10 +164,10 @@ func (m *MpcStaker) watchKeyGeneratedEvent(groupId []byte) (string, error) {
 
 	events := make(chan *contract.MpcCoordinatorKeyGenerated)
 
-	var start = uint64(1)
-	opts := new(bind.WatchOpts) // todo: to get more clear on opts meaning.
-	opts.Start = &start
-	sub, err := m.cWebsocketCoordinator.WatchKeyGenerated(opts, events, [][32]byte{groupId32})
+	//var start = uint64(1)
+	//opts := new(bind.WatchOpts) // todo: to get more clear on opts meaning.
+	//opts.Start = &start
+	sub, err := m.cWebsocketCoordinator.WatchKeyGenerated(nil, events, [][32]byte{groupId32})
 	if err != nil {
 		return "", errors.Trace(err)
 	}
