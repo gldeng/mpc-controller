@@ -143,7 +143,7 @@ func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 	if err != nil {
 		return "", pkgErrors.WithStack(err)
 	}
-	logger.Info("RequestKeygen sent.", logger.Field{"groupId", groupIdHex})
+	logger.Info("RequestKeygen sent.", logger.Field{"groupIdHex", groupIdHex})
 
 	result := <-resultChan
 	close(resultChan)

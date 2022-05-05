@@ -208,65 +208,92 @@ func (m *TaskManager) Initialize() error {
 func (m *TaskManager) Start() error {
 	err := m.subscribeParticipantAdded()
 	if err != nil {
-		return err
+		return pkgErrors.WithStack(err)
 	}
 	for {
 		select {
 		case evt, ok := <-m.eventsPA:
-			if ok {
-				fmt.Printf("ParticipantAdded: %v\n", evt)
-				fmt.Printf("GroupId is %v\n", common.Bytes2Hex(evt.GroupId[:]))
-				m.onParticipantAdded(evt)
+			if !ok {
+				logger.Debug("Retrieve nothing from ParticipantAdded event channel")
+				break
 			}
+
+			logger.Info("Received ParticipantAdded event",
+				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+				logger.Field{"event", evt})
+
+			m.onParticipantAdded(evt)
+
 		case evt, ok := <-m.eventsKA:
-			if ok {
-				fmt.Printf("KeygenAdded %v\n", evt)
-				err = m.onKeygenRequestAdded(evt)
-				if err != nil {
-					fmt.Errorf("failed to handle keygen %v\n", err)
-				}
-			} else {
+			if !ok {
+				logger.Debug("Retrieve nothing from KeygenAdded event channel")
 				break
 			}
-		case evt, ok := <-m.eventsKG:
-			if ok {
-				err := m.onKeyGenerated(evt)
-				if err != nil {
-					logger.Error("failed to handle key on KeyGenerated",
-						logger.Field{"error", err},
-						logger.Field{"eventType", "KeyGenerated"},
-						logger.Field{"eventValue", evt})
-				}
-				logger.Debug("Received coordinator event",
-					logger.Field{"eventType", "KeyGenerated"},
-					logger.Field{"eventValue", evt})
-			} else {
-				break
-			}
-		case evt, ok := <-m.eventsStA:
-			if ok {
-				fmt.Printf("StakeRequestAdded %v\n", evt)
-				err := m.onStakeRequestAdded(evt)
-				if err != nil {
-					fmt.Printf("failed to respond to stake request %v\n", err)
-				}
-			} else {
-				break
-			}
-		case evt, ok := <-m.eventsStS:
-			if ok {
-				fmt.Printf("StakeRequestStarted %v\n", evt)
-				err := m.onStakeRequestStarted(evt)
-				if err != nil {
-					fmt.Printf("failed to handle stake request %v\n", err)
-				}
-			} else {
-				break
-			}
-		case <-time.After(1 * time.Second):
-			err := m.tick() // TODO: Handle error
+
+			logger.Info("Received KeygenAdded event",
+				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+				logger.Field{"event", evt})
+
+			err = m.onKeygenRequestAdded(evt)
 			if err != nil {
-				logger.Error("Got an tick error", logger.Field{"error", err})
+				logger.Error("Failed to respond to KeygenAdded event",
+					logger.Field{"event", evt},
+					logger.Field{"error", err})
+			}
+
+		case evt, ok := <-m.eventsKG:
+			if !ok {
+				logger.Debug("Retrieve nothing from KeyGenerated event channel")
+				break
+			}
+
+			logger.Info("Received KeyGenerated event",
+				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+				logger.Field{"event", evt})
+
+			err := m.onKeyGenerated(evt)
+			if err != nil {
+				logger.Error("Failed to respond to KeyGenerated event",
+					logger.Field{"event", evt},
+					logger.Field{"error", err})
+			}
+
+		case evt, ok := <-m.eventsStA:
+			if !ok {
+				logger.Debug("Retrieve nothing from StakeRequestAdded event channel")
+				break
+			}
+
+			logger.Info("Received StakeRequestAdded event",
+				logger.Field{"event", evt})
+
+			err := m.onStakeRequestAdded(evt)
+			if err != nil {
+				logger.Error("Failed to respond to StakeRequestAdded event",
+					logger.Field{"event", evt},
+					logger.Field{"error", err})
+			}
+
+		case evt, ok := <-m.eventsStS:
+			if !ok {
+				logger.Debug("Retrieve nothing from StakeRequestStarted event channel")
+				break
+			}
+
+			logger.Info("Received StakeRequestStarted event",
+				logger.Field{"event", evt})
+
+			err := m.onStakeRequestStarted(evt)
+			if err != nil {
+				logger.Error("Failed to respond to StakeRequestStarted evnet",
+					logger.Field{"error", err})
+			}
+
+		case <-time.After(1 * time.Second):
+			err := m.tick()
+			if err != nil {
+				logger.Error("Got an tick error",
+					logger.Field{"error", err})
 			}
 			logger.Debug("Tick-----------Tick---------Tick--------")
 		}

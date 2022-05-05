@@ -120,7 +120,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 		cWebsocketUrl := "ws://127.0.0.1:9650/ext/bc/C/ws"
 		nodeID := "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5"
 		mpcStaker := mpc_staker.New(43112, suite.privateKeyHex, suite.coordinatorAddrHex, cHttpUrl, cWebsocketUrl)
-		for i := 0; i < 100; i++ {
+		for i := 1; i < 100; i++ {
 			logger.Debug("RequestStakeAfterKeyAdded started////////////////////////////", logger.Field{"number", i})
 			err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, 30_000_000_000, 21)
 			if err != nil {
