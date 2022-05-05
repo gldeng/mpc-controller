@@ -3,6 +3,8 @@ package crypto
 import (
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/ava-labs/avalanchego/utils/hashing"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -48,4 +50,20 @@ func (suite *SignerTestSuite) TestSECP256K1RSigner() {
 
 func TestSignerTestSuite(t *testing.T) {
 	suite.Run(t, new(SignerTestSuite))
+}
+
+func (suite *SignerTestSuite) TestVerify() {
+	require := suite.Require()
+
+	msg_hash := "6a1be824fa870c1517d9ea84013e75ba81cccb44b48a270f12f1ebe45cb2a0c7"
+	pubkey := "029d9175befe99a15fb51929d3181ba9331501330749e8e8e8783ebbd729d385f2"
+	sig := "ece2351a119e2778aab76c20c8842eba524e6440f143f4c7a96bc7bb60464449492116ab49298c4e3c1e55586c45fd5917da640504ccafba37dd123bc30cc45b01"
+
+	pubkeyBytes := common.Hex2Bytes(pubkey)
+	digestBytes := common.Hex2Bytes(msg_hash)
+	sigBytes := common.Hex2Bytes(sig)
+
+	correct := crypto.VerifySignature(pubkeyBytes, digestBytes, sigBytes)
+
+	require.True(correct)
 }
