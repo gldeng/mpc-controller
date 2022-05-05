@@ -7,7 +7,6 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/mocks/mpc_client"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
 	"github.com/avalido/mpc-controller/mocks/mpc_staker"
 	"github.com/avalido/mpc-controller/utils/network"
@@ -160,13 +159,13 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 			if err != nil {
 				return errors.Wrapf(err, "failed to parse private key from %q", arg.privateKey)
 			}
-			//
-			//mpcClient, err := core.NewMpcClient(arg.mpc_url)
-			//if err != nil {
-			//	return errors.Wrapf(err, "failed to build mpc-client %d with mpc-url %q", i, arg.mpc_url)
-			//}
 
-			mpcClient := mpc_client.New(3, 1)
+			mpcClient, err := core.NewMpcClient(arg.mpc_url)
+			if err != nil {
+				return errors.Wrapf(err, "failed to build mpc-client %d with mpc-url %q", i, arg.mpc_url)
+			}
+
+			//mpcClient := mpc_client.New(3, 1)
 
 			coordinatorAddr := common.HexToAddress(suite.coordinatorAddrHex)
 			manager, err := NewTaskManager(i, *networkCtx, mpcClient, sk, coordinatorAddr)

@@ -8,9 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 )
+
+//var globalSigner crypto.Signer
 
 type RequestType string
 
@@ -104,10 +107,10 @@ func (m *MpcClientMock) Keygen(ctx context.Context, keygenReq *core.KeygenReques
 			payload: keygenReq,
 		})
 		IncreaseRequestNumber(reqId, TypeKeygen)
-	case lastReqNum == 2:
+	case lastReqNum == m.parties-1:
 		IncreaseRequestNumber(reqId, TypeKeygen)
 		keygenTaskQueue <- reqId
-	case lastReqNum == 1 || lastReqNum >= 3:
+	default:
 		IncreaseRequestNumber(reqId, TypeKeygen)
 	}
 
@@ -121,15 +124,23 @@ func (m *MpcClientMock) Sign(ctx context.Context, signReq *core.SignRequest) err
 	// todo: validate input, currently taking assumption that the content will be identical for the same request id
 	reqId := signReq.RequestId
 
-	// make sure sign request can be triggered only after there is corresponding valid signer.
-	value, ok := keyGenRequestsCache.Load(reqId)
-	if !ok {
-		return errors.Errorf("you haven't call Keygen interface for request id %q, thus there's no signer to sign", reqId)
-	}
+	ids := strings.Split(reqId, "-")
+	logger.Debug("Mpc-server received sign request", logger.Field{"signReq", signReq})
+	for {
+		value, ok := keyGenRequestsCache.Load(ids[0])
+		if !ok {
+			logger.Debug("Mpc-server waiting for corresponding key generated")
+			time.Sleep(3)
+			continue
+		}
 
-	keyGenReqMod := value.(*keyGenRequestModel)
-	if keyGenReqMod.status != StatusDone || keyGenReqMod.signer == nil {
-		return errors.Errorf("request id %q is in keygen process and you should wait for a signer to be available.", reqId)
+		keyGenReqMod := value.(*keyGenRequestModel)
+		if keyGenReqMod.status != StatusDone || keyGenReqMod.signer == nil {
+			logger.Debug("Mpc-server waiting for corresponding key generated")
+			time.Sleep(3)
+			continue
+		}
+		break
 	}
 
 	lastReqNum := QueryRequestNumber(reqId, TypeSign)
@@ -139,16 +150,17 @@ func (m *MpcClientMock) Sign(ctx context.Context, signReq *core.SignRequest) err
 			status:  StatusReceived,
 			payload: signReq})
 		IncreaseRequestNumber(reqId, TypeSign)
-	case lastReqNum == 2:
+	case lastReqNum == m.threshold:
 		IncreaseRequestNumber(reqId, TypeSign)
 		signTaskQueue <- reqId
-	case lastReqNum == 1 || lastReqNum >= 3:
+	default:
 		IncreaseRequestNumber(reqId, TypeSign)
 	}
 
-	logger.Debug("Sign request RECEIVED.",
+	logger.Debug("Mpc-Server received sign request..",
 		logger.Field{"requestId", reqId},
-		logger.Field{"requestNum", lastReqNum + 1})
+		logger.Field{"requestNum", lastReqNum + 1},
+		logger.Field{"signReq", signReq})
 	return nil
 }
 
@@ -175,7 +187,7 @@ func (m *MpcClientMock) Result(ctx context.Context, reqID string) (*core.Result,
 		}, nil
 	}
 
-	return nil, errors.Errorf("not found result concerning request id %q", reqID)
+	return nil, errors.Errorf("Mpc-server not found result concerning request id %q", reqID)
 }
 
 func (m *MpcClientMock) keygen(reqId string) error {
@@ -194,20 +206,22 @@ func (m *MpcClientMock) keygen(reqId string) error {
 		return errors.WithStack(err)
 	}
 	reqMod.signer = signer
-	reqMod.pubKeyHex = common.Bytes2Hex(signer.PublicKey().Bytes())
+
+	privKeyHex := common.Bytes2Hex(signer.PrivateKey().Bytes())
+	pubKeyHex := common.Bytes2Hex(signer.PublicKey().Bytes())
+	reqMod.pubKeyHex = pubKeyHex
 	reqMod.status = StatusDone
 	keyGenRequestsCache.Store(reqId, reqMod)
-	logger.Debug("Keygen request DONE",
-		logger.Field{"requestID", reqId},
-		logger.Field{"privateKeyHex", common.Bytes2Hex(signer.PrivateKey().Bytes())},
-		logger.Field{"publicKeyHex", reqMod.pubKeyHex},
-		logger.Field{"addressHex", signer.Address().Hex()})
+	logger.Debug("Mpc-server generated key",
+		logger.Field{"reqId", reqId},
+		logger.Field{"privKeyHex", privKeyHex},
+		logger.Field{"pubKeyHex", pubKeyHex})
 	return nil
 }
 
 func (m *MpcClientMock) sign(reqId string) error {
 	// simulate time elapse before process sign
-	logger.Debug("Sign request PROCESSING.", logger.Field{"requestId", reqId})
+	logger.Debug("Mpc-server sign request PROCESSING.", logger.Field{"requestId", reqId})
 	value, _ := signRequestCache.Load(reqId)
 	signReqMod := value.(*signRequestModel)
 	signReqMod.status = StatusProcessing
@@ -216,20 +230,26 @@ func (m *MpcClientMock) sign(reqId string) error {
 	randNun := rand.Intn(m.parties)
 	time.Sleep(time.Second * time.Duration(randNun))
 
+	ids := strings.Split(reqId, "-")
 	message := signReqMod.payload.Hash
-	value, _ = keyGenRequestsCache.Load(reqId)
+	value, _ = keyGenRequestsCache.Load(ids[0])
 	keygenMod := value.(*keyGenRequestModel)
 	signer := keygenMod.signer
-	sig, err := signer.SignHash([]byte(message))
+
+	messageBytes := common.Hex2Bytes(message)
+	sigBytes, err := signer.SignHash(messageBytes)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	signReqMod.signature = string(sig)
+	sigHex := common.Bytes2Hex(sigBytes)
+
+	signReqMod.signature = sigHex
 	signReqMod.status = StatusDone
 	signRequestCache.Store(reqId, signReqMod)
 
-	logger.Debug("sign request DONE",
+	logger.Debug("Mpc-server signed message",
 		logger.Field{"requestId", reqId},
-		logger.Field{"signature", signReqMod.signature})
+		logger.Field{"messageHex", message},
+		logger.Field{"signatureHex", signReqMod.signature})
 	return nil
 }

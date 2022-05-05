@@ -283,8 +283,8 @@ func (m *TaskManager) Start() error {
 			logger.Info("Received StakeRequestStarted event",
 				logger.Field{"event", evt})
 
-			// Wait until the corresponding key has been generated
-			<-time.After(time.Second * 20)
+			//// Wait until the corresponding key has been generated
+			//<-time.After(time.Second * 20)
 
 			err := m.onStakeRequestStarted(evt)
 			if err != nil {
@@ -496,7 +496,7 @@ func (m *TaskManager) checkResult(requestId string) error {
 	}
 	if result.RequestStatus == "DONE" {
 		var sig [65]byte
-		sigBytes := common.Hex2Bytes(result.Result)
+		sigBytes := common.Hex2Bytes(result.Result[2:])
 		copy(sig[:], sigBytes)
 		reqId, err := parsePendingRequestId(requestId)
 		if err != nil {
@@ -810,8 +810,9 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 			Hash:            hash,
 		}
 		err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
+		logger.Debug("Task manager called mpcClient.Sign", logger.Field{"signRequest", request})
 		if err != nil {
-			return err
+			return pkgErrors.WithStack(err)
 		}
 		m.pendingRequests[reqId.ToString()] = request
 	}
