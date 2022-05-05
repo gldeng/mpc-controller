@@ -283,9 +283,12 @@ func (m *TaskManager) Start() error {
 			logger.Info("Received StakeRequestStarted event",
 				logger.Field{"event", evt})
 
+			// Wait until the corresponding key has been generated
+			<-time.After(time.Second * 20)
+
 			err := m.onStakeRequestStarted(evt)
 			if err != nil {
-				logger.Error("Failed to respond to StakeRequestStarted evnet",
+				logger.Error("Failed to respond to StakeRequestStarted event",
 					logger.Field{"error", err})
 			}
 

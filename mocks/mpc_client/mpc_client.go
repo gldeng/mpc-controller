@@ -60,25 +60,32 @@ type MpcClientMock struct {
 	threshold int
 }
 
+// todo: take measures to avoid gorutine leak
+
 func New(parties, threshold int) core.MPCClient {
 	m := &MpcClientMock{parties, threshold}
 	go func() {
 		for {
 			select {
 			case reqId := <-keygenTaskQueue:
-				err := m.keygen(reqId)
-				if err != nil {
-					logger.Error("Failed to generate key",
-						logger.Field{"requestId", reqId},
-						logger.Field{"error", err})
-				}
+				go func(reqId string) {
+					err := m.keygen(reqId)
+					if err != nil {
+						logger.Error("Failed to generate key",
+							logger.Field{"requestId", reqId},
+							logger.Field{"error", err})
+					}
+				}(reqId)
+
 			case reqId := <-signTaskQueue:
-				err := m.sign(reqId)
-				if err != nil {
-					logger.Error("Failed to sign message",
-						logger.Field{"requestId", reqId},
-						logger.Field{"error", err})
-				}
+				go func(reqId string) {
+					err := m.sign(reqId)
+					if err != nil {
+						logger.Error("Failed to sign message",
+							logger.Field{"requestId", reqId},
+							logger.Field{"error", err})
+					}
+				}(reqId)
 			}
 		}
 	}()

@@ -37,18 +37,18 @@ func New(cChainId int64, cPrivateKey, cCoordinatorAddressHex, cHttpUrl, cWebsock
 
 	cHttpCoordinator, err := contract.NewCoordinator(cChainId, &cCAddress, cHttpClient)
 	if err != nil {
-		logger.Error("Failed to create http coordinator", logger.Field{"error", err})
+		logger.Error("Staker failed to create http coordinator", logger.Field{"error", err})
 		os.Exit(1)
 	}
 	cWebsocketCoordinator, err := contract.NewCoordinator(cChainId, &cCAddress, cWebsocketClient)
 	if err != nil {
-		logger.Error("Failed to create websocket coordinator", logger.Field{"error", err})
+		logger.Error("Staker failed to create websocket coordinator", logger.Field{"error", err})
 		os.Exit(1)
 	}
 
 	cPrivateKey_, err := ethCrypto.HexToECDSA(cPrivateKey)
 	if err != nil {
-		logger.Error("Failed to parse C-Chain private key", logger.Field{"privateKeyHex", cPrivateKey_})
+		logger.Error("Staker failed to parse C-Chain private key", logger.Field{"privateKeyHex", cPrivateKey_})
 		os.Exit(1)
 	}
 
@@ -74,7 +74,7 @@ func (m *MpcStaker) RequestStakeAfterKeyAdded(groupIdHex string, nodeId string, 
 		return pkgErrors.WithStack(err)
 	}
 
-	logger.Info("RequestStakeAfterKeyAdded end.")
+	logger.Info("Staker RequestStakeAfterKeyAdded end.")
 	return nil
 }
 
@@ -102,7 +102,7 @@ func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount in
 		return errors.Trace(err)
 	}
 
-	logger.Info("RequestStake sent",
+	logger.Info("Staker RequestStake sent",
 		logger.Field{"pubKeyHex", pubKeyHex},
 		logger.Field{"nodeId", nodeId},
 		logger.Field{"stakeAmount", stakeAmount},
@@ -128,7 +128,7 @@ func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 	}
 	resultChan := make(chan resultT)
 	go func() {
-		logger.Debug("Started watch KeyGenerated event", logger.Field{"groupIdHex", groupIdHex})
+		logger.Debug("Staker started watch KeyGenerated event", logger.Field{"groupIdHex", groupIdHex})
 		pubKeyHex, err := m.watchKeyGeneratedEvent(groupId)
 		if err != nil {
 			resultChan <- resultT{"", pkgErrors.WithStack(err)}
@@ -143,7 +143,7 @@ func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 	if err != nil {
 		return "", pkgErrors.WithStack(err)
 	}
-	logger.Info("RequestKeygen sent.", logger.Field{"groupIdHex", groupIdHex})
+	logger.Info("Staker RequestKeygen sent.", logger.Field{"groupIdHex", groupIdHex})
 
 	result := <-resultChan
 	close(resultChan)
@@ -151,7 +151,7 @@ func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 	if result.err != nil {
 		return "", pkgErrors.WithStack(result.err)
 	}
-	logger.Info("KeyGenerated",
+	logger.Info("Staker received KeyGenerated event",
 		logger.Field{"groupIdHex", groupIdHex},
 		logger.Field{"pubkeyHex", result.pubKeyHex})
 
