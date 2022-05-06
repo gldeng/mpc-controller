@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
+	"github.com/avalido/mpc-controller/mocks/mpc_server_openapi"
 	"github.com/avalido/mpc-controller/mocks/mpc_staker"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/common"
@@ -133,6 +134,12 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 		return nil
 	})
 
+	// Simulate mpc-server, for mock
+	g.Go(func() error {
+		mpc_server_openapi.ListenAndServe("9000")
+		return nil
+	})
+
 	// Do the mpc-controller stuff
 	type Arg struct {
 		privateKey string
@@ -140,9 +147,12 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 	}
 
 	var args = []Arg{
-		{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:8001"},
-		{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:8002"},
-		{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:8003"},
+		//{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:8001"},
+		//{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:8002"},
+		//{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:8003"},
+		{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:9000"},
+		{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:9000"},
+		{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:9000"},
 	}
 
 	for i, arg := range args {

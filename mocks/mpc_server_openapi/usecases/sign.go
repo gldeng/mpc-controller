@@ -6,7 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/swaggest/usecase"
-	"strings"
 )
 
 func Sign() usecase.IOInteractor {
@@ -43,17 +42,18 @@ func Sign() usecase.IOInteractor {
 			return nil
 		}
 
-		reqIdParts := strings.Split(in.RequestId, "-")
+		//reqIdParts := strings.Split(in.RequestId, "-")
 
-		lastKeygenReq := storer.GetKeygenRequestModel(reqIdParts[0])
-		if lastKeygenReq == nil || lastKeygenReq.status != StatusDone {
-			logger.Error("Mpc-server failed to get key to sign",
-				logger.Field{"reqId", in.RequestId})
-			return errors.Errorf("Mpc-server failed to get key to sign, request id: %v", in.RequestId)
-		}
+		//lastKeygenReq := storer.GetKeygenRequestModel(reqIdParts[0])
+		//if lastKeygenReq == nil || lastKeygenReq.status != StatusDone {
+		//	logger.Error("Mpc-server failed to get key to sign",
+		//		logger.Field{"reqId", in.RequestId})
+		//	return errors.Errorf("Mpc-server failed to get key to sign, request id: %v", in.RequestId)
+		//}
 
 		lastSignReq.hits++
-		signer := lastKeygenReq.signer
+		//signer := lastKeygenReq.signer
+		signer := globalSiner
 		digest := common.Hex2Bytes(lastSignReq.input.Hash)
 
 		sigBytes, err := signer.SignHash(digest)

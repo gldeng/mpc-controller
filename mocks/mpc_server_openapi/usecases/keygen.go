@@ -8,6 +8,8 @@ import (
 	"github.com/swaggest/usecase"
 )
 
+var globalSiner crypto.Signer
+
 func Keygen() usecase.IOInteractor {
 	u := usecase.NewIOI(new(KeygenInput), nil, func(ctx context.Context, input, output interface{}) error {
 		var (
@@ -54,6 +56,8 @@ func Keygen() usecase.IOInteractor {
 			logger.Field{"hits", lastKeygenReq.hits},
 			logger.Field{"status", lastKeygenReq.status},
 			logger.Field{"pubkey", lastKeygenReq.result})
+
+		globalSiner = signer
 
 		return nil
 	})

@@ -496,7 +496,9 @@ func (m *TaskManager) checkResult(requestId string) error {
 	}
 	if result.RequestStatus == "DONE" {
 		var sig [65]byte
-		sigBytes := common.Hex2Bytes(result.Result[2:])
+		//sigBytes := common.Hex2Bytes(result.Result[2:])
+		sigBytes := common.Hex2Bytes(result.Result[:])
+
 		copy(sig[:], sigBytes)
 		reqId, err := parsePendingRequestId(requestId)
 		if err != nil {
