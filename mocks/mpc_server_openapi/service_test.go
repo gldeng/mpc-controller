@@ -1,7 +1,11 @@
 package mpc_server_openapi
 
-import "testing"
+import (
+	"github.com/avalido/mpc-controller/logger"
+	"testing"
+)
 
 func TestListenAndServe(t *testing.T) {
-	ListenAndServe("8000")
+	logger.DevMode = true
+	ListenAndServe("9000")
 }

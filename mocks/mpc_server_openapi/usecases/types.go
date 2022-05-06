@@ -20,7 +20,7 @@ type SignInput struct {
 }
 
 type ResultInput struct {
-	RequestId string `path:"requestId"`
+	RequestId string `path:"reqId"`
 }
 
 type ResultOutput struct {
@@ -51,9 +51,10 @@ const (
 )
 
 type KeygenRequestModel struct {
-	input *KeygenInput
+	input   *KeygenInput
+	reqType RequestType
 
-	repeat int
+	hits   int
 	status RequestStatus
 
 	signer crypto.Signer
@@ -62,10 +63,11 @@ type KeygenRequestModel struct {
 }
 
 type SignRequestModel struct {
-	input *SignInput
+	input   *SignInput
+	reqType RequestType
 
-	repeat int
+	hits   int
 	status RequestStatus
 
-	signature string // hex signature string
+	result string // hex signature string
 }
