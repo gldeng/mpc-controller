@@ -6,10 +6,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	pkgErrors "github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -74,12 +74,13 @@ func (c *MpcClient) Keygen(ctx context.Context, request *KeygenRequest) error {
 }
 
 func (c *MpcClient) Sign(ctx context.Context, request *SignRequest) error {
-	normalized, err := normalizePubKeys(request.ParticipantKeys)
-	fmt.Printf("normalized keys %v\n", normalized)
-	if err != nil {
-		return err
-	}
-	request.ParticipantKeys = normalized
+	//normalized, err := normalizePubKeys(request.ParticipantKeys)
+	//fmt.Printf("normalized keys %v\n", normalized)
+	//if err != nil {
+	//	log.Fatalf("%+v", pkgErrors.WithStack(err))
+	//	return pkgErrors.WithStack(err)
+	//}
+	//request.ParticipantKeys = normalized
 	payloadBytes, err := json.Marshal(request)
 	if err != nil {
 		return err
@@ -117,9 +118,10 @@ func (c *MpcClient) Result(ctx context.Context, requestId string) (*Result, erro
 }
 
 func normalizePubKey(pubKey string) (*string, error) {
-	var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 	pub := common.Hex2Bytes(pubKey)
-	if len(pub) == 33 && (pubKey[0] == 3) || (pubKey[0] == 2) {
+	pubKey0 := pubKey[0]
+
+	if len(pub) == 33 && (pubKey0 == 3) || (pubKey0 == 2) {
 		// Compressed format
 		return &pubKey, nil
 	} else if len(pub) == 65 && pubKey[0] == 4 {
@@ -140,15 +142,14 @@ func normalizePubKey(pubKey string) (*string, error) {
 		pubN := common.Bytes2Hex(compressed)
 		return &pubN, nil
 	} else {
-		return nil, errInvalidPubkey
+		return nil, pkgErrors.New("invalid secp256k1 public key")
 	}
 }
 
 func toCompressed(pub []byte) ([]byte, error) {
-	var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 	x, y := elliptic.Unmarshal(crypto.S256(), pub)
 	if x == nil {
-		return nil, errInvalidPubkey
+		return nil, pkgErrors.New("invalid secp256k1 public key")
 	}
 	pk := &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}
 	pubCompressed := elliptic.MarshalCompressed(crypto.S256(), pk.X, pk.Y)

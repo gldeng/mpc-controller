@@ -15,7 +15,7 @@ import (
 
 // todo: check balance sufficience
 
-func TransferInCChain(client *ethclient.Client, chainId int64, privateKey *ecdsa.PrivateKey, to *common.Address, amount int64) error {
+func TransferInCChain(client *ethclient.Client, chainId int64, privateKey *ecdsa.PrivateKey, to *common.Address, amount *big.Int) error {
 	nonce, err := client.NonceAt(context.Background(), crypto.PubkeyToAddress(privateKey.PublicKey), nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to query nonce")
@@ -31,7 +31,7 @@ func TransferInCChain(client *ethclient.Client, chainId int64, privateKey *ecdsa
 		Gas:        uint64(gas),
 		GasFeeCap:  big.NewInt(baseFee),
 		AccessList: nil,
-		Value:      big.NewInt(amount),
+		Value:      amount,
 	}
 	tx := types.NewTx(txdata)
 	signer := types.LatestSignerForChainID(big.NewInt(chainId))
@@ -48,7 +48,11 @@ func TransferInCChain(client *ethclient.Client, chainId int64, privateKey *ecdsa
 	if err != nil {
 		return errors.Wrapf(err, "failed to send transfer transaction")
 	}
-	logger.Debug("Sent a transfer transaction", logger.Field{"TxHash", txSigned.Hash()})
+	logger.Debug("Sent a C-Chain transfer transaction",
+		logger.Field{"from", crypto.PubkeyToAddress(privateKey.PublicKey).Hex()},
+		logger.Field{"to", to.Hex()},
+		logger.Field{"amount", amount.String()},
+		logger.Field{"TxHash", txSigned.Hash()})
 
 	time.Sleep(5 * time.Second)
 	rcp, err := client.TransactionReceipt(context.Background(), txSigned.Hash())

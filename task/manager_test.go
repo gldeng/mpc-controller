@@ -118,11 +118,12 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 		time.Sleep(time.Second * 10)
 		cHttpUrl := "http://localhost:9650/ext/bc/C/rpc"
 		cWebsocketUrl := "ws://127.0.0.1:9650/ext/bc/C/ws"
-		nodeID := "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5"
+		nodeID := "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"
 		mpcStaker := mpc_staker.New(43112, suite.privateKeyHex, suite.coordinatorAddrHex, cHttpUrl, cWebsocketUrl)
 		for i := 1; i < 2; i++ {
 			logger.Debug("RequestStakeAfterKeyAdded started////////////////////////////", logger.Field{"number", i})
-			err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, 30_000_000_000, 21)
+			amountToStake := big.NewInt(25_000_000_000)
+			err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, amountToStake, 21)
 			if err != nil {
 				logger.Error("Failed to RequestStakeAfterKeyAdded",
 					logger.Field{"error", err})

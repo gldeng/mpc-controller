@@ -63,7 +63,7 @@ func New(cChainId int64, cPrivateKey, cCoordinatorAddressHex, cHttpUrl, cWebsock
 }
 
 // todo: watch StakeRequestAdded, and StakeRequestStarted
-func (m *MpcStaker) RequestStakeAfterKeyAdded(groupIdHex string, nodeId string, stakeAmount int64, stakeDays int) error {
+func (m *MpcStaker) RequestStakeAfterKeyAdded(groupIdHex string, nodeId string, stakeAmount *big.Int, stakeDays int) error {
 	pubKeyHex, err := m.requestKeygen(groupIdHex)
 	if err != nil {
 		return pkgErrors.WithStack(err)
@@ -78,7 +78,7 @@ func (m *MpcStaker) RequestStakeAfterKeyAdded(groupIdHex string, nodeId string, 
 	return nil
 }
 
-func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount int64, stakeDays int) error {
+func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount *big.Int, stakeDays int) error {
 	pubKeyBytes := common.Hex2Bytes(pubKeyHex)
 
 	pubKey, err := crypto.UnmarshalPubKeyHex(pubKeyHex)
@@ -87,7 +87,12 @@ func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount in
 	}
 	account := ethCrypto.PubkeyToAddress(*pubKey)
 
-	err = m.ensureBalance(&account, stakeAmount+1_000_000_000)
+	// todo: to adjust amount needed
+	amountForTxFee := big.NewInt(1_000_000_000_000_000_000)
+	times := big.NewInt(1_000_0)
+	amountForTxFee = new(big.Int).Mul(amountForTxFee, times)
+
+	err = m.ensureBalance(&account, new(big.Int).Add(stakeAmount, amountForTxFee))
 	if err != nil {
 		return pkgErrors.WithStack(err)
 	}
@@ -97,7 +102,7 @@ func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount in
 	startTime := time.Now().Unix() + fiveMins
 	endTime := startTime + stakeDaysInSeconds
 
-	err = m.cHttpCoordinator.RequestStake_(m.cPrivateKey, pubKeyBytes, nodeId, big.NewInt(stakeAmount), big.NewInt(startTime), big.NewInt(endTime))
+	err = m.cHttpCoordinator.RequestStake_(m.cPrivateKey, pubKeyBytes, nodeId, stakeAmount, big.NewInt(startTime), big.NewInt(endTime))
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -110,7 +115,7 @@ func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount in
 	return nil
 }
 
-func (m *MpcStaker) ensureBalance(stakeAccountAddr *common.Address, transferAmount int64) error {
+func (m *MpcStaker) ensureBalance(stakeAccountAddr *common.Address, transferAmount *big.Int) error {
 	err := token.TransferInCChain(m.cHttpClient, m.cChainId, m.cPrivateKey, stakeAccountAddr, transferAmount)
 	if err != nil {
 		return errors.Trace(err)

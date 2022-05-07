@@ -14,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -93,7 +94,7 @@ type TaskManager struct {
 	publicKeyCache        map[common.Hash]string
 	myIndicesInGroups     map[string]*big.Int
 	stakeTasks            map[string]*StakeTask
-	pendingRequests       map[string]*core.SignRequest
+	pendingSignRequests   map[string]*core.SignRequest
 	pendingKeygenRequests map[string]*core.KeygenRequest
 	keygenRequestGroups   map[string][32]byte
 	pendingReports        map[common.Hash]*ReportKeyTx
@@ -156,7 +157,7 @@ func NewTaskManager(
 		publicKeyCache:        make(map[common.Hash]string),
 		myIndicesInGroups:     make(map[string]*big.Int),
 		stakeTasks:            make(map[string]*StakeTask),
-		pendingRequests:       make(map[string]*core.SignRequest),
+		pendingSignRequests:   make(map[string]*core.SignRequest),
 		pendingKeygenRequests: make(map[string]*core.KeygenRequest),
 		keygenRequestGroups:   make(map[string][32]byte),
 		pendingReports:        make(map[common.Hash]*ReportKeyTx),
@@ -297,8 +298,8 @@ func (m *TaskManager) Start() error {
 			if err != nil {
 				logger.Error("Got an tick error",
 					logger.Field{"error", err})
+				fmt.Printf("%+v", err)
 			}
-			logger.Debug("Tick-----------Tick---------Tick--------")
 		}
 	}
 }
@@ -318,8 +319,8 @@ func (m *TaskManager) tick() error {
 			return err
 		}
 	}
-	for requestId, _ := range m.pendingRequests {
-		err := m.checkResult(requestId)
+	for requestId, _ := range m.pendingSignRequests {
+		err := m.checkSignResult(requestId)
 		if err != nil {
 			return err
 		}
@@ -442,6 +443,9 @@ func (m *TaskManager) checkPendingJoins() error {
 
 func (m *TaskManager) checkKeygenResult(requestId string) error {
 	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
+	logger.Debug("Task-manager retrieved keygen result from mpc-server",
+		logger.Field{"reqId", requestId},
+		logger.Field{"result", result})
 	if err != nil {
 		logger.Error("Got an error when check key generating result",
 			logger.Field{"requestId", requestId},
@@ -489,82 +493,132 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 	return nil
 }
 
-func (m *TaskManager) checkResult(requestId string) error {
-	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
+// todo: verify signature with third-party lib.
+func (m *TaskManager) checkSignResult(signReqId string) error {
+	signResult, err := m.mpcClient.Result(context.Background(), signReqId) // todo: add shared context to task manager
+	logger.Debug("Task-manager got sign result from mpc-server",
+		logger.Field{"signResult", signResult})
 	if err != nil {
 		return err
 	}
-	if result.RequestStatus == "DONE" {
+	if signResult.RequestStatus == "DONE" {
 		var sig [65]byte
-		//sigBytes := common.Hex2Bytes(result.Result[2:])
-		sigBytes := common.Hex2Bytes(result.Result[:])
+		sigBytes := common.FromHex(signResult.Result)
+		//sigBytes := common.Hex2Bytes(signResult.Result[:])
 
 		copy(sig[:], sigBytes)
-		reqId, err := parsePendingRequestId(requestId)
+		pendingTaskId, err := parsePendingRequestId(signReqId)
 		if err != nil {
 			return err
 		}
-		req := m.pendingRequests[requestId]
-		task := m.stakeTasks[reqId.taskId]
+		pendingSignReq := m.pendingSignRequests[signReqId]
+		task := m.stakeTasks[pendingTaskId.taskId]
 		var hashMismatchErr = errors.New("hash doesn't match")
 		var wrongRequestNumberErr = errors.New("wrong request number")
-		if reqId.requestNumber == 0 {
-			hash, err := task.ExportTxHash()
+		if pendingTaskId.requestNumber == 0 {
+			logger.Info("ExportHash have been signed from mpc-server=========step forward for ImportHash sign")
+			// todo: verify signature with third-party lib.
+
+			hashBytes, err := task.ExportTxHash()
 			if err != nil {
 				return err
 			}
-			hashHex := common.Bytes2Hex(hash)
-			if req.Hash != hashHex {
+			hashHex := common.Bytes2Hex(hashBytes)
+			if pendingSignReq.Hash != hashHex {
+				fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
 				return hashMismatchErr
 			}
 			err = task.SetExportTxSig(sig)
 			if err != nil {
 				return err
 			}
-			delete(m.pendingRequests, requestId)
-			reqId.requestNumber += 1
-			req.Hash = hashHex
-			err = m.requestSign(reqId.ToString(), req)
+
+			// Delete signed export message
+			delete(m.pendingSignRequests, signReqId)
+
+			// Build next sign request
+			pendingTaskId.requestNumber += 1
+			nextPendingSignReq := new(core.SignRequest)
+			nextPendingSignReq.RequestId = pendingTaskId.ToString()
+			nextPendingSignReq.PublicKey = pendingSignReq.PublicKey
+			nextPendingSignReq.ParticipantKeys = pendingSignReq.ParticipantKeys
+			hashBytes, err = task.ImportTxHash()
+			if err != nil {
+				return pkgErrors.WithStack(err)
+			}
+			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
+
+			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
+			logger.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
+			if err != nil {
+				return pkgErrors.WithStack(err)
+			}
+
+			m.pendingSignRequests[nextPendingSignReq.RequestId] = nextPendingSignReq
+
+		} else if pendingTaskId.requestNumber == 1 {
+			// todo: verify signature with third-party lib.
+
+			hashBytes, err := task.ImportTxHash()
 			if err != nil {
 				return err
 			}
-			m.pendingRequests[reqId.ToString()] = req
-		} else if reqId.requestNumber == 1 {
-			hash, err := task.ImportTxHash()
-			if err != nil {
-				return err
-			}
-			hashHex := common.Bytes2Hex(hash)
-			if req.Hash != hashHex {
+			hashHex := common.Bytes2Hex(hashBytes)
+			if pendingSignReq.Hash != hashHex {
+				fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
 				return hashMismatchErr
 			}
 			err = task.SetImportTxSig(sig)
 			if err != nil {
 				return err
 			}
-			delete(m.pendingRequests, requestId)
-			reqId.requestNumber += 1
-			req.Hash = hashHex
-			err = m.requestSign(reqId.ToString(), req)
+			delete(m.pendingSignRequests, signReqId)
+
+			// Build next sign request
+			pendingTaskId.requestNumber += 1
+			nextPendingSignReq := new(core.SignRequest)
+			nextPendingSignReq.RequestId = pendingTaskId.ToString()
+			nextPendingSignReq.PublicKey = pendingSignReq.PublicKey
+			nextPendingSignReq.ParticipantKeys = pendingSignReq.ParticipantKeys
+			hashBytes, err = task.AddDelegatorTxHash()
+			if err != nil {
+				return pkgErrors.WithStack(err)
+			}
+			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
+
+			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
+			logger.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
+			if err != nil {
+				return pkgErrors.WithStack(err)
+			}
+
+			m.pendingSignRequests[nextPendingSignReq.RequestId] = nextPendingSignReq
+		} else if pendingTaskId.requestNumber == 2 {
+			hashBytes, err := task.AddDelegatorTxHash()
 			if err != nil {
 				return err
 			}
-			m.pendingRequests[reqId.ToString()] = req
-		} else if reqId.requestNumber == 2 {
-			hash, err := task.AddDelegatorTxHash()
-			if err != nil {
-				return err
-			}
-			hashHex := common.Bytes2Hex(hash)
-			if req.Hash != hashHex {
+			hashHex := common.Bytes2Hex(hashBytes)
+			if pendingSignReq.Hash != hashHex {
+				fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
 				return hashMismatchErr
 			}
 			err = task.SetAddDelegatorTxSig(sig)
 			if err != nil {
 				return err
 			}
-			delete(m.pendingRequests, requestId)
+			delete(m.pendingSignRequests, signReqId)
+			logger.Info("Mpc-manager: Cool! All signings for a stake task all done.")
+			err = doStake(task)
+			if err != nil {
+				logger.Error("Failed to doStake",
+					logger.Field{"error", err})
+				return pkgErrors.WithStack(err)
+			}
+			logger.Info("Mpc-manager: Cool! Success to add delegator!",
+				logger.Field{"stakeTaske", task})
 		} else {
+			fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
 			return wrongRequestNumberErr
 		}
 
@@ -801,22 +855,33 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 		}
 		pariticipantKeys, err := m.getPariticipantKeys(pubKey, req.ParticipantIndices)
 		if err != nil {
-			return err
+			return pkgErrors.WithStack(err)
 		}
+
+		logger.Debug("Task-manager got participant public keys",
+			logger.Field{"participantPubKeys", pariticipantKeys})
+
+		normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
+		logger.Debug("Task-manager normalized participant public keys",
+			logger.Field{"normalizedParticipantPubKeys", normalized})
+		if err != nil {
+			return pkgErrors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
+		}
+
 		reqId := PendingRequestId{taskId: taskId, requestNumber: 0}
 		hash := common.Bytes2Hex(hashBytes)
 		request := &core.SignRequest{
-			RequestId:       reqId.ToString(),
-			PublicKey:       pubKey,
-			ParticipantKeys: pariticipantKeys,
+			RequestId: reqId.ToString(),
+			PublicKey: pubKey,
+			//ParticipantKeys: pariticipantKeys,
+			ParticipantKeys: normalized,
 			Hash:            hash,
 		}
 		err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
-		logger.Debug("Task manager called mpcClient.Sign", logger.Field{"signRequest", request})
 		if err != nil {
 			return pkgErrors.WithStack(err)
 		}
-		m.pendingRequests[reqId.ToString()] = request
+		m.pendingSignRequests[request.RequestId] = request
 	}
 	return nil
 }
@@ -931,18 +996,16 @@ func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) 
 }
 
 func unmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
-	msg := fmt.Sprintf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
-	var errInvalidPubkey = errors.New(msg)
 	if pub[0] == 4 {
 		x, y := elliptic.Unmarshal(crypto.S256(), pub)
 		if x == nil {
-			return nil, errInvalidPubkey
+			return nil, pkgErrors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
 		}
 		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
 	} else {
 		x, y := secp256k1.DecompressPubkey(pub)
 		if x == nil {
-			return nil, errInvalidPubkey
+			return nil, pkgErrors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
 		}
 		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
 	}

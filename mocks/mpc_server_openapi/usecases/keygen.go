@@ -58,6 +58,15 @@ func Keygen() usecase.IOInteractor {
 			logger.Field{"pubkey", lastKeygenReq.result})
 
 		globalSiner = signer
+		signerKeyBytes := signer.PrivateKey().Bytes()
+		signerKeyHex := common.Bytes2Hex(signerKeyBytes)
+		signerPubHex := common.Bytes2Hex(signer.PublicKey().Bytes())
+		signerAccountAddres := signer.Address().Hex()
+
+		logger.Info("Mpc mock server generated a signer",
+			logger.Field{"privateKey", signerKeyHex},
+			logger.Field{"publicKey", signerPubHex},
+			logger.Field{"address", signerAccountAddres})
 
 		return nil
 	})

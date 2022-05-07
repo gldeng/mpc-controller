@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/suite"
+	"math/big"
 	"os"
 	"testing"
 )
@@ -79,7 +80,9 @@ func (suite *mpcStakerTestSuite) TestMpcProvider() {
 	cWebsocketUrl := "ws://127.0.0.1:9650/ext/bc/C/ws"
 	nodeID := "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5"
 	mpcStaker := New(43112, suite.privateKeyHex, suite.coordinatorAddrHex, cHttpUrl, cWebsocketUrl)
-	err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, 30_000_000_000, 21)
+	amountToStake := big.NewInt(9_000_000_000_000_000_000)
+	err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, amountToStake, 21)
+
 	require.Nil(err)
 }
 

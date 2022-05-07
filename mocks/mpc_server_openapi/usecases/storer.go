@@ -6,27 +6,27 @@ var storer = NewStorer()
 
 type Storer struct {
 	keygenMap    map[string]*KeygenRequestModel
-	keygenLocker *sync.RWMutex
+	keygenLocker *sync.Mutex
 
 	signMap    map[string]*SignRequestModel
-	signLocker *sync.RWMutex
+	signLocker *sync.Mutex
 }
 
 func NewStorer() *Storer {
 	return &Storer{
 		keygenMap:    make(map[string]*KeygenRequestModel),
-		keygenLocker: new(sync.RWMutex),
+		keygenLocker: new(sync.Mutex),
 
 		signMap:    make(map[string]*SignRequestModel),
-		signLocker: new(sync.RWMutex),
+		signLocker: new(sync.Mutex),
 	}
 }
 
 // Operations on keygen request
 
 func (s *Storer) GetKeygenRequestModel(requestId string) *KeygenRequestModel {
-	s.keygenLocker.RLock()
-	s.keygenLocker.RUnlock()
+	s.keygenLocker.Lock()
+	s.keygenLocker.Unlock()
 
 	return s.keygenMap[requestId]
 }
@@ -41,8 +41,8 @@ func (s *Storer) StoreKeygenRequestModel(m *KeygenRequestModel) {
 // Operations on sign request
 
 func (s *Storer) GetSignRequestModel(requestId string) *SignRequestModel {
-	s.signLocker.RLock()
-	s.signLocker.RUnlock()
+	s.signLocker.Lock()
+	s.signLocker.Unlock()
 
 	return s.signMap[requestId]
 }
