@@ -51,6 +51,15 @@ func (l *logrus) Error(msg string, fields ...Field) {
 	l.l.WithFields(fieldsl).Error(msg)
 }
 
+// Fatal implements Logger.Debug for sirupsen/logrus logger
+func (l *logrus) Fatal(msg string, fields ...Field) {
+	fieldsl := sirupsenLogrus.Fields{}
+	for _, f := range fields {
+		fieldsl[f.Key] = f.Value
+	}
+	l.l.WithFields(fieldsl).Fatal(msg)
+}
+
 // With implements nested logrus for sirupsen/logrus logger
 func (l *logrus) With(fields ...Field) Logger {
 	fieldsl := sirupsenLogrus.Fields{}

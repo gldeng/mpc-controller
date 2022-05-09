@@ -35,6 +35,11 @@ func (l *zap) Error(msg string, fields ...Field) {
 	l.l.Error(msg, l.zapFields(fields...)...)
 }
 
+// Fatal implements Logger.Debug for go.uber.org/zap logger
+func (l *zap) Fatal(msg string, fields ...Field) {
+	l.l.Fatal(msg, l.zapFields(fields...)...)
+}
+
 // With implements nested logger for go.uber.org/zap logger
 func (l *zap) With(fields ...Field) Logger {
 	return NewZap(l.l.With(l.zapFields(fields...)...))
