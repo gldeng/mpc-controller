@@ -26,14 +26,14 @@ func NewStorer() *Storer {
 
 func (s *Storer) GetKeygenRequestModel(requestId string) *KeygenRequestModel {
 	s.keygenLocker.Lock()
-	s.keygenLocker.Unlock()
+	defer s.keygenLocker.Unlock()
 
 	return s.keygenMap[requestId]
 }
 
 func (s *Storer) StoreKeygenRequestModel(m *KeygenRequestModel) {
 	s.keygenLocker.Lock()
-	s.keygenLocker.Unlock()
+	defer s.keygenLocker.Unlock()
 
 	s.keygenMap[m.input.RequestId] = m
 }
@@ -42,14 +42,14 @@ func (s *Storer) StoreKeygenRequestModel(m *KeygenRequestModel) {
 
 func (s *Storer) GetSignRequestModel(requestId string) *SignRequestModel {
 	s.signLocker.Lock()
-	s.signLocker.Unlock()
+	defer s.signLocker.Unlock()
 
 	return s.signMap[requestId]
 }
 
 func (s *Storer) StoreSignRequestModel(m *SignRequestModel) {
 	s.signLocker.Lock()
-	s.signLocker.Unlock()
+	defer s.signLocker.Unlock()
 
 	s.signMap[m.input.RequestId] = m
 }
