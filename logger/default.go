@@ -49,6 +49,11 @@ func Info(msg string, fields ...Field) {
 	logger.Info(msg, fields...)
 }
 
+func Warn(msg string, fields ...Field) {
+	logger := Default()
+	logger.Warn(msg, fields...)
+}
+
 func Error(msg string, fields ...Field) {
 	logger := Default()
 	logger.Error(msg, fields...)

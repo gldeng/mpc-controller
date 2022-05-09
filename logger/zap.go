@@ -25,6 +25,11 @@ func (l *zap) Info(msg string, fields ...Field) {
 	l.l.Info(msg, l.zapFields(fields...)...)
 }
 
+// Warn implements Logger.Debug for go.uber.org/zap logger
+func (l *zap) Warn(msg string, fields ...Field) {
+	l.l.Warn(msg, l.zapFields(fields...)...)
+}
+
 // Error implements Logger.Debug for go.uber.org/zap logger
 func (l *zap) Error(msg string, fields ...Field) {
 	l.l.Error(msg, l.zapFields(fields...)...)

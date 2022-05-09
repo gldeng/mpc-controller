@@ -33,6 +33,15 @@ func (l *logrus) Info(msg string, fields ...Field) {
 	l.l.WithFields(fieldsl).Info(msg)
 }
 
+// Warn implements Logger.Debug for sirupsen/logrus logger
+func (l *logrus) Warn(msg string, fields ...Field) {
+	fieldsl := sirupsenLogrus.Fields{}
+	for _, f := range fields {
+		fieldsl[f.Key] = f.Value
+	}
+	l.l.WithFields(fieldsl).Warn(msg)
+}
+
 // Error implements Logger.Debug for sirupsen/logrus logger
 func (l *logrus) Error(msg string, fields ...Field) {
 	fieldsl := sirupsenLogrus.Fields{}
