@@ -301,7 +301,8 @@ const (
 //}
 
 func mpcController(c *cli.Context) error {
-	configInterface := config.ParseConfigFromFile(c.String(configFile))
+	configImpl := config.ParseConfigFromFile(c.String(configFile))
+	configInterface := config.InitConfig(configImpl)
 
 	logger.DevMode = configInterface.IsDevMode()
 	log := logger.Default()
@@ -314,7 +315,6 @@ func mpcController(c *cli.Context) error {
 	}
 
 	err = m.Start()
-	//m.Initialize()
 	if err != nil {
 		return errors.Wrap(err, "Failed to start task-manager for mpc-controller")
 	}
