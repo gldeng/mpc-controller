@@ -11,27 +11,13 @@ import (
 )
 
 type Staker struct {
-	CChainClient evm.Client
-	PChainClient platformvm.Client
+	log               logger.Logger
+	cChainIssueClient evm.Client
+	pChainIssueClient platformvm.Client
 }
 
-func NewStaker(cChainUri, pChainUri string) *Staker {
-	if cChainUri == "" {
-		cChainUri = "http://localhost:9650"
-	}
-
-	if pChainUri == "" {
-		pChainUri = "http://localhost:9650"
-	}
-
-	// todo: check whether clients can connect normally.
-	cclient := evm.NewClient(cChainUri, "C")
-	pclient := platformvm.NewClient(pChainUri)
-
-	return &Staker{
-		CChainClient: cclient,
-		PChainClient: pclient,
-	}
+func NewStaker(log logger.Logger, cChainIssueClient evm.Client, pChainIssueClient platformvm.Client) *Staker {
+	return &Staker{log, cChainIssueClient, pChainIssueClient}
 }
 
 func (s *Staker) IssueStakeTaskTxs(ctx context.Context, task *StakeTask) ([]ids.ID, error) {
@@ -55,7 +41,7 @@ func (s *Staker) IssueStakeTaskTxs(ctx context.Context, task *StakeTask) ([]ids.
 }
 
 func (s *Staker) IssueSignedStakeTxs(ctx context.Context, exportTx, importTx, addDelegatorTx []byte) ([]ids.ID, error) {
-	exportId, err := s.CChainClient.IssueTx(ctx, exportTx)
+	exportId, err := s.cChainIssueClient.IssueTx(ctx, exportTx)
 	if err != nil {
 		logger.Error("Staker failed to issue signed exportTx",
 			logger.Field{"error", err})
@@ -63,7 +49,7 @@ func (s *Staker) IssueSignedStakeTxs(ctx context.Context, exportTx, importTx, ad
 	}
 
 	time.Sleep(time.Second * 2)
-	importId, err := s.PChainClient.IssueTx(ctx, importTx)
+	importId, err := s.pChainIssueClient.IssueTx(ctx, importTx)
 	if err != nil {
 		logger.Error("Stake failed to issue signed importTx",
 			logger.Field{"error", err})
@@ -71,7 +57,7 @@ func (s *Staker) IssueSignedStakeTxs(ctx context.Context, exportTx, importTx, ad
 	}
 
 	time.Sleep(time.Second * 2)
-	addDelegatorId, err := s.PChainClient.IssueTx(ctx, addDelegatorTx)
+	addDelegatorId, err := s.pChainIssueClient.IssueTx(ctx, addDelegatorTx)
 	if err != nil {
 		logger.Error("Stake failed to issue signed addDelegatorTx",
 			logger.Field{"error", err})

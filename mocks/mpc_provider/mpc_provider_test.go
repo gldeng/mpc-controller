@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/suite"
+	"math/big"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func (suite *mpcProviderTestSuite) TestMpcProvider() {
 
 	rpcClient := network.DefaultEthClient()
 	wsClient := network.DefaultWsEthClient()
-	mpcProvider := New(43112, privateKey, rpcClient, wsClient)
+	mpcProvider := New(logger.Default(), big.NewInt(43112), privateKey, rpcClient, wsClient)
 
 	// Deploy coordinator contract
 	_, _, err = mpcProvider.DeployContract()

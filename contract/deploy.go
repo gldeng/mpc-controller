@@ -16,7 +16,7 @@ import (
 var Gas int64 = 8000000
 var BaseFee int64 = 300_000_000_000
 
-func Deploy(chainID int64, client *ethclient.Client, privKey *ecdsa.PrivateKey, bytecodeJSON string) (*common.Address, *types.Receipt, error) {
+func Deploy(chainId *big.Int, client *ethclient.Client, privKey *ecdsa.PrivateKey, bytecodeJSON string) (*common.Address, *types.Receipt, error) {
 	account := crypto.PubkeyToAddress(privKey.PublicKey)
 	nonce, err := client.NonceAt(context.Background(), account, nil)
 	if err != nil {
@@ -25,7 +25,6 @@ func Deploy(chainID int64, client *ethclient.Client, privKey *ecdsa.PrivateKey, 
 
 	bytecodeBytes := common.Hex2Bytes(bytecodeJSON)
 
-	chainId := big.NewInt(chainID)
 	txdata := &types.DynamicFeeTx{
 		ChainID:    chainId,
 		Nonce:      nonce,
@@ -37,7 +36,7 @@ func Deploy(chainID int64, client *ethclient.Client, privKey *ecdsa.PrivateKey, 
 		Data:       bytecodeBytes,
 	}
 	tx := types.NewTx(txdata)
-	signer := types.LatestSignerForChainID(big.NewInt(chainID))
+	signer := types.LatestSignerForChainID(chainId)
 	signature, err := crypto.Sign(signer.Hash(tx).Bytes(), privKey)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to sign transaction %v with private key %v.", tx, privKey)

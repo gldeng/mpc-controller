@@ -12,27 +12,24 @@ import (
 
 type Coordinator struct {
 	*MpcCoordinator
-	ChainID      int64
-	ContractAddr *common.Address
+	chainId *big.Int
+	log     logger.Logger
 }
 
 // NewCoordinator creates a new singleton instance of MpcCoordinator, bound to a specific deployed coordinator.
-func NewCoordinator(chainID int64, contractAddress *common.Address, contractBackend bind.ContractBackend) (*Coordinator, error) {
-	var coordinator = new(Coordinator)
+func NewCoordinator(log logger.Logger, chainID *big.Int, contractAddress *common.Address, contractBackend bind.ContractBackend) (*Coordinator, error) {
 	c, err := NewMpcCoordinator(*contractAddress, contractBackend)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new coordinator instance")
 	}
-	coordinator.MpcCoordinator = c
-	coordinator.ChainID = chainID
 
-	return coordinator, nil
+	return &Coordinator{c, chainID, log}, nil
 }
 
 // todo: check receipt to see whether a group created successfully or not
 
 func (c *Coordinator) CreateGroup_(txSenderPrivKey *ecdsa.PrivateKey, participantPubKeys [][]byte, threshold int64) (groupID []byte, err error) {
-	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, big.NewInt(c.ChainID)) // todo: abstract this away for reusibility
+	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, c.chainId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a transaction signer with private key %q.", txSenderPrivKey)
 	}
@@ -42,7 +39,7 @@ func (c *Coordinator) CreateGroup_(txSenderPrivKey *ecdsa.PrivateKey, participan
 		return nil, errors.Wrapf(err, "failed to create group.")
 	}
 
-	logger.Debug("Sent a transaction to create group.",
+	c.log.Debug("Sent a transaction to create group.",
 		logger.Field{"participants", len(participantPubKeys)},
 		logger.Field{"threshold", threshold},
 		logger.Field{"txHashHex", txn.Hash().Hex()})
@@ -51,7 +48,7 @@ func (c *Coordinator) CreateGroup_(txSenderPrivKey *ecdsa.PrivateKey, participan
 }
 
 func (c *Coordinator) RequestKeygen_(txSenderPrivKey *ecdsa.PrivateKey, groupId []byte) error {
-	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, big.NewInt(c.ChainID))
+	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, c.chainId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create a transaction signer with private key %q.", txSenderPrivKey)
 	}
@@ -63,12 +60,12 @@ func (c *Coordinator) RequestKeygen_(txSenderPrivKey *ecdsa.PrivateKey, groupId 
 	if err != nil {
 		return errors.Wrapf(err, "failed to request keygen.")
 	}
-	logger.Debug("Sent a transaction for keygen.", logger.Field{"txHashHex", txn.Hash().Hex()})
+	c.log.Debug("Sent a transaction for keygen.", logger.Field{"txHashHex", txn.Hash().Hex()})
 	return nil
 }
 
 func (c *Coordinator) RequestStake_(txSenderPrivKey *ecdsa.PrivateKey, publicKey []byte, nodeID string, amount *big.Int, startTime *big.Int, endTime *big.Int) error {
-	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, big.NewInt(c.ChainID))
+	signer, err := bind.NewKeyedTransactorWithChainID(txSenderPrivKey, c.chainId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create a transaction signer with private key %q.", txSenderPrivKey)
 	}
@@ -77,6 +74,6 @@ func (c *Coordinator) RequestStake_(txSenderPrivKey *ecdsa.PrivateKey, publicKey
 	if err != nil {
 		return errors.Wrapf(err, "failed to request stake.")
 	}
-	logger.Debug("Sent a transaction for stake.", logger.Field{"txHashHex", txn.Hash().Hex()})
+	c.log.Debug("Sent a transaction for stake.", logger.Field{"txHashHex", txn.Hash().Hex()})
 	return nil
 }

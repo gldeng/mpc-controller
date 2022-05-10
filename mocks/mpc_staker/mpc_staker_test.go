@@ -5,10 +5,13 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
 	"github.com/avalido/mpc-controller/utils/network"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/suite"
 	"math/big"
 	"os"
+
 	"testing"
 )
 
@@ -35,7 +38,7 @@ func (suite *mpcStakerTestSuite) SetupTest() {
 
 	rpcClient := network.DefaultEthClient()
 	wsClient := network.DefaultWsEthClient()
-	mpcProvider := mpc_provider.New(43112, privateKey, rpcClient, wsClient)
+	mpcProvider := mpc_provider.New(logger.Default(), big.NewInt(43112), privateKey, rpcClient, wsClient)
 
 	// Deploy coordinator contract
 	addr, _, err := mpcProvider.DeployContract()
@@ -72,17 +75,31 @@ func (suite *mpcStakerTestSuite) SetupTest() {
 	suite.groupIdHex = groupId
 }
 
-func (suite *mpcStakerTestSuite) TestMpcProvider() {
+func (suite *mpcStakerTestSuite) TestMpcStaker() {
 	require := suite.Require()
 
 	// Request stake after key added
 	cHttpUrl := "http://localhost:9650/ext/bc/C/rpc"
 	cWebsocketUrl := "ws://127.0.0.1:9650/ext/bc/C/ws"
 	nodeID := "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5"
-	mpcStaker := New(43112, suite.privateKeyHex, suite.coordinatorAddrHex, cHttpUrl, cWebsocketUrl)
-	amountToStake := big.NewInt(9_000_000_000_000_000_000)
-	err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, amountToStake, 21)
 
+	// Create eth rpc client
+	ethRpcCli, err := ethclient.Dial(cHttpUrl)
+	require.Nil(err, "Failed to connect eth rpc client")
+
+	// Create eth ws client
+	ethWsCli, err := ethclient.Dial(cWebsocketUrl)
+	require.Nil(err, "Failed to connect eth ws client")
+
+	// Convert coordinator address
+	coordinatorAddr := common.HexToAddress(suite.coordinatorAddrHex)
+	require.Nil(err, "Failed to parse private key")
+
+	privateKey, err := crypto.HexToECDSA(suite.privateKeyHex)
+
+	mpcStaker := New(logger.DefaultLogger, big.NewInt(43112), &coordinatorAddr, privateKey, ethRpcCli, ethWsCli)
+	amountToStake := big.NewInt(9_000_000_000_000_000_000)
+	err = mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, amountToStake, 21)
 	require.Nil(err)
 }
 

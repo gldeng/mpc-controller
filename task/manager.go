@@ -11,6 +11,7 @@ import (
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	avaEthclient "github.com/ava-labs/coreth/ethclient"
 	"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
@@ -21,11 +22,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
-	_errors "github.com/juju/errors"
 	pkgErrors "github.com/pkg/errors"
 	"math/big"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 )
@@ -89,7 +88,10 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type TaskManager struct {
-	taskManagerNum        int
+	config                config.Config
+	log                   logger.Logger
+	staker                *Staker
+	mpcControllerId       string
 	networkContext        core.NetworkContext
 	publicKeyCache        map[common.Hash]string
 	myIndicesInGroups     map[string]*big.Int
@@ -118,7 +120,7 @@ type TaskManager struct {
 	secpFactory   avaCrypto.FactorySECP256K1R
 	chSigReceived chan *SignatureReceived
 	mpcClient     core.MPCClient
-	transactor    *bind.TransactOpts
+	signer        *bind.TransactOpts
 	myPubKey      string
 	eventsPA      chan *contract.MpcCoordinatorParticipantAdded
 	subPA         event.Subscription
@@ -129,31 +131,36 @@ type TaskManager struct {
 	eventsKG      chan *contract.MpcCoordinatorKeyGenerated
 }
 
-func NewTaskManager(
-	taskManagerNum int,
-	networkContext core.NetworkContext,
-	mpcClient core.MPCClient,
-	privateKey *ecdsa.PrivateKey,
-	coordinatorAddr common.Address,
+func NewTaskManager(log logger.Logger, config config.Config, staker *Staker,
+
+//mpcControllerId int,
+//networkContext core.NetworkContext,
+//mpcClient core.MPCClient,
+//privateKey *ecdsa.PrivateKey,
+//coordinatorAddr common.Address,
 ) (*TaskManager, error) {
-	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, networkContext.ChainID())
-	if err != nil {
-		return nil, _errors.Annotatef(err, "failed to create transaction signer")
-	}
+	//transactor, err := bind.NewKeyedTransactorWithChainID(config.ControllerKey_(), networkContext.ChainID())
+	//if err != nil {
+	//	return nil, _errors.Annotatef(err, "failed to create transaction signer")
+	//}
 	//pubKeyBytes := crypto.CompressPubkey(&privateKey.PublicKey)
-	pubKeyBytes := marshalPubkey(&privateKey.PublicKey)[1:]
+	privKey := config.ControllerKey()
+	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
 	hash := crypto.Keccak256Hash(pubKeyBytes)
 	logger.Debug("parsed task manager key info",
-		logger.Field{"taskManagerNum", taskManagerNum},
+		logger.Field{"mpcControllerId", config.ControllerId()},
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", hash})
-	return &TaskManager{
-		networkContext:        networkContext,
-		mpcClient:             mpcClient,
-		transactor:            transactor,
+	m := &TaskManager{
+		config:                config,
+		log:                   log,
+		staker:                staker,
+		networkContext:        *config.NetworkContext(),
+		mpcClient:             config.MpcClient(),
+		signer:                config.ControllerSigner(),
 		myPubKey:              pubKeyHex,
-		coordinatorAddr:       coordinatorAddr,
+		coordinatorAddr:       *config.CoordinatorAddress(),
 		publicKeyCache:        make(map[common.Hash]string),
 		myIndicesInGroups:     make(map[string]*big.Int),
 		stakeTasks:            make(map[string]*StakeTask),
@@ -162,38 +169,13 @@ func NewTaskManager(
 		keygenRequestGroups:   make(map[string][32]byte),
 		pendingReports:        make(map[common.Hash]*ReportKeyTx),
 		pendingJoins:          make(map[common.Hash]*JoinTx),
-	}, nil
-}
+	}
 
-// todo: enable urls customizable
-func (m *TaskManager) Initialize() error {
-	//cChainClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
-	cChainClient := evm.NewClient("http://localhost:9650", "C")
-	wsClient, err := ethclient.Dial("ws://127.0.0.1:9650/ext/bc/C/ws")
-	if err != nil {
-		logger.Error("failed to dail ws://127.0.0.1:9650/ext/bc/C/ws", logger.Field{"ERROR", err})
-		os.Exit(1)
-	}
-	ethClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
-	if err != nil {
-		logger.Error("failed to dail http://localhost:9650/ext/bc/C/rpc", logger.Field{"ERROR", err})
-		os.Exit(1)
-	}
-	listener, err := contract.NewMpcCoordinator(m.coordinatorAddr, wsClient)
-	if err != nil {
-		logger.Error("failed to create ws mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
-		os.Exit(1)
-	}
-	instance, err := contract.NewMpcCoordinator(m.coordinatorAddr, ethClient)
-	if err != nil {
-		logger.Error("failed to create mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
-		os.Exit(1)
-	}
-	m.listener = listener
-	m.instance = instance
-	m.ethClient = ethClient
-	m.cChainClient = cChainClient
-	m.wsClient = wsClient
+	m.listener = config.CoordinatorBoundListener()
+	m.instance = config.CoordinatorBoundInstance()
+	m.ethClient = config.EthRpcClient()
+	//m.cChainClient = config.CChainIssueClient()
+	//m.wsClient = config.EthWsClient()
 	m.chSigReceived = make(chan *SignatureReceived)
 	m.eventsPA = make(chan *contract.MpcCoordinatorParticipantAdded)
 	m.eventsKA = make(chan *contract.MpcCoordinatorKeygenRequestAdded)
@@ -201,9 +183,51 @@ func (m *TaskManager) Initialize() error {
 	m.eventsStA = make(chan *contract.MpcCoordinatorStakeRequestAdded)
 	m.eventsStS = make(chan *contract.MpcCoordinatorStakeRequestStarted)
 	m.secpFactory = avaCrypto.FactorySECP256K1R{}
-
-	return nil
+	return m, nil
 }
+
+////// todo: enable urls customizable
+//func (m *TaskManager) Initialize() error {
+//	//cChainClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
+//	//cChainClient := evm.NewClient("http://localhost:9650", "C")
+//	//wsClient, err := ethclient.Dial("ws://127.0.0.1:9650/ext/bc/C/ws")
+//	//if err != nil {
+//	//	logger.Error("failed to dail ws://127.0.0.1:9650/ext/bc/C/ws", logger.Field{"ERROR", err})
+//	//	os.Exit(1)
+//	//}
+//	ethClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
+//	if err != nil {
+//		logger.Error("failed to dail http://localhost:9650/ext/bc/C/rpc", logger.Field{"ERROR", err})
+//		os.Exit(1)
+//	}
+//	//listener, err := contract.NewMpcCoordinator(m.coordinatorAddr, wsClient)
+//	//if err != nil {
+//	//	logger.Error("failed to create ws mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
+//	//	os.Exit(1)
+//	//}
+//	instance, err := contract.NewMpcCoordinator(m.coordinatorAddr, ethClient)
+//	if err != nil {
+//		logger.Error("failed to create mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
+//		os.Exit(1)
+//	}
+//	//m.listener = listener
+//	m.listener = m.config.CoordinatorBoundListener()
+//
+//	m.instance = instance
+//	m.ethClient = ethClient
+//	//m.cChainClient = cChainClient
+//
+//	//m.wsClient = wsClient
+//	m.chSigReceived = make(chan *SignatureReceived)
+//	m.eventsPA = make(chan *contract.MpcCoordinatorParticipantAdded)
+//	m.eventsKA = make(chan *contract.MpcCoordinatorKeygenRequestAdded)
+//	m.eventsKG = make(chan *contract.MpcCoordinatorKeyGenerated)
+//	m.eventsStA = make(chan *contract.MpcCoordinatorStakeRequestAdded)
+//	m.eventsStS = make(chan *contract.MpcCoordinatorStakeRequestStarted)
+//	m.secpFactory = avaCrypto.FactorySECP256K1R{}
+//
+//	return nil
+//}
 
 // todo: logic to quit for loop
 func (m *TaskManager) Start() error {
@@ -362,7 +386,7 @@ func (m *TaskManager) checkPendingReports() error {
 	for _, txHash := range sampledRetry {
 		req := m.pendingReports[txHash]
 		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
-		tx, err := m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, ind, pubkey)
 		// todo: deal with error: "error": "insufficient funds for gas * price + value: address 0x3051bA2d313840932B7091D2e8684672496E9A4B have (2972700000107200) want (5436550000000000)
 		if err != nil {
 			logger.Error("Failed to reported generated key",
@@ -417,7 +441,7 @@ func (m *TaskManager) checkPendingJoins() error {
 	for _, txHash := range sampledRetry {
 		req := m.pendingJoins[txHash]
 		requestId, myIndex := req.requestId, req.myIndex
-		tx, err := m.instance.JoinRequest(m.transactor, requestId, myIndex)
+		tx, err := m.instance.JoinRequest(m.signer, requestId, myIndex)
 		m.pendingJoins[tx.Hash()] = &JoinTx{
 			requestId: requestId,
 			myIndex:   myIndex,
@@ -461,7 +485,7 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 		if err != nil {
 			return err
 		}
-		tx, err := m.instance.ReportGeneratedKey(m.transactor, groupId, ind, pubkey)
+		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, ind, pubkey)
 		// todo: to deal with: "error": "insufficient funds for gas * price + value: address 0x3600323b486F115CE127758ed84F26977628EeaA have (103000) want (3019200000000000)"}
 		if err != nil {
 			logger.Error("Failed to report generated key",
@@ -609,19 +633,21 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			delete(m.pendingSignRequests, signReqId)
 			logger.Info("Mpc-manager: Cool! All signings for a stake task all done.")
-			err = doStake(task)
+			ids, err := m.staker.IssueStakeTaskTxs(context.Background(), task)
+
+			//err = doStake(task)
 			if err != nil {
 				logger.Error("Failed to doStake",
 					logger.Field{"error", err})
 				return pkgErrors.WithStack(err)
 			}
 			logger.Info("Mpc-manager: Cool! Success to add delegator!",
-				logger.Field{"stakeTaske", task})
+				logger.Field{"stakeTaske", task},
+				logger.Field{"ids", ids})
 		} else {
 			fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
 			return wrongRequestNumberErr
 		}
-
 	}
 	return nil
 }
@@ -769,7 +795,7 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeReque
 	if err != nil {
 		return err
 	}
-	tx, err := m.instance.JoinRequest(m.transactor, req.RequestId, ind)
+	tx, err := m.instance.JoinRequest(m.signer, req.RequestId, ind)
 	if err != nil {
 		fmt.Printf("Failed to joined stake request tx hash: %v\n", tx)
 		return err

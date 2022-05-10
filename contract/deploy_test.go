@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"math/big"
 	"os"
 	"testing"
 )
@@ -30,7 +31,7 @@ func TestDeploy(t *testing.T) {
 		os.Exit(1)
 	}
 
-	addr, txHash, err := Deploy(int64(chainID), network.DefaultEthClient(), privateKey, Bytecode)
+	addr, txHash, err := Deploy(big.NewInt(int64(chainID)), network.DefaultEthClient(), privateKey, Bytecode)
 	require.Nilf(t, err, "%+v", err)
 	require.NotNil(t, addr)
 	require.NotNil(t, txHash)

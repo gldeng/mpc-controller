@@ -3,12 +3,14 @@ package task
 import (
 	"context"
 	"crypto/ecdsa"
-	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/avalido/mpc-controller/core"
+	//"github.com/ava-labs/avalanchego/ids"
+	//"github.com/ava-labs/avalanchego/vms/components/avax"
+	//"github.com/ava-labs/avalanchego/vms/platformvm"
+	//"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/avalido/mpc-controller/config"
+	//"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
-	"github.com/avalido/mpc-controller/mocks/mpc_server_openapi"
 	"github.com/avalido/mpc-controller/mocks/mpc_staker"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,10 +38,11 @@ const (
 type TaskManagerTestSuite struct {
 	suite.Suite
 	participantPrivKeyHexs []string
-	coordinatorAddrHex     string
-	groupIdHex             string
-	privateKeyHex          string
-	mpcProvider            *mpc_provider.MpcProvider
+	//coordinatorAddrHex     string
+	coordinatorAddr *common.Address
+	groupIdHex      string
+	privateKeyHex   string
+	mpcProvider     *mpc_provider.MpcProvider
 }
 
 // todo: transfer before doing stuff if neccessary
@@ -66,7 +69,7 @@ func (suite *TaskManagerTestSuite) SetupTest() {
 
 	rpcClient := network.DefaultEthClient()
 	wsClient := network.DefaultWsEthClient()
-	mpcProvider := mpc_provider.New(43112, privateKey, rpcClient, wsClient)
+	mpcProvider := mpc_provider.New(logger.Default(), big.NewInt(43112), privateKey, rpcClient, wsClient)
 	suite.mpcProvider = mpcProvider
 
 	// Deploy coordinator contract
@@ -76,7 +79,8 @@ func (suite *TaskManagerTestSuite) SetupTest() {
 			logger.Field{"error", err})
 		os.Exit(1)
 	}
-	suite.coordinatorAddrHex = addr.Hex()
+	suite.coordinatorAddr = addr
+	//suite.coordinatorAddrHex = addr.Hex()
 }
 
 func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
@@ -116,10 +120,15 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 	// Simulate request stake after key added
 	g.Go(func() error {
 		time.Sleep(time.Second * 10)
-		cHttpUrl := "http://localhost:9650/ext/bc/C/rpc"
-		cWebsocketUrl := "ws://127.0.0.1:9650/ext/bc/C/ws"
 		nodeID := "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"
-		mpcStaker := mpc_staker.New(43112, suite.privateKeyHex, suite.coordinatorAddrHex, cHttpUrl, cWebsocketUrl)
+
+		privateKey, err := crypto.HexToECDSA(suite.privateKeyHex)
+		require.Nil(err)
+
+		rpcClient := network.DefaultEthClient()
+		wsClient := network.DefaultWsEthClient()
+
+		mpcStaker := mpc_staker.New(logger.Default(), big.NewInt(43112), suite.coordinatorAddr, privateKey, rpcClient, wsClient)
 		for i := 1; i < 2; i++ {
 			logger.Debug("RequestStakeAfterKeyAdded started////////////////////////////", logger.Field{"number", i})
 			amountToStake := big.NewInt(25_000_000_000)
@@ -135,73 +144,118 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 		return nil
 	})
 
-	// Simulate mpc-server, for mock
-	g.Go(func() error {
-		mpc_server_openapi.ListenAndServe("9000")
-		return nil
-	})
+	//// Simulate mpc-server, for mock
+	//g.Go(func() error {
+	//	mpc_server_openapi.ListenAndServe("9000")
+	//	return nil
+	//})
 
 	// Do the mpc-controller stuff
-	type Arg struct {
-		privateKey string
-		mpc_url    string
+	//type Arg struct {
+	//	privateKey string
+	//	mpc_url    string
+	//}
+
+	var configFiles = []string{
+		"./testConfigs/config1.yaml",
+		"./testConfigs/config2.yaml",
+		"./testConfigs/config3.yaml",
 	}
 
-	var args = []Arg{
-		//{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:8001"},
-		//{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:8002"},
-		//{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:8003"},
-		{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:9000"},
-		{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:9000"},
-		{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:9000"},
-	}
+	for _, configFile := range configFiles {
+		configImpl := config.ParseConfigFromFile(configFile)
+		configImpl.SetCoordinatorAddress(suite.coordinatorAddr.Hex())
+		configInterface := config.InitConfig(configImpl)
 
-	for i, arg := range args {
-		i := i
-		arg := arg
 		g.Go(func() error {
-			i++
-			networkCtx, err := testNetworkContext()
+			logger.DevMode = configInterface.IsDevMode()
+			log := logger.Default()
+
+			staker := NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
+
+			m, err := NewTaskManager(log, configInterface, staker)
 			if err != nil {
-				return errors.Wrap(err, "failed to build Avalanche network context")
+				return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 			}
 
-			sk, err := crypto.HexToECDSA(arg.privateKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to parse private key from %q", arg.privateKey)
-			}
+			//err = m.Initialize()
+			//if err != nil {
+			//	return errors.Wrapf(err, "Failed to initialize task-manager %d", i)
+			//}
 
-			mpcClient, err := core.NewMpcClient(arg.mpc_url)
+			err = m.Start()
 			if err != nil {
-				return errors.Wrapf(err, "failed to build mpc-client %d with mpc-url %q", i, arg.mpc_url)
-			}
-
-			//mpcClient := mpc_client.New(3, 1)
-
-			coordinatorAddr := common.HexToAddress(suite.coordinatorAddrHex)
-			manager, err := NewTaskManager(i, *networkCtx, mpcClient, sk, coordinatorAddr)
-			if err != nil {
-				return errors.Wrapf(err, "Failed to build task-manager %d", i)
-			}
-			logger.Debug("A task manager created", logger.Field{"taskMangerNum", i})
-
-			err = manager.Initialize()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to initialize task-manager %d", i)
-			}
-
-			logger.Debug("Started a task manager",
-				logger.Field{"managerID", i},
-				logger.Field{"privateKey", arg.privateKey},
-				logger.Field{"mpcURL", arg.mpc_url},
-				logger.Field{"contractAddress", coordinatorAddr})
-			err = manager.Start()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to start task-manager %d", i)
+				return errors.Wrap(err, "Failed to start task-manager for mpc-controller")
 			}
 			return nil
 		})
 	}
+
+	//var args = []Arg{
+	//	//{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:8001"},
+	//	//{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:8002"},
+	//	//{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:8003"},
+	//	{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:9000"},
+	//	{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:9000"},
+	//	{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:9000"},
+	//}
+	//
+	//for i, arg := range args {
+	//	i := i
+	//	arg := arg
+	//	g.Go(func() error {
+	//		i++
+	//		networkCtx, err := testNetworkContext()
+	//		if err != nil {
+	//			return errors.Wrap(err, "failed to build Avalanche network context")
+	//		}
+	//
+	//		sk, err := crypto.HexToECDSA(arg.privateKey)
+	//		if err != nil {
+	//			return errors.Wrapf(err, "failed to parse private key from %q", arg.privateKey)
+	//		}
+	//
+	//		mpcClient, err := core.NewMpcClient(arg.mpc_url)
+	//		if err != nil {
+	//			return errors.Wrapf(err, "failed to build mpc-client %d with mpc-url %q", i, arg.mpc_url)
+	//		}
+	//
+	//		//mpcClient := mpc_client.New(3, 1)
+	//
+	//		cChainIssueUrl := "http://localhost:9650"
+	//		pChainIssueUrl := "http://localhost:9650"
+	//		// Create C-Chain issue client
+	//		cChainIssueCli := evm.NewClient(cChainIssueUrl, "C")
+	//
+	//		// Create P-Chain issue client
+	//		pChainIssueCli := platformvm.NewClient(pChainIssueUrl)
+	//
+	//
+	//
+	//		staker := NewStaker(logger.DefaultLogger, cChainIssueCli, pChainIssueCli)
+	//		manager, err := NewTaskManager(logger.Default(), config, staker)
+	//		if err != nil {
+	//			return errors.Wrapf(err, "Failed to build task-manager %d", i)
+	//		}
+	//		logger.Debug("A task manager created", logger.Field{"taskMangerNum", i})
+	//
+	//		//err = manager.Initialize()
+	//		//if err != nil {
+	//		//	return errors.Wrapf(err, "Failed to initialize task-manager %d", i)
+	//		//}
+	//
+	//		logger.Debug("Started a task manager",
+	//			logger.Field{"managerID", i},
+	//			logger.Field{"privateKey", arg.privateKey},
+	//			logger.Field{"mpcURL", arg.mpc_url},
+	//			logger.Field{"contractAddress", coordinatorAddr})
+	//		err = manager.Start()
+	//		if err != nil {
+	//			return errors.Wrapf(err, "Failed to start task-manager %d", i)
+	//		}
+	//		return nil
+	//	})
+	//}
 
 	err := g.Wait()
 	require.Nilf(err, "ERROR STACK: %+v", errors.WithStack(err))
@@ -209,29 +263,4 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 
 func TestTaskManagerTestSuite(t *testing.T) {
 	suite.Run(t, new(TaskManagerTestSuite))
-}
-
-func testNetworkContext() (*core.NetworkContext, error) {
-	cchainID, err := ids.FromString(CCHAIN_ID)
-	if err != nil {
-		return nil, err
-	}
-	assetId, err := ids.FromString(AVAX_ID)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx := core.NewNetworkContext(
-		NETWORK_ID,
-		cchainID,
-		big.NewInt(CHAIN_ID),
-		avax.Asset{
-			ID: assetId,
-		},
-		IMPORT_FEE,
-		GAS_PER_BYTE,
-		GAS_PER_SIG,
-		GAS_FIXED,
-	)
-	return &ctx, nil
 }

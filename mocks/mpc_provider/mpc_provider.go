@@ -21,7 +21,8 @@ const (
 )
 
 type MpcProvider struct {
-	chainId         int64
+	log             logger.Logger
+	chainId         *big.Int
 	rpcClient       *ethclient.Client
 	wsClient        *ethclient.Client
 	RpcCoordinator  *contract.Coordinator // created automatically after calling DeployContract
@@ -30,8 +31,9 @@ type MpcProvider struct {
 	privateKey      *ecdsa.PrivateKey
 }
 
-func New(chainId int64, privKey *ecdsa.PrivateKey, rpcClient, wsClient *ethclient.Client) *MpcProvider {
+func New(log logger.Logger, chainId *big.Int, privKey *ecdsa.PrivateKey, rpcClient, wsClient *ethclient.Client) *MpcProvider {
 	return &MpcProvider{
+		log:            log,
 		chainId:        chainId,
 		rpcClient:      rpcClient,
 		wsClient:       wsClient,
@@ -47,11 +49,11 @@ func (m *MpcProvider) DeployContract() (*common.Address, *types.Receipt, error) 
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	rpcCoordinator, err := contract.NewCoordinator(m.chainId, addr, m.rpcClient)
+	rpcCoordinator, err := contract.NewCoordinator(m.log, m.chainId, addr, m.rpcClient)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	wsCoordinator, err := contract.NewCoordinator(m.chainId, addr, m.wsClient)
+	wsCoordinator, err := contract.NewCoordinator(m.log, m.chainId, addr, m.wsClient)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}

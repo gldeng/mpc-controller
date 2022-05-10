@@ -5,7 +5,6 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/avalido/mpc-controller/utils/token"
 	"github.com/ethereum/go-ethereum/common"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
@@ -13,12 +12,12 @@ import (
 	"github.com/juju/errors"
 	pkgErrors "github.com/pkg/errors"
 	"math/big"
-	"os"
 	"time"
 )
 
 type MpcStaker struct {
-	cChainId int64
+	log      logger.Logger
+	cChainId *big.Int
 
 	cHttpClient      *ethclient.Client
 	cWebsocketCLient *ethclient.Client
@@ -29,38 +28,34 @@ type MpcStaker struct {
 	cPrivateKey *ecdsa.PrivateKey
 }
 
-func New(cChainId int64, cPrivateKey, cCoordinatorAddressHex, cHttpUrl, cWebsocketUrl string) *MpcStaker {
-	cHttpClient := network.NewEthClient(cHttpUrl)
-	cWebsocketClient := network.NewWsEthClient(cWebsocketUrl)
+// todo: allow given logger
+// todo: use given logger
 
-	cCAddress := common.HexToAddress(cCoordinatorAddressHex)
+func New(log logger.Logger,
+	cChainId *big.Int,
+	coordinatorAddr *common.Address,
+	cPrivateKey *ecdsa.PrivateKey,
+	cHttpClient *ethclient.Client,
+	cWsClient *ethclient.Client) *MpcStaker {
 
-	cHttpCoordinator, err := contract.NewCoordinator(cChainId, &cCAddress, cHttpClient)
-	if err != nil {
-		logger.Error("Staker failed to create http coordinator", logger.Field{"error", err})
-		os.Exit(1)
-	}
-	cWebsocketCoordinator, err := contract.NewCoordinator(cChainId, &cCAddress, cWebsocketClient)
-	if err != nil {
-		logger.Error("Staker failed to create websocket coordinator", logger.Field{"error", err})
-		os.Exit(1)
-	}
+	cHttpCoord, err := contract.NewCoordinator(log, cChainId, coordinatorAddr, cHttpClient)
+	log.FatalOnError(err, "Failed to create http coordinator", logger.Field{"error", err})
 
-	cPrivateKey_, err := ethCrypto.HexToECDSA(cPrivateKey)
-	if err != nil {
-		logger.Error("Staker failed to parse C-Chain private key", logger.Field{"privateKeyHex", cPrivateKey_})
-		os.Exit(1)
-	}
+	cWsCoord, err := contract.NewCoordinator(log, cChainId, coordinatorAddr, cWsClient)
+	log.FatalOnError(err, "Failed to create websocket coordinator", logger.Field{"error", err})
 
 	return &MpcStaker{
+		log:                   log,
 		cChainId:              cChainId,
 		cHttpClient:           cHttpClient,
-		cWebsocketCLient:      cWebsocketClient,
-		cHttpCoordinator:      cHttpCoordinator,
-		cWebsocketCoordinator: cWebsocketCoordinator,
-		cPrivateKey:           cPrivateKey_,
+		cWebsocketCLient:      cWsClient,
+		cHttpCoordinator:      cHttpCoord,
+		cWebsocketCoordinator: cWsCoord,
+		cPrivateKey:           cPrivateKey,
 	}
 }
+
+//func NewCoordinator(log logger.Logger, chainID *big.Int, contractAddress *common.Address, contractBackend bind.ContractBackend) (*Coordinator, error) {
 
 // todo: watch StakeRequestAdded, and StakeRequestStarted
 func (m *MpcStaker) RequestStakeAfterKeyAdded(groupIdHex string, nodeId string, stakeAmount *big.Int, stakeDays int) error {
@@ -74,7 +69,7 @@ func (m *MpcStaker) RequestStakeAfterKeyAdded(groupIdHex string, nodeId string, 
 		return pkgErrors.WithStack(err)
 	}
 
-	logger.Info("Staker RequestStakeAfterKeyAdded end.")
+	m.log.Info("Staker RequestStakeAfterKeyAdded end.")
 	return nil
 }
 
@@ -107,7 +102,7 @@ func (m *MpcStaker) requestStake(pubKeyHex string, nodeId string, stakeAmount *b
 		return errors.Trace(err)
 	}
 
-	logger.Info("Staker RequestStake sent",
+	m.log.Info("Staker RequestStake sent",
 		logger.Field{"pubKeyHex", pubKeyHex},
 		logger.Field{"nodeId", nodeId},
 		logger.Field{"stakeAmount", stakeAmount},
@@ -148,7 +143,7 @@ func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 	if err != nil {
 		return "", pkgErrors.WithStack(err)
 	}
-	logger.Info("Staker RequestKeygen sent.", logger.Field{"groupIdHex", groupIdHex})
+	m.log.Info("Staker RequestKeygen sent.", logger.Field{"groupIdHex", groupIdHex})
 
 	result := <-resultChan
 	close(resultChan)
@@ -156,7 +151,7 @@ func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 	if result.err != nil {
 		return "", pkgErrors.WithStack(result.err)
 	}
-	logger.Info("Staker received KeyGenerated event",
+	m.log.Info("Staker received KeyGenerated event",
 		logger.Field{"groupIdHex", groupIdHex},
 		logger.Field{"pubkeyHex", result.pubKeyHex})
 
