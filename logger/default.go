@@ -59,9 +59,19 @@ func Error(msg string, fields ...Field) {
 	logger.Error(msg, fields...)
 }
 
+func ErrorOnError(err error, msg string, fields ...Field) {
+	logger := Default()
+	logger.ErrorOnError(err, msg, fields...)
+}
+
 func Fatal(msg string, fields ...Field) {
 	logger := Default()
 	logger.Fatal(msg, fields...)
+}
+
+func FatalOnError(err error, msg string, fields ...Field) {
+	logger := Default()
+	logger.FatalOnError(err, msg, fields...)
 }
 
 func With(fields ...Field) Logger {
