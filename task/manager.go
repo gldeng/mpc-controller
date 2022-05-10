@@ -148,7 +148,7 @@ func NewTaskManager(log logger.Logger, config config.Config, staker *Staker,
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
 	hash := crypto.Keccak256Hash(pubKeyBytes)
-	logger.Debug("parsed task manager key info",
+	log.Debug("parsed task manager key info",
 		logger.Field{"mpcControllerId", config.ControllerId()},
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", hash})
@@ -239,11 +239,11 @@ func (m *TaskManager) Start() error {
 		select {
 		case evt, ok := <-m.eventsPA:
 			if !ok {
-				logger.Debug("Retrieve nothing from ParticipantAdded event channel")
+				m.log.Debug("Retrieve nothing from ParticipantAdded event channel")
 				break
 			}
 
-			logger.Info("Received ParticipantAdded event",
+			m.log.Info("Received ParticipantAdded event",
 				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
 				logger.Field{"event", evt})
 
@@ -251,61 +251,61 @@ func (m *TaskManager) Start() error {
 
 		case evt, ok := <-m.eventsKA:
 			if !ok {
-				logger.Debug("Retrieve nothing from KeygenAdded event channel")
+				m.log.Debug("Retrieve nothing from KeygenAdded event channel")
 				break
 			}
 
-			logger.Info("Received KeygenAdded event",
+			m.log.Info("Received KeygenAdded event",
 				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
 				logger.Field{"event", evt})
 
 			err = m.onKeygenRequestAdded(evt)
 			if err != nil {
-				logger.Error("Failed to respond to KeygenAdded event",
+				m.log.Error("Failed to respond to KeygenAdded event",
 					logger.Field{"event", evt},
 					logger.Field{"error", err})
 			}
 
 		case evt, ok := <-m.eventsKG:
 			if !ok {
-				logger.Debug("Retrieve nothing from KeyGenerated event channel")
+				m.log.Debug("Retrieve nothing from KeyGenerated event channel")
 				break
 			}
 
-			logger.Info("Received KeyGenerated event",
+			m.log.Info("Received KeyGenerated event",
 				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
 				logger.Field{"event", evt})
 
 			err := m.onKeyGenerated(evt)
 			if err != nil {
-				logger.Error("Failed to respond to KeyGenerated event",
+				m.log.Error("Failed to respond to KeyGenerated event",
 					logger.Field{"event", evt},
 					logger.Field{"error", err})
 			}
 
 		case evt, ok := <-m.eventsStA:
 			if !ok {
-				logger.Debug("Retrieve nothing from StakeRequestAdded event channel")
+				m.log.Debug("Retrieve nothing from StakeRequestAdded event channel")
 				break
 			}
 
-			logger.Info("Received StakeRequestAdded event",
+			m.log.Info("Received StakeRequestAdded event",
 				logger.Field{"event", evt})
 
 			err := m.onStakeRequestAdded(evt)
 			if err != nil {
-				logger.Error("Failed to respond to StakeRequestAdded event",
+				m.log.Error("Failed to respond to StakeRequestAdded event",
 					logger.Field{"event", evt},
 					logger.Field{"error", err})
 			}
 
 		case evt, ok := <-m.eventsStS:
 			if !ok {
-				logger.Debug("Retrieve nothing from StakeRequestStarted event channel")
+				m.log.Debug("Retrieve nothing from StakeRequestStarted event channel")
 				break
 			}
 
-			logger.Info("Received StakeRequestStarted event",
+			m.log.Info("Received StakeRequestStarted event",
 				logger.Field{"event", evt})
 
 			//// Wait until the corresponding key has been generated
@@ -313,14 +313,14 @@ func (m *TaskManager) Start() error {
 
 			err := m.onStakeRequestStarted(evt)
 			if err != nil {
-				logger.Error("Failed to respond to StakeRequestStarted event",
+				m.log.Error("Failed to respond to StakeRequestStarted event",
 					logger.Field{"error", err})
 			}
 
 		case <-time.After(1 * time.Second):
 			err := m.tick()
 			if err != nil {
-				logger.Error("Got an tick error",
+				m.log.Error("Got an tick error",
 					logger.Field{"error", err})
 				fmt.Printf("%+v", err)
 			}
@@ -389,7 +389,7 @@ func (m *TaskManager) checkPendingReports() error {
 		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, ind, pubkey)
 		// todo: deal with error: "error": "insufficient funds for gas * price + value: address 0x3051bA2d313840932B7091D2e8684672496E9A4B have (2972700000107200) want (5436550000000000)
 		if err != nil {
-			logger.Error("Failed to reported generated key",
+			m.log.Error("Failed to reported generated key",
 				logger.Field{"error", err},
 				logger.Field{"groupId", groupId},
 				logger.Field{"pubKey", string(pubkey)})
@@ -467,11 +467,11 @@ func (m *TaskManager) checkPendingJoins() error {
 
 func (m *TaskManager) checkKeygenResult(requestId string) error {
 	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
-	logger.Debug("Task-manager retrieved keygen result from mpc-server",
+	m.log.Debug("Task-manager retrieved keygen result from mpc-server",
 		logger.Field{"reqId", requestId},
 		logger.Field{"result", result})
 	if err != nil {
-		logger.Error("Got an error when check key generating result",
+		m.log.Error("Got an error when check key generating result",
 			logger.Field{"requestId", requestId},
 			logger.Field{"error", err})
 		return err
@@ -488,7 +488,7 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, ind, pubkey)
 		// todo: to deal with: "error": "insufficient funds for gas * price + value: address 0x3600323b486F115CE127758ed84F26977628EeaA have (103000) want (3019200000000000)"}
 		if err != nil {
-			logger.Error("Failed to report generated key",
+			m.log.Error("Failed to report generated key",
 				logger.Field{"groupId", groupId},
 				logger.Field{"pubKey", result.Result},
 				logger.Field{"error", err})
@@ -502,13 +502,13 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 		if err != nil {
 			return err
 		}
-		logger.Info("Reported generated public key",
+		m.log.Info("Reported generated public key",
 			logger.Field{"publicKeyHex", result.Result},
 			logger.Field{"txHashHex", tx.Hash().Hex()})
 		delete(m.pendingKeygenRequests, requestId)
 		return nil
 	} else {
-		logger.Debug("Key hasn't been generated yet",
+		m.log.Debug("Key hasn't been generated yet",
 			logger.Field{"requestId", requestId},
 			logger.Field{"requestType", result.RequestType},
 			logger.Field{"statusStatus", result.RequestStatus})
@@ -520,7 +520,7 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 // todo: verify signature with third-party lib.
 func (m *TaskManager) checkSignResult(signReqId string) error {
 	signResult, err := m.mpcClient.Result(context.Background(), signReqId) // todo: add shared context to task manager
-	logger.Debug("Task-manager got sign result from mpc-server",
+	m.log.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
 	if err != nil {
 		return err
@@ -540,7 +540,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 		var hashMismatchErr = errors.New("hash doesn't match")
 		var wrongRequestNumberErr = errors.New("wrong request number")
 		if pendingTaskId.requestNumber == 0 {
-			logger.Info("ExportHash have been signed from mpc-server=========step forward for ImportHash sign")
+			m.log.Info("ExportHash have been signed from mpc-server=========step forward for ImportHash sign")
 			// todo: verify signature with third-party lib.
 
 			hashBytes, err := task.ExportTxHash()
@@ -573,7 +573,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
 			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
-			logger.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
+			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return pkgErrors.WithStack(err)
 			}
@@ -611,7 +611,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
 			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
-			logger.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
+			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return pkgErrors.WithStack(err)
 			}
@@ -632,16 +632,16 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 				return err
 			}
 			delete(m.pendingSignRequests, signReqId)
-			logger.Info("Mpc-manager: Cool! All signings for a stake task all done.")
+			m.log.Info("Mpc-manager: Cool! All signings for a stake task all done.")
 			ids, err := m.staker.IssueStakeTaskTxs(context.Background(), task)
 
 			//err = doStake(task)
 			if err != nil {
-				logger.Error("Failed to doStake",
+				m.log.Error("Failed to doStake",
 					logger.Field{"error", err})
 				return pkgErrors.WithStack(err)
 			}
-			logger.Info("Mpc-manager: Cool! Success to add delegator!",
+			m.log.Info("Mpc-manager: Cool! Success to add delegator!",
 				logger.Field{"stakeTaske", task},
 				logger.Field{"ids", ids})
 		} else {
@@ -884,11 +884,11 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 			return pkgErrors.WithStack(err)
 		}
 
-		logger.Debug("Task-manager got participant public keys",
+		m.log.Debug("Task-manager got participant public keys",
 			logger.Field{"participantPubKeys", pariticipantKeys})
 
 		normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
-		logger.Debug("Task-manager normalized participant public keys",
+		m.log.Debug("Task-manager normalized participant public keys",
 			logger.Field{"normalizedParticipantPubKeys", normalized})
 		if err != nil {
 			return pkgErrors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
