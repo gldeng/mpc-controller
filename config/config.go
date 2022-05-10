@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"io/ioutil"
 	"math/big"
 
 	"github.com/ava-labs/coreth/plugin/evm"
@@ -16,10 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/goccy/go-yaml"
-	"io/ioutil"
 )
 
-var _ Config = (*config)(nil)
+var _ Config = (*ConfigImpl)(nil)
 
 type Config interface {
 	IsDevMode() bool
@@ -37,13 +37,14 @@ type Config interface {
 	PChainIssueClient() platformvm.Client
 
 	CoordinatorAddress() *common.Address
+	SetCoordinatorAddress(address string)
 	CoordinatorBoundInstance() *contract.MpcCoordinator
 	CoordinatorBoundListener() *contract.MpcCoordinator
 
 	NetworkContext() *core.NetworkContext
 }
 
-type config struct {
+type ConfigImpl struct {
 	EnableDevMode bool `yaml:"enableDevMode"`
 
 	ControllerId_ string `yaml:"controllerId"`
@@ -103,22 +104,29 @@ type ConfigNetwork struct {
 	avaxId   *ids.ID
 }
 
-// todo: add config validator
+// todo: add ConfigImpl validator
 
-func ParseConfig(filename string) Config {
-	// Read config file
+func ParseConfigFromFile(filename string) *ConfigImpl {
+	// Read ConfigImpl file
 	cBytes, err := ioutil.ReadFile(filename)
-	logger.FatalOnError(err, "Failed to read config file",
+	logger.FatalOnError(err, "Failed to read ConfigImpl file",
 		logger.Field{"filename", filename},
 		logger.Field{"error", err})
 
-	// Unmarshal config content
-	var c config
-	err = yaml.Unmarshal(cBytes, &c)
-	logger.FatalOnError(err, "Failed to read unmarshal config file",
-		logger.Field{"filename", filename},
+	return ParseConfigFromStr(string(cBytes))
+}
+
+func ParseConfigFromStr(configYmlStr string) *ConfigImpl {
+	// Unmarshal ConfigImpl content
+	var c ConfigImpl
+	err := yaml.Unmarshal([]byte(configYmlStr), &c)
+	logger.FatalOnError(err, "Failed to unmarshal ConfigImpl content",
 		logger.Field{"error", err})
 
+	return &c
+}
+
+func InitConfig(c *ConfigImpl) Config {
 	// Parse private key
 	key, err := crypto.HexToECDSA(c.ControllerKey_)
 	logger.FatalOnError(err, "Failed to parse secp256k1 private key",
@@ -207,57 +215,61 @@ func ParseConfig(filename string) Config {
 	c.networkContext = &networkCtx
 
 	logger.Info("Config parsed successfully.")
-	return &c
+	return c
 }
 
-func (c *config) IsDevMode() bool {
+func (c *ConfigImpl) IsDevMode() bool {
 	return c.EnableDevMode
 }
 
-func (c *config) ControllerId() string {
+func (c *ConfigImpl) ControllerId() string {
 	return c.ControllerId_
 }
 
-func (c *config) ControllerKey() *ecdsa.PrivateKey {
+func (c *ConfigImpl) ControllerKey() *ecdsa.PrivateKey {
 	return c.controllerKey
 }
 
-func (c *config) ControllerSigner() *bind.TransactOpts {
+func (c *ConfigImpl) ControllerSigner() *bind.TransactOpts {
 	return c.controllerSigner
 }
 
-func (c *config) MpcClient() core.MPCClient {
+func (c *ConfigImpl) MpcClient() core.MPCClient {
 	return c.mpcClient
 }
 
-func (c *config) EthRpcClient() *ethclient.Client {
+func (c *ConfigImpl) EthRpcClient() *ethclient.Client {
 	return c.ethRpcClient
 }
 
-func (c *config) EthWsClient() *ethclient.Client {
+func (c *ConfigImpl) EthWsClient() *ethclient.Client {
 	return c.ethWsClient
 }
 
-func (c *config) CChainIssueClient() evm.Client {
+func (c *ConfigImpl) CChainIssueClient() evm.Client {
 	return c.cChainIssueClient
 }
 
-func (c *config) PChainIssueClient() platformvm.Client {
+func (c *ConfigImpl) PChainIssueClient() platformvm.Client {
 	return c.pChainIssueClient
 }
 
-func (c *config) CoordinatorAddress() *common.Address {
+func (c *ConfigImpl) CoordinatorAddress() *common.Address {
 	return c.coordinatorAddress
 }
 
-func (c *config) CoordinatorBoundInstance() *contract.MpcCoordinator {
+func (c *ConfigImpl) SetCoordinatorAddress(address string) {
+	c.CoordinatorAddress_ = address
+}
+
+func (c *ConfigImpl) CoordinatorBoundInstance() *contract.MpcCoordinator {
 	return c.coordinatorBoundInstance
 }
 
-func (c *config) CoordinatorBoundListener() *contract.MpcCoordinator {
+func (c *ConfigImpl) CoordinatorBoundListener() *contract.MpcCoordinator {
 	return c.coordinatorBoundListener
 }
 
-func (c *config) NetworkContext() *core.NetworkContext {
+func (c *ConfigImpl) NetworkContext() *core.NetworkContext {
 	return c.networkContext
 }
