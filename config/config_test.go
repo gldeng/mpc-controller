@@ -33,6 +33,8 @@ confignetwork:
   gasPerByte: 1
   gasPerSig: 1000
   gasFixed: 10000
+configdbbadger:
+  badgerDbPath: "./mpc_controller_db"
 `
 	config = ParseConfigFromStr(configStr)
 	require.NotNil(t, config)

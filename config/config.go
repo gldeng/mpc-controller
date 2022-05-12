@@ -42,6 +42,8 @@ type Config interface {
 	CoordinatorBoundListener() *contract.MpcCoordinator
 
 	NetworkContext() *core.NetworkContext
+
+	DatabasePath() string
 }
 
 type ConfigImpl struct {
@@ -81,6 +83,9 @@ type ConfigImpl struct {
 	//
 	ConfigNetwork
 	networkContext *core.NetworkContext
+
+	//
+	ConfigDbBadger
 }
 
 type ConfigNetwork struct {
@@ -102,6 +107,10 @@ type ConfigNetwork struct {
 	chainId  *big.Int
 	cChainId *ids.ID
 	avaxId   *ids.ID
+}
+
+type ConfigDbBadger struct {
+	BadgerDbPath string `yaml:"badgerDbPath"`
 }
 
 // todo: add ConfigImpl validator
@@ -272,4 +281,8 @@ func (c *ConfigImpl) CoordinatorBoundListener() *contract.MpcCoordinator {
 
 func (c *ConfigImpl) NetworkContext() *core.NetworkContext {
 	return c.networkContext
+}
+
+func (c *ConfigImpl) DatabasePath() string {
+	return c.BadgerDbPath
 }
