@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
 	"github.com/avalido/mpc-controller/mocks/mpc_staker"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -80,6 +81,7 @@ func (suite *TaskManagerTestSuite) SetupTest() {
 		os.Exit(1)
 	}
 	suite.coordinatorAddr = addr
+	//time.Sleep(time.Second * 20)
 	//suite.coordinatorAddrHex = addr.Hex()
 }
 
@@ -144,7 +146,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 		return nil
 	})
 
-	//// Simulate mpc-server, for mock
+	// Simulate mpc-server, for mock
 	//g.Go(func() error {
 	//	mpc_server_openapi.ListenAndServe("9000")
 	//	return nil
@@ -173,7 +175,8 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 
 			staker := NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
 
-			m, err := NewTaskManager(log, configInterface, staker)
+			storer := storage.New(log, configImpl.DatabasePath())
+			m, err := NewTaskManager(log, configInterface, storer, staker)
 			if err != nil {
 				return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 			}

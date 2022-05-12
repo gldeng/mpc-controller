@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/task"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
@@ -309,7 +310,9 @@ func mpcController(c *cli.Context) error {
 
 	staker := task.NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
 
-	m, err := task.NewTaskManager(log, configInterface, staker)
+	storer := storage.New(log, configImpl.DatabasePath())
+
+	m, err := task.NewTaskManager(log, configInterface, storer, staker)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 	}
@@ -325,6 +328,7 @@ func mpcController(c *cli.Context) error {
 // todo: elegant shutdown
 // todo: automatic panic recover
 // todo: distributed trace, log and monitor
+// todo: deal with gorutine leak
 
 func main() {
 	logger.DevMode = true // remove this line later

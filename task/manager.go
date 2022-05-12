@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"errors"
+	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
+
+	//"errors"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
@@ -15,14 +17,14 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
-	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
-	pkgErrors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"math/big"
 	"math/rand"
 	"strings"
@@ -88,19 +90,30 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type TaskManager struct {
-	config                config.Config
-	log                   logger.Logger
-	staker                *Staker
-	mpcControllerId       string
-	networkContext        core.NetworkContext
-	publicKeyCache        map[common.Hash]string
-	myIndicesInGroups     map[string]*big.Int
-	stakeTasks            map[string]*StakeTask
+	config config.Config
+	log    logger.Logger
+	storer storage.Storer
+	staker *Staker
+
+	mpcControllerId string
+	networkContext  core.NetworkContext
+
+	//groupCache map[string]*storage.GroupInfo
+
+	//publicKeyCache    map[common.Hash]string
+	//myIndicesInGroups map[string]*big.Int
+
+	stakeTasks map[string]*StakeTask
+
 	pendingSignRequests   map[string]*core.SignRequest
 	pendingKeygenRequests map[string]*core.KeygenRequest
-	keygenRequestGroups   map[string][32]byte
-	pendingReports        map[common.Hash]*ReportKeyTx
-	pendingJoins          map[common.Hash]*JoinTx
+
+	//keygenRequestGroups map[string][32]byte
+
+	pendingReports map[common.Hash]*ReportKeyTx
+
+	pendingJoins map[common.Hash]*JoinTx
+
 	//networkID uint32
 	//cchainID  ids.ID
 	////assetID ids.ID
@@ -122,6 +135,7 @@ type TaskManager struct {
 	mpcClient     core.MPCClient
 	signer        *bind.TransactOpts
 	myPubKey      string
+	myPubKeyHash  common.Hash
 	eventsPA      chan *contract.MpcCoordinatorParticipantAdded
 	subPA         event.Subscription
 	subKA         event.Subscription
@@ -131,7 +145,7 @@ type TaskManager struct {
 	eventsKG      chan *contract.MpcCoordinatorKeyGenerated
 }
 
-func NewTaskManager(log logger.Logger, config config.Config, staker *Staker,
+func NewTaskManager(log logger.Logger, config config.Config, storer storage.Storer, staker *Staker,
 
 //mpcControllerId int,
 //networkContext core.NetworkContext,
@@ -144,31 +158,36 @@ func NewTaskManager(log logger.Logger, config config.Config, staker *Staker,
 	//	return nil, _errors.Annotatef(err, "failed to create transaction signer")
 	//}
 	//pubKeyBytes := crypto.CompressPubkey(&privateKey.PublicKey)
+	//log.With(logger.Field{"receiver", "task-manager"})
+
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
-	hash := crypto.Keccak256Hash(pubKeyBytes)
+	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
 	log.Debug("parsed task manager key info",
 		logger.Field{"mpcControllerId", config.ControllerId()},
 		logger.Field{"pubKey", pubKeyHex},
-		logger.Field{"pubKeyTopic", hash})
+		logger.Field{"pubKeyTopic", pubKeyHash})
 	m := &TaskManager{
-		config:                config,
-		log:                   log,
-		staker:                staker,
-		networkContext:        *config.NetworkContext(),
-		mpcClient:             config.MpcClient(),
-		signer:                config.ControllerSigner(),
-		myPubKey:              pubKeyHex,
-		coordinatorAddr:       *config.CoordinatorAddress(),
-		publicKeyCache:        make(map[common.Hash]string),
-		myIndicesInGroups:     make(map[string]*big.Int),
+		config:          config,
+		log:             log,
+		staker:          staker,
+		storer:          storer,
+		networkContext:  *config.NetworkContext(),
+		mpcClient:       config.MpcClient(),
+		signer:          config.ControllerSigner(),
+		myPubKey:        pubKeyHex,
+		myPubKeyHash:    pubKeyHash,
+		coordinatorAddr: *config.CoordinatorAddress(),
+		//groupCache:            make(map[string]*storage.GroupInfo),
+		//publicKeyCache:        make(map[common.Hash]string),
+		//myIndicesInGroups:     make(map[string]*big.Int),
 		stakeTasks:            make(map[string]*StakeTask),
 		pendingSignRequests:   make(map[string]*core.SignRequest),
 		pendingKeygenRequests: make(map[string]*core.KeygenRequest),
-		keygenRequestGroups:   make(map[string][32]byte),
-		pendingReports:        make(map[common.Hash]*ReportKeyTx),
-		pendingJoins:          make(map[common.Hash]*JoinTx),
+		//keygenRequestGroups:   make(map[string][32]byte),
+		pendingReports: make(map[common.Hash]*ReportKeyTx),
+		pendingJoins:   make(map[common.Hash]*JoinTx),
 	}
 
 	m.listener = config.CoordinatorBoundListener()
@@ -230,10 +249,11 @@ func NewTaskManager(log logger.Logger, config config.Config, staker *Staker,
 //}
 
 // todo: logic to quit for loop
+
 func (m *TaskManager) Start() error {
 	err := m.subscribeParticipantAdded()
 	if err != nil {
-		return pkgErrors.WithStack(err)
+		return errors.WithStack(err)
 	}
 	for {
 		select {
@@ -247,7 +267,10 @@ func (m *TaskManager) Start() error {
 				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
 				logger.Field{"event", evt})
 
-			m.onParticipantAdded(evt)
+			err := m.onParticipantAdded(evt)
+			if err != nil {
+				m.log.Error("Failed to deal with event ParticipantAdded", logger.Field{"error", err})
+			}
 
 		case evt, ok := <-m.eventsKA:
 			if !ok {
@@ -393,7 +416,7 @@ func (m *TaskManager) checkPendingReports() error {
 				logger.Field{"error", err},
 				logger.Field{"groupId", groupId},
 				logger.Field{"pubKey", string(pubkey)})
-			return pkgErrors.Wrapf(err, "failed to reported generated key %v for group %v", string(pubkey), groupId)
+			return errors.Wrapf(err, "failed to reported generated key %v for group %v", string(pubkey), groupId)
 		}
 		m.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
@@ -477,43 +500,68 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 		return err
 	}
 	if result.RequestStatus == "DONE" {
-		fmt.Printf("Received result %v\n", result)
-		pubkey := common.Hex2Bytes(result.Result)
-		groupId := m.keygenRequestGroups[requestId]
-		ind, err := m.getMyIndexInGroup(groupId)
-		fmt.Printf("My index is %v\n", ind)
+		genPubKey := common.Hex2Bytes(result.Result)
+
+		keyGenInfo, err := m.storer.LoadKeygenRequestInfo(requestId)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
-		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, ind, pubkey)
+		partyInfo, err := m.storer.LoadParticipantInfo(m.myPubKeyHash.Hex(), keyGenInfo.GroupIdHex)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		groupIdRaw := common.Hex2BytesFixed(keyGenInfo.GroupIdHex, 32)
+
+		var groupId [32]byte
+		copy(groupId[:], groupIdRaw)
+
+		myIndex := big.NewInt(int64(partyInfo.Index))
+
+		//groupId := m.keygenRequestGroups[requestId]
+		////ind, err := m.getMyIndexInGroup(groupId)
+		//m.storer.
+		//	fmt.Printf("My index is %v\n", ind)
+		//if err != nil {
+		//	return err
+		//}
+		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, myIndex, genPubKey)
 		// todo: to deal with: "error": "insufficient funds for gas * price + value: address 0x3600323b486F115CE127758ed84F26977628EeaA have (103000) want (3019200000000000)"}
 		if err != nil {
 			m.log.Error("Failed to report generated key",
 				logger.Field{"groupId", groupId},
 				logger.Field{"pubKey", result.Result},
 				logger.Field{"error", err})
-			return pkgErrors.Wrapf(err, "failed to report generated key %v for group %v", result.Result, groupId)
+			return errors.Wrapf(err, "failed to report generated key %v for group %v", result.Result, groupId)
 		}
+
+		keyGenInfo.PubKeyReportedAt = time.Now()
+		pubKeyHash := crypto.Keccak256Hash(genPubKey)
+		keyGenInfo.PubKeyHashHex = pubKeyHash.Hex()
+
+		err = m.storer.StoreKeygenRequestInfo(keyGenInfo)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
 		m.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
-			myIndex:            ind,
-			generatedPublicKey: pubkey,
+			myIndex:            myIndex,
+			generatedPublicKey: genPubKey,
 		}
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 		m.log.Info("Reported generated public key",
 			logger.Field{"publicKeyHex", result.Result},
 			logger.Field{"txHashHex", tx.Hash().Hex()})
 		delete(m.pendingKeygenRequests, requestId)
 		return nil
-	} else {
-		m.log.Debug("Key hasn't been generated yet",
-			logger.Field{"requestId", requestId},
-			logger.Field{"requestType", result.RequestType},
-			logger.Field{"statusStatus", result.RequestStatus})
-		return nil
 	}
+	m.log.Debug("Key hasn't been generated yet",
+		logger.Field{"requestId", requestId},
+		logger.Field{"requestType", result.RequestType},
+		logger.Field{"statusStatus", result.RequestStatus})
 	return nil
 }
 
@@ -549,7 +597,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
+				fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
 				return hashMismatchErr
 			}
 			err = task.SetExportTxSig(sig)
@@ -568,14 +616,14 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			nextPendingSignReq.ParticipantKeys = pendingSignReq.ParticipantKeys
 			hashBytes, err = task.ImportTxHash()
 			if err != nil {
-				return pkgErrors.WithStack(err)
+				return errors.WithStack(err)
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
 			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
 			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
-				return pkgErrors.WithStack(err)
+				return errors.WithStack(err)
 			}
 
 			m.pendingSignRequests[nextPendingSignReq.RequestId] = nextPendingSignReq
@@ -589,7 +637,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
+				fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
 				return hashMismatchErr
 			}
 			err = task.SetImportTxSig(sig)
@@ -606,14 +654,14 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			nextPendingSignReq.ParticipantKeys = pendingSignReq.ParticipantKeys
 			hashBytes, err = task.AddDelegatorTxHash()
 			if err != nil {
-				return pkgErrors.WithStack(err)
+				return errors.WithStack(err)
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
 			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
 			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
-				return pkgErrors.WithStack(err)
+				return errors.WithStack(err)
 			}
 
 			m.pendingSignRequests[nextPendingSignReq.RequestId] = nextPendingSignReq
@@ -624,7 +672,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
+				fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
 				return hashMismatchErr
 			}
 			err = task.SetAddDelegatorTxSig(sig)
@@ -639,13 +687,13 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			if err != nil {
 				m.log.Error("Failed to doStake",
 					logger.Field{"error", err})
-				return pkgErrors.WithStack(err)
+				return errors.WithStack(err)
 			}
 			m.log.Info("Mpc-manager: Cool! Success to add delegator!",
 				logger.Field{"stakeTaske", task},
 				logger.Field{"ids", ids})
 		} else {
-			fmt.Printf("%+v", pkgErrors.WithStack(hashMismatchErr))
+			fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
 			return wrongRequestNumberErr
 		}
 	}
@@ -654,27 +702,63 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 
 func (m *TaskManager) onKeygenRequestAdded(evt *contract.MpcCoordinatorKeygenRequestAdded) error {
 	// Request MPC server
-	group, err := m.instance.GetGroup(nil, evt.GroupId)
-	if err != nil {
-		return err
-	}
-	var participantKeys []string
-	for _, k := range group.Participants {
-		pk := common.Bytes2Hex(k)
-		participantKeys = append(participantKeys, pk)
-	}
-	request := &core.KeygenRequest{
-		RequestId:       evt.Raw.TxHash.Hex(),
-		ParticipantKeys: participantKeys,
+	//group, err := m.instance.GetGroup(nil, evt.GroupIdHex)
+	//if err != nil {
+	//	return err
+	//}
+	//var participantKeys []string
+	//for _, k := range group.PartPubKeyHexs {
+	//	pk := common.Bytes2Hex(k)
+	//	participantKeys = append(participantKeys, pk)
+	//}
+	//
+	//t := group.Threshold.Uint64()
 
-		Threshold: group.Threshold.Uint64(),
+	groupIdHex := common.Bytes2Hex(evt.GroupId[:])
+	//groupInfo, ok := m.groupCache[groupIdHex]
+	//if !ok {
+	//	m.log.Error("Failed to get group from cache", logger.Field{"groupIdHex", groupIdHex})
+	//	return pkgErrors.Errorf("Failed to get group from cache, groupIdHex: %q", groupIdHex)
+	//}
+
+	groupInfo, err := m.storer.LoadGroupInfo(groupIdHex)
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
+	//request := &core.KeygenRequest{
+	//	RequestId:       evt.Raw.TxHash.Hex(),
+	//	ParticipantKeys: participantKeys,
+	//
+	//	Threshold: t,
+	//}
+
+	reqIdHex := evt.Raw.TxHash.Hex()
+	partPubKeyHexs := groupInfo.PartPubKeyHexs
+	request := &core.KeygenRequest{
+		RequestId:       reqIdHex,
+		ParticipantKeys: partPubKeyHexs,
+
+		Threshold: groupInfo.Threshold,
+	}
+
 	err = m.mpcClient.Keygen(context.Background(), request) // todo: add shared context to task manager
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to send keygen request to mpc-server")
 	}
 	m.pendingKeygenRequests[request.RequestId] = request
-	m.keygenRequestGroups[request.RequestId] = evt.GroupId
+	//m.keygenRequestGroups[request.RequestId] = evt.GroupId
+
+	keygenReqInfo := storage.KeygenRequestInfo{
+		RequestIdHex:   reqIdHex,
+		GroupIdHex:     groupIdHex,
+		RequestAddedAt: time.Now(),
+	}
+
+	err = m.storer.StoreKeygenRequestInfo(&keygenReqInfo)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return nil
 }
 
@@ -700,13 +784,20 @@ func (m *TaskManager) subscribeKeygenRequestAdded() error {
 		m.subKA.Unsubscribe()
 		m.subKA = nil
 	}
-	var groupIds [][32]byte
-	for groupIdHex, _ := range m.myIndicesInGroups {
-		var groupId [32]byte
-		groupIdRaw := common.Hex2BytesFixed(groupIdHex, 32)
-		copy(groupId[:], groupIdRaw)
-		groupIds = append(groupIds, groupId)
+
+	//var groupIds [][32]byte
+	//for groupIdHex, _ := range m.myIndicesInGroups {
+	//	var groupId [32]byte
+	//	groupIdRaw := common.Hex2BytesFixed(groupIdHex, 32)
+	//	copy(groupId[:], groupIdRaw)
+	//	groupIds = append(groupIds, groupId)
+	//}
+
+	groupIds, err := m.getMyGroupIds()
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
 	sub, err := m.listener.WatchKeygenRequestAdded(nil, m.eventsKA, groupIds)
 	if err != nil {
 		return err
@@ -720,13 +811,19 @@ func (m *TaskManager) subscribeKeyGenerated() error {
 		m.subKG.Unsubscribe()
 		m.subKG = nil
 	}
-	var groupIds [][32]byte
-	for groupIdHex, _ := range m.myIndicesInGroups {
-		var groupId [32]byte
-		groupIdRaw := common.Hex2BytesFixed(groupIdHex, 32)
-		copy(groupId[:], groupIdRaw)
-		groupIds = append(groupIds, groupId)
+	//var groupIds [][32]byte
+	//for groupIdHex, _ := range m.myIndicesInGroups {
+	//	var groupId [32]byte
+	//	groupIdRaw := common.Hex2BytesFixed(groupIdHex, 32)
+	//	copy(groupId[:], groupIdRaw)
+	//	groupIds = append(groupIds, groupId)
+	//}
+
+	groupIds, err := m.getMyGroupIds()
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
 	sub, err := m.listener.WatchKeyGenerated(nil, m.eventsKG, groupIds)
 	if err != nil {
 		return err
@@ -740,11 +837,17 @@ func (m *TaskManager) subscribeStakeRequestAdded() error {
 		m.subStA.Unsubscribe()
 		m.subStA = nil
 	}
-	var pubkeys [][]byte
-	for _, pubKeyHex := range m.publicKeyCache {
-		pk := common.Hex2Bytes(pubKeyHex)
-		pubkeys = append(pubkeys, pk)
+	//var pubkeys [][]byte
+	//for _, pubKeyHex := range m.publicKeyCache {
+	//	pk := common.Hex2Bytes(pubKeyHex)
+	//	pubkeys = append(pubkeys, pk)
+	//}
+
+	pubkeys, err := m.getMyPubKeys()
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
 	sub, err := m.listener.WatchStakeRequestAdded(nil, m.eventsStA, pubkeys)
 	if err != nil {
 		return err
@@ -758,11 +861,17 @@ func (m *TaskManager) subscribeStakeRequestStarted() error {
 		m.subStS.Unsubscribe()
 		m.subStS = nil
 	}
-	var pubkeys [][]byte
-	for _, pubKeyHex := range m.publicKeyCache {
-		pk := common.Hex2Bytes(pubKeyHex)
-		pubkeys = append(pubkeys, pk)
+	//var pubkeys [][]byte
+	//for _, pubKeyHex := range m.publicKeyCache {
+	//	pk := common.Hex2Bytes(pubKeyHex)
+	//	pubkeys = append(pubkeys, pk)
+	//}
+
+	pubkeys, err := m.getMyPubKeys()
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
 	sub, err := m.listener.WatchStakeRequestStarted(nil, m.eventsStS, pubkeys)
 	if err != nil {
 		return err
@@ -771,34 +880,116 @@ func (m *TaskManager) subscribeStakeRequestStarted() error {
 	return nil
 }
 
-func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipantAdded) {
+func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipantAdded) error {
+	// Store participant
 	groupId := common.Bytes2Hex(evt.GroupId[:])
-	m.myIndicesInGroups[groupId] = evt.Index
-	m.subscribeKeygenRequestAdded()
-	m.subscribeKeyGenerated()
-}
+	p := storage.ParticipantInfo{
+		PubKeyHashHex: m.myPubKeyHash.Hex(),
+		PubKeyHex:     m.myPubKey,
+		GroupIdHex:    groupId,
+		Index:         evt.Index.Uint64(),
+	}
+	err := m.storer.StoreParticipantInfo(&p)
+	if err != nil {
+		return errors.Wrapf(err, "failed to store participant")
+	}
+	m.log.Debug("Stored a participant", logger.Field{"participant", p})
 
-func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) error {
-	hash := crypto.Keccak256Hash(req.PublicKey)
-	pkHex := common.Bytes2Hex(req.PublicKey)
-	m.publicKeyCache[hash] = pkHex
+	// Store group
+	group, err := m.instance.GetGroup(nil, evt.GroupId)
+	if err != nil {
+		m.log.Error("Failed to query group", logger.Field{"error", err})
+		return errors.Wrapf(err, "failed to query group")
+	}
+	var participantKeys []string
+	for _, k := range group.Participants {
+		pk := common.Bytes2Hex(k)
+		participantKeys = append(participantKeys, pk)
+	}
 
-	// todo: only do the following if it's me added.
-	m.subscribeStakeRequestAdded()
-	m.subscribeStakeRequestStarted()
+	t := group.Threshold.Uint64()
+
+	g := storage.GroupInfo{
+		GroupIdHex:     groupId,
+		PartPubKeyHexs: participantKeys,
+		Threshold:      t,
+	}
+	err = m.storer.StoreGroupInfo(&g)
+	if err != nil {
+		return errors.Wrapf(err, "failed to store group")
+	}
+	m.log.Debug("Stored a group", logger.Field{"group", g})
+	//m.groupCache[groupId] = &g
+
+	// Subscribe event KeygenRequestAdded
+
+	//m.myIndicesInGroups[groupId] = evt.Index
+	err = m.subscribeKeygenRequestAdded()
+	if err != nil {
+		return errors.Wrapf(err, "failed to subscribe event KeygenRequestAdded")
+	}
+
+	// Subscribe event KeyGenerated
+	err = m.subscribeKeyGenerated()
+	if err != nil {
+		return errors.Wrapf(err, "failed to subscribe event KeyGenerated")
+	}
+
 	return nil
 }
 
-func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeRequestAdded) error {
-	pubKey := m.getPublicKey(req.PublicKey)
-	ind, err := m.getMyIndex(pubKey)
-	if err != nil {
-		return err
+func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) error {
+	// Store generated public key
+	pkHash := crypto.Keccak256Hash(req.PublicKey)
+	pkHex := common.Bytes2Hex(req.PublicKey)
+	groupId := common.Bytes2Hex(req.GroupId[:])
+	pk := storage.GeneratedPubKeyInfo{
+		PubKeyHashHex: pkHash.Hex(),
+		PubKeyHex:     pkHex,
+		GroupIdHex:    groupId,
 	}
+	err := m.storer.StoreGeneratedPubKeyInfo(&pk)
+	if err != nil {
+		return errors.Wrapf(err, "failed to store generated public key")
+	}
+	m.log.Debug("Stored a generated public ket", logger.Field{"genPubKey", pk})
+
+	//m.publicKeyCache[hash] = pkHex
+
+	// todo: only do the following if it's me added.
+
+	// Subscribe event StakeRequestAdded
+	err = m.subscribeStakeRequestAdded()
+	if err != nil {
+		return errors.Wrapf(err, "failed to subscribe event StakeRequestAdded")
+	}
+
+	// Subscribe event StakeRequestStarted
+	err = m.subscribeStakeRequestStarted()
+	if err != nil {
+		return errors.Wrapf(err, "failed to subscribe event StakeRequestStarted")
+	}
+
+	return nil
+}
+
+// todo: store this event info
+func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeRequestAdded) error {
+	//pubKeyHex := m.getPublicKey(req.PublicKey)
+	//ind, err := m.getMyIndex(pubKeyHex)
+	//if err != nil {
+	//	return err
+	//}
+
+	ind, err := m.getMyIndex(req.PublicKey)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	tx, err := m.instance.JoinRequest(m.signer, req.RequestId, ind)
 	if err != nil {
 		fmt.Printf("Failed to joined stake request tx hash: %v\n", tx)
-		return err
+		return errors.WithStack(err)
 	}
 	j := &JoinTx{
 		requestId: req.RequestId,
@@ -827,10 +1018,17 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 	m.removePendingJoin(req.RequestId)
 
 	// Request MPC server
-	pubKey := m.getPublicKey(req.PublicKey)
-	myInd, err := m.getMyIndex(pubKey)
+	//m.storer.LoadGeneratedPubKeyInfo()
+	//
+	//pubKey := m.getPublicKey(req.PublicKey)
+	//myInd, err := m.getMyIndex(pubKey)
+	//if err != nil {
+	//	return err
+	//}
+
+	myInd, err := m.getMyIndex(req.PublicKey)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	var participating bool
@@ -840,75 +1038,146 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 
 	if !participating {
 		// Not Participating, Ignore
-		fmt.Printf("Not participating to request %v\n", req.RequestId)
+		m.log.Info("Not participated to stake request", logger.Field{"stakeReqId", req.RequestId})
 		return nil
 	}
 
 	nodeID, err := ids.ShortFromPrefixedString(req.NodeID, constants.NodeIDPrefix)
 
 	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	pkHashHex := req.PublicKey.Hex()
+	genPkInfo, err := m.storer.LoadGeneratedPubKeyInfo(pkHashHex)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if genPkInfo == nil {
+		return errors.New("No generated public key info found")
+	}
+
+	pkBytes := common.Hex2Bytes(genPkInfo.PubKeyHex)
+	pk, err := unmarshalPubkey(pkBytes)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	cChainAddress := crypto.PubkeyToAddress(*pk)
+	nonce, err := m.ethClient.NonceAt(context.Background(), cChainAddress, nil)
+
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
+	if !req.Amount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
+		return errors.New("invalid uint64")
+	}
+	task, err := NewStakeTask(m.networkContext, *pk, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
+	if err != nil {
 		return err
 	}
-
-	if pkHex, ok := m.publicKeyCache[req.PublicKey]; ok {
-		pkBytes := common.Hex2Bytes(pkHex)
-
-		pk, err := unmarshalPubkey(pkBytes)
-		if err != nil {
-			return err
-		}
-		cChainAddress := crypto.PubkeyToAddress(*pk)
-		nonce, err := m.ethClient.NonceAt(context.Background(), cChainAddress, nil)
-
-		if err != nil {
-			return err
-		}
-
-		var invalidUint64Err = errors.New("invalid uint64")
-		baseFeeGwei := uint64(300) // TODO: It should be given by the contract
-		if !req.Amount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
-			return invalidUint64Err
-		}
-		task, err := NewStakeTask(m.networkContext, *pk, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
-		if err != nil {
-			return err
-		}
-		taskId := req.Raw.TxHash.Hex()
-		m.stakeTasks[taskId] = task
-		hashBytes, err := task.ExportTxHash()
-		if err != nil {
-			return err
-		}
-		pariticipantKeys, err := m.getPariticipantKeys(pubKey, req.ParticipantIndices)
-		if err != nil {
-			return pkgErrors.WithStack(err)
-		}
-
-		m.log.Debug("Task-manager got participant public keys",
-			logger.Field{"participantPubKeys", pariticipantKeys})
-
-		normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
-		m.log.Debug("Task-manager normalized participant public keys",
-			logger.Field{"normalizedParticipantPubKeys", normalized})
-		if err != nil {
-			return pkgErrors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
-		}
-
-		reqId := PendingRequestId{taskId: taskId, requestNumber: 0}
-		hash := common.Bytes2Hex(hashBytes)
-		request := &core.SignRequest{
-			RequestId: reqId.ToString(),
-			PublicKey: pubKey,
-			//ParticipantKeys: pariticipantKeys,
-			ParticipantKeys: normalized,
-			Hash:            hash,
-		}
-		err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
-		if err != nil {
-			return pkgErrors.WithStack(err)
-		}
-		m.pendingSignRequests[request.RequestId] = request
+	taskId := req.Raw.TxHash.Hex()
+	m.stakeTasks[taskId] = task
+	hashBytes, err := task.ExportTxHash()
+	if err != nil {
+		return err
 	}
+	pariticipantKeys, err := m.getPariticipantKeys(req.PublicKey, req.ParticipantIndices)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	m.log.Debug("Task-manager got participant public keys",
+		logger.Field{"participantPubKeys", pariticipantKeys})
+
+	normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
+	m.log.Debug("Task-manager normalized participant public keys",
+		logger.Field{"normalizedParticipantPubKeys", normalized})
+	if err != nil {
+		return errors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
+	}
+
+	genPkInfo, err = m.storer.LoadGeneratedPubKeyInfo(pkHashHex)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	reqId := PendingRequestId{taskId: taskId, requestNumber: 0}
+	hash := common.Bytes2Hex(hashBytes)
+	request := &core.SignRequest{
+		RequestId: reqId.ToString(),
+		PublicKey: genPkInfo.PubKeyHex,
+		//ParticipantKeys: pariticipantKeys,
+		ParticipantKeys: normalized,
+		Hash:            hash,
+	}
+	err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	m.pendingSignRequests[request.RequestId] = request
+
+	//if pkHashHex, ok := m.publicKeyCache[req.PublicKey]; ok {
+	//	pkBytes := common.Hex2Bytes(pkHashHex)
+	//
+	//	pk, err := unmarshalPubkey(pkBytes)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	cChainAddress := crypto.PubkeyToAddress(*pk)
+	//	nonce, err := m.ethClient.NonceAt(context.Background(), cChainAddress, nil)
+	//
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	var invalidUint64Err = errors.New("invalid uint64")
+	//	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
+	//	if !req.Amount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
+	//		return invalidUint64Err
+	//	}
+	//	task, err := NewStakeTask(m.networkContext, *pk, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	taskId := req.Raw.TxHash.Hex()
+	//	m.stakeTasks[taskId] = task
+	//	hashBytes, err := task.ExportTxHash()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	pariticipantKeys, err := m.getPariticipantKeys(pubKey, req.ParticipantIndices)
+	//	if err != nil {
+	//		return errors.WithStack(err)
+	//	}
+	//
+	//	m.log.Debug("Task-manager got participant public keys",
+	//		logger.Field{"participantPubKeys", pariticipantKeys})
+	//
+	//	normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
+	//	m.log.Debug("Task-manager normalized participant public keys",
+	//		logger.Field{"normalizedParticipantPubKeys", normalized})
+	//	if err != nil {
+	//		return errors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
+	//	}
+	//
+	//	reqId := PendingRequestId{taskId: taskId, requestNumber: 0}
+	//	hash := common.Bytes2Hex(hashBytes)
+	//	request := &core.SignRequest{
+	//		RequestId: reqId.ToString(),
+	//		PublicKey: pubKey,
+	//		//ParticipantKeys: pariticipantKeys,
+	//		ParticipantKeys: normalized,
+	//		Hash:            hash,
+	//	}
+	//	err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
+	//	if err != nil {
+	//		return errors.WithStack(err)
+	//	}
+	//	m.pendingSignRequests[request.RequestId] = request
+	//}
 	return nil
 }
 
@@ -916,14 +1185,14 @@ func (m *TaskManager) requestKeygen(req *contract.MpcCoordinatorKeygenRequestAdd
 	/*
 		m.mpcClient.Keygen(core.KeygenRequest{RequestId: req.Raw.TxHash.Hex(), })
 		ParticipantKeys
-		res, err := m.instance.GetGroup(nil, req.GroupId)
+		res, err := m.instance.GetGroup(nil, req.GroupIdHex)
 		if err != nil {
 			return err
 		}
 		t := res.Threshold.String()
 		id := req.Raw.TxHash.Hex()
 		pubKeys := ""
-		for i, pk := range res.Participants {
+		for i, pk := range res.PartPubKeyHexs {
 			var pref string
 			if pref = ""; i > 0 {
 				pref = ","
@@ -958,80 +1227,167 @@ func (m *TaskManager) requestSign(requestId string, request *core.SignRequest) e
 	return nil
 }
 
-func (m *TaskManager) getPublicKey(topic common.Hash) string {
-	return m.publicKeyCache[topic]
+//func (m *TaskManager) getPublicKey(topic common.Hash) string {
+//	return m.publicKeyCache[topic]
+//}
+
+//func (m *TaskManager) getMyIndex(publicKey string) (*big.Int, error) {
+//
+//	k := common.Hex2Bytes(publicKey)
+//
+//	//inf, err := m.instance.GetKey(nil, k)
+//	//if err != nil {
+//	//	return nil, err
+//	//}
+//
+//	group, err := m.instance.GetGroup(nil, inf.GroupId)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	groupId := common.Bytes2Hex(inf.GroupId[:])
+//	g, ok := m.groupCache[groupId]
+//	if !ok {
+//		m.log.Error("Failed to get group from cache", logger.Field{"groupId", groupId})
+//		return nil, pkgErrors.Errorf("Failed to get group from cache, groupId: %q", groupId)
+//	}
+//	for i, pkBytes := range group.Participants {
+//		pk := common.Bytes2Hex(pkBytes)
+//		if m.myPubKey == pk {
+//			return big.NewInt(int64(i) + 1), nil
+//		}
+//	}
+//	return nil, errors.New("not a member of the group")
+//}
+
+//func (m *TaskManager) getMyIndexInGroup(groupId [32]byte) (*big.Int, error) {
+//
+//	group, err := m.instance.GetGroup(nil, groupId)
+//	if err != nil {
+//		return nil, err
+//	}
+//	for i, pkBytes := range group.Participants {
+//		pk := common.Bytes2Hex(pkBytes)
+//		if m.myPubKey == pk {
+//			return big.NewInt(int64(i) + 1), nil
+//		}
+//	}
+//	return nil, errors.New("not a member of the group")
+//}
+
+//func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) ([]string, error) {
+//
+//	k := common.Hex2Bytes(publicKey)
+//
+//	inf, err := m.instance.GetKey(nil, k)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	group, err := m.instance.GetGroup(nil, inf.GroupId)
+//	if err != nil {
+//		return nil, err
+//	}
+//	var out []string
+//	for _, ind := range indices {
+//		k := group.Participants[ind.Uint64()-1]
+//		pk := common.Bytes2Hex(k)
+//		out = append(out, pk)
+//	}
+//	return out, nil
+//}
+
+func (m *TaskManager) getMyIndex(genPubKeyHash common.Hash) (*big.Int, error) {
+	genPubKeyInfo, err := m.storer.LoadGeneratedPubKeyInfo(genPubKeyHash.Hex())
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	partInfo, err := m.storer.LoadParticipantInfo(m.myPubKeyHash.Hex(), genPubKeyInfo.GroupIdHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return big.NewInt(int64(partInfo.Index)), nil
 }
 
-func (m *TaskManager) getMyIndex(publicKey string) (*big.Int, error) {
-
-	k := common.Hex2Bytes(publicKey)
-
-	inf, err := m.instance.GetKey(nil, k)
+func (m *TaskManager) getMyGroupIds() ([][32]byte, error) {
+	partInfos, err := m.storer.LoadParticipantInfos(m.myPubKeyHash.Hex())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	group, err := m.instance.GetGroup(nil, inf.GroupId)
-	if err != nil {
-		return nil, err
+	var groupIds [][32]byte
+
+	for _, partInfo := range partInfos {
+		var groupId [32]byte
+		groupIdRaw := common.Hex2BytesFixed(partInfo.GroupIdHex, 32)
+		copy(groupId[:], groupIdRaw)
+		groupIds = append(groupIds, groupId)
 	}
-	for i, pkBytes := range group.Participants {
-		pk := common.Bytes2Hex(pkBytes)
-		if m.myPubKey == pk {
-			return big.NewInt(int64(i) + 1), nil
-		}
-	}
-	return nil, errors.New("not a member of the group")
+
+	return groupIds, nil
 }
 
-func (m *TaskManager) getMyIndexInGroup(groupId [32]byte) (*big.Int, error) {
-
-	group, err := m.instance.GetGroup(nil, groupId)
+func (m *TaskManager) getMyPubKeys() ([][]byte, error) {
+	partyInfos, err := m.storer.LoadParticipantInfos(m.myPubKeyHash.Hex())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
-	for i, pkBytes := range group.Participants {
-		pk := common.Bytes2Hex(pkBytes)
-		if m.myPubKey == pk {
-			return big.NewInt(int64(i) + 1), nil
-		}
+
+	var groupIdHexs []string
+	for _, partyInfo := range partyInfos {
+		groupIdHexs = append(groupIdHexs, partyInfo.GroupIdHex)
 	}
-	return nil, errors.New("not a member of the group")
+	if len(groupIdHexs) == 0 {
+		return nil, errors.New("found no group")
+	}
+
+	genPubKeyInfos, err := m.storer.LoadGeneratedPubKeyInfos(groupIdHexs)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if len(genPubKeyInfos) == 0 {
+		return nil, errors.New("found no generated public key")
+	}
+
+	var genPubKeyBytes [][]byte
+	for _, genPubKeyInfo := range genPubKeyInfos {
+		pubKeyBytes := common.Hex2Bytes(genPubKeyInfo.PubKeyHex)
+		genPubKeyBytes = append(genPubKeyBytes, pubKeyBytes)
+	}
+
+	return genPubKeyBytes, nil
 }
 
-func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) ([]string, error) {
-
-	k := common.Hex2Bytes(publicKey)
-
-	inf, err := m.instance.GetKey(nil, k)
+func (m *TaskManager) getPariticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) ([]string, error) {
+	genPkInfo, err := m.storer.LoadGeneratedPubKeyInfo(genPubKeyHash.Hex())
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
-	group, err := m.instance.GetGroup(nil, inf.GroupId)
+	groupInfo, err := m.storer.LoadGroupInfo(genPkInfo.GroupIdHex)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
-	var out []string
+
+	var partPubKeyHexs []string
 	for _, ind := range indices {
-		k := group.Participants[ind.Uint64()-1]
-		pk := common.Bytes2Hex(k)
-		out = append(out, pk)
+		partPubKeyHex := groupInfo.PartPubKeyHexs[ind.Uint64()-1]
+		partPubKeyHexs = append(partPubKeyHexs, partPubKeyHex)
 	}
-	return out, nil
+	return partPubKeyHexs, nil
 }
 
 func unmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 	if pub[0] == 4 {
 		x, y := elliptic.Unmarshal(crypto.S256(), pub)
 		if x == nil {
-			return nil, pkgErrors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
+			return nil, errors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
 		}
 		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
 	} else {
 		x, y := secp256k1.DecompressPubkey(pub)
 		if x == nil {
-			return nil, pkgErrors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
+			return nil, errors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
 		}
 		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
 	}
