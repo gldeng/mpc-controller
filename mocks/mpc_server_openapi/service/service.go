@@ -1,4 +1,4 @@
-package mpc_server_openapi
+package service
 
 import (
 	"github.com/avalido/mpc-controller/mocks/mpc_server_openapi/usecases"

@@ -6,10 +6,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/swaggest/usecase"
+	"sync"
 )
+
+var lockSign = &sync.Mutex{}
 
 func Sign() usecase.IOInteractor {
 	u := usecase.NewIOI(new(SignInput), nil, func(ctx context.Context, input, output interface{}) error {
+		lockSign.Lock()
+		defer lockSign.Unlock()
+
 		var (
 			in = input.(*SignInput)
 		)

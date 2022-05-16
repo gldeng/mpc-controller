@@ -6,12 +6,19 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/swaggest/usecase"
+	"sync"
 )
 
 var globalSiner crypto.Signer
 
+var lockKeygen = &sync.Mutex{}
+
 func Keygen() usecase.IOInteractor {
+
 	u := usecase.NewIOI(new(KeygenInput), nil, func(ctx context.Context, input, output interface{}) error {
+		lockKeygen.Lock()
+		defer lockKeygen.Unlock()
+
 		var (
 			in = input.(*KeygenInput)
 		)
