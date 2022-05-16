@@ -48,7 +48,8 @@ func (s *Staker) IssueSignedStakeTxs(ctx context.Context, exportTx, importTx, ad
 		return nil, errors.Wrap(err, "failed to issue signed exportTx")
 	}
 
-	time.Sleep(time.Second * 2)
+	// sleep to avoid error: "failed to get shared memory: not found"
+	time.Sleep(time.Second * 5)
 	importId, err := s.pChainIssueClient.IssueTx(ctx, importTx)
 	if err != nil {
 		logger.Error("Stake failed to issue signed importTx",
@@ -56,7 +57,8 @@ func (s *Staker) IssueSignedStakeTxs(ctx context.Context, exportTx, importTx, ad
 		return nil, errors.Wrap(err, "failed to issue signed importTx")
 	}
 
-	time.Sleep(time.Second * 2)
+	// sleep to avoid error: "failed to get shared memory: not found"
+	time.Sleep(time.Second * 5)
 	addDelegatorId, err := s.pChainIssueClient.IssueTx(ctx, addDelegatorTx)
 	if err != nil {
 		logger.Error("Stake failed to issue signed addDelegatorTx",
