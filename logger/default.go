@@ -23,11 +23,11 @@ func Default() Logger {
 			logConfig = uberZap.NewDevelopmentConfig()
 			logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
 			logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-			logger, _ = logConfig.Build(uberZap.AddCallerSkip(2))
+			logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
 		} else {
 			logConfig = uberZap.NewProductionConfig()
 			logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
-			logger, _ = logConfig.Build(uberZap.AddCallerSkip(2))
+			logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
 		}
 		DefaultLogger = NewZap(logger)
 	})
