@@ -271,6 +271,18 @@ func (m *TaskManager) Start() error {
 	}
 }
 
+// Shutdown gracefully shuts down the mpc-manager.
+func (m *TaskManager) Shutdown(ctx context.Context) error {
+	if m == nil {
+		panic("no manager started")
+	}
+
+	// todo: release system resources
+	fmt.Println("---------- Releasing resources...")
+	time.Sleep(5 * time.Second)
+	return nil
+}
+
 func (m *TaskManager) tick() error {
 	err := m.checkPendingReports()
 	if err != nil {
