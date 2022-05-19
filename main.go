@@ -74,6 +74,8 @@ func mpcController(c *cli.Context) error {
 // todo: deal with error: invalid nonce
 // todo: check and sync participant upon startup, there ere maybe groups created during mpc-controller downtime.
 // todo: add mpc-controller version info
+// todo: mechanism to check result from mpc-server and resume task on mpc-controller startup
+// todo: history even track for mpc-coordinator smart contract.eeeee
 
 func main() {
 	logger.DevMode = true // remove this line later

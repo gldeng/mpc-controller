@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
@@ -171,10 +170,28 @@ func NewTaskManager(log logger.Logger, config config.Config, storer storage.Stor
 // todo: logic to quit for loop
 
 func (m *TaskManager) Start() error {
+	//
 	err := m.subscribeParticipantAdded()
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	err = m.subscribeKeygenRequestAdded()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = m.subscribeKeyGenerated()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = m.subscribeStakeRequestAdded()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = m.subscribeStakeRequestStarted()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	for {
 		select {
 		case evt, ok := <-m.eventsPA:
@@ -704,8 +721,6 @@ func (m *TaskManager) subscribeKeygenRequestAdded() error {
 	return nil
 }
 
-// todo: subscribe keyGenerated upon mpc-controller startup
-
 func (m *TaskManager) subscribeKeyGenerated() error {
 	if m.subKG != nil {
 		m.subKG.Unsubscribe()
@@ -724,7 +739,6 @@ func (m *TaskManager) subscribeKeyGenerated() error {
 	return nil
 }
 
-// todo: subscribe stakeRequestAdded upong mpc-controller startup
 func (m *TaskManager) subscribeStakeRequestAdded() error {
 	if m.subStA != nil {
 		m.subStA.Unsubscribe()
@@ -742,8 +756,6 @@ func (m *TaskManager) subscribeStakeRequestAdded() error {
 	m.subStA = sub
 	return nil
 }
-
-// todo: subscribe stakeRequestStarted upong mpc-controller startup
 
 func (m *TaskManager) subscribeStakeRequestStarted() error {
 	if m.subStS != nil {
@@ -813,8 +825,6 @@ func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipant
 	}
 
 	// Subscribe event KeyGenerated
-	// todo: subscribe keyGenerated upon mpc-controller startup
-
 	err = m.subscribeKeyGenerated()
 	if err != nil {
 		return errors.Wrapf(err, "failed to subscribe event KeyGenerated")
@@ -1062,22 +1072,6 @@ func (m *TaskManager) getPariticipantKeys(genPubKeyHash common.Hash, indices []*
 		partPubKeyHexs = append(partPubKeyHexs, partPubKeyHex)
 	}
 	return partPubKeyHexs, nil
-}
-
-func unmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
-	if pub[0] == 4 {
-		x, y := elliptic.Unmarshal(crypto.S256(), pub)
-		if x == nil {
-			return nil, errors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
-		}
-		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
-	} else {
-		x, y := secp256k1.DecompressPubkey(pub)
-		if x == nil {
-			return nil, errors.Errorf("invalid secp256k1 public key %v", common.Bytes2Hex(pub))
-		}
-		return &ecdsa.PublicKey{Curve: crypto.S256(), X: x, Y: y}, nil
-	}
 }
 
 func marshalPubkey(pub *ecdsa.PublicKey) []byte {
