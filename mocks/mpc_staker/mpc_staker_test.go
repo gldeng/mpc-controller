@@ -2,12 +2,14 @@ package mpc_staker
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"math/big"
 	"os"
@@ -105,4 +107,37 @@ func (suite *mpcStakerTestSuite) TestMpcStaker() {
 
 func TestMpcStakerTestSuite(t *testing.T) {
 	suite.Run(t, new(mpcStakerTestSuite))
+}
+
+// ----------
+
+// todo: move this to mpc-provider
+func TestMpcStaker_RequestKeyGen(t *testing.T) {
+	logger.DevMode = true
+
+	privateKeyHex := "56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027"
+
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	require.Nil(t, err)
+
+	// Request stake after key added
+	cHttpUrl := "http://localhost:9650/ext/bc/C/rpc"
+	cWebsocketUrl := "ws://127.0.0.1:9650/ext/bc/C/ws"
+
+	// Create eth rpc client
+	ethRpcCli, err := ethclient.Dial(cHttpUrl)
+	require.Nil(t, err)
+
+	// Create eth ws client
+	ethWsCli, err := ethclient.Dial(cWebsocketUrl)
+	require.Nil(t, err)
+
+	// Convert coordinator address
+	coordinatorAddr := common.HexToAddress("0x52C84043CD9c865236f11d9Fc9F56aa003c1f922")
+
+	mpcStaker := New(logger.Default(), big.NewInt(43112), &coordinatorAddr, privateKey, ethRpcCli, ethWsCli)
+
+	pubkeyHex, err := mpcStaker.requestKeygen("3726383e52fd4cb603498459e8a4a15d148566a51b3f5bfbbf3cac7b61647d04")
+	require.Nil(t, err)
+	fmt.Printf("Got generated public key hex: %q", pubkeyHex)
 }

@@ -329,6 +329,8 @@ func mpcController(c *cli.Context) error {
 // todo: automatic panic recover
 // todo: distributed trace, log and monitor
 // todo: deal with gorutine leak
+// todo: deal with error: invalid nonce
+// todo: check and sync participant upon startup, there ere maybe groups created during mpc-controller downtime.
 
 func main() {
 	logger.DevMode = true // remove this line later

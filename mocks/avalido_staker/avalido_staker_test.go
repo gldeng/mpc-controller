@@ -37,13 +37,14 @@ func (suite *AvaLidoTestSuite) SetupTest() {
 	suite.cRpcClient = network.DefaultEthClient()
 	suite.cWsClient = network.DefaultWsEthClient()
 
-	avalidoAddr := common.HexToAddress("0xA4cD3b0Eb6E5Ab5d8CE4065BcCD70040ADAB1F00")
+	avalidoAddr := common.HexToAddress("0x65f07C5D38E95C6EAc92aD1A13a0D54115915659")
 	suite.avaLidoAddr = &avalidoAddr
 }
 
 func (suite *AvaLidoTestSuite) TestInitiateStake() {
 	require := suite.Require()
 
+	// Note: the stake account must at least has 25 AVAX to become a delegator.
 	err := token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, suite.avaLidoAddr, big.NewInt(26_000_000_000))
 	require.Nilf(err, "Failed to transfer token. error: %v", err)
 

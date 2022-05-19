@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/davecgh/go-spew/spew"
 
 	//"errors"
 	"fmt"
@@ -55,13 +56,7 @@ type PendingRequestId struct {
 	requestNumber uint8
 }
 
-//type SignRequest struct {
-//	groupId [32]byte
-//	publicKey string
-//	participantKeys []string
-//	hash string
-//	// TODO: Add startTime to handle timeouts
-//}
+// TODO: Add startTime to handle timeouts
 
 type SignResult struct {
 	RequestId     string `json:"request_id"`
@@ -98,26 +93,15 @@ type TaskManager struct {
 	mpcControllerId string
 	networkContext  core.NetworkContext
 
-	//groupCache map[string]*storage.GroupInfo
-
-	//publicKeyCache    map[common.Hash]string
-	//myIndicesInGroups map[string]*big.Int
-
 	stakeTasks map[string]*StakeTask
 
 	pendingSignRequests   map[string]*core.SignRequest
 	pendingKeygenRequests map[string]*core.KeygenRequest
 
-	//keygenRequestGroups map[string][32]byte
-
 	pendingReports map[common.Hash]*ReportKeyTx
 
 	pendingJoins map[common.Hash]*JoinTx
 
-	//networkID uint32
-	//cchainID  ids.ID
-	////assetID ids.ID
-	//asset           avax.Asset
 	avaEthclient    avaEthclient.Client
 	myAddr          ids.ShortID
 	coordinatorAddr common.Address
@@ -126,40 +110,25 @@ type TaskManager struct {
 	eventsKA        chan *contract.MpcCoordinatorKeygenRequestAdded
 	eventsStS       chan *contract.MpcCoordinatorStakeRequestStarted
 	eventsStA       chan *contract.MpcCoordinatorStakeRequestAdded
-	//mpcServiceUrl   string
-	listener      *contract.MpcCoordinator
-	instance      *contract.MpcCoordinator
-	ethClient     *ethclient.Client
-	secpFactory   avaCrypto.FactorySECP256K1R
-	chSigReceived chan *SignatureReceived
-	mpcClient     core.MPCClient
-	signer        *bind.TransactOpts
-	myPubKey      string
-	myPubKeyHash  common.Hash
-	eventsPA      chan *contract.MpcCoordinatorParticipantAdded
-	subPA         event.Subscription
-	subKA         event.Subscription
-	subStA        event.Subscription
-	subStS        event.Subscription
-	subKG         event.Subscription
-	eventsKG      chan *contract.MpcCoordinatorKeyGenerated
+	listener        *contract.MpcCoordinator
+	instance        *contract.MpcCoordinator
+	ethClient       *ethclient.Client
+	secpFactory     avaCrypto.FactorySECP256K1R
+	chSigReceived   chan *SignatureReceived
+	mpcClient       core.MPCClient
+	signer          *bind.TransactOpts
+	myPubKey        string
+	myPubKeyHash    common.Hash
+	eventsPA        chan *contract.MpcCoordinatorParticipantAdded
+	subPA           event.Subscription
+	subKA           event.Subscription
+	subStA          event.Subscription
+	subStS          event.Subscription
+	subKG           event.Subscription
+	eventsKG        chan *contract.MpcCoordinatorKeyGenerated
 }
 
-func NewTaskManager(log logger.Logger, config config.Config, storer storage.Storer, staker *Staker,
-
-//mpcControllerId int,
-//networkContext core.NetworkContext,
-//mpcClient core.MPCClient,
-//privateKey *ecdsa.PrivateKey,
-//coordinatorAddr common.Address,
-) (*TaskManager, error) {
-	//transactor, err := bind.NewKeyedTransactorWithChainID(config.ControllerKey_(), networkContext.ChainID())
-	//if err != nil {
-	//	return nil, _errors.Annotatef(err, "failed to create transaction signer")
-	//}
-	//pubKeyBytes := crypto.CompressPubkey(&privateKey.PublicKey)
-	//log.With(logger.Field{"receiver", "task-manager"})
-
+func NewTaskManager(log logger.Logger, config config.Config, storer storage.Storer, staker *Staker) (*TaskManager, error) {
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
@@ -169,32 +138,26 @@ func NewTaskManager(log logger.Logger, config config.Config, storer storage.Stor
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", pubKeyHash})
 	m := &TaskManager{
-		config:          config,
-		log:             log,
-		staker:          staker,
-		storer:          storer,
-		networkContext:  *config.NetworkContext(),
-		mpcClient:       config.MpcClient(),
-		signer:          config.ControllerSigner(),
-		myPubKey:        pubKeyHex,
-		myPubKeyHash:    pubKeyHash,
-		coordinatorAddr: *config.CoordinatorAddress(),
-		//groupCache:            make(map[string]*storage.GroupInfo),
-		//publicKeyCache:        make(map[common.Hash]string),
-		//myIndicesInGroups:     make(map[string]*big.Int),
+		config:                config,
+		log:                   log,
+		staker:                staker,
+		storer:                storer,
+		networkContext:        *config.NetworkContext(),
+		mpcClient:             config.MpcClient(),
+		signer:                config.ControllerSigner(),
+		myPubKey:              pubKeyHex,
+		myPubKeyHash:          pubKeyHash,
+		coordinatorAddr:       *config.CoordinatorAddress(),
 		stakeTasks:            make(map[string]*StakeTask),
 		pendingSignRequests:   make(map[string]*core.SignRequest),
 		pendingKeygenRequests: make(map[string]*core.KeygenRequest),
-		//keygenRequestGroups:   make(map[string][32]byte),
-		pendingReports: make(map[common.Hash]*ReportKeyTx),
-		pendingJoins:   make(map[common.Hash]*JoinTx),
+		pendingReports:        make(map[common.Hash]*ReportKeyTx),
+		pendingJoins:          make(map[common.Hash]*JoinTx),
 	}
 
 	m.listener = config.CoordinatorBoundListener()
 	m.instance = config.CoordinatorBoundInstance()
 	m.ethClient = config.EthRpcClient()
-	//m.cChainClient = config.CChainIssueClient()
-	//m.wsClient = config.EthWsClient()
 	m.chSigReceived = make(chan *SignatureReceived)
 	m.eventsPA = make(chan *contract.MpcCoordinatorParticipantAdded)
 	m.eventsKA = make(chan *contract.MpcCoordinatorKeygenRequestAdded)
@@ -204,49 +167,6 @@ func NewTaskManager(log logger.Logger, config config.Config, storer storage.Stor
 	m.secpFactory = avaCrypto.FactorySECP256K1R{}
 	return m, nil
 }
-
-////// todo: enable urls customizable
-//func (m *TaskManager) Initialize() error {
-//	//cChainClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
-//	//cChainClient := evm.NewClient("http://localhost:9650", "C")
-//	//wsClient, err := ethclient.Dial("ws://127.0.0.1:9650/ext/bc/C/ws")
-//	//if err != nil {
-//	//	logger.Error("failed to dail ws://127.0.0.1:9650/ext/bc/C/ws", logger.Field{"ERROR", err})
-//	//	os.Exit(1)
-//	//}
-//	ethClient, err := ethclient.Dial("http://localhost:9650/ext/bc/C/rpc")
-//	if err != nil {
-//		logger.Error("failed to dail http://localhost:9650/ext/bc/C/rpc", logger.Field{"ERROR", err})
-//		os.Exit(1)
-//	}
-//	//listener, err := contract.NewMpcCoordinator(m.coordinatorAddr, wsClient)
-//	//if err != nil {
-//	//	logger.Error("failed to create ws mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
-//	//	os.Exit(1)
-//	//}
-//	instance, err := contract.NewMpcCoordinator(m.coordinatorAddr, ethClient)
-//	if err != nil {
-//		logger.Error("failed to create mpc coordinator, ERROR: %v", logger.Field{"ERROR", err})
-//		os.Exit(1)
-//	}
-//	//m.listener = listener
-//	m.listener = m.config.CoordinatorBoundListener()
-//
-//	m.instance = instance
-//	m.ethClient = ethClient
-//	//m.cChainClient = cChainClient
-//
-//	//m.wsClient = wsClient
-//	m.chSigReceived = make(chan *SignatureReceived)
-//	m.eventsPA = make(chan *contract.MpcCoordinatorParticipantAdded)
-//	m.eventsKA = make(chan *contract.MpcCoordinatorKeygenRequestAdded)
-//	m.eventsKG = make(chan *contract.MpcCoordinatorKeyGenerated)
-//	m.eventsStA = make(chan *contract.MpcCoordinatorStakeRequestAdded)
-//	m.eventsStS = make(chan *contract.MpcCoordinatorStakeRequestStarted)
-//	m.secpFactory = avaCrypto.FactorySECP256K1R{}
-//
-//	return nil
-//}
 
 // todo: logic to quit for loop
 
@@ -489,79 +409,78 @@ func (m *TaskManager) checkPendingJoins() error {
 }
 
 func (m *TaskManager) checkKeygenResult(requestId string) error {
+	// Query result from mpc-server
 	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
-	m.log.Debug("Task-manager retrieved keygen result from mpc-server",
-		logger.Field{"reqId", requestId},
-		logger.Field{"result", result})
 	if err != nil {
-		m.log.Error("Got an error when check key generating result",
-			logger.Field{"requestId", requestId},
-			logger.Field{"error", err})
-		return err
+		return errors.WithStack(err)
 	}
-	if result.RequestStatus == "DONE" {
-		genPubKey := common.Hex2Bytes(result.Result)
 
-		keyGenInfo, err := m.storer.LoadKeygenRequestInfo(requestId)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		partyInfo, err := m.storer.LoadParticipantInfo(m.myPubKeyHash.Hex(), keyGenInfo.GroupIdHex)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		groupIdRaw := common.Hex2BytesFixed(keyGenInfo.GroupIdHex, 32)
-
-		var groupId [32]byte
-		copy(groupId[:], groupIdRaw)
-
-		myIndex := big.NewInt(int64(partyInfo.Index))
-
-		//groupId := m.keygenRequestGroups[requestId]
-		////ind, err := m.getMyIndexInGroup(groupId)
-		//m.storer.
-		//	fmt.Printf("My index is %v\n", ind)
-		//if err != nil {
-		//	return err
-		//}
-		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, myIndex, genPubKey)
-		// todo: to deal with: "error": "insufficient funds for gas * price + value: address 0x3600323b486F115CE127758ed84F26977628EeaA have (103000) want (3019200000000000)"}
-		if err != nil {
-			m.log.Error("Failed to report generated key",
-				logger.Field{"groupId", groupId},
-				logger.Field{"pubKey", result.Result},
-				logger.Field{"error", err})
-			return errors.Wrapf(err, "failed to report generated key %v for group %v", result.Result, groupId)
-		}
-
-		keyGenInfo.PubKeyReportedAt = time.Now()
-		pubKeyHash := crypto.Keccak256Hash(genPubKey)
-		keyGenInfo.PubKeyHashHex = pubKeyHash.Hex()
-
-		err = m.storer.StoreKeygenRequestInfo(keyGenInfo)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		m.pendingReports[tx.Hash()] = &ReportKeyTx{
-			groupId:            groupId,
-			myIndex:            myIndex,
-			generatedPublicKey: genPubKey,
-		}
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		m.log.Info("Reported generated public key",
-			logger.Field{"publicKeyHex", result.Result},
-			logger.Field{"txHashHex", tx.Hash().Hex()})
-		delete(m.pendingKeygenRequests, requestId)
+	if result.RequestStatus != "DONE" {
+		m.log.Debug("Key hasn't been generated yet",
+			[]logger.Field{{"reqId", requestId}, {"reqStatus", result.RequestStatus}}...)
 		return nil
 	}
-	m.log.Debug("Key hasn't been generated yet",
-		logger.Field{"requestId", requestId},
-		logger.Field{"requestType", result.RequestType},
-		logger.Field{"statusStatus", result.RequestStatus})
+
+	// Deal with crypto values
+	dnmGenPubKeyBytes, err := myCrypto.DenormalizePubKeyFromHex(result.Result) // for Ethereum compatibility
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	pubKeyHash := crypto.Keccak256Hash(dnmGenPubKeyBytes) // digest to identify generated public key
+
+	// Load pre-stored corresponding participant and keygen request information
+	keyGenInfo, err := m.storer.LoadKeygenRequestInfo(requestId) // keygen request info
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	partyInfo, err := m.storer.LoadParticipantInfo(m.myPubKeyHash.Hex(), keyGenInfo.GroupIdHex) // participant info
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	groupIdRaw := common.Hex2BytesFixed(keyGenInfo.GroupIdHex, 32)
+	var groupId [32]byte
+	copy(groupId[:], groupIdRaw)
+	myIndex := big.NewInt(int64(partyInfo.Index))
+
+	// Locally store the generated public key
+	pk := storage.GeneratedPubKeyInfo{
+		PubKeyHashHex: pubKeyHash.Hex(),
+		PubKeyHex:     result.Result,
+		GroupIdHex:    keyGenInfo.GroupIdHex,
+	}
+	err = m.storer.StoreGeneratedPubKeyInfo(&pk)
+	if err != nil {
+		return errors.Wrapf(err, "failed to store generated public key")
+	}
+
+	// Report the generated public key, in denormalized format due to Ethereum compatibility
+	// Todo: establish a strategy to deal with "insufficient fund" error, maybe check account balance before report
+	tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, myIndex, dnmGenPubKeyBytes)
+	if err != nil {
+		m.log.Error("Failed to report public key", logger.Field{"error", err})
+		return errors.Wrap(err, "failed to report generated key")
+	}
+
+	// Locally update keygen request information
+	keyGenInfo.PubKeyReportedAt = time.Now()
+	keyGenInfo.PubKeyHashHex = pubKeyHash.Hex()
+	err = m.storer.StoreKeygenRequestInfo(keyGenInfo)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	m.pendingReports[tx.Hash()] = &ReportKeyTx{
+		groupId:            groupId,
+		myIndex:            myIndex,
+		generatedPublicKey: dnmGenPubKeyBytes,
+	}
+	delete(m.pendingKeygenRequests, requestId)
+
+	addr, _ := myCrypto.PubKeyHexToAddress(result.Result) // for debug
+	m.log.Info("Generated and reported public key",
+		[]logger.Field{{"ethAddress", addr}, {"generatedPubkey", result.Result},
+			{"reportedPubkey", common.Bytes2Hex(dnmGenPubKeyBytes)}}...)
 	return nil
 }
 
@@ -681,6 +600,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			delete(m.pendingSignRequests, signReqId)
 			m.log.Info("Mpc-manager: Cool! All signings for a stake task all done.")
+
 			ids, err := m.staker.IssueStakeTaskTxs(context.Background(), task)
 
 			//err = doStake(task)
@@ -701,37 +621,12 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 }
 
 func (m *TaskManager) onKeygenRequestAdded(evt *contract.MpcCoordinatorKeygenRequestAdded) error {
-	// Request MPC server
-	//group, err := m.instance.GetGroup(nil, evt.GroupIdHex)
-	//if err != nil {
-	//	return err
-	//}
-	//var participantKeys []string
-	//for _, k := range group.PartPubKeyHexs {
-	//	pk := common.Bytes2Hex(k)
-	//	participantKeys = append(participantKeys, pk)
-	//}
-	//
-	//t := group.Threshold.Uint64()
-
 	groupIdHex := common.Bytes2Hex(evt.GroupId[:])
-	//groupInfo, ok := m.groupCache[groupIdHex]
-	//if !ok {
-	//	m.log.Error("Failed to get group from cache", logger.Field{"groupIdHex", groupIdHex})
-	//	return pkgErrors.Errorf("Failed to get group from cache, groupIdHex: %q", groupIdHex)
-	//}
 
 	groupInfo, err := m.storer.LoadGroupInfo(groupIdHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	//request := &core.KeygenRequest{
-	//	RequestId:       evt.Raw.TxHash.Hex(),
-	//	ParticipantKeys: participantKeys,
-	//
-	//	Threshold: t,
-	//}
 
 	reqIdHex := evt.Raw.TxHash.Hex()
 	partPubKeyHexs := groupInfo.PartPubKeyHexs
@@ -784,15 +679,6 @@ func (m *TaskManager) subscribeKeygenRequestAdded() error {
 		m.subKA.Unsubscribe()
 		m.subKA = nil
 	}
-
-	//var groupIds [][32]byte
-	//for groupIdHex, _ := range m.myIndicesInGroups {
-	//	var groupId [32]byte
-	//	groupIdRaw := common.Hex2BytesFixed(groupIdHex, 32)
-	//	copy(groupId[:], groupIdRaw)
-	//	groupIds = append(groupIds, groupId)
-	//}
-
 	groupIds, err := m.getMyGroupIds()
 	if err != nil {
 		return errors.WithStack(err)
@@ -806,19 +692,13 @@ func (m *TaskManager) subscribeKeygenRequestAdded() error {
 	return nil
 }
 
+// todo: subscribe keyGenerated upon mpc-controller startup
+
 func (m *TaskManager) subscribeKeyGenerated() error {
 	if m.subKG != nil {
 		m.subKG.Unsubscribe()
 		m.subKG = nil
 	}
-	//var groupIds [][32]byte
-	//for groupIdHex, _ := range m.myIndicesInGroups {
-	//	var groupId [32]byte
-	//	groupIdRaw := common.Hex2BytesFixed(groupIdHex, 32)
-	//	copy(groupId[:], groupIdRaw)
-	//	groupIds = append(groupIds, groupId)
-	//}
-
 	groupIds, err := m.getMyGroupIds()
 	if err != nil {
 		return errors.WithStack(err)
@@ -832,17 +712,12 @@ func (m *TaskManager) subscribeKeyGenerated() error {
 	return nil
 }
 
+// todo: subscribe stakeRequestAdded upong mpc-controller startup
 func (m *TaskManager) subscribeStakeRequestAdded() error {
 	if m.subStA != nil {
 		m.subStA.Unsubscribe()
 		m.subStA = nil
 	}
-	//var pubkeys [][]byte
-	//for _, pubKeyHex := range m.publicKeyCache {
-	//	pk := common.Hex2Bytes(pubKeyHex)
-	//	pubkeys = append(pubkeys, pk)
-	//}
-
 	pubkeys, err := m.getMyPubKeys()
 	if err != nil {
 		return errors.WithStack(err)
@@ -856,17 +731,13 @@ func (m *TaskManager) subscribeStakeRequestAdded() error {
 	return nil
 }
 
+// todo: subscribe stakeRequestStarted upong mpc-controller startup
+
 func (m *TaskManager) subscribeStakeRequestStarted() error {
 	if m.subStS != nil {
 		m.subStS.Unsubscribe()
 		m.subStS = nil
 	}
-	//var pubkeys [][]byte
-	//for _, pubKeyHex := range m.publicKeyCache {
-	//	pk := common.Hex2Bytes(pubKeyHex)
-	//	pubkeys = append(pubkeys, pk)
-	//}
-
 	pubkeys, err := m.getMyPubKeys()
 	if err != nil {
 		return errors.WithStack(err)
@@ -930,6 +801,8 @@ func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipant
 	}
 
 	// Subscribe event KeyGenerated
+	// todo: subscribe keyGenerated upon mpc-controller startup
+
 	err = m.subscribeKeyGenerated()
 	if err != nil {
 		return errors.Wrapf(err, "failed to subscribe event KeyGenerated")
@@ -939,27 +812,10 @@ func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipant
 }
 
 func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) error {
-	// Store generated public key
-	pkHash := crypto.Keccak256Hash(req.PublicKey)
-	pkHex := common.Bytes2Hex(req.PublicKey)
-	groupId := common.Bytes2Hex(req.GroupId[:])
-	pk := storage.GeneratedPubKeyInfo{
-		PubKeyHashHex: pkHash.Hex(),
-		PubKeyHex:     pkHex,
-		GroupIdHex:    groupId,
-	}
-	err := m.storer.StoreGeneratedPubKeyInfo(&pk)
-	if err != nil {
-		return errors.Wrapf(err, "failed to store generated public key")
-	}
-	m.log.Debug("Stored a generated public ket", logger.Field{"genPubKey", pk})
-
-	//m.publicKeyCache[hash] = pkHex
-
 	// todo: only do the following if it's me added.
 
 	// Subscribe event StakeRequestAdded
-	err = m.subscribeStakeRequestAdded()
+	err := m.subscribeStakeRequestAdded()
 	if err != nil {
 		return errors.Wrapf(err, "failed to subscribe event StakeRequestAdded")
 	}
@@ -975,12 +831,6 @@ func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) e
 
 // todo: store this event info
 func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeRequestAdded) error {
-	//pubKeyHex := m.getPublicKey(req.PublicKey)
-	//ind, err := m.getMyIndex(pubKeyHex)
-	//if err != nil {
-	//	return err
-	//}
-
 	ind, err := m.getMyIndex(req.PublicKey)
 	if err != nil {
 		return errors.WithStack(err)
@@ -1017,15 +867,6 @@ func (m *TaskManager) removePendingJoin(requestId *big.Int) error {
 func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeRequestStarted) error {
 	m.removePendingJoin(req.RequestId)
 
-	// Request MPC server
-	//m.storer.LoadGeneratedPubKeyInfo()
-	//
-	//pubKey := m.getPublicKey(req.PublicKey)
-	//myInd, err := m.getMyIndex(pubKey)
-	//if err != nil {
-	//	return err
-	//}
-
 	myInd, err := m.getMyIndex(req.PublicKey)
 	if err != nil {
 		return errors.WithStack(err)
@@ -1058,26 +899,31 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 		return errors.New("No generated public key info found")
 	}
 
-	pkBytes := common.Hex2Bytes(genPkInfo.PubKeyHex)
-	pk, err := unmarshalPubkey(pkBytes)
+	pubkey, err := myCrypto.UnmarshalPubKeyHex(genPkInfo.PubKeyHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	cChainAddress := crypto.PubkeyToAddress(*pk)
-	nonce, err := m.ethClient.NonceAt(context.Background(), cChainAddress, nil)
 
+	address := myCrypto.PubkeyToAddresse(pubkey)
+
+	nonce, err := m.ethClient.NonceAt(context.Background(), *address, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	bl, _ := m.ethClient.BalanceAt(context.Background(), *address, nil)
+	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{{"address", *address}, {"balance", bl.Uint64()}}...)
 
 	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
 	if !req.Amount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
 		return errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(m.networkContext, *pk, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
+	task, err := NewStakeTask(m.networkContext, *pubkey, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
 	if err != nil {
 		return err
 	}
+	// todo: remove this
+	spew.Dump(task)
 	taskId := req.Raw.TxHash.Hex()
 	m.stakeTasks[taskId] = task
 	hashBytes, err := task.ExportTxHash()
@@ -1118,184 +964,8 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 		return errors.WithStack(err)
 	}
 	m.pendingSignRequests[request.RequestId] = request
-
-	//if pkHashHex, ok := m.publicKeyCache[req.PublicKey]; ok {
-	//	pkBytes := common.Hex2Bytes(pkHashHex)
-	//
-	//	pk, err := unmarshalPubkey(pkBytes)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	cChainAddress := crypto.PubkeyToAddress(*pk)
-	//	nonce, err := m.ethClient.NonceAt(context.Background(), cChainAddress, nil)
-	//
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	var invalidUint64Err = errors.New("invalid uint64")
-	//	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
-	//	if !req.Amount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
-	//		return invalidUint64Err
-	//	}
-	//	task, err := NewStakeTask(m.networkContext, *pk, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	taskId := req.Raw.TxHash.Hex()
-	//	m.stakeTasks[taskId] = task
-	//	hashBytes, err := task.ExportTxHash()
-	//	if err != nil {
-	//		return err
-	//	}
-	//	pariticipantKeys, err := m.getPariticipantKeys(pubKey, req.ParticipantIndices)
-	//	if err != nil {
-	//		return errors.WithStack(err)
-	//	}
-	//
-	//	m.log.Debug("Task-manager got participant public keys",
-	//		logger.Field{"participantPubKeys", pariticipantKeys})
-	//
-	//	normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
-	//	m.log.Debug("Task-manager normalized participant public keys",
-	//		logger.Field{"normalizedParticipantPubKeys", normalized})
-	//	if err != nil {
-	//		return errors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
-	//	}
-	//
-	//	reqId := PendingRequestId{taskId: taskId, requestNumber: 0}
-	//	hash := common.Bytes2Hex(hashBytes)
-	//	request := &core.SignRequest{
-	//		RequestId: reqId.ToString(),
-	//		PublicKey: pubKey,
-	//		//ParticipantKeys: pariticipantKeys,
-	//		ParticipantKeys: normalized,
-	//		Hash:            hash,
-	//	}
-	//	err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
-	//	if err != nil {
-	//		return errors.WithStack(err)
-	//	}
-	//	m.pendingSignRequests[request.RequestId] = request
-	//}
 	return nil
 }
-
-func (m *TaskManager) requestKeygen(req *contract.MpcCoordinatorKeygenRequestAdded) error {
-	/*
-		m.mpcClient.Keygen(core.KeygenRequest{RequestId: req.Raw.TxHash.Hex(), })
-		ParticipantKeys
-		res, err := m.instance.GetGroup(nil, req.GroupIdHex)
-		if err != nil {
-			return err
-		}
-		t := res.Threshold.String()
-		id := req.Raw.TxHash.Hex()
-		pubKeys := ""
-		for i, pk := range res.PartPubKeyHexs {
-			var pref string
-			if pref = ""; i > 0 {
-				pref = ","
-			}
-			pubKeys += fmt.Sprintf(`%v"%v"`, pref, common.Bytes2Hex(pk))
-		}
-		payloadStr := fmt.Sprintf(`{"request_id": "%v", "public_keys": [%v], "t": %v}`, id, pubKeys, t)
-		payload := strings.NewReader(payloadStr)
-		http.Post(m.mpcServiceUrl+"/keygen", "application/json", payload)
-
-	*/
-	return nil
-}
-
-func (m *TaskManager) requestSign(requestId string, request *core.SignRequest) error {
-	/*
-		pubKeys := ""
-		cnt := 0
-		for _, k := range request.participantKeys {
-			var pref string
-			if pref = ""; cnt > 0 {
-				pref = ","
-			}
-			pubKeys += fmt.Sprintf(`%v"%v"`, pref, k)
-			cnt += 1
-		}
-		payloadStr := fmt.Sprintf(`{"request_id": "%v", "public_key": "%v", "hash": "%v", "participant_public_keys": [%v]}`, requestId, request.publicKey, request.hash, pubKeys)
-		payload := strings.NewReader(payloadStr)
-		http.Post(m.mpcServiceUrl+"/sign", "application/json", payload)
-
-	*/
-	return nil
-}
-
-//func (m *TaskManager) getPublicKey(topic common.Hash) string {
-//	return m.publicKeyCache[topic]
-//}
-
-//func (m *TaskManager) getMyIndex(publicKey string) (*big.Int, error) {
-//
-//	k := common.Hex2Bytes(publicKey)
-//
-//	//inf, err := m.instance.GetKey(nil, k)
-//	//if err != nil {
-//	//	return nil, err
-//	//}
-//
-//	group, err := m.instance.GetGroup(nil, inf.GroupId)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	groupId := common.Bytes2Hex(inf.GroupId[:])
-//	g, ok := m.groupCache[groupId]
-//	if !ok {
-//		m.log.Error("Failed to get group from cache", logger.Field{"groupId", groupId})
-//		return nil, pkgErrors.Errorf("Failed to get group from cache, groupId: %q", groupId)
-//	}
-//	for i, pkBytes := range group.Participants {
-//		pk := common.Bytes2Hex(pkBytes)
-//		if m.myPubKey == pk {
-//			return big.NewInt(int64(i) + 1), nil
-//		}
-//	}
-//	return nil, errors.New("not a member of the group")
-//}
-
-//func (m *TaskManager) getMyIndexInGroup(groupId [32]byte) (*big.Int, error) {
-//
-//	group, err := m.instance.GetGroup(nil, groupId)
-//	if err != nil {
-//		return nil, err
-//	}
-//	for i, pkBytes := range group.Participants {
-//		pk := common.Bytes2Hex(pkBytes)
-//		if m.myPubKey == pk {
-//			return big.NewInt(int64(i) + 1), nil
-//		}
-//	}
-//	return nil, errors.New("not a member of the group")
-//}
-
-//func (m *TaskManager) getPariticipantKeys(publicKey string, indices []*big.Int) ([]string, error) {
-//
-//	k := common.Hex2Bytes(publicKey)
-//
-//	inf, err := m.instance.GetKey(nil, k)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	group, err := m.instance.GetGroup(nil, inf.GroupId)
-//	if err != nil {
-//		return nil, err
-//	}
-//	var out []string
-//	for _, ind := range indices {
-//		k := group.Participants[ind.Uint64()-1]
-//		pk := common.Bytes2Hex(k)
-//		out = append(out, pk)
-//	}
-//	return out, nil
-//}
 
 func (m *TaskManager) getMyIndex(genPubKeyHash common.Hash) (*big.Int, error) {
 	genPubKeyInfo, err := m.storer.LoadGeneratedPubKeyInfo(genPubKeyHash.Hex())
@@ -1351,8 +1021,13 @@ func (m *TaskManager) getMyPubKeys() ([][]byte, error) {
 
 	var genPubKeyBytes [][]byte
 	for _, genPubKeyInfo := range genPubKeyInfos {
-		pubKeyBytes := common.Hex2Bytes(genPubKeyInfo.PubKeyHex)
-		genPubKeyBytes = append(genPubKeyBytes, pubKeyBytes)
+		dnmGenPubKeyBytes, err := myCrypto.DenormalizePubKeyFromHex(genPubKeyInfo.PubKeyHex) // for Ethereum compatibility
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		//pubKeyBytes := common.Hex2Bytes(genPubKeyInfo.PubKeyHex)
+		genPubKeyBytes = append(genPubKeyBytes, dnmGenPubKeyBytes)
 	}
 
 	return genPubKeyBytes, nil

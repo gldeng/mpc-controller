@@ -10,6 +10,8 @@ import (
 	"math/big"
 )
 
+// todo: consider remove this extra wrapper
+
 type Coordinator struct {
 	*MpcCoordinator
 	chainId *big.Int

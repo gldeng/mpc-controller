@@ -118,6 +118,8 @@ func (m *MpcStaker) ensureBalance(stakeAccountAddr *common.Address, transferAmou
 	return nil
 }
 
+// TODO: assign this function to mpc-provider
+
 func (m *MpcStaker) requestKeygen(groupIdHex string) (string, error) {
 
 	groupId := common.FromHex(groupIdHex)

@@ -3,6 +3,10 @@ package task
 import (
 	"context"
 	"crypto/ecdsa"
+	"github.com/avalido/mpc-controller/mocks/avalido_staker"
+	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/token"
+
 	//"github.com/ava-labs/avalanchego/ids"
 	//"github.com/ava-labs/avalanchego/vms/components/avax"
 	//"github.com/ava-labs/avalanchego/vms/platformvm"
@@ -11,17 +15,19 @@ import (
 	//"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
-	"github.com/avalido/mpc-controller/mocks/mpc_staker"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	ethCrypto "github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/sync/errgroup"
 	"math/big"
 	"os"
 	"testing"
+
 	"time"
 )
 
@@ -38,12 +44,24 @@ const (
 
 type TaskManagerTestSuite struct {
 	suite.Suite
+
+	log         logger.Logger
+	cChainId    *big.Int
+	cPrivateKey *ecdsa.PrivateKey
+	cRpcClient  *ethclient.Client
+	cWsClient   *ethclient.Client
+
 	participantPrivKeyHexs []string
 	//coordinatorAddrHex     string
-	coordinatorAddr *common.Address
-	groupIdHex      string
-	privateKeyHex   string
+	//groupIdHex string
+	//privateKeyHex   string
+
+	stakeAddr       common.Address
 	mpcProvider     *mpc_provider.MpcProvider
+	coordinatorAddr common.Address
+
+	avaLidoStaker *avalido_staker.AvaLidoStaker
+	avaLidoAddr   common.Address
 }
 
 // todo: transfer before doing stuff if neccessary
@@ -51,38 +69,24 @@ type TaskManagerTestSuite struct {
 func (suite *TaskManagerTestSuite) SetupTest() {
 	logger.DevMode = true
 
+	suite.log = logger.Default()
+	suite.cChainId = big.NewInt(43112)
+
+	privateKey, _ := ethCrypto.HexToECDSA("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	suite.cPrivateKey = privateKey
+
+	suite.cRpcClient = network.DefaultEthClient()
+	suite.cWsClient = network.DefaultWsEthClient()
+
+	avalidoAddr := common.HexToAddress("0xA4cD3b0Eb6E5Ab5d8CE4065BcCD70040ADAB1F00")
+	suite.avaLidoAddr = avalidoAddr
+	// ----
+
 	suite.participantPrivKeyHexs = []string{
 		"59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21",
 		"6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33",
 		"5431ed99fbcc291f2ed8906d7d46fdf45afbb1b95da65fecd4707d16a6b3301b",
 	}
-
-	cPrivKeyHex := "56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027"
-	suite.privateKeyHex = cPrivKeyHex
-
-	privateKey, err := crypto.HexToECDSA(cPrivKeyHex)
-	if err != nil {
-		logger.Error("Failed to parse C-Chain private key",
-			logger.Field{"privateKeyHex", cPrivKeyHex},
-			logger.Field{"error", err})
-		os.Exit(1)
-	}
-
-	rpcClient := network.DefaultEthClient()
-	wsClient := network.DefaultWsEthClient()
-	mpcProvider := mpc_provider.New(logger.Default(), big.NewInt(43112), privateKey, rpcClient, wsClient)
-	suite.mpcProvider = mpcProvider
-
-	// Deploy coordinator contract
-	addr, _, err := mpcProvider.DeployContract()
-	if err != nil {
-		logger.Error("Failed to deploy coordinator contract",
-			logger.Field{"error", err})
-		os.Exit(1)
-	}
-	suite.coordinatorAddr = addr
-	//time.Sleep(time.Second * 20)
-	//suite.coordinatorAddrHex = addr.Hex()
 }
 
 func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
@@ -95,15 +99,31 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 	_ = shutdown
 	_ = gctx
 
-	// Simulate creating group
+	// Deploy coordinator contract
+	coordinatorAdd, _, err := mpc_provider.DeployMpcCoordinator(suite.log, suite.cChainId, suite.cRpcClient, suite.cPrivateKey)
+	require.Nilf(err, "error: %v", err)
+	suite.log.Info("Deployed mpc coordinator", logger.Field{"coordinatorAddress", coordinatorAdd.Hex()})
+	suite.coordinatorAddr = *coordinatorAdd
+	suite.log.Debug("######## Coordinator contract address", logger.Field{"address", suite.coordinatorAddr.Hex()})
+	mpcProvider := mpc_provider.New(suite.log, suite.cChainId, &suite.coordinatorAddr, suite.cPrivateKey, suite.cRpcClient, suite.cWsClient)
+	suite.mpcProvider = mpcProvider
+
+	// Deploy AvaLido contract
+	avaLidoAddr, _, err := avalido_staker.DeployAvaLido(suite.log, suite.cChainId, suite.cRpcClient, suite.cPrivateKey, &suite.coordinatorAddr)
+	require.Nilf(err, "error: %v", err)
+	suite.avaLidoAddr = *avaLidoAddr
+	suite.log.Debug("######## AvaLido contract address", logger.Field{"address", suite.avaLidoAddr.Hex()})
+	avalidoStaker := avalido_staker.New(suite.log, suite.cChainId, avaLidoAddr, suite.cPrivateKey, suite.cRpcClient, suite.cWsClient)
+	suite.avaLidoStaker = avalidoStaker
+
+	// Simulate creating group and request key generating
 	g.Go(func() error {
 		time.Sleep(time.Second * 5)
 		var pubKeys []*ecdsa.PublicKey
 		for _, pubKey := range suite.participantPrivKeyHexs {
-			privateKey, err := crypto.HexToECDSA(pubKey)
+			privateKey, err := ethCrypto.HexToECDSA(pubKey)
 			if err != nil {
-				logger.Error("Failed to parse C-Chain private key",
-					logger.Field{"privateKeyHex", suite.privateKeyHex},
+				suite.log.Error("Failed to parse C-Chain private key",
 					logger.Field{"error", err})
 				os.Exit(1)
 			}
@@ -111,53 +131,97 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 		}
 		groupId, err := suite.mpcProvider.CreateGroup(pubKeys, 1)
 		if err != nil {
-			logger.Error("Failed to create group",
+			suite.log.Error("Failed to create group",
 				logger.Field{"error", err})
 			os.Exit(1)
 		}
-		suite.groupIdHex = groupId
+
+		pubKeyHex, err := suite.mpcProvider.RequestKeygen(groupId)
+		if err != nil {
+			logger.Error("Got an error when request key generation")
+			os.Exit(1)
+		}
+
+		pubKey, err := crypto.UnmarshalPubKeyHex(pubKeyHex)
+		if err != nil {
+			logger.Error("Got an error when unmarshal public key")
+			os.Exit(1)
+		}
+
+		stakeAddr := ethCrypto.PubkeyToAddress(*pubKey)
+		suite.stakeAddr = stakeAddr
+		suite.log.Debug("######## Account to stake", logger.Field{"address", suite.stakeAddr})
 		return nil
 	})
 
-	// Simulate request stake after key added
+	// Simulate initiate stake by AvaLido staker after key generated
+	// TODO: add code to check participant balance
 	g.Go(func() error {
-		time.Sleep(time.Second * 10)
-		nodeID := "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"
-
-		privateKey, err := crypto.HexToECDSA(suite.privateKeyHex)
-		require.Nil(err)
-
-		rpcClient := network.DefaultEthClient()
-		wsClient := network.DefaultWsEthClient()
-
-		mpcStaker := mpc_staker.New(logger.Default(), big.NewInt(43112), suite.coordinatorAddr, privateKey, rpcClient, wsClient)
+		time.Sleep(time.Second * 15)
 		for i := 1; i < 2; i++ {
-			logger.Debug("RequestStakeAfterKeyAdded started////////////////////////////", logger.Field{"number", i})
+			// Check balance before transfer
+			bl, _ := suite.cRpcClient.BalanceAt(context.Background(), suite.avaLidoAddr, nil)
+			suite.log.Debug("$$$$$$$$$0 Balance of AvaLido address before transfer", []logger.Field{{"address", suite.avaLidoAddr}, {"balance", bl.Uint64()}}...)
+
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.coordinatorAddr, nil)
+			suite.log.Debug("$$$$$$$$$0 Balance of Coordinator address before transfer", []logger.Field{{"address", suite.coordinatorAddr}, {"balance", bl.Uint64()}}...)
+
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.stakeAddr, nil)
+			suite.log.Debug("$$$$$$$$$0 Balance of stake address before transfer", []logger.Field{{"address", suite.stakeAddr.Hex()}, {"balance", bl.Uint64()}}...)
+
+			// Transfer to AvaLido smart contract to make sure there is enough balance to be deducted for initiating stake
+			// Including gas fee
+			err := token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.avaLidoAddr, big.NewInt(1_000_000_000_000_000_000))
+			require.Nilf(err, "Failed to transfer token. error: %v", err)
+
+			time.Sleep(time.Second * 10)
+
+			// Transfer gas fee to Coordinator smart contract
+			err = token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.coordinatorAddr, big.NewInt(1_000_000_000_000_000_000))
+			require.Nilf(err, "Failed to transfer token. error: %v", err)
+
+			time.Sleep(time.Second * 10)
+
+			// Transfer gas fee to stake address
+			err = token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.stakeAddr, big.NewInt(1_000_000_000_000_000_000))
+			require.Nilf(err, "Failed to transfer token. error: %v", err)
+
+			time.Sleep(time.Second * 10)
+
+			// Check balance before initiating stake
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.avaLidoAddr, nil)
+			suite.log.Debug("$$$$$$$$$1 Balance of AvaLido address before initiating stake", []logger.Field{{"address", suite.avaLidoAddr}, {"balance", bl.Uint64()}}...)
+
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.coordinatorAddr, nil)
+			suite.log.Debug("$$$$$$$$$1 Balance of Coordinator address before initiating stake", []logger.Field{{"address", suite.coordinatorAddr}, {"balance", bl.Uint64()}}...)
+
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.stakeAddr, nil)
+			suite.log.Debug("$$$$$$$$$1 Balance of stake address before initiating stake", []logger.Field{{"address", suite.stakeAddr.Hex()}, {"balance", bl.Uint64()}}...)
+
 			amountToStake := big.NewInt(25_000_000_000)
-			err := mpcStaker.RequestStakeAfterKeyAdded(suite.groupIdHex, nodeID, amountToStake, 21)
+			err = suite.avaLidoStaker.InitiateStake(amountToStake)
 			if err != nil {
-				logger.Error("Failed to RequestStakeAfterKeyAdded",
+				logger.Error("Failed to initiate stake",
 					logger.Field{"error", err})
 				os.Exit(1)
 			}
-			time.Sleep(time.Second * 5)
+
+			// Check balance after initiating stake
+			time.Sleep(time.Second * 15)
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.avaLidoAddr, nil)
+			suite.log.Debug("$$$$$$$$$2 Balance of AvaLido address after initiating stake", []logger.Field{{"address", suite.avaLidoAddr}, {"balance", bl.Uint64()}}...)
+
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.coordinatorAddr, nil)
+			suite.log.Debug("$$$$$$$$$2 Balance of Coordinator address after initiating stake", []logger.Field{{"address", suite.coordinatorAddr}, {"balance", bl.Uint64()}}...)
+
+			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.stakeAddr, nil)
+			suite.log.Debug("$$$$$$$$$2 Balance of stake address after initiating stake", []logger.Field{{"address", suite.stakeAddr.Hex()}, {"balance", bl.Uint64()}}...)
 		}
 
 		return nil
 	})
 
-	// Simulate mpc-server, for mock
-	//g.Go(func() error {
-	//	mpc_server_openapi.ListenAndServe("9000")
-	//	return nil
-	//})
-
-	// Do the mpc-controller stuff
-	//type Arg struct {
-	//	privateKey string
-	//	mpc_url    string
-	//}
-
+	// Start mpc controllers
 	var configFiles = []string{
 		"./testConfigs/config1.yaml",
 		"./testConfigs/config2.yaml",
@@ -181,11 +245,6 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 				return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 			}
 
-			//err = m.Initialize()
-			//if err != nil {
-			//	return errors.Wrapf(err, "Failed to initialize task-manager %d", i)
-			//}
-
 			err = m.Start()
 			if err != nil {
 				return errors.Wrap(err, "Failed to start task-manager for mpc-controller")
@@ -193,74 +252,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 			return nil
 		})
 	}
-
-	//var args = []Arg{
-	//	//{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:8001"},
-	//	//{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:8002"},
-	//	//{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:8003"},
-	//	{privateKey: suite.participantPrivKeyHexs[0], mpc_url: "http://localhost:9000"},
-	//	{privateKey: suite.participantPrivKeyHexs[1], mpc_url: "http://localhost:9000"},
-	//	{privateKey: suite.participantPrivKeyHexs[2], mpc_url: "http://localhost:9000"},
-	//}
-	//
-	//for i, arg := range args {
-	//	i := i
-	//	arg := arg
-	//	g.Go(func() error {
-	//		i++
-	//		networkCtx, err := testNetworkContext()
-	//		if err != nil {
-	//			return errors.Wrap(err, "failed to build Avalanche network context")
-	//		}
-	//
-	//		sk, err := crypto.HexToECDSA(arg.privateKey)
-	//		if err != nil {
-	//			return errors.Wrapf(err, "failed to parse private key from %q", arg.privateKey)
-	//		}
-	//
-	//		mpcClient, err := core.NewMpcClient(arg.mpc_url)
-	//		if err != nil {
-	//			return errors.Wrapf(err, "failed to build mpc-client %d with mpc-url %q", i, arg.mpc_url)
-	//		}
-	//
-	//		//mpcClient := mpc_client.New(3, 1)
-	//
-	//		cChainIssueUrl := "http://localhost:9650"
-	//		pChainIssueUrl := "http://localhost:9650"
-	//		// Create C-Chain issue client
-	//		cChainIssueCli := evm.NewClient(cChainIssueUrl, "C")
-	//
-	//		// Create P-Chain issue client
-	//		pChainIssueCli := platformvm.NewClient(pChainIssueUrl)
-	//
-	//
-	//
-	//		staker := NewStaker(logger.DefaultLogger, cChainIssueCli, pChainIssueCli)
-	//		manager, err := NewTaskManager(logger.Default(), config, staker)
-	//		if err != nil {
-	//			return errors.Wrapf(err, "Failed to build task-manager %d", i)
-	//		}
-	//		logger.Debug("A task manager created", logger.Field{"taskMangerNum", i})
-	//
-	//		//err = manager.Initialize()
-	//		//if err != nil {
-	//		//	return errors.Wrapf(err, "Failed to initialize task-manager %d", i)
-	//		//}
-	//
-	//		logger.Debug("Started a task manager",
-	//			logger.Field{"managerID", i},
-	//			logger.Field{"privateKey", arg.privateKey},
-	//			logger.Field{"mpcURL", arg.mpc_url},
-	//			logger.Field{"contractAddress", coordinatorAddr})
-	//		err = manager.Start()
-	//		if err != nil {
-	//			return errors.Wrapf(err, "Failed to start task-manager %d", i)
-	//		}
-	//		return nil
-	//	})
-	//}
-
-	err := g.Wait()
+	err = g.Wait()
 	require.Nilf(err, "ERROR STACK: %+v", errors.WithStack(err))
 }
 

@@ -1,3 +1,5 @@
+// todo: consider remove this package
+
 package mpc_client
 
 import (
@@ -64,6 +66,9 @@ type MpcClientMock struct {
 }
 
 // todo: take measures to avoid gorutine leak
+// todo: pass a logger
+// todo: retry strategy
+// todo: accept context
 
 func New(parties, threshold int) core.MPCClient {
 	m := &MpcClientMock{parties, threshold}

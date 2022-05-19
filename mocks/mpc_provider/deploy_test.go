@@ -1,10 +1,9 @@
-package avalido_staker
+package mpc_provider
 
 import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"math/big"
@@ -17,7 +16,7 @@ import (
 // To run a local test network please reference "https://docs.avax.network/build/tutorials/platform/create-a-local-test-network/".
 // To transfer fund to the address mentioned above, you can use Avalanche wallet from "https://wallet.avax.network/".
 // Plus go to "https://docs.avax.network/learn/platform-overview/transaction-fees" for more information on Avalanche transaction fee.
-func TestDeploy(t *testing.T) {
+func TestDeployMpcCoordinator(t *testing.T) {
 	logger.DevMode = true
 
 	log := logger.Default()
@@ -27,11 +26,9 @@ func TestDeploy(t *testing.T) {
 
 	cRpcClient := network.DefaultEthClient()
 
-	mpcCoordiAddr := common.HexToAddress("0x4Ac1d98D9cEF99EC6546dEd4Bd550b0b287aaD6D")
-
-	addr, avalido, err := DeployAvaLido(log, chainId, cRpcClient, privateKey, &mpcCoordiAddr)
+	addr, mpcCoordinator, err := DeployMpcCoordinator(log, chainId, cRpcClient, privateKey)
 	require.Nilf(t, err, "error:%v", err)
 
 	spew.Println("Deployed address: ", addr.Hex())
-	spew.Dump(avalido)
+	spew.Dump(mpcCoordinator)
 }

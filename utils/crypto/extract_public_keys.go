@@ -35,6 +35,17 @@ func ExtractPubKeysForParticipantsHex(keys []string) ([]string, error) {
 	return pubKeys, nil
 }
 
+// TODO: use go-ethereum/crypto.FromECDSAPub instead
+/*
+
+func FromECDSAPub(pub *ecdsa.PublicKey) []byte {
+	if pub == nil || pub.X == nil || pub.Y == nil {
+		return nil
+	}
+	return elliptic.Marshal(S256(), pub.X, pub.Y)
+}
+*/
+
 func MarshalPubkey(pub *ecdsa.PublicKey) []byte {
 	return elliptic.Marshal(crypto.S256(), pub.X, pub.Y)
 }
@@ -45,15 +56,6 @@ func MarshalPubkeys(pubs []*ecdsa.PublicKey) [][]byte {
 		marshaledPubs = append(marshaledPubs, MarshalPubkey(pub))
 	}
 	return marshaledPubs
-}
-
-func PubkeysToAddresses(pubkeys []*ecdsa.PublicKey) []*common.Address {
-	var addrs = make([]*common.Address, 0)
-	for _, pubkey := range pubkeys {
-		addr := crypto.PubkeyToAddress(*pubkey)
-		addrs = append(addrs, &addr)
-	}
-	return addrs
 }
 
 func UnmarshalPubKeyHex(pubKeyHex string) (*ecdsa.PublicKey, error) {

@@ -27,3 +27,11 @@ func TestExtractPubKeysForParticipantsHex(t *testing.T) {
 		fmt.Println(k)
 	}
 }
+
+func TestUnmarshalPubKeyHex(t *testing.T) {
+	pubKeys, err := ExtractPubKeysForParticipantsHex(keys)
+	require.True(t, pubKeys != nil && err == nil)
+	for _, k := range pubKeys {
+		fmt.Println(k)
+	}
+}

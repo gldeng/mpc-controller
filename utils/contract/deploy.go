@@ -67,7 +67,6 @@ func Deploy(log logger.Logger, chainId *big.Int, client *ethclient.Client, privK
 	if rcp.Status != 1 {
 		log.Error("Failed to deploy contract", logger.Field{"receipt", spew.Sdump(rcp)})
 		return nil, errors.Errorf("failed to deploy contract, receipt: %v", spew.Sdump(rcp))
-
 	}
 	return &rcp.ContractAddress, nil
 }

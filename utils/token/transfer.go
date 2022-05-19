@@ -21,7 +21,7 @@ func TransferInCChain(client *ethclient.Client, chainId *big.Int, privateKey *ec
 		return errors.Wrap(err, "failed to query nonce")
 	}
 
-	var gas int64 = 21_000 // todo: this value maybe need to adjust
+	var gas int64 = 8_000_000 // todo: this value maybe need to adjust
 	var baseFee int64 = 300_000_000_000
 	txdata := &types.DynamicFeeTx{
 		ChainID:    chainId,
@@ -54,6 +54,8 @@ func TransferInCChain(client *ethclient.Client, chainId *big.Int, privateKey *ec
 		logger.Field{"TxHash", txSigned.Hash()})
 
 	time.Sleep(5 * time.Second)
+	// todo: check receipt status, 0 or 1?
+	// 1 for success, 0 for failure.
 	rcp, err := client.TransactionReceipt(context.Background(), txSigned.Hash())
 	if err != nil {
 		return errors.Wrapf(err, "failed to query transfer transaction receipt")

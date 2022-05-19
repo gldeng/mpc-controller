@@ -8,6 +8,28 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Normalize public key(s)
+
+func NormalizePubKeyBytes(pubKeyBytes []byte) ([]byte, error) {
+	pubkeyHex, err := NormalizePubKey(common.Bytes2Hex(pubKeyBytes))
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return common.Hex2Bytes(*pubkeyHex), nil
+}
+
+func NormalizePubKeys(pubKeyHexs []string) ([]string, error) {
+	var out []string
+	for _, hex := range pubKeyHexs {
+		normalized, err := NormalizePubKey(hex)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to normalized public key %q", hex)
+		}
+		out = append(out, *normalized)
+	}
+	return out, nil
+}
+
 func NormalizePubKey(pubKeyHex string) (*string, error) {
 	pubKeyBytes := common.Hex2Bytes(pubKeyHex)
 	pubKeyHex0 := pubKeyHex[0]
@@ -47,14 +69,37 @@ func toCompressed(pubKeyBytes []byte) ([]byte, error) {
 	return pubCompressed, nil
 }
 
-func NormalizePubKeys(pubKeyHexs []string) ([]string, error) {
-	var out []string
-	for _, hex := range pubKeyHexs {
-		normalized, err := NormalizePubKey(hex)
+// Denormalize public key(s)
+
+func DenormalizePubKeysFromHexs(pubKeys []string) ([][]byte, error) {
+	var results [][]byte
+	for _, pubKey := range pubKeys {
+		result, err := DenormalizePubKeyFromHex(pubKey)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to normalized public key %q", hex)
+			return nil, errors.WithStack(err)
 		}
-		out = append(out, *normalized)
+		results = append(results, result)
 	}
-	return out, nil
+	return results, nil
+}
+
+func DenormalizePubKeyFromHex(pubKeyHex string) ([]byte, error) {
+	pubKey, err := UnmarshalPubKeyHex(pubKeyHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return DenormalizePubKey(pubKey), nil
+}
+
+func DenormalizePubKeys(pubKeys []*ecdsa.PublicKey) [][]byte {
+	var results [][]byte
+	for _, pubKey := range pubKeys {
+		results = append(results, DenormalizePubKey(pubKey))
+	}
+	return results
+}
+
+func DenormalizePubKey(pubKey *ecdsa.PublicKey) []byte {
+	pubBytes := crypto.FromECDSAPub(pubKey)
+	return pubBytes[1:]
 }

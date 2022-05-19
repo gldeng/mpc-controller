@@ -1,4 +1,4 @@
-package avalido_staker
+package mpc_provider
 
 import (
 	"context"
@@ -14,13 +14,11 @@ import (
 	"time"
 )
 
-// todo: move this responsibility to mpc_provider
-
-func DeployAvaLido(log logger.Logger, chainId *big.Int, client *ethclient.Client, privKey *ecdsa.PrivateKey, mpcCoordinatorAddr *common.Address) (*common.Address, *contract.AvaLido, error) {
+func DeployMpcCoordinator(log logger.Logger, chainId *big.Int, client *ethclient.Client, privKey *ecdsa.PrivateKey) (*common.Address, *contract.MpcCoordinator, error) {
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, chainId)
 	log.FatalOnError(err, "Failed to create transaction signer", logger.Field{"error", err})
 
-	addr, tx, avalido, err := contract.DeployAvaLido(signer, client, *mpcCoordinatorAddr)
+	addr, tx, mpcCoordinator, err := contract.DeployMpcCoordinator(signer, client)
 	log.FatalOnError(err, "Failed to deploy AvaLido smart contract", logger.Field{"error", err})
 
 	time.Sleep(time.Second * 5)
@@ -30,5 +28,5 @@ func DeployAvaLido(log logger.Logger, chainId *big.Int, client *ethclient.Client
 		return nil, nil, errors.Errorf("transaction failed, receipt: %s", spew.Sdump(rcp))
 	}
 
-	return &addr, avalido, nil
+	return &addr, mpcCoordinator, nil
 }
