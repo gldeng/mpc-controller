@@ -29,6 +29,6 @@ func TestDeployMpcCoordinator(t *testing.T) {
 	addr, mpcCoordinator, err := DeployMpcCoordinator(log, chainId, cRpcClient, privateKey)
 	require.Nilf(t, err, "error:%v", err)
 
-	spew.Println("Deployed address: ", addr.Hex())
+	spew.Println("Deployed Mpc-coordinator address: ", addr.Hex())
 	spew.Dump(mpcCoordinator)
 }
