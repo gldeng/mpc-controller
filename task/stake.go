@@ -371,7 +371,7 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 	avax.SortTransferableInputsWithSigners(ins, signers)
 	t.addDelegatorTx = &platformvm.UnsignedAddDelegatorTx{
 		BaseTx: platformvm.BaseTx{BaseTx: avax.BaseTx{
-			NetworkID:    12345,
+			NetworkID:    t.network.NetworkID(),
 			BlockchainID: ids.Empty,
 			Ins:          ins,
 		}},
