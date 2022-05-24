@@ -38,5 +38,5 @@ func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn f
 		lastRetryAt = time.Now()
 		retryNum++
 	}
-	return errors.Wrapf(lastErr, "failed to get value")
+	return errors.Wrapf(lastErr, "failed to retry")
 }
