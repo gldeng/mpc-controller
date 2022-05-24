@@ -1,13 +1,17 @@
 package config
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"math/big"
+	"time"
 
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/contract"
@@ -40,6 +44,7 @@ type Config interface {
 	SetCoordinatorAddress(address string)
 	CoordinatorBoundInstance() *contract.MpcCoordinator
 	CoordinatorBoundListener() *contract.MpcCoordinator
+	CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcCoordinator, error)
 
 	NetworkContext() *core.NetworkContext
 
@@ -170,11 +175,23 @@ func InitConfig(c *ConfigImpl) Config {
 	c.ethRpcClient = ethRpcCli
 
 	// Create eth ws client
-	ethWsCli, err := ethclient.Dial(c.EthWsUrl)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	err = backoff.RetryFn(logger.Default(), ctx, backoff.ExponentialForever(), func() error {
+		ethWsCli, err := ethclient.Dial(c.EthWsUrl)
+		if err != nil {
+			return err
+		}
+		c.ethWsClient = ethWsCli
+		return nil
+	})
 	logger.FatalOnError(err, "Failed to connect eth ws client",
 		logger.Field{"url", c.EthWsUrl},
 		logger.Field{"error", err})
-	c.ethWsClient = ethWsCli
+
+	if c.ethWsClient == nil {
+		logger.Fatal("Ethereum websocket client is nil")
+	}
 
 	// Create C-Chain issue client
 	cChainIssueCli := evm.NewClient(c.CChainIssueUrl, "C")
@@ -190,8 +207,10 @@ func InitConfig(c *ConfigImpl) Config {
 
 	// Create coordinator bound instance and listener
 	coordBoundInst, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethRpcClient)
+	logger.FatalOnError(err, "Failed to create mpc-coordinator instance", logger.Field{"error", err})
 	c.coordinatorBoundInstance = coordBoundInst
 	coordBoundListener, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethWsClient)
+	logger.FatalOnError(err, "Failed to create mpc-coordinator listener", logger.Field{"error", err})
 	c.coordinatorBoundListener = coordBoundListener
 
 	// Convert C-Chain ID
@@ -277,6 +296,38 @@ func (c *ConfigImpl) CoordinatorBoundInstance() *contract.MpcCoordinator {
 
 func (c *ConfigImpl) CoordinatorBoundListener() *contract.MpcCoordinator {
 	return c.coordinatorBoundListener
+}
+
+func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcCoordinator, error) {
+	// Create eth ws client
+	err := backoff.RetryFn(log, ctx, backoff.ExponentialForever(), func() error {
+		ethWsCli, err := ethclient.Dial(c.EthWsUrl)
+		if err != nil {
+			return errors.Wrap(err, "failed to connect eth ws client")
+		}
+		c.ethWsClient = ethWsCli
+		return nil
+	})
+
+	if err != nil {
+		log.Error("Failed to connect eth ws client", []logger.Field{{"error", err}}...)
+		return nil, nil, errors.WithStack(err)
+	}
+
+	if c.ethWsClient == nil {
+		logger.Error("Ethereum websocket client is nil")
+		return nil, nil, errors.New("Ethereum websocket cient is nil")
+	}
+
+	// Create coordinator bound listener
+	coordBoundListener, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethWsClient)
+	if err != nil {
+		log.Error("Failed to create mpc-coordinator listener", []logger.Field{{"error", err}}...)
+		return nil, nil, errors.Wrap(err, "failed to  create mpc-coordinator listener")
+	}
+
+	c.coordinatorBoundListener = coordBoundListener
+	return c.ethWsClient, c.coordinatorBoundListener, nil
 }
 
 func (c *ConfigImpl) NetworkContext() *core.NetworkContext {
