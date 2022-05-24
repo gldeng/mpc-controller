@@ -937,10 +937,12 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{{"address", *address}, {"balance", bl.Uint64()}}...)
 
 	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
-	if !req.Amount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
+
+	nAVAXAmount := new(big.Int).Div(req.Amount, big.NewInt(1_000_000_000))
+	if !nAVAXAmount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
 		return errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(m.networkContext, *pubkey, nonce, nodeID, req.Amount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
+	task, err := NewStakeTask(m.networkContext, *pubkey, nonce, nodeID, nAVAXAmount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
 	if err != nil {
 		return err
 	}
