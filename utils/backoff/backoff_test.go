@@ -19,8 +19,12 @@ func TestExponentialForever(t *testing.T) {
 		return errors.New("failed to dial ...")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+	// It will stop retrying due to specified context timeout limit
+	//ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	//defer cancel()
+
+	// It will keep retying due to with no context timeout limit
+	ctx := context.Background()
 
 	retryFunc := func() error {
 		b := p.Start(ctx)
