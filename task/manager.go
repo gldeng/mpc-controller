@@ -101,30 +101,32 @@ type TaskManager struct {
 
 	pendingJoins map[common.Hash]*JoinTx
 
-	avaEthclient    avaEthclient.Client
-	myAddr          ids.ShortID
-	coordinatorAddr common.Address
-	wsClient        *ethclient.Client
-	cChainClient    evm.Client
-	eventsKA        chan *contract.MpcCoordinatorKeygenRequestAdded
-	eventsStS       chan *contract.MpcCoordinatorStakeRequestStarted
-	eventsStA       chan *contract.MpcCoordinatorStakeRequestAdded
-	listener        *contract.MpcCoordinator
-	instance        *contract.MpcCoordinator
-	ethClient       *ethclient.Client
-	secpFactory     avaCrypto.FactorySECP256K1R
-	chSigReceived   chan *SignatureReceived
-	mpcClient       core.MPCClient
-	signer          *bind.TransactOpts
-	myPubKey        string
-	myPubKeyHash    common.Hash
-	eventsPA        chan *contract.MpcCoordinatorParticipantAdded
-	subPA           event.Subscription
-	subKA           event.Subscription
-	subStA          event.Subscription
-	subStS          event.Subscription
-	subKG           event.Subscription
-	eventsKG        chan *contract.MpcCoordinatorKeyGenerated
+	avaEthclient        avaEthclient.Client
+	myAddr              ids.ShortID
+	coordinatorAddr     common.Address
+	ethWsClient         *ethclient.Client
+	cChainClient        evm.Client
+	eventsKA            chan *contract.MpcCoordinatorKeygenRequestAdded
+	eventsStS           chan *contract.MpcCoordinatorStakeRequestStarted
+	eventsStA           chan *contract.MpcCoordinatorStakeRequestAdded
+	rebuildListener     chan struct{}
+	rebuildListenerDone chan struct{}
+	listener            *contract.MpcCoordinator
+	instance            *contract.MpcCoordinator
+	ethRpcClient        *ethclient.Client
+	secpFactory         avaCrypto.FactorySECP256K1R
+	chSigReceived       chan *SignatureReceived
+	mpcClient           core.MPCClient
+	signer              *bind.TransactOpts
+	myPubKey            string
+	myPubKeyHash        common.Hash
+	eventsPA            chan *contract.MpcCoordinatorParticipantAdded
+	subPA               event.Subscription
+	subKA               event.Subscription
+	subStA              event.Subscription
+	subStS              event.Subscription
+	subKG               event.Subscription
+	eventsKG            chan *contract.MpcCoordinatorKeyGenerated
 }
 
 func NewTaskManager(log logger.Logger, config config.Config, storer storage.Storer, staker *Staker) (*TaskManager, error) {
@@ -156,8 +158,11 @@ func NewTaskManager(log logger.Logger, config config.Config, storer storage.Stor
 
 	m.listener = config.CoordinatorBoundListener()
 	m.instance = config.CoordinatorBoundInstance()
-	m.ethClient = config.EthRpcClient()
+	m.ethWsClient = config.EthWsClient()
+	m.ethRpcClient = config.EthRpcClient()
 	m.chSigReceived = make(chan *SignatureReceived)
+	m.rebuildListener = make(chan struct{})
+	m.rebuildListenerDone = make(chan struct{})
 	m.eventsPA = make(chan *contract.MpcCoordinatorParticipantAdded)
 	m.eventsKA = make(chan *contract.MpcCoordinatorKeygenRequestAdded)
 	m.eventsKG = make(chan *contract.MpcCoordinatorKeyGenerated)
@@ -183,17 +188,52 @@ func (m *TaskManager) Start() error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = m.subscribeStakeRequestAdded()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	err = m.subscribeStakeRequestStarted()
-	if err != nil {
-		return errors.WithStack(err)
-	}
+
+	// todo: deal with gorutine leak
+	// todo: consider access error ""RPC connection read error"" within Client.dispach function:
+	// https://github.com/ethereum/go-ethereum/blob/master/rpc/client.go
+	// by fork or submodule
+	go func() {
+		c := time.Tick(5 * time.Second)
+		for range c {
+			_, err := m.ethWsClient.NetworkID(context.Background())
+			if err != nil {
+				m.log.Error("Websocket client failed to connect", logger.Field{"error", err})
+				m.rebuildListener <- struct{}{}
+				<-m.rebuildListenerDone
+			}
+		}
+	}()
 
 	for {
 		select {
+		case <-m.rebuildListener:
+			// Rebuild listener
+			wsClient, listener, err := m.config.CoordinatorBoundListenerRebuild(m.log, context.Background())
+			if err != nil {
+				m.log.Error("Failed to rebuild coordinator listener", logger.Field{"error", err})
+			}
+			// todo: data race condition
+			m.ethWsClient = wsClient
+			m.instance = listener
+
+			m.rebuildListenerDone <- struct{}{}
+
+			// Resubscribe events
+			err = m.subscribeParticipantAdded()
+			if err != nil {
+				m.log.Error("Failed to resubscribe event ParticipantAdded", logger.Field{"error", err})
+			}
+			err = m.subscribeKeygenRequestAdded()
+			if err != nil {
+				m.log.Error("Failed to resubscribe event KeygenRequestAdded", logger.Field{"error", err})
+			}
+			err = m.subscribeKeyGenerated()
+			if err != nil {
+				m.log.Error("Failed to resubscribe event KeyGenerated", logger.Field{"error", err})
+			}
+
+			m.log.Warn("Websocket client and coordinator listener rebuilt, plus events resubscribed")
 		case evt, ok := <-m.eventsPA:
 			if !ok {
 				m.log.Debug("Retrieve nothing from ParticipantAdded event channel")
@@ -342,7 +382,7 @@ func (m *TaskManager) checkPendingReports() error {
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingReports {
-		rcp, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+		rcp, err := m.ethRpcClient.TransactionReceipt(context.Background(), txHash)
 		if err == nil {
 			if rcp.Status == 1 {
 				done = append(done, txHash)
@@ -397,7 +437,7 @@ func (m *TaskManager) checkPendingJoins() error {
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingJoins {
-		rcp, err := m.ethClient.TransactionReceipt(context.Background(), txHash)
+		rcp, err := m.ethRpcClient.TransactionReceipt(context.Background(), txHash)
 		if err == nil {
 			if rcp.Status == 1 {
 				done = append(done, txHash)
@@ -928,12 +968,12 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 
 	address := myCrypto.PubkeyToAddresse(pubkey)
 
-	nonce, err := m.ethClient.NonceAt(context.Background(), *address, nil)
+	nonce, err := m.ethRpcClient.NonceAt(context.Background(), *address, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	bl, _ := m.ethClient.BalanceAt(context.Background(), *address, nil)
+	bl, _ := m.ethRpcClient.BalanceAt(context.Background(), *address, nil)
 	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{{"address", *address}, {"balance", bl.Uint64()}}...)
 
 	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
