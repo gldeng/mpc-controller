@@ -20,24 +20,29 @@ const (
 )
 
 func mpcController(c *cli.Context) error {
+	// Parse config file
 	configImpl := config.ParseConfigFromFile(c.String(configFile))
-	configInterface := config.InitConfig(configImpl)
 
-	logger.DevMode = configInterface.IsDevMode()
+	// Create globally shared logger
+	logger.DevMode = configImpl.IsDevMode()
 	log := logger.Default()
 
+	// Initialize config
+	configInterface := config.InitConfig(log, configImpl)
+
+	// Start task manager
+	ctx, shutdown := context.WithCancel(context.Background())
 	staker := task.NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
 	storer := storage.New(log, configImpl.DatabasePath())
 
-	m, err := task.NewTaskManager(log, configInterface, storer, staker)
+	m, err := task.NewTaskManager(ctx, log, configInterface, storer, staker)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 	}
 
 	// Start the mpc-controller.
-	ctx, shutdown := context.WithCancel(context.Background())
 	go func() {
-		err = m.Start(ctx)
+		err = m.Start()
 		if err != nil {
 			fmt.Printf("Failed to run mpc-controller, error: %+v", err)
 			os.Exit(1)

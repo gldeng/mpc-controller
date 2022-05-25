@@ -85,6 +85,7 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type TaskManager struct {
+	ctx    context.Context
 	config config.Config
 	log    logger.Logger
 	storer storage.Storer
@@ -117,7 +118,7 @@ type TaskManager struct {
 	ethRpcClient        *ethclient.Client
 	secpFactory         avaCrypto.FactorySECP256K1R
 	chSigReceived       chan *SignatureReceived
-	mpcClient           core.MPCClient
+	mpcClient           core.MpcClient
 	signer              *bind.TransactOpts
 	myPubKey            string
 	myPubKeyHash        common.Hash
@@ -130,7 +131,7 @@ type TaskManager struct {
 	eventsKG            chan *contract.MpcCoordinatorKeyGenerated
 }
 
-func NewTaskManager(log logger.Logger, config config.Config, storer storage.Storer, staker *Staker) (*TaskManager, error) {
+func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config, storer storage.Storer, staker *Staker) (*TaskManager, error) {
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
@@ -175,7 +176,7 @@ func NewTaskManager(log logger.Logger, config config.Config, storer storage.Stor
 
 // todo: logic to quit for loop
 
-func (m *TaskManager) Start(ctx context.Context) error {
+func (m *TaskManager) Start() error {
 	// Initiate event subscription with mpc-coordinator
 	err := m.subscribeParticipantAdded()
 	if err != nil {
@@ -190,7 +191,7 @@ func (m *TaskManager) Start(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(m.ctx)
 	// Continuously check websocket connection with Avalanche network (C-Chain).
 	// Try to rebuild the websocket and coordinator if the network connection is down.
 	// Also resubscribe three events, namely: ParticipantAdded, KeygenRequestAdded and KeyGenerated.
@@ -405,11 +406,10 @@ func sample(arr []common.Hash) []common.Hash {
 }
 
 func (m *TaskManager) checkPendingReports() error {
-
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingReports {
-		rcp, err := m.ethRpcClient.TransactionReceipt(context.Background(), txHash)
+		rcp, err := m.ethRpcClient.TransactionReceipt(m.ctx, txHash)
 		if err == nil {
 			if rcp.Status == 1 {
 				done = append(done, txHash)
@@ -464,7 +464,7 @@ func (m *TaskManager) checkPendingJoins() error {
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingJoins {
-		rcp, err := m.ethRpcClient.TransactionReceipt(context.Background(), txHash)
+		rcp, err := m.ethRpcClient.TransactionReceipt(m.ctx, txHash)
 		if err == nil {
 			if rcp.Status == 1 {
 				done = append(done, txHash)
@@ -506,7 +506,7 @@ func (m *TaskManager) checkPendingJoins() error {
 
 func (m *TaskManager) checkKeygenResult(requestId string) error {
 	// Query result from mpc-server
-	result, err := m.mpcClient.Result(context.Background(), requestId) // todo: add shared context to task manager
+	result, err := m.mpcClient.Result(m.ctx, requestId) // todo: add shared context to task manager
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -582,7 +582,7 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 
 // todo: verify signature with third-party lib.
 func (m *TaskManager) checkSignResult(signReqId string) error {
-	signResult, err := m.mpcClient.Result(context.Background(), signReqId) // todo: add shared context to task manager
+	signResult, err := m.mpcClient.Result(m.ctx, signReqId) // todo: add shared context to task manager
 	m.log.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
 	if err != nil {
@@ -635,7 +635,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
+			err = m.mpcClient.Sign(m.ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -673,7 +673,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.mpcClient.Sign(context.Background(), nextPendingSignReq) // todo: add shared context to task manager
+			err = m.mpcClient.Sign(m.ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -697,7 +697,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			delete(m.pendingSignRequests, signReqId)
 			m.log.Info("Mpc-manager: Cool! All signings for a stake task all done.")
 
-			ids, err := m.staker.IssueStakeTaskTxs(context.Background(), task)
+			ids, err := m.staker.IssueStakeTaskTxs(m.ctx, task)
 
 			//err = doStake(task)
 			if err != nil {
@@ -733,7 +733,7 @@ func (m *TaskManager) onKeygenRequestAdded(evt *contract.MpcCoordinatorKeygenReq
 		Threshold: groupInfo.Threshold,
 	}
 
-	err = m.mpcClient.Keygen(context.Background(), request) // todo: add shared context to task manager
+	err = m.mpcClient.Keygen(m.ctx, request) // todo: add shared context to task manager
 	if err != nil {
 		return errors.Wrapf(err, "failed to send keygen request to mpc-server")
 	}
@@ -995,12 +995,12 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 
 	address := myCrypto.PubkeyToAddresse(pubkey)
 
-	nonce, err := m.ethRpcClient.NonceAt(context.Background(), *address, nil)
+	nonce, err := m.ethRpcClient.NonceAt(m.ctx, *address, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	bl, _ := m.ethRpcClient.BalanceAt(context.Background(), *address, nil)
+	bl, _ := m.ethRpcClient.BalanceAt(m.ctx, *address, nil)
 	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{{"address", *address}, {"balance", bl.Uint64()}}...)
 
 	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
@@ -1050,7 +1050,7 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 		ParticipantKeys: normalized,
 		Hash:            hash,
 	}
-	err = m.mpcClient.Sign(context.Background(), request) // todo: add shared context to task manager
+	err = m.mpcClient.Sign(m.ctx, request) // todo: add shared context to task manager
 	if err != nil {
 		return errors.WithStack(err)
 	}

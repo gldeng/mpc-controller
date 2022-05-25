@@ -32,7 +32,7 @@ type Config interface {
 	ControllerKey() *ecdsa.PrivateKey
 	ControllerSigner() *bind.TransactOpts
 
-	MpcClient() core.MPCClient
+	MpcClient() core.MpcClient
 
 	EthRpcClient() *ethclient.Client
 	EthWsClient() *ethclient.Client
@@ -73,7 +73,7 @@ type ConfigImpl struct {
 	controllerKey    *ecdsa.PrivateKey
 	controllerSigner *bind.TransactOpts
 
-	mpcClient core.MPCClient
+	mpcClient core.MpcClient
 
 	ethRpcClient *ethclient.Client
 	ethWsClient  *ethclient.Client
@@ -140,7 +140,7 @@ func ParseConfigFromStr(configYmlStr string) *ConfigImpl {
 	return &c
 }
 
-func InitConfig(c *ConfigImpl) Config {
+func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 	// Parse private key
 	key, err := crypto.HexToECDSA(c.ControllerKey_)
 	logger.FatalOnError(err, "Failed to parse secp256k1 private key",
@@ -161,7 +161,7 @@ func InitConfig(c *ConfigImpl) Config {
 	c.controllerSigner = signer
 
 	// Create mpc-client
-	mpcClient, err := core.NewMpcClient(c.MpcServerUrl)
+	mpcClient, err := core.NewMpcClient(log, c.MpcServerUrl)
 	logger.FatalOnError(err, "Failed to create mpc-client",
 		logger.Field{"url", c.MpcServerUrl},
 		logger.Field{"error", err})
@@ -262,7 +262,7 @@ func (c *ConfigImpl) ControllerSigner() *bind.TransactOpts {
 	return c.controllerSigner
 }
 
-func (c *ConfigImpl) MpcClient() core.MPCClient {
+func (c *ConfigImpl) MpcClient() core.MpcClient {
 	return c.mpcClient
 }
 
