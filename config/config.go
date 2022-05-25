@@ -118,14 +118,10 @@ type ConfigDbBadger struct {
 	BadgerDbPath string `yaml:"badgerDbPath"`
 }
 
-// todo: add ConfigImpl validator
-
 func ParseConfigFromFile(filename string) *ConfigImpl {
 	// Read ConfigImpl file
 	cBytes, err := ioutil.ReadFile(filename)
-	logger.FatalOnError(err, "Failed to read ConfigImpl file",
-		logger.Field{"filename", filename},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to read ConfigImpl file", logger.Field{"error", err})
 
 	return ParseConfigFromStr(string(cBytes))
 }
@@ -134,8 +130,7 @@ func ParseConfigFromStr(configYmlStr string) *ConfigImpl {
 	// Unmarshal ConfigImpl content
 	var c ConfigImpl
 	err := yaml.Unmarshal([]byte(configYmlStr), &c)
-	logger.FatalOnError(err, "Failed to unmarshal ConfigImpl content",
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to unmarshal ConfigImpl content", logger.Field{"error", err})
 
 	return &c
 }
@@ -143,9 +138,7 @@ func ParseConfigFromStr(configYmlStr string) *ConfigImpl {
 func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 	// Parse private key
 	key, err := crypto.HexToECDSA(c.ControllerKey_)
-	logger.FatalOnError(err, "Failed to parse secp256k1 private key",
-		logger.Field{"key", c.ControllerKey_},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to parse secp256k1 private key", logger.Field{"error", err})
 	c.controllerKey = key
 
 	// Convert chain ID
@@ -154,24 +147,17 @@ func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 
 	// Create controller transaction signer
 	signer, err := bind.NewKeyedTransactorWithChainID(c.controllerKey, c.chainId)
-	logger.FatalOnError(err, "Failed to create controller transaction signer",
-		logger.Field{"key", c.ControllerKey_},
-		logger.Field{"chainId", c.ChainId},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to create controller transaction signer", logger.Field{"error", err})
 	c.controllerSigner = signer
 
 	// Create mpc-client
 	mpcClient, err := core.NewMpcClient(log, c.MpcServerUrl)
-	logger.FatalOnError(err, "Failed to create mpc-client",
-		logger.Field{"url", c.MpcServerUrl},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to create mpc-client", logger.Field{"error", err})
 	c.mpcClient = mpcClient
 
 	// Create eth rpc client
 	ethRpcCli, err := ethclient.Dial(c.EthRpcUrl)
-	logger.FatalOnError(err, "Failed to connect eth rpc client",
-		logger.Field{"url", c.EthRpcUrl},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to connect eth rpc client", logger.Field{"error", err})
 	c.ethRpcClient = ethRpcCli
 
 	// Create eth ws client
@@ -185,9 +171,7 @@ func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 		c.ethWsClient = ethWsCli
 		return nil
 	})
-	logger.FatalOnError(err, "Failed to connect eth ws client",
-		logger.Field{"url", c.EthWsUrl},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to connect eth ws client", logger.Field{"error", err})
 
 	if c.ethWsClient == nil {
 		logger.Fatal("Ethereum websocket client is nil")
@@ -215,16 +199,12 @@ func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 
 	// Convert C-Chain ID
 	cchainID, err := ids.FromString(c.CChainId)
-	logger.FatalOnError(err, "Failed to convert C-Chain ID",
-		logger.Field{"cChainId", c.CChainId},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to convert C-Chain ID", logger.Field{"error", err})
 	c.cChainId = &cchainID
 
 	// Convert AVAX assetId ID
 	assetId, err := ids.FromString(c.AvaxId)
-	logger.FatalOnError(err, "Failed to convert AVAX assetId ID",
-		logger.Field{"avaxId", c.AvaxId},
-		logger.Field{"error", err})
+	logger.FatalOnError(err, "Failed to convert AVAX assetId ID", logger.Field{"error", err})
 	c.avaxId = &assetId
 
 	networkCtx := core.NewNetworkContext(
@@ -308,7 +288,7 @@ func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx cont
 	})
 
 	if err != nil {
-		log.Error("Failed to connect eth ws client", []logger.Field{{"error", err}}...)
+		log.Error("Failed to connect eth ws client", logger.Field{"error", err})
 		return nil, nil, errors.WithStack(err)
 	}
 
@@ -320,7 +300,7 @@ func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx cont
 	// Create coordinator bound listener
 	coordBoundListener, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethWsClient)
 	if err != nil {
-		log.Error("Failed to create mpc-coordinator listener", []logger.Field{{"error", err}}...)
+		log.Error("Failed to create mpc-coordinator listener", logger.Field{"error", err})
 		return nil, nil, errors.Wrap(err, "failed to  create mpc-coordinator listener")
 	}
 

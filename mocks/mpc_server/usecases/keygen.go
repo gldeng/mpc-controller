@@ -32,22 +32,22 @@ func Keygen() usecase.IOInteractor {
 				status:  StatusReceived,
 			}
 			storer.StoreKeygenRequestModel(lastKeygenReq)
-			logger.Debug("Mpc-server received keygen request",
-				logger.Field{"reqId", in.RequestId},
-				logger.Field{"hits", lastKeygenReq.hits},
-				logger.Field{"status", lastKeygenReq.status},
-				logger.Field{"pubkey", lastKeygenReq.result})
+			logger.Debug("Mpc-server received keygen request", []logger.Field{
+				{"reqId", in.RequestId},
+				{"hits", lastKeygenReq.hits},
+				{"status", lastKeygenReq.status},
+				{"pubkey", lastKeygenReq.result}}...)
 			return nil
 		}
 
 		if lastKeygenReq.hits != 2 {
 			lastKeygenReq.hits++
 			storer.StoreKeygenRequestModel(lastKeygenReq)
-			logger.Debug("Mpc-server received keygen request",
-				logger.Field{"reqId", in.RequestId},
-				logger.Field{"hits", lastKeygenReq.hits},
-				logger.Field{"status", lastKeygenReq.status},
-				logger.Field{"pubkey", lastKeygenReq.result})
+			logger.Debug("Mpc-server received keygen request", []logger.Field{
+				{"reqId", in.RequestId},
+				{"hits", lastKeygenReq.hits},
+				{"status", lastKeygenReq.status},
+				{"pubkey", lastKeygenReq.result}}...)
 			return nil
 		}
 
@@ -58,11 +58,11 @@ func Keygen() usecase.IOInteractor {
 		lastKeygenReq.result = pubkeyHex
 		lastKeygenReq.status = StatusDone
 		storer.StoreKeygenRequestModel(lastKeygenReq)
-		logger.Debug("Mpc-server received keygen request",
-			logger.Field{"reqId", in.RequestId},
-			logger.Field{"hits", lastKeygenReq.hits},
-			logger.Field{"status", lastKeygenReq.status},
-			logger.Field{"pubkey", lastKeygenReq.result})
+		logger.Debug("Mpc-server received keygen request", []logger.Field{
+			{"reqId", in.RequestId},
+			{"hits", lastKeygenReq.hits},
+			{"status", lastKeygenReq.status},
+			{"pubkey", lastKeygenReq.result}}...)
 
 		globalSiner = signer
 		signerKeyBytes := signer.PrivateKey().Bytes()
@@ -70,10 +70,10 @@ func Keygen() usecase.IOInteractor {
 		signerPubHex := common.Bytes2Hex(signer.PublicKey().Bytes())
 		signerAccountAddres := signer.Address().Hex()
 
-		logger.Info("Mpc mock server generated a signer",
-			logger.Field{"privateKey", signerKeyHex},
-			logger.Field{"publicKey", signerPubHex},
-			logger.Field{"address", signerAccountAddres})
+		logger.Info("Mpc mock server generated a signer", []logger.Field{
+			{"privateKey", signerKeyHex},
+			{"publicKey", signerPubHex},
+			{"address", signerAccountAddres}}...)
 
 		return nil
 	})

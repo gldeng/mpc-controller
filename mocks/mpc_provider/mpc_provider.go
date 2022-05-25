@@ -11,8 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/juju/errors"
-	pkgErrors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"math/big"
 	"time"
 )
@@ -78,21 +77,20 @@ func (m *MpcProvider) CreateGroup(participantPubKeys []*ecdsa.PublicKey, thresho
 
 	_, err := m.RpcCoordinator.CreateGroup(m.txSigner, participants_, big.NewInt(threshold))
 	if err != nil {
-		return "", errors.Trace(err)
+		return "", errors.WithStack(err)
 	}
 
 	groupId, err := m.waitForAllParticipantsAdded(participants_)
 	if err != nil {
-		return "", errors.Trace(err)
+		return "", errors.WithStack(err)
 	}
 
 	err = m.ensureBalance(crypto.PubkeysToAddresses(participantPubKeys))
 	if err != nil {
-		return "", errors.Trace(err)
+		return "", errors.WithStack(err)
 	}
 
-	logger.Info("Group created",
-		logger.Field{"groupId", groupId})
+	logger.Info("Group created", logger.Field{"groupId", groupId})
 	return groupId, nil
 }
 
@@ -108,7 +106,7 @@ func (m *MpcProvider) RequestKeygen(groupIdHex string) (string, error) {
 		logger.Debug("Staker started watch KeyGenerated event", logger.Field{"groupIdHex", groupIdHex})
 		pubKeyHex, err := m.watchKeyGeneratedEvent(groupId)
 		if err != nil {
-			resultChan <- resultT{"", pkgErrors.WithStack(err)}
+			resultChan <- resultT{"", errors.WithStack(err)}
 			return
 		}
 		resultChan <- resultT{pubKeyHex, nil}
@@ -120,7 +118,7 @@ func (m *MpcProvider) RequestKeygen(groupIdHex string) (string, error) {
 	copy(groupId32[:], groupId)
 	tx, err := m.RpcCoordinator.RequestKeygen(m.txSigner, groupId32)
 	if err != nil {
-		return "", pkgErrors.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 	m.log.Info("Staker RequestKeygen sent.", logger.Field{"groupIdHex", groupIdHex})
 
@@ -128,19 +126,19 @@ func (m *MpcProvider) RequestKeygen(groupIdHex string) (string, error) {
 	rcp, err := m.rpcClient.TransactionReceipt(context.Background(), tx.Hash())
 	if err != nil {
 		m.log.Error("Got an error when query transaction receipt", logger.Field{"error", err})
-		return "", pkgErrors.Wrap(err, "got an error when query transaction receipt")
+		return "", errors.Wrap(err, "got an error when query transaction receipt")
 	}
 
 	if rcp.Status != 1 {
 		m.log.Error("Transaction failed", logger.Field{"receipt", spew.Sdump(rcp)})
-		return "", pkgErrors.Errorf("transaction failed, receipt: %s", spew.Sdump(rcp))
+		return "", errors.Errorf("transaction failed, receipt: %s", spew.Sdump(rcp))
 	}
 
 	result := <-resultChan
 	close(resultChan)
 
 	if result.err != nil {
-		return "", pkgErrors.WithStack(result.err)
+		return "", errors.WithStack(result.err)
 	}
 	m.log.Info("Staker received KeyGenerated event",
 		logger.Field{"groupIdHex", groupIdHex},
@@ -160,7 +158,7 @@ func (m *MpcProvider) watchKeyGeneratedEvent(groupId []byte) (string, error) {
 	//opts.Start = &start
 	sub, err := m.WsCoordinator.WatchKeyGenerated(nil, events, [][32]byte{groupId32})
 	if err != nil {
-		return "", errors.Trace(err)
+		return "", errors.WithStack(err)
 	}
 
 	var listenErr error
@@ -187,12 +185,12 @@ func (m *MpcProvider) ensureBalance(participantAddrs []*common.Address) error {
 	for _, addr := range participantAddrs {
 		bal, err := m.rpcClient.BalanceAt(context.Background(), *addr, nil)
 		if err != nil {
-			return errors.Trace(err)
+			return errors.WithStack(err)
 		}
 		if bal.Cmp(big.NewInt(MinimumToEnsureBalance)) < 0 {
 			err = token.TransferInCChain(m.rpcClient, m.chainId, m.privateKey, addr, big.NewInt(MinimumToEnsureBalance))
 			if err != nil {
-				return errors.Trace(err)
+				return errors.WithStack(err)
 			}
 		}
 	}
@@ -208,7 +206,7 @@ func (m *MpcProvider) waitForAllParticipantsAdded(participantPubKeys [][]byte) (
 	opts.Start = &start
 	sub, err := m.WsCoordinator.WatchParticipantAdded(opts, events, participantPubKeys)
 	if err != nil {
-		return "", errors.Trace(err)
+		return "", errors.WithStack(err)
 	}
 
 	var listenErr error

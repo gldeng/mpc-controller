@@ -47,11 +47,11 @@ func TransferInCChain(client *ethclient.Client, chainId *big.Int, privateKey *ec
 	if err != nil {
 		return errors.Wrapf(err, "failed to send transfer transaction")
 	}
-	logger.Debug("Sent a C-Chain transfer transaction",
-		logger.Field{"from", crypto.PubkeyToAddress(privateKey.PublicKey).Hex()},
-		logger.Field{"to", to.Hex()},
-		logger.Field{"amount", amount.String()},
-		logger.Field{"TxHash", txSigned.Hash()})
+	logger.Debug("Sent a C-Chain transfer transaction", []logger.Field{
+		{"from", crypto.PubkeyToAddress(privateKey.PublicKey).Hex()},
+		{"to", to.Hex()},
+		{"amount", amount.String()},
+		{"TxHash", txSigned.Hash()}}...)
 
 	time.Sleep(5 * time.Second)
 	// todo: check receipt status, 0 or 1?

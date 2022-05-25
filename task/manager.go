@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/sync/errgroup"
 
 	//"errors"
@@ -269,9 +268,9 @@ func (m *TaskManager) Start() error {
 					break
 				}
 
-				m.log.Info("Received ParticipantAdded event",
-					logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
-					logger.Field{"event", evt})
+				m.log.Info("Received ParticipantAdded event", []logger.Field{
+					{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+					{"event", evt}}...)
 
 				err := m.onParticipantAdded(evt)
 				if err != nil {
@@ -284,15 +283,15 @@ func (m *TaskManager) Start() error {
 					break
 				}
 
-				m.log.Info("Received KeygenAdded event",
-					logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
-					logger.Field{"event", evt})
+				m.log.Info("Received KeygenAdded event", []logger.Field{
+					{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+					{"event", evt}}...)
 
 				err = m.onKeygenRequestAdded(evt)
 				if err != nil {
-					m.log.Error("Failed to respond to KeygenAdded event",
-						logger.Field{"event", evt},
-						logger.Field{"error", err})
+					m.log.Error("Failed to respond to KeygenAdded event", []logger.Field{
+						{"event", evt},
+						{"error", err}}...)
 				}
 
 			case evt, ok := <-m.eventsKG:
@@ -301,15 +300,15 @@ func (m *TaskManager) Start() error {
 					break
 				}
 
-				m.log.Info("Received KeyGenerated event",
-					logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
-					logger.Field{"event", evt})
+				m.log.Info("Received KeyGenerated event", []logger.Field{
+					{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+					{"event", evt}}...)
 
 				err := m.onKeyGenerated(evt)
 				if err != nil {
-					m.log.Error("Failed to respond to KeyGenerated event",
-						logger.Field{"event", evt},
-						logger.Field{"error", err})
+					m.log.Error("Failed to respond to KeyGenerated event", []logger.Field{
+						{"event", evt},
+						{"error", err}}...)
 				}
 
 			case evt, ok := <-m.eventsStA:
@@ -318,14 +317,13 @@ func (m *TaskManager) Start() error {
 					break
 				}
 
-				m.log.Info("Received StakeRequestAdded event",
-					logger.Field{"event", evt})
+				m.log.Info("Received StakeRequestAdded event", logger.Field{"event", evt})
 
 				err := m.onStakeRequestAdded(evt)
 				if err != nil {
-					m.log.Error("Failed to respond to StakeRequestAdded event",
-						logger.Field{"event", evt},
-						logger.Field{"error", err})
+					m.log.Error("Failed to respond to StakeRequestAdded event", []logger.Field{
+						{"event", evt},
+						{"error", err}}...)
 				}
 
 			case evt, ok := <-m.eventsStS:
@@ -334,16 +332,14 @@ func (m *TaskManager) Start() error {
 					break
 				}
 
-				m.log.Info("Received StakeRequestStarted event",
-					logger.Field{"event", evt})
+				m.log.Info("Received StakeRequestStarted event", logger.Field{"event", evt})
 
 				//// Wait until the corresponding key has been generated
 				//<-time.After(time.Second * 20)
 
 				err := m.onStakeRequestStarted(evt)
 				if err != nil {
-					m.log.Error("Failed to respond to StakeRequestStarted event",
-						logger.Field{"error", err})
+					m.log.Error("Failed to respond to StakeRequestStarted event", logger.Field{"error", err})
 				}
 
 			case <-time.After(1 * time.Second):
@@ -566,9 +562,10 @@ func (m *TaskManager) checkKeygenResult(requestId string) error {
 	delete(m.pendingKeygenRequests, requestId)
 
 	addr, _ := myCrypto.PubKeyHexToAddress(result.Result) // for debug
-	m.log.Info("Generated and reported public key",
-		[]logger.Field{{"ethAddress", addr}, {"generatedPubkey", result.Result},
-			{"reportedPubkey", common.Bytes2Hex(dnmGenPubKeyBytes)}}...)
+	m.log.Info("Generated and reported public key", []logger.Field{
+		{"ethAddress", addr},
+		{"generatedPubkey", result.Result},
+		{"reportedPubkey", common.Bytes2Hex(dnmGenPubKeyBytes)}}...)
 	return nil
 }
 
@@ -991,7 +988,9 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 	}
 
 	bl, _ := m.ethRpcClient.BalanceAt(m.ctx, *address, nil)
-	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{{"address", *address}, {"balance", bl.Uint64()}}...)
+	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{
+		{"address", *address},
+		{"balance", bl.Uint64()}}...)
 
 	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
 
@@ -1001,23 +1000,20 @@ func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeReq
 	}
 	task, err := NewStakeTask(m.networkContext, *pubkey, nonce, nodeID, nAVAXAmount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
-	// todo: remove this
-	spew.Dump(task)
 	taskId := req.Raw.TxHash.Hex()
 	m.stakeTasks[taskId] = task
 	hashBytes, err := task.ExportTxHash()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	pariticipantKeys, err := m.getPariticipantKeys(req.PublicKey, req.ParticipantIndices)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	m.log.Debug("Task-manager got participant public keys",
-		logger.Field{"participantPubKeys", pariticipantKeys})
+	m.log.Debug("Task-manager got participant public keys", logger.Field{"participantPubKeys", pariticipantKeys})
 
 	normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
 	m.log.Debug("Task-manager normalized participant public keys",

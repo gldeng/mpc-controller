@@ -29,22 +29,22 @@ func Sign() usecase.IOInteractor {
 				status:  StatusReceived,
 			}
 			storer.StoreSignRequestModel(lastSignReq)
-			logger.Debug("Mpc-server received sign request",
-				logger.Field{"reqId", in.RequestId},
-				logger.Field{"hits", lastSignReq.hits},
-				logger.Field{"status", lastSignReq.status},
-				logger.Field{"signature", lastSignReq.result})
+			logger.Debug("Mpc-server received sign request", []logger.Field{
+				{"reqId", in.RequestId},
+				{"hits", lastSignReq.hits},
+				{"status", lastSignReq.status},
+				{"signature", lastSignReq.result}}...)
 			return nil
 		}
 
 		if lastSignReq.hits != 1 {
 			lastSignReq.hits++
 			storer.StoreSignRequestModel(lastSignReq)
-			logger.Debug("Mpc-server received sign request",
-				logger.Field{"reqId", in.RequestId},
-				logger.Field{"hits", lastSignReq.hits},
-				logger.Field{"status", lastSignReq.status},
-				logger.Field{"signature", lastSignReq.result})
+			logger.Debug("Mpc-server received sign request", []logger.Field{
+				{"reqId", in.RequestId},
+				{"hits", lastSignReq.hits},
+				{"status", lastSignReq.status},
+				{"signature", lastSignReq.result}}...)
 			return nil
 		}
 
@@ -64,20 +64,20 @@ func Sign() usecase.IOInteractor {
 
 		sigBytes, err := signer.SignHash(digest)
 		if err != nil {
-			logger.Error("Mpc-server failed to sign",
-				logger.Field{"reqId", in.RequestId},
-				logger.Field{"error", err})
+			logger.Error("Mpc-server failed to sign", []logger.Field{
+				{"reqId", in.RequestId},
+				{"error", err}}...)
 			return errors.Wrapf(err, "Mpc-server failed to sign")
 		}
 		sigHex := common.Bytes2Hex(sigBytes)
 		lastSignReq.result = sigHex
 		lastSignReq.status = StatusDone
 		storer.StoreSignRequestModel(lastSignReq)
-		logger.Debug("Mpc-server received sign request",
-			logger.Field{"reqId", in.RequestId},
-			logger.Field{"hits", lastSignReq.hits},
-			logger.Field{"status", lastSignReq.status},
-			logger.Field{"signature", lastSignReq.result})
+		logger.Debug("Mpc-server received sign request", []logger.Field{
+			{"reqId", in.RequestId},
+			{"hits", lastSignReq.hits},
+			{"status", lastSignReq.status},
+			{"signature", lastSignReq.result}}...)
 		return nil
 	})
 

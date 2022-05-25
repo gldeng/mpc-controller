@@ -9,9 +9,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/ethereum/go-ethereum v1.10.16
-	github.com/go-chi/chi v1.5.4
 	github.com/goccy/go-yaml v1.9.5
-	github.com/juju/errors v0.0.0-20220331221717-b38fca44723b
 	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1

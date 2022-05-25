@@ -36,10 +36,10 @@ func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn f
 			return nil
 		}
 		lastErr = err
-		log.Error("Retry",
-			[]logger.Field{{"error", err},
-				{"retryNum", retryNum},
-				{"retryAfter", time.Now().Sub(lastRetryAt).Seconds()}}...)
+		log.Error("Retry", []logger.Field{
+			{"error", err},
+			{"retryNum", retryNum},
+			{"retryAfter", time.Now().Sub(lastRetryAt).Seconds()}}...)
 		lastRetryAt = time.Now()
 		retryNum++
 	}
