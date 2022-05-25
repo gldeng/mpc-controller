@@ -141,6 +141,7 @@ func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", pubKeyHash})
 	m := &TaskManager{
+		ctx:                   ctx,
 		config:                config,
 		log:                   log,
 		staker:                staker,
@@ -348,9 +349,7 @@ func (m *TaskManager) Start() error {
 			case <-time.After(1 * time.Second):
 				err := m.tick()
 				if err != nil {
-					m.log.Error("Got an tick error",
-						logger.Field{"error", err})
-					fmt.Printf("%+v", err)
+					m.log.Error("Got an tick error", logger.Field{"error", err})
 				}
 			}
 		}
@@ -426,29 +425,23 @@ func (m *TaskManager) checkPendingReports() error {
 		req := m.pendingReports[txHash]
 		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
 		tx, err := m.instance.ReportGeneratedKey(m.signer, groupId, ind, pubkey)
-		// todo: deal with error: "error": "insufficient funds for gas * price + value: address 0x3051bA2d313840932B7091D2e8684672496E9A4B have (2972700000107200) want (5436550000000000)
-		if err != nil {
-			m.log.Error("Failed to reported generated key",
-				logger.Field{"error", err},
-				logger.Field{"groupId", groupId},
-				logger.Field{"pubKey", string(pubkey)})
-			return errors.Wrapf(err, "failed to reported generated key %v for group %v", string(pubkey), groupId)
-		}
 		m.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
 			myIndex:            ind,
 			generatedPublicKey: pubkey,
 		}
+
 		if err != nil {
-			return err
+			m.log.Error("Failed to report generated key", logger.Field{"error", err})
+			return errors.WithStack(err)
 		}
-		fmt.Printf(
-			"Retry reporting key tx:\n  groupId: %v\n  myIndex: %v\n  pubKey: %v\n  txHash: %v\n",
-			common.Bytes2Hex(groupId[:]),
-			ind,
-			common.Bytes2Hex(pubkey),
-			tx.Hash(),
-		)
+
+		m.log.Info("Retry reporting key.", []logger.Field{
+			{"groupId", common.Bytes2Hex(groupId[:])},
+			{"myIndex", ind},
+			{"pubKey", common.Bytes2Hex(pubkey)},
+			{"txHash", tx.Hash()}}...)
+
 	}
 	for _, txHash := range sampledRetry {
 		delete(m.pendingReports, txHash)
@@ -460,7 +453,6 @@ func (m *TaskManager) checkPendingReports() error {
 }
 
 func (m *TaskManager) checkPendingJoins() error {
-
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingJoins {
@@ -486,14 +478,14 @@ func (m *TaskManager) checkPendingJoins() error {
 			myIndex:   myIndex,
 		}
 		if err != nil {
-			return err
+			m.log.Error("Failed to join request", logger.Field{"error", err})
+			return errors.WithStack(err)
 		}
-		fmt.Printf(
-			"Retry join tx:\n  requestId: %v\n  myIndex: %v\n  txHash: %v\n",
-			requestId,
-			myIndex,
-			tx.Hash(),
-		)
+
+		m.log.Info("Retry join request.", []logger.Field{
+			{"reqId", requestId},
+			{"myIndex", myIndex},
+			{"txHash", tx.Hash()}}...)
 	}
 	for _, txHash := range sampledRetry {
 		delete(m.pendingJoins, txHash)
@@ -612,7 +604,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
+				m.log.Error("Hash doesn't match")
 				return hashMismatchErr
 			}
 			err = task.SetExportTxSig(sig)
@@ -652,7 +644,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
+				m.log.Error("Hash doesn't match")
 				return hashMismatchErr
 			}
 			err = task.SetImportTxSig(sig)
@@ -687,7 +679,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
+				m.log.Error("Hash doesn't match")
 				return hashMismatchErr
 			}
 			err = task.SetAddDelegatorTxSig(sig)
@@ -709,7 +701,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 				logger.Field{"stakeTaske", task},
 				logger.Field{"ids", ids})
 		} else {
-			fmt.Printf("%+v", errors.WithStack(hashMismatchErr))
+			m.log.Error("Hash doesn't match")
 			return wrongRequestNumberErr
 		}
 	}
@@ -927,7 +919,7 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeReque
 
 	tx, err := m.instance.JoinRequest(m.signer, req.RequestId, ind)
 	if err != nil {
-		fmt.Printf("Failed to joined stake request tx hash: %v\n", tx)
+		m.log.Error("Failed to join stake request", []logger.Field{{"error", err}, {"tx", tx}}...)
 		return errors.WithStack(err)
 	}
 	j := &JoinTx{
@@ -935,7 +927,6 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeReque
 		myIndex:   ind,
 	}
 	m.pendingJoins[tx.Hash()] = j
-	fmt.Printf("Joined stake request tx hash: %v\n", tx)
 	return nil
 }
 
