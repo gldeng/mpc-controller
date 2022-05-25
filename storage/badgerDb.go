@@ -48,7 +48,6 @@ func (b *badgerDb) StoreGroupInfo(g *GroupInfo) error {
 		return errors.Wrapf(err, "failed to store %+v", g)
 	}
 
-	b.Info("Group info stored", []logger.Field{{"key", key}, {"value", g}}...)
 	return nil
 }
 
@@ -122,7 +121,6 @@ func (b *badgerDb) StoreParticipantInfo(p *ParticipantInfo) error {
 		return errors.Wrapf(err, "failed to store %+v", p)
 	}
 
-	b.Info("participant info stored", []logger.Field{{"key", key}, {"value", p}}...)
 	return nil
 }
 
@@ -199,7 +197,6 @@ func (b *badgerDb) StoreGeneratedPubKeyInfo(pk *GeneratedPubKeyInfo) error {
 		return errors.Wrapf(err, "failed to store %+v", pk)
 	}
 
-	b.Info("generated public key info stored", []logger.Field{{"key", key}, {"value", pk}}...)
 	return nil
 }
 
@@ -285,7 +282,6 @@ func (b *badgerDb) StoreKeygenRequestInfo(k *KeygenRequestInfo) error {
 		return errors.Wrapf(err, "failed to store %+v", k)
 	}
 
-	b.Info("keygen request info stored", []logger.Field{{"key", key}, {"value", k}}...)
 	return nil
 }
 
