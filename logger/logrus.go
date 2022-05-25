@@ -54,7 +54,11 @@ func (l *logrus) Error(msg string, fields ...Field) {
 // ErrorOnError implements Logger.Error for sirupsen/logrus logger
 func (l *logrus) ErrorOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.Error(msg, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Error(msg)
 	}
 }
 
@@ -70,7 +74,11 @@ func (l *logrus) Fatal(msg string, fields ...Field) {
 // FatalOnError implements Logger.Fatal for sirupsen/logrus logger
 func (l *logrus) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.Fatal(msg, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Fatal(msg)
 	}
 }
 

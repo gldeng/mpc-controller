@@ -38,7 +38,7 @@ func (l *zap) Error(msg string, fields ...Field) {
 // ErrorOnError implements Logger.Error for go.uber.org/zap logger
 func (l *zap) ErrorOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.Error(msg, fields...)
+		l.l.Error(msg, l.zapFields(fields...)...)
 	}
 }
 
@@ -50,7 +50,7 @@ func (l *zap) Fatal(msg string, fields ...Field) {
 // FatalOnError implements Logger.Fatal for go.uber.org/zap logger
 func (l *zap) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.Fatal(msg, fields...)
+		l.l.Fatal(msg, l.zapFields(fields...)...)
 	}
 }
 

@@ -15,22 +15,20 @@ var once = new(sync.Once)
 
 // Default return a Logger right depending on go.uber.org/zap Logger.
 func Default() Logger {
-	once.Do(func() {
-		var logger *uberZap.Logger
-		var logConfig uberZap.Config
+	var logger *uberZap.Logger
+	var logConfig uberZap.Config
 
-		if DevMode {
-			logConfig = uberZap.NewDevelopmentConfig()
-			logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
-			logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-			logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
-		} else {
-			logConfig = uberZap.NewProductionConfig()
-			logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
-			logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
-		}
-		DefaultLogger = NewZap(logger)
-	})
+	if DevMode {
+		logConfig = uberZap.NewDevelopmentConfig()
+		logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
+		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
+	} else {
+		logConfig = uberZap.NewProductionConfig()
+		logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
+		logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
+	}
+	DefaultLogger = NewZap(logger)
 	return DefaultLogger
 }
 
