@@ -595,7 +595,6 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 		var hashMismatchErr = errors.New("hash doesn't match")
 		var wrongRequestNumberErr = errors.New("wrong request number")
 		if pendingTaskId.requestNumber == 0 {
-			m.log.Info("ExportHash have been signed from mpc-server=========step forward for ImportHash sign")
 			// todo: verify signature with third-party lib.
 
 			hashBytes, err := task.ExportTxHash()

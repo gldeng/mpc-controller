@@ -241,8 +241,6 @@ func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 	)
 
 	c.networkContext = &networkCtx
-
-	logger.Info("Config parsed successfully.")
 	return c
 }
 
