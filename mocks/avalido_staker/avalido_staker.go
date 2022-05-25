@@ -3,8 +3,8 @@ package avalido_staker
 import (
 	"context"
 	"crypto/ecdsa"
-	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/mocks/avalido_staker/AvaLido"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,8 +21,8 @@ type AvaLidoStaker struct {
 	cRpcClient *ethclient.Client
 	cWsClient  *ethclient.Client
 
-	cRpcAvaLido *contract.AvaLido
-	cWsAvaLido  *contract.AvaLido
+	cRpcAvaLido *AvaLido.AvaLido
+	cWsAvaLido  *AvaLido.AvaLido
 
 	cPrivateKey *ecdsa.PrivateKey
 	cTxSigner   *bind.TransactOpts
@@ -35,9 +35,9 @@ func New(log logger.Logger,
 	cRpcClient *ethclient.Client,
 	cWsClient *ethclient.Client) *AvaLidoStaker {
 
-	rpcAvaLido, err := contract.NewAvaLido(*avaLidoAddr, cRpcClient)
+	rpcAvaLido, err := AvaLido.NewAvaLido(*avaLidoAddr, cRpcClient)
 	log.FatalOnError(err, "Failed to create AvaLido bindings", logger.Field{"error", err})
-	wsAvaLido, err := contract.NewAvaLido(*avaLidoAddr, cWsClient)
+	wsAvaLido, err := AvaLido.NewAvaLido(*avaLidoAddr, cWsClient)
 	log.FatalOnError(err, "Failed to create AvaLido bindings", logger.Field{"error", err})
 
 	signer, err := bind.NewKeyedTransactorWithChainID(cPrivateKey, cChainId)
