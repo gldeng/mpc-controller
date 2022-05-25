@@ -20,6 +20,11 @@ func ExponentialForever() backoff.Policy {
 	return p
 }
 
+func RetryFnExponentialForever(log logger.Logger, ctx context.Context, fn func() error) error {
+	policy := ExponentialForever()
+	return RetryFn(log, ctx, policy, fn)
+}
+
 func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn func() error) error {
 	b := policy.Start(ctx)
 	var lastErr error

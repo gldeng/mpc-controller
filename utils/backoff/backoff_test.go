@@ -81,3 +81,34 @@ func TestRetryFn(t *testing.T) {
 		})
 	}
 }
+
+func TestRetryFnExponentialForever(t *testing.T) {
+	type scenario struct {
+		name    string
+		fn      func() error
+		wantErr bool
+	}
+
+	flakyFuncErr := func() error {
+		return errors.New("failed to dial ...")
+	}
+
+	flakyFuncNil := func() error {
+		return nil
+	}
+
+	scenarios := []scenario{
+		{"Fn returns error", flakyFuncErr, true},
+		{"Fn returns nil", flakyFuncNil, false},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
+
+			err := RetryFnExponentialForever(logger.Default(), ctx, scenario.fn)
+			assert.True(t, err != nil == scenario.wantErr)
+		})
+	}
+}
