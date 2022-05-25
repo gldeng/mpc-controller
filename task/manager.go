@@ -6,6 +6,7 @@ import (
 	"crypto/elliptic"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/sync/errgroup"
 
 	//"errors"
 	"fmt"
@@ -174,8 +175,8 @@ func NewTaskManager(log logger.Logger, config config.Config, storer storage.Stor
 
 // todo: logic to quit for loop
 
-func (m *TaskManager) Start() error {
-	//
+func (m *TaskManager) Start(ctx context.Context) error {
+	// Initiate event subscription with mpc-coordinator
 	err := m.subscribeParticipantAdded()
 	if err != nil {
 		return errors.WithStack(err)
@@ -189,154 +190,180 @@ func (m *TaskManager) Start() error {
 		return errors.WithStack(err)
 	}
 
-	// todo: deal with gorutine leak
-	// todo: consider access error ""RPC connection read error"" within Client.dispach function:
-	// https://github.com/ethereum/go-ethereum/blob/master/rpc/client.go
-	// by fork or submodule
-	go func() {
-		c := time.Tick(5 * time.Second)
-		for range c {
-			_, err := m.ethWsClient.NetworkID(context.Background())
-			if err != nil {
-				m.log.Error("Websocket client failed to connect", logger.Field{"error", err})
-				m.rebuildListener <- struct{}{}
-				<-m.rebuildListenerDone
+	g, ctx := errgroup.WithContext(ctx)
+	// Continuously check websocket connection with Avalanche network (C-Chain).
+	// Try to rebuild the websocket and coordinator if the network connection is down.
+	// Also resubscribe three events, namely: ParticipantAdded, KeygenRequestAdded and KeyGenerated.
+	g.Go(func() error {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				return nil
+			case <-ticker.C:
+				_, err := m.ethWsClient.NetworkID(ctx)
+				if err != nil {
+					m.log.Error("Failed to connect websocket", logger.Field{"error", err})
+					m.rebuildListener <- struct{}{}
+				rebuild:
+					for {
+						select {
+						case <-ctx.Done():
+							ticker.Stop()
+							return nil
+						case <-m.rebuildListenerDone:
+							break rebuild
+						}
+					}
+				}
 			}
 		}
-	}()
+	})
+	g.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-m.rebuildListener:
+				wsClient, listener, err := m.config.CoordinatorBoundListenerRebuild(m.log, ctx)
+				if err != nil {
+					m.log.Error("Failed to rebuild coordinator listener", logger.Field{"error", err})
+					break
+				}
+				// todo: pay attention to data race condition
+				m.ethWsClient = wsClient
+				m.instance = listener
 
-	for {
-		select {
-		case <-m.rebuildListener:
-			// Rebuild listener
-			wsClient, listener, err := m.config.CoordinatorBoundListenerRebuild(m.log, context.Background())
-			if err != nil {
-				m.log.Error("Failed to rebuild coordinator listener", logger.Field{"error", err})
-			}
-			// todo: data race condition
-			m.ethWsClient = wsClient
-			m.instance = listener
+				err = m.subscribeParticipantAdded()
+				if err != nil {
+					m.log.Error("Failed to resubscribe event ParticipantAdded", logger.Field{"error", err})
+				}
+				err = m.subscribeKeygenRequestAdded()
+				if err != nil {
+					m.log.Error("Failed to resubscribe event KeygenRequestAdded", logger.Field{"error", err})
+				}
+				err = m.subscribeKeyGenerated()
+				if err != nil {
+					m.log.Error("Failed to resubscribe event KeyGenerated", logger.Field{"error", err})
+				}
 
-			m.rebuildListenerDone <- struct{}{}
+				m.rebuildListenerDone <- struct{}{}
 
-			// Resubscribe events
-			err = m.subscribeParticipantAdded()
-			if err != nil {
-				m.log.Error("Failed to resubscribe event ParticipantAdded", logger.Field{"error", err})
-			}
-			err = m.subscribeKeygenRequestAdded()
-			if err != nil {
-				m.log.Error("Failed to resubscribe event KeygenRequestAdded", logger.Field{"error", err})
-			}
-			err = m.subscribeKeyGenerated()
-			if err != nil {
-				m.log.Error("Failed to resubscribe event KeyGenerated", logger.Field{"error", err})
-			}
-
-			m.log.Warn("Websocket client and coordinator listener rebuilt, plus events resubscribed")
-		case evt, ok := <-m.eventsPA:
-			if !ok {
-				m.log.Debug("Retrieve nothing from ParticipantAdded event channel")
-				break
-			}
-
-			m.log.Info("Received ParticipantAdded event",
-				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
-				logger.Field{"event", evt})
-
-			err := m.onParticipantAdded(evt)
-			if err != nil {
-				m.log.Error("Failed to deal with event ParticipantAdded", logger.Field{"error", err})
-			}
-
-		case evt, ok := <-m.eventsKA:
-			if !ok {
-				m.log.Debug("Retrieve nothing from KeygenAdded event channel")
-				break
-			}
-
-			m.log.Info("Received KeygenAdded event",
-				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
-				logger.Field{"event", evt})
-
-			err = m.onKeygenRequestAdded(evt)
-			if err != nil {
-				m.log.Error("Failed to respond to KeygenAdded event",
-					logger.Field{"event", evt},
-					logger.Field{"error", err})
-			}
-
-		case evt, ok := <-m.eventsKG:
-			if !ok {
-				m.log.Debug("Retrieve nothing from KeyGenerated event channel")
-				break
-			}
-
-			m.log.Info("Received KeyGenerated event",
-				logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
-				logger.Field{"event", evt})
-
-			err := m.onKeyGenerated(evt)
-			if err != nil {
-				m.log.Error("Failed to respond to KeyGenerated event",
-					logger.Field{"event", evt},
-					logger.Field{"error", err})
-			}
-
-		case evt, ok := <-m.eventsStA:
-			if !ok {
-				m.log.Debug("Retrieve nothing from StakeRequestAdded event channel")
-				break
-			}
-
-			m.log.Info("Received StakeRequestAdded event",
-				logger.Field{"event", evt})
-
-			err := m.onStakeRequestAdded(evt)
-			if err != nil {
-				m.log.Error("Failed to respond to StakeRequestAdded event",
-					logger.Field{"event", evt},
-					logger.Field{"error", err})
-			}
-
-		case evt, ok := <-m.eventsStS:
-			if !ok {
-				m.log.Debug("Retrieve nothing from StakeRequestStarted event channel")
-				break
-			}
-
-			m.log.Info("Received StakeRequestStarted event",
-				logger.Field{"event", evt})
-
-			//// Wait until the corresponding key has been generated
-			//<-time.After(time.Second * 20)
-
-			err := m.onStakeRequestStarted(evt)
-			if err != nil {
-				m.log.Error("Failed to respond to StakeRequestStarted event",
-					logger.Field{"error", err})
-			}
-
-		case <-time.After(1 * time.Second):
-			err := m.tick()
-			if err != nil {
-				m.log.Error("Got an tick error",
-					logger.Field{"error", err})
-				fmt.Printf("%+v", err)
+				m.log.Debug("Websocket client and coordinator listener rebuilt, plus events resubscribed")
 			}
 		}
-	}
-}
+	})
 
-// Shutdown gracefully shuts down the mpc-manager.
-func (m *TaskManager) Shutdown(ctx context.Context) error {
-	if m == nil {
-		panic("no manager started")
+	// Do the heavy core service
+	g.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case evt, ok := <-m.eventsPA:
+				if !ok {
+					m.log.Debug("Retrieve nothing from ParticipantAdded event channel")
+					break
+				}
+
+				m.log.Info("Received ParticipantAdded event",
+					logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+					logger.Field{"event", evt})
+
+				err := m.onParticipantAdded(evt)
+				if err != nil {
+					m.log.Error("Failed to deal with event ParticipantAdded", logger.Field{"error", err})
+				}
+
+			case evt, ok := <-m.eventsKA:
+				if !ok {
+					m.log.Debug("Retrieve nothing from KeygenAdded event channel")
+					break
+				}
+
+				m.log.Info("Received KeygenAdded event",
+					logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+					logger.Field{"event", evt})
+
+				err = m.onKeygenRequestAdded(evt)
+				if err != nil {
+					m.log.Error("Failed to respond to KeygenAdded event",
+						logger.Field{"event", evt},
+						logger.Field{"error", err})
+				}
+
+			case evt, ok := <-m.eventsKG:
+				if !ok {
+					m.log.Debug("Retrieve nothing from KeyGenerated event channel")
+					break
+				}
+
+				m.log.Info("Received KeyGenerated event",
+					logger.Field{"groupIdHex", common.Bytes2Hex(evt.GroupId[:])},
+					logger.Field{"event", evt})
+
+				err := m.onKeyGenerated(evt)
+				if err != nil {
+					m.log.Error("Failed to respond to KeyGenerated event",
+						logger.Field{"event", evt},
+						logger.Field{"error", err})
+				}
+
+			case evt, ok := <-m.eventsStA:
+				if !ok {
+					m.log.Debug("Retrieve nothing from StakeRequestAdded event channel")
+					break
+				}
+
+				m.log.Info("Received StakeRequestAdded event",
+					logger.Field{"event", evt})
+
+				err := m.onStakeRequestAdded(evt)
+				if err != nil {
+					m.log.Error("Failed to respond to StakeRequestAdded event",
+						logger.Field{"event", evt},
+						logger.Field{"error", err})
+				}
+
+			case evt, ok := <-m.eventsStS:
+				if !ok {
+					m.log.Debug("Retrieve nothing from StakeRequestStarted event channel")
+					break
+				}
+
+				m.log.Info("Received StakeRequestStarted event",
+					logger.Field{"event", evt})
+
+				//// Wait until the corresponding key has been generated
+				//<-time.After(time.Second * 20)
+
+				err := m.onStakeRequestStarted(evt)
+				if err != nil {
+					m.log.Error("Failed to respond to StakeRequestStarted event",
+						logger.Field{"error", err})
+				}
+
+			case <-time.After(1 * time.Second):
+				err := m.tick()
+				if err != nil {
+					m.log.Error("Got an tick error",
+						logger.Field{"error", err})
+					fmt.Printf("%+v", err)
+				}
+			}
+		}
+	})
+
+	fmt.Printf("%v service started.\n", m.config.ControllerId())
+	if err := g.Wait(); err != nil {
+		return errors.WithStack(err)
 	}
 
-	// todo: release system resources
-	fmt.Println("---------- Releasing resources...")
-	time.Sleep(5 * time.Second)
+	// Release supportive resources after no further consumption
+	m.ethWsClient.Close()
+
+	fmt.Printf("%v service closed.\n", m.config.ControllerId())
 	return nil
 }
 

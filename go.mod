@@ -12,6 +12,7 @@ require (
 	github.com/go-chi/chi v1.5.4
 	github.com/goccy/go-yaml v1.9.5
 	github.com/juju/errors v0.0.0-20220331221717-b38fca44723b
+	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.1
@@ -61,6 +62,7 @@ require (
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.2.0 // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
+	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/linxGnu/grocksdb v1.6.34 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect

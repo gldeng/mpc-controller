@@ -27,7 +27,6 @@ func mpcController(c *cli.Context) error {
 	log := logger.Default()
 
 	staker := task.NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
-
 	storer := storage.New(log, configImpl.DatabasePath())
 
 	m, err := task.NewTaskManager(log, configInterface, storer, staker)
@@ -35,14 +34,13 @@ func mpcController(c *cli.Context) error {
 		return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 	}
 
-	fmt.Printf("---------- Starting mpc-controller %s\n", configImpl.ControllerId())
-
 	// Start the mpc-controller.
+	ctx, shutdown := context.WithCancel(context.Background())
 	go func() {
-		err = m.Start()
+		err = m.Start(ctx)
 		if err != nil {
-			fmt.Println("Failed to start mpc-manager!")
-			panic(err)
+			fmt.Printf("Failed to run mpc-controller, error: %+v", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -51,34 +49,22 @@ func mpcController(c *cli.Context) error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	fmt.Println("---------- Gracefully shutting down the mpc-controller...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	err = m.Shutdown(ctx)
-	if err != nil {
-		return errors.Wrap(err, "Failed to shutdown mpc-controller")
-	}
-
-	fmt.Println("---------- The mpc-controller shut down.")
+	shutdown()
+	time.Sleep(time.Second * 10) // wait for while
 
 	return nil
 }
 
 // todo: keystore to strength private key security
-// todo: listening signals
-// todo: elegant shutdown
 // todo: automatic panic recover
 // todo: distributed trace, log and monitor
-// todo: deal with gorutine leak
 // todo: deal with error: invalid nonce
 // todo: check and sync participant upon startup, there ere maybe groups created during mpc-controller downtime.
 // todo: add mpc-controller version info
 // todo: mechanism to check result from mpc-server and resume task on mpc-controller startup
-// todo: history even track for mpc-coordinator smart contract.eeeee
+// todo: history even track for mpc-coordinator smart contract.
 
 func main() {
-	logger.DevMode = true // remove this line later
 	app := &cli.App{
 		Name:  "mpc-controller",
 		Usage: "Handles the MPC operations needed for Avalanche",
@@ -93,5 +79,7 @@ func main() {
 	}
 
 	err := app.Run(os.Args)
-	logger.FatalOnError(err, "Failed to run mpc-controller.", logger.Field{"error", err})
+	if err != nil {
+		fmt.Printf("Failed to run mpc-controller, error: %+v", err)
+	}
 }
