@@ -17,4 +17,4 @@ confignetwork:
   gasPerSig: 1000
   gasFixed: 10000
 configdbbadger:
-  badgerDbPath: "./mpc_controller_db3"
+  badgerDbPath: "./db/mpc_controller_db3"
