@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/avalido/mpc-controller/mocks/mpc_server_openapi/usecases"
+	"github.com/avalido/mpc-controller/mocks/mpc_server/usecases"
 	"github.com/swaggest/rest/web"
 	swgui "github.com/swaggest/swgui/v4emb"
 	"log"
