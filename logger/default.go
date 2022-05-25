@@ -3,15 +3,12 @@ package logger
 import (
 	uberZap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"sync"
 	"time"
 )
 
 var DefaultLogger Logger
 
 var DevMode bool
-
-var once = new(sync.Once)
 
 // Default return a Logger right depending on go.uber.org/zap Logger.
 func Default() Logger {
