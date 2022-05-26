@@ -107,13 +107,13 @@ type TaskManager struct {
 	coordinatorAddr     common.Address
 	ethWsClient         *ethclient.Client
 	cChainClient        evm.Client
-	eventsKA            chan *contract.MpcCoordinatorKeygenRequestAdded
-	eventsStS           chan *contract.MpcCoordinatorStakeRequestStarted
-	eventsStA           chan *contract.MpcCoordinatorStakeRequestAdded
+	eventsKA            chan *contract.MpcManagerKeygenRequestAdded
+	eventsStS           chan *contract.MpcManagerStakeRequestStarted
+	eventsStA           chan *contract.MpcManagerStakeRequestAdded
 	rebuildListener     chan struct{}
 	rebuildListenerDone chan struct{}
-	listener            *contract.MpcCoordinator
-	instance            *contract.MpcCoordinator
+	listener            *contract.MpcManager
+	instance            *contract.MpcManager
 	ethRpcClient        *ethclient.Client
 	secpFactory         avaCrypto.FactorySECP256K1R
 	chSigReceived       chan *SignatureReceived
@@ -121,13 +121,13 @@ type TaskManager struct {
 	signer              *bind.TransactOpts
 	myPubKey            string
 	myPubKeyHash        common.Hash
-	eventsPA            chan *contract.MpcCoordinatorParticipantAdded
+	eventsPA            chan *contract.MpcManagerParticipantAdded
 	subPA               event.Subscription
 	subKA               event.Subscription
 	subStA              event.Subscription
 	subStS              event.Subscription
 	subKG               event.Subscription
-	eventsKG            chan *contract.MpcCoordinatorKeyGenerated
+	eventsKG            chan *contract.MpcManagerKeyGenerated
 }
 
 func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config, storer storage.Storer, staker *Staker) (*TaskManager, error) {
@@ -165,11 +165,11 @@ func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config
 	m.chSigReceived = make(chan *SignatureReceived)
 	m.rebuildListener = make(chan struct{})
 	m.rebuildListenerDone = make(chan struct{})
-	m.eventsPA = make(chan *contract.MpcCoordinatorParticipantAdded)
-	m.eventsKA = make(chan *contract.MpcCoordinatorKeygenRequestAdded)
-	m.eventsKG = make(chan *contract.MpcCoordinatorKeyGenerated)
-	m.eventsStA = make(chan *contract.MpcCoordinatorStakeRequestAdded)
-	m.eventsStS = make(chan *contract.MpcCoordinatorStakeRequestStarted)
+	m.eventsPA = make(chan *contract.MpcManagerParticipantAdded)
+	m.eventsKA = make(chan *contract.MpcManagerKeygenRequestAdded)
+	m.eventsKG = make(chan *contract.MpcManagerKeyGenerated)
+	m.eventsStA = make(chan *contract.MpcManagerStakeRequestAdded)
+	m.eventsStS = make(chan *contract.MpcManagerStakeRequestStarted)
 	m.secpFactory = avaCrypto.FactorySECP256K1R{}
 	return m, nil
 }
@@ -704,7 +704,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 	return nil
 }
 
-func (m *TaskManager) onKeygenRequestAdded(evt *contract.MpcCoordinatorKeygenRequestAdded) error {
+func (m *TaskManager) onKeygenRequestAdded(evt *contract.MpcManagerKeygenRequestAdded) error {
 	groupIdHex := common.Bytes2Hex(evt.GroupId[:])
 
 	groupInfo, err := m.storer.LoadGroupInfo(groupIdHex)
@@ -830,7 +830,7 @@ func (m *TaskManager) subscribeStakeRequestStarted() error {
 	return nil
 }
 
-func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipantAdded) error {
+func (m *TaskManager) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) error {
 	// Store participant
 	groupId := common.Bytes2Hex(evt.GroupId[:])
 	p := storage.ParticipantInfo{
@@ -888,7 +888,7 @@ func (m *TaskManager) onParticipantAdded(evt *contract.MpcCoordinatorParticipant
 	return nil
 }
 
-func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) error {
+func (m *TaskManager) onKeyGenerated(req *contract.MpcManagerKeyGenerated) error {
 	// todo: only do the following if it's me added.
 
 	// Subscribe event StakeRequestAdded
@@ -907,7 +907,7 @@ func (m *TaskManager) onKeyGenerated(req *contract.MpcCoordinatorKeyGenerated) e
 }
 
 // todo: store this event info
-func (m *TaskManager) onStakeRequestAdded(req *contract.MpcCoordinatorStakeRequestAdded) error {
+func (m *TaskManager) onStakeRequestAdded(req *contract.MpcManagerStakeRequestAdded) error {
 	ind, err := m.getMyIndex(req.PublicKey)
 	if err != nil {
 		return errors.WithStack(err)
@@ -940,7 +940,7 @@ func (m *TaskManager) removePendingJoin(requestId *big.Int) error {
 	return nil
 }
 
-func (m *TaskManager) onStakeRequestStarted(req *contract.MpcCoordinatorStakeRequestStarted) error {
+func (m *TaskManager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStarted) error {
 	m.removePendingJoin(req.RequestId)
 
 	myInd, err := m.getMyIndex(req.PublicKey)

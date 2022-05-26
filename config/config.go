@@ -42,9 +42,9 @@ type Config interface {
 
 	CoordinatorAddress() *common.Address
 	SetCoordinatorAddress(address string)
-	CoordinatorBoundInstance() *contract.MpcCoordinator
-	CoordinatorBoundListener() *contract.MpcCoordinator
-	CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcCoordinator, error)
+	CoordinatorBoundInstance() *contract.MpcManager
+	CoordinatorBoundListener() *contract.MpcManager
+	CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcManager, error)
 
 	NetworkContext() *core.NetworkContext
 
@@ -82,8 +82,8 @@ type ConfigImpl struct {
 	pChainIssueClient platformvm.Client
 
 	coordinatorAddress       *common.Address
-	coordinatorBoundInstance *contract.MpcCoordinator
-	coordinatorBoundListener *contract.MpcCoordinator
+	coordinatorBoundInstance *contract.MpcManager
+	coordinatorBoundListener *contract.MpcManager
 
 	//
 	ConfigNetwork
@@ -190,10 +190,10 @@ func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 	c.coordinatorAddress = &coordinatorAddr
 
 	// Create coordinator bound instance and listener
-	coordBoundInst, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethRpcClient)
+	coordBoundInst, err := contract.NewMpcManager(*c.coordinatorAddress, c.ethRpcClient)
 	logger.FatalOnError(err, "Failed to create mpc-coordinator instance", logger.Field{"error", err})
 	c.coordinatorBoundInstance = coordBoundInst
-	coordBoundListener, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethWsClient)
+	coordBoundListener, err := contract.NewMpcManager(*c.coordinatorAddress, c.ethWsClient)
 	logger.FatalOnError(err, "Failed to create mpc-coordinator listener", logger.Field{"error", err})
 	c.coordinatorBoundListener = coordBoundListener
 
@@ -268,15 +268,15 @@ func (c *ConfigImpl) SetCoordinatorAddress(address string) {
 	c.CoordinatorAddress_ = address
 }
 
-func (c *ConfigImpl) CoordinatorBoundInstance() *contract.MpcCoordinator {
+func (c *ConfigImpl) CoordinatorBoundInstance() *contract.MpcManager {
 	return c.coordinatorBoundInstance
 }
 
-func (c *ConfigImpl) CoordinatorBoundListener() *contract.MpcCoordinator {
+func (c *ConfigImpl) CoordinatorBoundListener() *contract.MpcManager {
 	return c.coordinatorBoundListener
 }
 
-func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcCoordinator, error) {
+func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcManager, error) {
 	// Create eth ws client
 	err := backoff.RetryFn(log, ctx, backoff.ExponentialForever(), func() error {
 		ethWsCli, err := ethclient.Dial(c.EthWsUrl)
@@ -298,7 +298,7 @@ func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx cont
 	}
 
 	// Create coordinator bound listener
-	coordBoundListener, err := contract.NewMpcCoordinator(*c.coordinatorAddress, c.ethWsClient)
+	coordBoundListener, err := contract.NewMpcManager(*c.coordinatorAddress, c.ethWsClient)
 	if err != nil {
 		log.Error("Failed to create mpc-coordinator listener", logger.Field{"error", err})
 		return nil, nil, errors.Wrap(err, "failed to  create mpc-coordinator listener")

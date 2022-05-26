@@ -25,8 +25,8 @@ type MpcProvider struct {
 	chainId        *big.Int
 	rpcClient      *ethclient.Client
 	wsClient       *ethclient.Client
-	RpcCoordinator *contract.MpcCoordinator
-	WsCoordinator  *contract.MpcCoordinator
+	RpcCoordinator *contract.MpcManager
+	WsCoordinator  *contract.MpcManager
 	privateKey     *ecdsa.PrivateKey
 	txSigner       *bind.TransactOpts
 }
@@ -38,10 +38,10 @@ func New(log logger.Logger,
 	rpcClient *ethclient.Client,
 	wsClient *ethclient.Client) *MpcProvider {
 
-	rpcCoordinator, err := contract.NewMpcCoordinator(*coordinatorAddr, rpcClient)
-	log.FatalOnError(err, "Failed to create MpcCoordinator bindings", logger.Field{"error", err})
-	wsCoordinator, err := contract.NewMpcCoordinator(*coordinatorAddr, wsClient)
-	log.FatalOnError(err, "Failed to create MpcCoordinator bindings", logger.Field{"error", err})
+	rpcCoordinator, err := contract.NewMpcManager(*coordinatorAddr, rpcClient)
+	log.FatalOnError(err, "Failed to create MpcManager bindings", logger.Field{"error", err})
+	wsCoordinator, err := contract.NewMpcManager(*coordinatorAddr, wsClient)
+	log.FatalOnError(err, "Failed to create MpcManager bindings", logger.Field{"error", err})
 
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, chainId)
 	log.FatalOnError(err, "Failed to create transaction signer", logger.Field{"error", err})
@@ -151,7 +151,7 @@ func (m *MpcProvider) watchKeyGeneratedEvent(groupId []byte) (string, error) {
 	var groupId32 [32]byte
 	copy(groupId32[:], groupId)
 
-	events := make(chan *contract.MpcCoordinatorKeyGenerated)
+	events := make(chan *contract.MpcManagerKeyGenerated)
 
 	//var start = uint64(1)
 	//opts := new(bind.WatchOpts) // todo: to get more clear on opts meaning.
@@ -199,7 +199,7 @@ func (m *MpcProvider) ensureBalance(participantAddrs []*common.Address) error {
 
 // todo: check whether the emit group id is fully corresponding to the given participant public keys.
 func (m *MpcProvider) waitForAllParticipantsAdded(participantPubKeys [][]byte) (string, error) {
-	events := make(chan *contract.MpcCoordinatorParticipantAdded)
+	events := make(chan *contract.MpcManagerParticipantAdded)
 
 	var start = uint64(1)
 	opts := new(bind.WatchOpts)

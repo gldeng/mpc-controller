@@ -100,7 +100,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 	_ = gctx
 
 	// Deploy coordinator contract
-	coordinatorAdd, _, err := mpc_provider.DeployMpcCoordinator(suite.log, suite.cChainId, suite.cRpcClient, suite.cPrivateKey)
+	coordinatorAdd, _, err := mpc_provider.DeployMpcManager(suite.log, suite.cChainId, suite.cRpcClient, suite.cPrivateKey)
 	require.Nilf(err, "error: %v", err)
 	suite.log.Info("Deployed mpc coordinator", logger.Field{"coordinatorAddress", coordinatorAdd.Hex()})
 	suite.coordinatorAddr = *coordinatorAdd

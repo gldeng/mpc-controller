@@ -16,7 +16,7 @@ import (
 // To run a local test network please reference "https://docs.avax.network/build/tutorials/platform/create-a-local-test-network/".
 // To transfer fund to the address mentioned above, you can use Avalanche wallet from "https://wallet.avax.network/".
 // Plus go to "https://docs.avax.network/learn/platform-overview/transaction-fees" for more information on Avalanche transaction fee.
-func TestDeployMpcCoordinator(t *testing.T) {
+func TestDeployMpcManager(t *testing.T) {
 	logger.DevMode = true
 
 	log := logger.Default()
@@ -26,9 +26,9 @@ func TestDeployMpcCoordinator(t *testing.T) {
 
 	cRpcClient := network.DefaultEthClient()
 
-	addr, mpcCoordinator, err := DeployMpcCoordinator(log, chainId, cRpcClient, privateKey)
+	addr, MpcManager, err := DeployMpcManager(log, chainId, cRpcClient, privateKey)
 	require.Nilf(t, err, "error:%v", err)
 
 	spew.Println("Deployed Mpc-coordinator address: ", addr.Hex())
-	spew.Dump(mpcCoordinator)
+	spew.Dump(MpcManager)
 }
