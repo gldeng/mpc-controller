@@ -30,14 +30,14 @@ var (
 
 // AvaLidoMetaData contains all meta data concerning the AvaLido contract.
 var AvaLidoMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"mpcManagerAddress\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"initiateStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"mpcManager\",\"outputs\":[{\"internalType\":\"contractIMpcManagerSimple\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"mpcManagerAddress_\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"mpcManagerAddress\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initiateStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"mpcManager\",\"outputs\":[{\"internalType\":\"contractIMpcManagerSimple\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"mpcManagerAddress_\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
 	Sigs: map[string]string{
 		"12065fe0": "getBalance()",
-		"b80325d6": "initiateStake(uint256)",
+		"db4567d3": "initiateStake()",
 		"846b3c8b": "mpcManager()",
 		"7286bf2f": "mpcManagerAddress_()",
 	},
-	Bin: "0x608060405260405161036038038061036083398101604081905261002291610051565b600080546001600160a01b039092166001600160a01b0319928316811790915560018054909216179055610081565b60006020828403121561006357600080fd5b81516001600160a01b038116811461007a57600080fd5b9392505050565b6102d0806100906000396000f3fe6080604052600436106100435760003560e01c806312065fe01461004f5780637286bf2f14610071578063846b3c8b146100a9578063b80325d6146100c957600080fd5b3661004a57005b600080fd5b34801561005b57600080fd5b50475b6040519081526020015b60405180910390f35b34801561007d57600080fd5b50600054610091906001600160a01b031681565b6040516001600160a01b039091168152602001610068565b3480156100b557600080fd5b50600154610091906001600160a01b031681565b3480156100d557600080fd5b5061005e6100e43660046101ca565b600080546040516001600160a01b039091169083156108fc0290849084818181858888f1935050505015801561011e573d6000803e3d6000fd5b50600061012c42601e6101e3565b9050600061013d62127500836101e3565b600154604080516060810190915260288082529293506001600160a01b03909116916389060b34919061027360208301398685856040518563ffffffff1660e01b81526004016101909493929190610209565b600060405180830381600087803b1580156101aa57600080fd5b505af11580156101be573d6000803e3d6000fd5b50959695505050505050565b6000602082840312156101dc57600080fd5b5035919050565b6000821982111561020457634e487b7160e01b600052601160045260246000fd5b500190565b608081526000855180608084015260005b8181101561023757602081890181015160a086840101520161021a565b8181111561024957600060a083860101525b506020830195909552506040810192909252606082015260a0601f909201601f1916010191905056fe4e6f646549442d50376f42324d636a42476757324e58585756596a56384a4544466f573978444535a2646970667358221220c5d79616e84c04211a6e1097931cdbe3b3a0e44ebfa66406d3d91b3eb522926a64736f6c634300080e0033",
+	Bin: "0x608060405260405161031e38038061031e83398101604081905261002291610051565b600080546001600160a01b039092166001600160a01b0319928316811790915560018054909216179055610081565b60006020828403121561006357600080fd5b81516001600160a01b038116811461007a57600080fd5b9392505050565b61028e806100906000396000f3fe6080604052600436106100435760003560e01c806312065fe01461004f5780637286bf2f14610071578063846b3c8b146100a9578063db4567d3146100c957600080fd5b3661004a57005b600080fd5b34801561005b57600080fd5b50475b6040519081526020015b60405180910390f35b34801561007d57600080fd5b50600054610091906001600160a01b031681565b6040516001600160a01b039091168152602001610068565b3480156100b557600080fd5b50600154610091906001600160a01b031681565b3480156100d557600080fd5b5061005e6000806100e742601e6101a1565b905060006100f862127500836101a1565b600154604080516060810190915260288082529293506001600160a01b03909116916389060b349168015af1d78b58c4000091610231602083013968015af1d78b58c4000086866040518663ffffffff1660e01b815260040161015e94939291906101c7565b6000604051808303818588803b15801561017757600080fd5b505af115801561018b573d6000803e3d6000fd5b505050505068015af1d78b58c400009250505090565b600082198211156101c257634e487b7160e01b600052601160045260246000fd5b500190565b608081526000855180608084015260005b818110156101f557602081890181015160a08684010152016101d8565b8181111561020757600060a083860101525b506020830195909552506040810192909252606082015260a0601f909201601f1916010191905056fe4e6f646549442d50376f42324d636a42476757324e58585756596a56384a4544466f573978444535a2646970667358221220ae819c0e95f78e104e4af8be9c13b11db27834b76788bdaf21c38227c5289b5164736f6c634300080e0033",
 }
 
 // AvaLidoABI is the input ABI used to generate the binding from.
@@ -304,25 +304,25 @@ func (_AvaLido *AvaLidoCallerSession) MpcManagerAddress() (common.Address, error
 	return _AvaLido.Contract.MpcManagerAddress(&_AvaLido.CallOpts)
 }
 
-// InitiateStake is a paid mutator transaction binding the contract method 0xb80325d6.
+// InitiateStake is a paid mutator transaction binding the contract method 0xdb4567d3.
 //
-// Solidity: function initiateStake(uint256 amount) returns(uint256)
-func (_AvaLido *AvaLidoTransactor) InitiateStake(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error) {
-	return _AvaLido.contract.Transact(opts, "initiateStake", amount)
+// Solidity: function initiateStake() returns(uint256)
+func (_AvaLido *AvaLidoTransactor) InitiateStake(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _AvaLido.contract.Transact(opts, "initiateStake")
 }
 
-// InitiateStake is a paid mutator transaction binding the contract method 0xb80325d6.
+// InitiateStake is a paid mutator transaction binding the contract method 0xdb4567d3.
 //
-// Solidity: function initiateStake(uint256 amount) returns(uint256)
-func (_AvaLido *AvaLidoSession) InitiateStake(amount *big.Int) (*types.Transaction, error) {
-	return _AvaLido.Contract.InitiateStake(&_AvaLido.TransactOpts, amount)
+// Solidity: function initiateStake() returns(uint256)
+func (_AvaLido *AvaLidoSession) InitiateStake() (*types.Transaction, error) {
+	return _AvaLido.Contract.InitiateStake(&_AvaLido.TransactOpts)
 }
 
-// InitiateStake is a paid mutator transaction binding the contract method 0xb80325d6.
+// InitiateStake is a paid mutator transaction binding the contract method 0xdb4567d3.
 //
-// Solidity: function initiateStake(uint256 amount) returns(uint256)
-func (_AvaLido *AvaLidoTransactorSession) InitiateStake(amount *big.Int) (*types.Transaction, error) {
-	return _AvaLido.Contract.InitiateStake(&_AvaLido.TransactOpts, amount)
+// Solidity: function initiateStake() returns(uint256)
+func (_AvaLido *AvaLidoTransactorSession) InitiateStake() (*types.Transaction, error) {
+	return _AvaLido.Contract.InitiateStake(&_AvaLido.TransactOpts)
 }
 
 // Receive is a paid mutator transaction binding the contract receive function.

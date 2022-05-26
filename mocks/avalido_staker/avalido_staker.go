@@ -55,8 +55,8 @@ func New(log logger.Logger,
 	}
 }
 
-func (a *AvaLidoStaker) InitiateStake(amount *big.Int) error {
-	tx, err := a.cRpcAvaLido.InitiateStake(a.cTxSigner, amount)
+func (a *AvaLidoStaker) InitiateStake() error {
+	tx, err := a.cRpcAvaLido.InitiateStake(a.cTxSigner)
 	if err != nil {
 		a.log.Error("Got an error when initiate stake", logger.Field{"error", err})
 		return errors.Wrap(err, "got an error when initiate stake")

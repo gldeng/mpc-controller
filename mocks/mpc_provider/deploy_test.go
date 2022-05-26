@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"math/big"
+	"os"
 	"testing"
 )
 
@@ -28,6 +29,11 @@ func TestDeployMpcManager(t *testing.T) {
 
 	addr, MpcManager, err := DeployMpcManager(log, chainId, cRpcClient, privateKey)
 	require.Nilf(t, err, "error:%v", err)
+
+	err = os.Setenv("MPC_MANAGER", addr.Hex())
+	require.Nil(t, err)
+	s := os.Getenv("MPC_MANAGER")
+	_ = s
 
 	spew.Println("Deployed Mpc-coordinator address: ", addr.Hex())
 	spew.Dump(MpcManager)

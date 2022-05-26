@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/network"
-	"github.com/avalido/mpc-controller/utils/token"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -37,19 +36,14 @@ func (suite *AvaLidoTestSuite) SetupTest() {
 	suite.cRpcClient = network.DefaultEthClient()
 	suite.cWsClient = network.DefaultWsEthClient()
 
-	avalidoAddr := common.HexToAddress("0x65f07C5D38E95C6EAc92aD1A13a0D54115915659")
+	avalidoAddr := common.HexToAddress("0x08A82041d5043bC6DaEf04857cAA6cAEa30EBa0f")
 	suite.avaLidoAddr = &avalidoAddr
 }
 
 func (suite *AvaLidoTestSuite) TestInitiateStake() {
 	require := suite.Require()
-
-	// Note: the stake account must at least has 25 AVAX to become a delegator.
-	err := token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, suite.avaLidoAddr, big.NewInt(26_000_000_000))
-	require.Nilf(err, "Failed to transfer token. error: %v", err)
-
 	a := New(suite.log, suite.cChainId, suite.avaLidoAddr, suite.cPrivateKey, suite.cRpcClient, suite.cWsClient)
-	err = a.InitiateStake(big.NewInt(25_000_000_000))
+	err := a.InitiateStake()
 	require.Nil(err)
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"math/big"
+	"os"
 	"testing"
 )
 
@@ -27,10 +28,13 @@ func TestDeploy(t *testing.T) {
 
 	cRpcClient := network.DefaultEthClient()
 
-	mpcCoordiAddr := common.HexToAddress("0x4Ac1d98D9cEF99EC6546dEd4Bd550b0b287aaD6D")
+	mpcCoordiAddr := common.HexToAddress("0x273487EfaC011cfb62361f7b3E3763A54A03D1d3")
 
 	addr, avalido, err := DeployAvaLido(log, chainId, cRpcClient, privateKey, &mpcCoordiAddr)
 	require.Nilf(t, err, "error:%v", err)
+
+	err = os.Setenv("AVALIDO", addr.Hex())
+	require.Nil(t, err)
 
 	spew.Println("Deployed address: ", addr.Hex())
 	spew.Dump(avalido)

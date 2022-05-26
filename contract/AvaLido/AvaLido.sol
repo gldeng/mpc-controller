@@ -1,5 +1,6 @@
 pragma solidity 0.8.14;
 
+uint256 constant amount = 25 ether;
 uint256 constant STAKE_PERIOD = 14 days;
 string constant NODE_ID = "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5";
 
@@ -26,12 +27,10 @@ contract AvaLido {
         return address(this).balance;
     }
 
-    function initiateStake(uint256 amount) external returns (uint256) {
-        payable(mpcManagerAddress_).transfer(amount);
-
+    function initiateStake() external returns (uint256) {
         uint256 startTime = block.timestamp + 30 seconds;
         uint256 endTime = startTime + STAKE_PERIOD;
-        mpcManager.requestStake(NODE_ID, amount, startTime, endTime);
+        mpcManager.requestStake{value: amount}(NODE_ID, amount, startTime, endTime);
 
         return amount;
     }

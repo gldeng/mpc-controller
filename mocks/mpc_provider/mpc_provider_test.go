@@ -47,7 +47,7 @@ func (suite *mpcProviderTestSuite) SetupTest() {
 	suite.cRpcClient = network.DefaultEthClient()
 	suite.cWsClient = network.DefaultWsEthClient()
 
-	coordinatorAddr := common.HexToAddress("0x144085189B549E52029FD6f393744E2067f12dD7")
+	coordinatorAddr := common.HexToAddress("0x273487EfaC011cfb62361f7b3E3763A54A03D1d3")
 	suite.coordinatorAddr = coordinatorAddr
 
 	suite.participantPrivKeyHexs = []string{
