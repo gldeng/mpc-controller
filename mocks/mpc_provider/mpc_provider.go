@@ -90,8 +90,31 @@ func (m *MpcProvider) CreateGroup(participantPubKeys []*ecdsa.PublicKey, thresho
 		return "", errors.WithStack(err)
 	}
 
-	logger.Info("Group created", logger.Field{"groupId", groupId})
+	m.log.Info("Group created", logger.Field{"groupId", groupId})
 	return groupId, nil
+}
+
+func (m *MpcProvider) SetAvaLidoAddress(address *common.Address) error {
+	_, err := m.RpcCoordinator.SetAvaLidoAddress(m.txSigner, *address)
+	if err != nil {
+		m.log.Error("Failed to set AvaLido address", logger.Field{"error", err})
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+func (m *MpcProvider) RequestKeygenAndGetAddress(groupIdHex string) (*common.Address, error) {
+	_, err := m.RequestKeygen(groupIdHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	addr, err := m.RpcCoordinator.LastGenAddress(nil)
+	if err != nil {
+		m.log.Error("Failed to set AvaLido address", logger.Field{"error", err})
+		return nil, errors.WithStack(err)
+	}
+	return &addr, nil
 }
 
 func (m *MpcProvider) RequestKeygen(groupIdHex string) (string, error) {
@@ -103,7 +126,7 @@ func (m *MpcProvider) RequestKeygen(groupIdHex string) (string, error) {
 	}
 	resultChan := make(chan resultT)
 	go func() {
-		logger.Debug("Staker started watch KeyGenerated event", logger.Field{"groupIdHex", groupIdHex})
+		m.log.Debug("Staker started watch KeyGenerated event", logger.Field{"groupIdHex", groupIdHex})
 		pubKeyHex, err := m.watchKeyGeneratedEvent(groupId)
 		if err != nil {
 			resultChan <- resultT{"", errors.WithStack(err)}

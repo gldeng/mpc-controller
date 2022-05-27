@@ -3,20 +3,13 @@ package task
 import (
 	"context"
 	"crypto/ecdsa"
-	"github.com/avalido/mpc-controller/mocks/avalido_staker"
-	"github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/avalido/mpc-controller/utils/token"
-
-	//"github.com/ava-labs/avalanchego/ids"
-	//"github.com/ava-labs/avalanchego/vms/components/avax"
-	//"github.com/ava-labs/avalanchego/vms/platformvm"
-	//"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/config"
-	//"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/mocks/avalido_staker"
 	"github.com/avalido/mpc-controller/mocks/mpc_provider"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/network"
+	"github.com/avalido/mpc-controller/utils/token"
 	"github.com/ethereum/go-ethereum/common"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 
@@ -31,17 +24,6 @@ import (
 	"time"
 )
 
-const (
-	AVAX_ID      = "2fombhL7aGPwj3KH4bfrmJwW6PVnMobf9Y2fn9GwxiAAJyFDbe"
-	CCHAIN_ID    = "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU"
-	NETWORK_ID   = 12345
-	CHAIN_ID     = 43112
-	GAS_PER_BYTE = 1
-	GAS_PER_SIG  = 1000
-	GAS_FIXED    = 10000
-	IMPORT_FEE   = 1000000
-)
-
 type TaskManagerTestSuite struct {
 	suite.Suite
 
@@ -52,9 +34,6 @@ type TaskManagerTestSuite struct {
 	cWsClient   *ethclient.Client
 
 	participantPrivKeyHexs []string
-	//coordinatorAddrHex     string
-	//groupIdHex string
-	//privateKeyHex   string
 
 	stakeAddr       common.Address
 	mpcProvider     *mpc_provider.MpcProvider
@@ -92,31 +71,28 @@ func (suite *TaskManagerTestSuite) SetupTest() {
 func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 	require := suite.Require()
 
-	ctx, shutdown := context.WithCancel(context.Background())
+	ctx, _ := context.WithCancel(context.Background())
 	g, gctx := errgroup.WithContext(ctx)
-
-	// todo: deal with elegant shutdown
-	_ = shutdown
-	_ = gctx
 
 	// Deploy coordinator contract
 	coordinatorAdd, _, err := mpc_provider.DeployMpcManager(suite.log, suite.cChainId, suite.cRpcClient, suite.cPrivateKey)
-	require.Nilf(err, "error: %v", err)
-	suite.log.Info("Deployed mpc coordinator", logger.Field{"coordinatorAddress", coordinatorAdd.Hex()})
+	require.Nil(err)
 	suite.coordinatorAddr = *coordinatorAdd
-	suite.log.Debug("######## Coordinator contract address", logger.Field{"address", suite.coordinatorAddr.Hex()})
 	mpcProvider := mpc_provider.New(suite.log, suite.cChainId, &suite.coordinatorAddr, suite.cPrivateKey, suite.cRpcClient, suite.cWsClient)
 	suite.mpcProvider = mpcProvider
 
 	// Deploy AvaLido contract
 	avaLidoAddr, _, err := avalido_staker.DeployAvaLido(suite.log, suite.cChainId, suite.cRpcClient, suite.cPrivateKey, &suite.coordinatorAddr)
-	require.Nilf(err, "error: %v", err)
+	require.Nil(err)
 	suite.avaLidoAddr = *avaLidoAddr
-	suite.log.Debug("######## AvaLido contract address", logger.Field{"address", suite.avaLidoAddr.Hex()})
 	avalidoStaker := avalido_staker.New(suite.log, suite.cChainId, avaLidoAddr, suite.cPrivateKey, suite.cRpcClient, suite.cWsClient)
 	suite.avaLidoStaker = avalidoStaker
 
-	// Simulate creating group and request key generating
+	// Set AvaLido address with MpcManager
+	err = mpcProvider.SetAvaLidoAddress(avaLidoAddr)
+	require.Nil(err)
+
+	// Simulate creating group, request key generating and fund the corresponding address for tx gas fee
 	g.Go(func() error {
 		time.Sleep(time.Second * 5)
 		var pubKeys []*ecdsa.PublicKey
@@ -136,21 +112,14 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 			os.Exit(1)
 		}
 
-		pubKeyHex, err := suite.mpcProvider.RequestKeygen(groupId)
+		stakeAddr, err := suite.mpcProvider.RequestKeygenAndGetAddress(groupId)
 		if err != nil {
-			logger.Error("Got an error when request key generation")
+			suite.log.Error("Failed to RequestKeygenAndGetAddress",
+				logger.Field{"error", err})
 			os.Exit(1)
 		}
 
-		pubKey, err := crypto.UnmarshalPubKeyHex(pubKeyHex)
-		if err != nil {
-			logger.Error("Got an error when unmarshal public key")
-			os.Exit(1)
-		}
-
-		stakeAddr := ethCrypto.PubkeyToAddress(*pubKey)
-		suite.stakeAddr = stakeAddr
-		suite.log.Debug("######## Account to stake", logger.Field{"address", suite.stakeAddr})
+		suite.stakeAddr = *stakeAddr
 		return nil
 	})
 
@@ -171,19 +140,20 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 
 			// Transfer to AvaLido smart contract to make sure there is enough balance to be deducted for initiating stake
 			// Including gas fee
-			err := token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.avaLidoAddr, big.NewInt(1_000_000_000_000_000_000))
+			amnt, _ := new(big.Int).SetString("100000000000000000000", 10)
+			err := token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.avaLidoAddr, amnt)
 			require.Nilf(err, "Failed to transfer token. error: %v", err)
 
 			time.Sleep(time.Second * 10)
 
 			// Transfer gas fee to Coordinator smart contract
-			err = token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.coordinatorAddr, big.NewInt(1_000_000_000_000_000_000))
+			err = token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.coordinatorAddr, amnt)
 			require.Nilf(err, "Failed to transfer token. error: %v", err)
 
 			time.Sleep(time.Second * 10)
 
 			// Transfer gas fee to stake address
-			err = token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.stakeAddr, big.NewInt(1_000_000_000_000_000_000))
+			err = token.TransferInCChain(suite.cRpcClient, suite.cChainId, suite.cPrivateKey, &suite.stakeAddr, amnt)
 			require.Nilf(err, "Failed to transfer token. error: %v", err)
 
 			time.Sleep(time.Second * 10)
@@ -198,8 +168,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 			bl, _ = suite.cRpcClient.BalanceAt(context.Background(), suite.stakeAddr, nil)
 			suite.log.Debug("$$$$$$$$$1 Balance of stake address before initiating stake", []logger.Field{{"address", suite.stakeAddr.Hex()}, {"balance", bl.Uint64()}}...)
 
-			amountToStake := big.NewInt(25_000_000_000)
-			err = suite.avaLidoStaker.InitiateStake(amountToStake)
+			err = suite.avaLidoStaker.InitiateStake()
 			if err != nil {
 				logger.Error("Failed to initiate stake",
 					logger.Field{"error", err})
@@ -223,15 +192,17 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 
 	// Start mpc controllers
 	var configFiles = []string{
-		"./testConfigs/config1.yaml",
-		"./testConfigs/config2.yaml",
-		"./testConfigs/config3.yaml",
+		"../config/config1.yaml",
+		"../config/config2.yaml",
+		"../config/config3.yaml",
 	}
 
 	for _, configFile := range configFiles {
 		configImpl := config.ParseConfigFromFile(configFile)
+		logger.DevMode = configImpl.IsDevMode()
+		log := logger.Default()
 		configImpl.SetCoordinatorAddress(suite.coordinatorAddr.Hex())
-		configInterface := config.InitConfig(configImpl)
+		configInterface := config.InitConfig(log, configImpl)
 
 		g.Go(func() error {
 			logger.DevMode = configInterface.IsDevMode()
@@ -240,7 +211,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 			staker := NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
 
 			storer := storage.New(log, configImpl.DatabasePath())
-			m, err := NewTaskManager(log, configInterface, storer, staker)
+			m, err := NewTaskManager(gctx, log, configInterface, storer, staker)
 			if err != nil {
 				return errors.Wrap(err, "Failed to create task-manager for mpc-controller")
 			}

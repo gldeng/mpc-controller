@@ -1,8 +1,8 @@
 enableDevMode: true
 controllerId: "mpc-controller-02"
 controllerKey: "6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33"
-coordinatorAddress: "0x80D72Ef553C7B5f92f6966c2799d926d26Da3dAF"
-mpcServerUrl: "http://localhost:8002"
+coordinatorAddress: "0x273487EfaC011cfb62361f7b3E3763A54A03D1d3"
+mpcServerUrl: "http://localhost:9000"
 ethRpcUrl: "http://localhost:9650/ext/bc/C/rpc"
 ethWsUrl: "ws://127.0.0.1:9650/ext/bc/C/ws"
 cChainIssueUrl: "http://localhost:9650"
