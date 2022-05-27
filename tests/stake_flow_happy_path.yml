@@ -1,0 +1,175 @@
+name: Stake flow integration test - happy path
+
+vars:
+  url: https://eu.api.ovh.com/
+
+testcases:
+  - name: Cleanup testing environment
+    steps:
+      - script: ../scripts/kill.sh
+        assertions:
+          - result.code ShouldEqual 0
+          -
+  - name: Build targets
+    steps:
+      - script: ../scripts/build.sh
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: Setup Avalanche local network
+    steps:
+      - script: ../scripts/start_avalanche_network.sh
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: Setup mpc-server local network
+    steps:
+      - script: cd ./mpc-server; ./scripts/start.sh; cd ..
+        assertions:
+          - result.code ShouldEqual 0
+
+  - name: Deploy MpcManager smart contract
+    steps:
+      - script: cd ./mpc-server; ./scripts/start.sh; cd ..
+        assertions:
+          - result.code ShouldEqual 0
+#
+#  - name: Deploy AvaLido smart contract
+#    steps:
+#      - script: echo 'foo'
+#        assertions:
+#          - result.code ShouldEqual 0
+#      - script: echo 'bar'
+#        assertions:
+#          - result.systemout ShouldNotContainSubstring foo
+#          - result.timeseconds ShouldBeLessThan 1
+#
+#  - name: Fund AvaLido address with sufficient stake amount
+#    steps:
+#      - script: echo 'foo'
+#        assertions:
+#          - result.code ShouldEqual 0
+#      - script: echo 'bar'
+#        assertions:
+#          - result.systemout ShouldNotContainSubstring foo
+#          - result.timeseconds ShouldBeLessThan 1
+#
+#  - name: Set AvaLido address with MpcManager
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        timeout: 5
+#        assertions:
+#          - result.body ShouldContainSubstring /dedicated/server
+#          - result.body ShouldContainSubstring /ipLoadbalancing
+#          - result.statuscode ShouldEqual 200
+#          - result.timeseconds ShouldBeLessThan 1
+#
+#  - name: Create a group with MpcManager
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Fund the group participants for transaction gas fee
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Set mpc-controller local network
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Generate a key for the group
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Query stake address to the last generated key
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Fund the stake address for transaction gas fee
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Initiate stake
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Check stake result
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200
+#
+#  - name: Cleanup testing garbage
+#    steps:
+#      - type: http
+#        method: GET
+#        url: https://eu.api.ovh.com/1.0/
+#        retry: 3
+#        retry_if: # (optional, lets you early break unrecoverable errors)
+#          - result.statuscode ShouldNotEqual 403
+#        delay: 2
+#        assertions:
+#          - result.statuscode ShouldEqual 200

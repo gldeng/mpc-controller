@@ -68,6 +68,7 @@ func mpcController(c *cli.Context) error {
 // todo: add mpc-controller version info
 // todo: mechanism to check result from mpc-server and resume task on mpc-controller startup
 // todo: history even track for mpc-coordinator smart contract.
+// todo: log rotation with lumberjack: https://github.com/natefinch/lumberjack
 
 func main() {
 	app := &cli.App{
