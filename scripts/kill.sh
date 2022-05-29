@@ -8,12 +8,13 @@ fi
 
 PROCESS_MPC_CONTROLLER=$(ps -aux | grep mpc-controller | xargs | wc -l)
 if [ $PROCESS_MPC_CONTROLLER -gt 1 ]; then
-    echo "Killing mpc-controller"
+  echo "Killing mpc-controller"
   pkill -f mpc-controller
 fi
 
 PROCESS_MPC_SERVER=$(ps -aux | grep mpc-server | xargs | wc -l)
 if [ $PROCESS_MPC_SERVER -gt 1 ]; then
+  echo "Killing mpc-server"
   pkill -f mpc-server
 fi
 
