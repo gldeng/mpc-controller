@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 
-avalanche=$(ps aux | grep avalanchego)
-if [ ! -d "$avalanche" ]; then
+PROCESS_AVALANCHE=$(ps -aux | grep avalanchego | xargs | wc -l)
+if [ $PROCESS_AVALANCHE -gt 1 ]; then
+  echo "Killing avalanchego"
   pkill -f avalanchego
 fi
 
-mpcController=$(ps aux | grep mpc-controller)
-if [ ! -d "$mpcController" ]; then
+PROCESS_MPC_CONTROLLER=$(ps -aux | grep mpc-controller | xargs | wc -l)
+if [ $PROCESS_MPC_CONTROLLER -gt 1 ]; then
+    echo "Killing mpc-controller"
   pkill -f mpc-controller
 fi
 
-mpcServer=$(ps aux | grep mpc-server)
-if [ ! -d "$mpcServer" ]; then
+PROCESS_MPC_SERVER=$(ps -aux | grep mpc-server | xargs | wc -l)
+if [ $PROCESS_MPC_SERVER -gt 1 ]; then
   pkill -f mpc-server
 fi
 
