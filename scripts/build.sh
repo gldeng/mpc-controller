@@ -1,30 +1,38 @@
 #!/usr/bin/env bash
 
-avalanche="git@github.com:ava-labs/avalanchego.git"
-mpcServer="git@github.com:AvaLido/mpc-server.git"
+cd ../avalanchego
 
-if [ ! -d "avalanchego" ]; then
-  git clone $avalanche
-  cd avalanchego
+if [ ! -d "build" ]; then
+  chmod +x ./scripts/build.sh
+  echo "Start building avalanchego..."
   ./scripts/build.sh
-  cd ..
 fi
 
-if [ ! -d "mpc-server" ]; then
-  git clone $mpcServer
-  cd mpc-server
-  cd messenger
+## Note: install libgmp-dev and libssl-dev before building mpc-server
+#sudo apt-get install libgmp-dev
+#sudo apt-get install libssl-dev
+
+cd ../mpc-server
+cd messenger
+if [ ! -d "target" ]; then
+  echo "Start building mpc-server/messenger..."
   cargo build
-  cd ../secp256k1-id
+fi
+
+cd ../secp256k1-id
+if [ ! -d "target" ]; then
+  echo "Start building mpc-server/secp256k1-id..."
   cargo build
-  cd ..
-  cargo build
-  cd ..
 fi
 
 cd ..
-go build
+if [ ! -d "target" ]; then
+  echo "Start building mpc-server..."
+  cargo build
+fi
 
-cd ./tests
-
-sleep 10
+cd ../mpc-controller
+if [ ! -f "mpc-controller" ]; then
+  echo "Start building mpc-controller..."
+  go build
+fi
