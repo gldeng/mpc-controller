@@ -17,3 +17,11 @@ if [ $PROCESS_MPC_SERVER -gt 1 ]; then
   echo "Killing mpc-server"
   pkill -f mpc-server
 fi
+
+PROCESS_MPC_MESSENGER=$(ps -aux | grep messenger | wc -l)
+if [ $PROCESS_MPC_MESSENGER -gt 3 ]; then
+  echo "Killing mpc-messenger"
+  pkill -f messenger
+fi
+
+sleep 3
