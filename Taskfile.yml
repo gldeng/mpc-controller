@@ -1,5 +1,8 @@
 version: '3'
 
+includes:
+  tests: ./tests
+
 tasks:
   abigen:
     cmds:

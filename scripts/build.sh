@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Build avalanchego
+
 cd ../avalanchego
 
 if [ ! -d "build" ]; then
@@ -7,6 +9,8 @@ if [ ! -d "build" ]; then
   echo "Start building avalanchego..."
   ./scripts/build.sh
 fi
+
+# Build mpc-server
 
 ## Note: install libgmp-dev and libssl-dev before building mpc-server
 #sudo apt-get install libgmp-dev
@@ -31,6 +35,7 @@ if [ ! -d "target" ]; then
   cargo build
 fi
 
+# Build mpc-controller
 cd ../mpc-controller
 if [ ! -f "mpc-controller" ]; then
   echo "Start building mpc-controller..."

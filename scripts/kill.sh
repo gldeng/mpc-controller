@@ -6,6 +6,7 @@ if [ $PROCESS_AVALANCHE -gt 1 ]; then
   pkill -f avalanchego
 fi
 
+# todo: deal with: task: Failed to run task "tests:kill": exit status 143
 PROCESS_MPC_CONTROLLER=$(ps -aux | grep mpc-controller | wc -l)
 if [ $PROCESS_MPC_CONTROLLER -gt 3 ]; then
   echo "Killing mpc-controller"
