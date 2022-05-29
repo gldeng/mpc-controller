@@ -5,8 +5,8 @@ pragma solidity 0.8.14;
 import "../lib/openzeppelin-contracts/contracts/security/Pausable.sol";
 import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/access/AccessControlEnumerable.sol";
-import "../interfaces/IMpcManager.sol";
-import "../interfaces/IMpcCoordinator.sol";
+import "./interfaces/IMpcManager.sol";
+import "./interfaces/IMpcCoordinator.sol";
 
 contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcManager, IMpcCoordinator {
     // TODO:

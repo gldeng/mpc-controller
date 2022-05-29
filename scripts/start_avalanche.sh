@@ -5,6 +5,8 @@ if [ ! $PROCESS_AVALANCHE -gt 1 ]; then
   echo "Starting avalanchego"
   cd ../avalanchego
 
+#todo: use mktemp -d
+#https://code-maven.com/create-temporary-directory-on-linux-using-bash#:~:text=In%20Unix%2FLinux%20shell%20we,directory%20inside%20the%20%2Ftmp%20directory.&text=The%20%2Dd%20flag%20instructs%20the,replaced%20by%20a%20random%20character.
   mkdir avalanche
   cd avalanche
   mkdir log

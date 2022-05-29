@@ -1,4 +1,4 @@
-//go:generate abigen --sol AvaLido/AvaLido.sol --pkg contract --out AvaLido.go --type AvaLido
-//go:generate abigen --sol MpcManager/MpcManager.sol --pkg contract --out MpcManager.go --type MpcManager
+//go:generate abigen --sol src/AvaLido.sol --pkg contract --out AvaLido.go --type AvaLido
+//go:generate abigen --sol src/MpcManager.sol --pkg contract --out MpcManager.go --type MpcManager
 
 package contract

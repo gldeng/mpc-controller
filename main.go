@@ -70,6 +70,8 @@ func mpcController(c *cli.Context) error {
 // todo: history even track for mpc-coordinator smart contract.
 // todo: log rotation with lumberjack: https://github.com/natefinch/lumberjack
 
+// todo: add main_test.go
+// todo: apply confluentinc/bincover: https://github.com/confluentinc/bincover
 func main() {
 	app := &cli.App{
 		Name:  "mpc-controller",
