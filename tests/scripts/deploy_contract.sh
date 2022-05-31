@@ -9,7 +9,7 @@ C_CHAIN_RPC_URL=http://127.0.0.1:9650/ext/bc/C/rpc
 
 LAST_WD=$(pwd)
 
-echo "Starting deploy smart contracts"
+echo "Start deploying smart contracts"
 
 #read LAST_TEST_WD < /tmp/mpctest/testwd_last
 #
