@@ -1,0 +1,28 @@
+version: '3'
+
+tasks:
+  init:
+    cmds:
+       - cmd: bash ./tests/scripts/kill.sh
+         ignore_error: true
+       - bash ./tests/scripts/clone.sh
+       - bash ./tests/scripts/build.sh
+       - bash ./tests/scripts/test_wd.sh
+       - bash ./tests/scripts/start_avalanche.sh
+       - bash ./tests/scripts/start_mpc-server.sh
+       - sleep 20 # wait for Avalanche and Mpc-Server get started
+       - bash ./tests/scripts/deploy_contract.sh
+       - bash ./tests/scripts/start_mpc-controller.sh
+#
+#  fundParticipants:
+#    cmds:
+#      - cast send --rpc-url {{.URL}} --from {{.FROM}} --private-key {{.PK}} --value 1ether  {{.TO1}}
+#      - cast send --rpc-url {{.URL}} --from {{.FROM}} --private-key {{.PK}} --value 1ether  {{.TO2}}
+#      - cast send --rpc-url {{.URL}} --from {{.FROM}} --private-key {{.PK}} --value 1ether  {{.TO3}}
+#    vars:
+#      URL: http://127.0.0.1:9650/ext/bc/C/rpc
+#      FROM: 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC
+#      PK: 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
+#      TO1: 0x3051bA2d313840932B7091D2e8684672496E9A4B
+#      TO2: 0x7Ac8e2083E3503bE631a0557b3f2A8543EaAdd90
+#      TO3: 0x3600323b486F115CE127758ed84F26977628EeaA
