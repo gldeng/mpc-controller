@@ -1,29 +1,26 @@
 #!/usr/bin/env bash
 
-PROCESS_AVALANCHE=$(ps -aux | grep avalanchego | wc -l)
-if [ ! $PROCESS_AVALANCHE -gt 1 ]; then
-  echo "Starting avalanchego"
-  cd ../avalanchego
+LAST_WD=$(pwd)
 
-#todo: use mktemp -d
-#https://code-maven.com/create-temporary-directory-on-linux-using-bash#:~:text=In%20Unix%2FLinux%20shell%20we,directory%20inside%20the%20%2Ftmp%20directory.&text=The%20%2Dd%20flag%20instructs%20the,replaced%20by%20a%20random%20character.
-  mkdir avalanche
-  cd avalanche
-  mkdir log
-  mkdir db
-  cd ..
+echo "Starting avalanchego"
 
-  ./build/avalanchego --public-ip=127.0.0.1 --http-port=9650 --staking-port=9651 --db-dir=avalanche/db/node1 --network-id=local --staking-tls-cert-file=$(pwd)/staking/local/staker1.crt --staking-tls-key-file=$(pwd)/staking/local/staker1.key  2>&1 | tee avalanche/log/node1.log &
+read LAST_TEST_WD < /tmp/mpctest/testwd_last
 
-  ./build/avalanchego --public-ip=127.0.0.1 --http-port=9652 --staking-port=9653 --db-dir=avalanche/db/node2 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$(pwd)/staking/local/staker2.crt --staking-tls-key-file=$(pwd)/staking/local/staker2.key  2>&1 | tee avalanche/log/node2.log &
+cd $LAST_TEST_WD/avalanchego
 
-  ./build/avalanchego --public-ip=127.0.0.1 --http-port=9654 --staking-port=9655 --db-dir=avalanche/db/node3 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$(pwd)/staking/local/staker3.crt --staking-tls-key-file=$(pwd)/staking/local/staker3.key  2>&1 | tee avalanche/log/node3.log &
+mkdir log
+mkdir db
 
-  ./build/avalanchego --public-ip=127.0.0.1 --http-port=9656 --staking-port=9657 --db-dir=avalanche/db/node4 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$(pwd)/staking/local/staker4.crt --staking-tls-key-file=$(pwd)/staking/local/staker4.key  2>&1 | tee avalanche/log/node4.log &
+AVALANCHEGO_REPO=/tmp/mpctest/avalanchego/
 
-  ./build/avalanchego --public-ip=127.0.0.1 --http-port=9658 --staking-port=9659 --db-dir=avalanche/db/node5 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$(pwd)/staking/local/staker5.crt --staking-tls-key-file=$(pwd)/staking/local/staker5.key  2>&1 | tee avalanche/log/node5.log &
+$AVALANCHEGO_REPO/build/avalanchego --public-ip=127.0.0.1 --http-port=9650 --staking-port=9651 --db-dir=db/node1 --network-id=local --staking-tls-cert-file=$AVALANCHEGO_REPO/staking/local/staker1.crt --staking-tls-key-file=$AVALANCHEGO_REPO/staking/local/staker1.key  2>&1 | tee testdir/log/node1.log &
 
-  sleep 5
+$AVALANCHEGO_REPO/build/avalanchego --public-ip=127.0.0.1 --http-port=9652 --staking-port=9653 --db-dir=db/node2 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$AVALANCHEGO_REPO/staking/local/staker2.crt --staking-tls-key-file=$AVALANCHEGO_REPO/staking/local/staker2.key  2>&1 | tee log/node2.log &
 
-  cd ../mpc-controller
-fi
+$AVALANCHEGO_REPO/build/avalanchego --public-ip=127.0.0.1 --http-port=9654 --staking-port=9655 --db-dir=db/node3 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$AVALANCHEGO_REPO/staking/local/staker3.crt --staking-tls-key-file=$AVALANCHEGO_REPO/staking/local/staker3.key  2>&1 | tee log/node3.log &
+
+$AVALANCHEGO_REPO/build/avalanchego --public-ip=127.0.0.1 --http-port=9656 --staking-port=9657 --db-dir=db/node4 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$AVALANCHEGO_REPO/staking/local/staker4.crt --staking-tls-key-file=$AVALANCHEGO_REPO/staking/local/staker4.key  2>&1 | tee log/node4.log &
+
+$AVALANCHEGO_REPO/build/avalanchego --public-ip=127.0.0.1 --http-port=9658 --staking-port=9659 --db-dir=db/node5 --network-id=local --bootstrap-ips=127.0.0.1:9651 --bootstrap-ids=NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg --staking-tls-cert-file=$AVALANCHEGO_REPO/staking/local/staker5.crt --staking-tls-key-file=$AVALANCHEGO_REPO/staking/local/staker5.key  2>&1 | tee log/node5.log &
+
+cd $LAST_WD
