@@ -13,6 +13,9 @@ if [ ! -d "/tmp/mpctest/mpc-server" ]; then
 fi
 
 if [ ! -d "/tmp/mpctest/contracts" ]; then
+  git submodule init
+  git submodule update
+
   LAST_WD=$(pwd)
   cd /tmp/mpctest/
 
