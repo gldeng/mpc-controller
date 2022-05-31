@@ -13,6 +13,11 @@ tasks:
        - sleep 20 # wait for Avalanche and Mpc-Server get started
        - bash ./tests/scripts/deploy_contract.sh
        - bash ./tests/scripts/start_mpc-controller.sh
+
+  createGroup:
+    cmds:
+      - task: init
+      - venom run tests/testsuites/createGroup/createGroup.yml
 #
 #  fundParticipants:
 #    cmds:

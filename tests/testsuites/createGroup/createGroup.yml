@@ -1,0 +1,21 @@
+name: create group test suite
+
+testcases:
+  - name: Create a new group of three participants with threshold 1
+    steps:
+      - script: bash ./tests/testsuites/createGroup/createGroup.sh
+        assertions: # todo: to improve assertion
+          - result.systemout ShouldNotBeNil
+
+#  - name: Recreate a group
+#    steps:
+#      - script: ../scripts/kill.sh
+#        assertions:
+#          - result.code ShouldEqual 0
+#
+#  - name: Create a group without permission
+#    steps:
+#      - script: ../scripts/kill.sh
+#        assertions:
+#          - result.code ShouldEqual 0
+
