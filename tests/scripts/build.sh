@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 
+# Build mpc-controller
+if [ ! -f "/tmp/mpctest/mpc-controller/mpc-controller" ]; then
+  echo "Start building mpc-controller..."
+  go build
+  mv mpc-controller /tmp/mpctest/mpc-controller/
+fi
+
+LAST_WD=$(pwd)
+
+cd /tmp/mpctest/
+
 # Build avalanchego
 
-cd ../avalanchego
+cd avalanchego/
 
 if [ ! -d "build" ]; then
-  chmod +x ./scripts/build.sh
   echo "Start building avalanchego..."
-  ./scripts/build.sh
+  bash ./scripts/build.sh
 fi
 
 # Build mpc-server
@@ -35,9 +45,4 @@ if [ ! -d "target" ]; then
   cargo build
 fi
 
-# Build mpc-controller
-cd ../mpc-controller
-if [ ! -f "mpc-controller" ]; then
-  echo "Start building mpc-controller..."
-  go build
-fi
+cd $LAST_WD
