@@ -18,6 +18,11 @@ tasks:
     cmds:
       - task: init
       - venom run tests/testsuites/createGroup/createGroup.yml
+
+  requestKeygen:
+    cmds:
+      - task: createGroup
+      - venom run tests/testsuites/requestKeygen/requestKeygen.yml
 #
 #  fundParticipants:
 #    cmds:

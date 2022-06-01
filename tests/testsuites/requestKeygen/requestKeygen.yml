@@ -1,0 +1,8 @@
+name: request keygen test suite
+
+testcases:
+  - name: Request keygen with pre-defined group ID
+    steps:
+      - script: bash ./tests/testsuites/requestKeygen/requestKeygen.sh
+        assertions: # todo: to improve assertion, plus check lastGenPubKey and lastGenAddress
+          - result.systemout ShouldNotBeNil
