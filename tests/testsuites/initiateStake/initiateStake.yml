@@ -1,8 +1,0 @@
-name: Initiate stake test suite
-
-testcases:
-  - name: initiate stake
-    steps:
-      - script: bash ./tests/testsuites/initiateStake/initiateStake.sh
-        assertions: # todo: to improve assertion
-          - result.systemout ShouldNotBeNil

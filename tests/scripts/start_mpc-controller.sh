@@ -2,7 +2,7 @@
 
 LAST_WD=$(pwd)
 
-echo "Starting mpc-controller"
+echo "Start mpc-controller"
 
 read LAST_TEST_WD < /tmp/mpctest/testwd_last
 

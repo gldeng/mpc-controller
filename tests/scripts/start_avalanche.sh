@@ -2,7 +2,7 @@
 
 LAST_WD=$(pwd)
 
-echo "Starting avalanchego"
+echo "Start avalanchego"
 
 read LAST_TEST_WD < /tmp/mpctest/testwd_last
 
