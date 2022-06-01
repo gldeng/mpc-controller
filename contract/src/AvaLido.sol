@@ -9,6 +9,7 @@ interface IMpcManagerSimple {
 }
 
 // This version of AvaLido contract is simplified for testing of MPC-Manager stake feature.
+// todo: consider add deposit() function
 contract AvaLido {
     address public mpcManagerAddress_;
     IMpcManagerSimple public mpcManager;

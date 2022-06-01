@@ -23,7 +23,18 @@ tasks:
     cmds:
       - task: createGroup
       - venom run tests/testsuites/requestKeygen/requestKeygen.yml
-#
+
+  initiateStake:
+    cmds:
+      - task: requestKeygen
+      - venom run tests/testsuites/initiateStake/initiateStake.yml
+
+  cleanup: # todo: add more operation, such as rm -rf /tmp/mpctest if needed
+    cmds:
+      - sleep 30
+      - cmd: bash tests/scripts/kill.sh
+        ignore_error: true
+
 #  fundParticipants:
 #    cmds:
 #      - cast send --rpc-url {{.URL}} --from {{.FROM}} --private-key {{.PK}} --value 1ether  {{.TO1}}
