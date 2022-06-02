@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/ava-labs/avalanchego v1.7.9
 	github.com/ava-labs/coreth v0.8.8-rc.0
-	github.com/brianvoe/gofakeit/v6 v6.16.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/ethereum/go-ethereum v1.10.16
