@@ -42,6 +42,28 @@ func (l *logrus) Warn(msg string, fields ...Field) {
 	l.l.WithFields(fieldsl).Warn(msg)
 }
 
+// WarnOnError implements Logger.Warn for sirupsen/logrus logger
+func (l *logrus) WarnOnError(err error, msg string, fields ...Field) {
+	if err != nil {
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Warn(msg)
+	}
+}
+
+// WarnOnNotOk implements Logger.Warn for sirupsen/logrus logger
+func (l *logrus) WarnOnNotOk(ok bool, msg string, fields ...Field) {
+	if !ok {
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Warn(msg)
+	}
+}
+
 // Error implements Logger.Error for sirupsen/logrus logger
 func (l *logrus) Error(msg string, fields ...Field) {
 	fieldsl := sirupsenLogrus.Fields{}
@@ -62,6 +84,17 @@ func (l *logrus) ErrorOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+// ErrorOnNotOk implements Logger.Error for sirupsen/logrus logger
+func (l *logrus) ErrorOnNotOk(ok bool, msg string, fields ...Field) {
+	if !ok {
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Error(msg)
+	}
+}
+
 // Fatal implements Logger.Fatal for sirupsen/logrus logger
 func (l *logrus) Fatal(msg string, fields ...Field) {
 	fieldsl := sirupsenLogrus.Fields{}
@@ -74,6 +107,17 @@ func (l *logrus) Fatal(msg string, fields ...Field) {
 // FatalOnError implements Logger.Fatal for sirupsen/logrus logger
 func (l *logrus) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Fatal(msg)
+	}
+}
+
+// FatalOnNotOk implements Logger.Fatal for sirupsen/logrus logger
+func (l *logrus) FatalOnNotOk(ok bool, msg string, fields ...Field) {
+	if !ok {
 		fieldsl := sirupsenLogrus.Fields{}
 		for _, f := range fields {
 			fieldsl[f.Key] = f.Value

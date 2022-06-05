@@ -10,13 +10,18 @@ type Field struct {
 type Logger interface {
 	Debug(msg string, fields ...Field)
 	Info(msg string, fields ...Field)
+
 	Warn(msg string, fields ...Field)
+	WarnOnError(err error, msg string, fields ...Field)
+	WarnOnNotOk(ok bool, msg string, fields ...Field)
 
 	Error(msg string, fields ...Field)
 	ErrorOnError(err error, msg string, fields ...Field)
+	ErrorOnNotOk(ok bool, msg string, fields ...Field)
 
 	Fatal(msg string, fields ...Field)
 	FatalOnError(err error, msg string, fields ...Field)
+	FatalOnNotOk(ok bool, msg string, fields ...Field)
 
 	With(fields ...Field) Logger
 }
