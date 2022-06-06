@@ -3,6 +3,7 @@ package mpc_controller
 import (
 	"context"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -59,6 +60,8 @@ type WatcherStakeRequestStarted interface {
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding storage
 
+// Group
+
 type StorerStoreGroupInfo interface {
 	StoreGroupInfo(g *storage.GroupInfo) error
 }
@@ -70,6 +73,8 @@ type StorerLoadGroupInfo interface {
 type StorerLoadGroupInfos interface {
 	LoadGroupInfos() ([]*storage.GroupInfo, error)
 }
+
+// Participant
 
 type StorerStoreParticipantInfo interface {
 	StoreParticipantInfo(p *storage.ParticipantInfo) error
@@ -83,6 +88,20 @@ type StorerLoadParticipantInfos interface {
 	LoadParticipantInfos(pubKeyHashHex string) ([]*storage.ParticipantInfo, error)
 }
 
+type StorerGetParticipantIndex interface {
+	GetIndex(partiPubKeyHashHex, genPubKeyHexHex string) (*big.Int, error)
+}
+
+type StorerGetGroupIds interface {
+	GetGroupIds(partiPubKeyHashHex string) ([][32]byte, error)
+}
+
+type StorerGetPubKeys interface {
+	GetPubKeys(partiPubKeyHashHex string) ([][]byte, error)
+}
+
+// Generated public key
+
 type StorerStoreGeneratedPubKeyInfo interface {
 	StoreGeneratedPubKeyInfo(genPubKeyInfo *storage.GeneratedPubKeyInfo) error
 }
@@ -95,10 +114,31 @@ type StorerLoadGeneratedPubKeyInfos interface {
 	LoadGeneratedPubKeyInfos(groupIdHexs []string) ([]*storage.GeneratedPubKeyInfo, error)
 }
 
+type StorerGetPariticipantKeys interface {
+	GetPariticipantKeys(genPubKeyHashHex string, indices []*big.Int) ([]string, error)
+}
+
+// Keygen request info
+
 type StorerStoreKeygenRequestInfo interface {
 	StoreKeygenRequestInfo(keygenReqInfo *storage.KeygenRequestInfo) error
 }
 
 type StorerLoadKeygenRequestInfo interface {
 	LoadKeygenRequestInfo(reqIdHex string) (*storage.KeygenRequestInfo, error)
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Interfaces regarding mpc-client
+
+type MpcClientKeygen interface {
+	Keygen(ctx context.Context, keygenReq *core.KeygenRequest) error
+}
+
+type MpcClientSign interface {
+	Sign(ctx context.Context, signReq *core.SignRequest) error
+}
+
+type MpcClientResult interface {
+	Result(ctx context.Context, reqID string) (*core.Result, error)
 }
