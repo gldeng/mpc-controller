@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ = (*badgerDb)(nil)
+var _ Storer = (*badgerDb)(nil)
 
 type badgerDb struct {
 	logger.Logger
