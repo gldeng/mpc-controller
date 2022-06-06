@@ -5,6 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
@@ -28,11 +29,11 @@ type CallerGetGroup interface {
 // Transactor
 
 type TransactorJoinRequest interface {
-	JoinRequest(requestId *big.Int, myIndex *big.Int) (*types.Transaction, error)
+	JoinRequest(opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error)
 }
 
 type TransactorReportGeneratedKey interface {
-	ReportGeneratedKey(groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
+	ReportGeneratedKey(opts *bind.TransactOpts, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
 }
 
 // Filters
