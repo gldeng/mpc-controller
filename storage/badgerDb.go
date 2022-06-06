@@ -3,8 +3,11 @@ package storage
 import (
 	"encoding/json"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/dgraph-io/badger/v3"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 var _ Storer = (*badgerDb)(nil)
@@ -179,6 +182,70 @@ func (b *badgerDb) LoadParticipantInfos(pubKeyHashHex string) ([]*ParticipantInf
 	return ps, nil
 }
 
+func (b *badgerDb) GetIndex(partiPubKeyHashHex, genPubKeyHashHex string) (*big.Int, error) {
+	genPubKeyInfo, err := b.LoadGeneratedPubKeyInfo(genPubKeyHashHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	partInfo, err := b.LoadParticipantInfo(partiPubKeyHashHex, genPubKeyInfo.GroupIdHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return big.NewInt(int64(partInfo.Index)), nil
+}
+
+func (b *badgerDb) GetGroupIds(partiPubKeyHashHex string) ([][32]byte, error) {
+	partInfos, err := b.LoadParticipantInfos(partiPubKeyHashHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var groupIds [][32]byte
+
+	for _, partInfo := range partInfos {
+		var groupId [32]byte
+		groupIdRaw := common.Hex2BytesFixed(partInfo.GroupIdHex, 32)
+		copy(groupId[:], groupIdRaw)
+		groupIds = append(groupIds, groupId)
+	}
+
+	return groupIds, nil
+}
+
+func (b *badgerDb) GetPubKeys(partiPubKeyHashHex string) ([][]byte, error) {
+	partyInfos, err := b.LoadParticipantInfos(partiPubKeyHashHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var groupIdHexs []string
+	for _, partyInfo := range partyInfos {
+		groupIdHexs = append(groupIdHexs, partyInfo.GroupIdHex)
+	}
+	if len(groupIdHexs) == 0 {
+		return nil, errors.New("found no group")
+	}
+
+	genPubKeyInfos, err := b.LoadGeneratedPubKeyInfos(groupIdHexs)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if len(genPubKeyInfos) == 0 {
+		return nil, errors.New("found no generated public key")
+	}
+
+	var genPubKeyBytes [][]byte
+	for _, genPubKeyInfo := range genPubKeyInfos {
+		dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyInfo.PubKeyHex) // for Ethereum compatibility
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		genPubKeyBytes = append(genPubKeyBytes, dnmGenPubKeyBytes)
+	}
+
+	return genPubKeyBytes, nil
+}
+
 //
 
 func (b *badgerDb) StoreGeneratedPubKeyInfo(pk *GeneratedPubKeyInfo) error {
@@ -262,6 +329,25 @@ func (b *badgerDb) LoadGeneratedPubKeyInfos(groupIdHexs []string) ([]*GeneratedP
 	})
 
 	return ps, nil
+}
+
+func (b *badgerDb) GetPariticipantKeys(genPubKeyHashHex string, indices []*big.Int) ([]string, error) {
+	genPkInfo, err := b.LoadGeneratedPubKeyInfo(genPubKeyHashHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	groupInfo, err := b.LoadGroupInfo(genPkInfo.GroupIdHex)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var partPubKeyHexs []string
+	for _, ind := range indices {
+		partPubKeyHex := groupInfo.PartPubKeyHexs[ind.Uint64()-1]
+		partPubKeyHexs = append(partPubKeyHexs, partPubKeyHex)
+	}
+	return partPubKeyHexs, nil
 }
 
 //
