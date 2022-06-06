@@ -50,6 +50,8 @@ type Keygen struct {
 	ctlPk.StorerLoadGroupInfo
 	ctlPk.StorerStoreKeygenRequestInfo
 
+	ctlPk.EthClientTransactionReceipt
+
 	keygenRequestAddedEvt chan *contract.MpcManagerKeygenRequestAdded
 	pendingKeygenRequests map[string]*core.KeygenRequest
 	pendingReports        map[common.Hash]*ReportKeyTx
@@ -136,6 +138,55 @@ func (k *Keygen) onKeygenRequestAdded(ctx context.Context, evt *contract.MpcMana
 	err = k.StoreKeygenRequestInfo(&keygenReqInfo)
 	if err != nil {
 		return errors.WithStack(err)
+	}
+	return nil
+}
+
+// todo: refactor ti into piple pattern.
+func (k *Keygen) checkPendingReports(ctx context.Context) error {
+	var done []common.Hash
+	var retry []common.Hash
+	for txHash, _ := range k.pendingReports {
+		rcp, err := k.TransactionReceipt(ctx, txHash)
+		if err == nil {
+			if rcp.Status == 1 {
+				done = append(done, txHash)
+			} else {
+				retry = append(retry, txHash)
+			}
+		}
+	}
+	// TODO: Figure out why tx fails
+	// Suspect due to contention between different users, for now make retry random
+	sampledRetry := sample(retry)
+
+	for _, txHash := range sampledRetry {
+		req := k.pendingReports[txHash]
+		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
+		tx, err := k.ReportGeneratedKey(k.signer, groupId, ind, pubkey)
+		k.pendingReports[tx.Hash()] = &ReportKeyTx{
+			groupId:            groupId,
+			myIndex:            ind,
+			generatedPublicKey: pubkey,
+		}
+
+		if err != nil {
+			k.Error("Failed to report generated key", logger.Field{"error", err})
+			return errors.WithStack(err)
+		}
+
+		k.Info("Retry reporting key.", []logger.Field{
+			{"groupId", common.Bytes2Hex(groupId[:])},
+			{"myIndex", ind},
+			{"pubKey", common.Bytes2Hex(pubkey)},
+			{"txHash", tx.Hash()}}...)
+
+	}
+	for _, txHash := range sampledRetry {
+		delete(k.pendingReports, txHash)
+	}
+	for _, txHash := range done {
+		delete(k.pendingReports, txHash)
 	}
 	return nil
 }
