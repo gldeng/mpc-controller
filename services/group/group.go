@@ -45,7 +45,7 @@ func (p *Group) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case evt := <-p.participantAddedEvt:
-			err := p.storeParticipantAdded(evt)
+			err := p.onParticipantAdded(evt)
 			p.Log.ErrorOnError(err, "Failed to process ParticipantAdded event")
 		}
 	}
@@ -75,7 +75,7 @@ func (p *Group) watchParticipantAdded(ctx context.Context) error {
 	}
 }
 
-func (p *Group) storeParticipantAdded(evt *contract.MpcManagerParticipantAdded) error {
+func (p *Group) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) error {
 	// Store participant
 	groupId := common.Bytes2Hex(evt.GroupId[:])
 	pt := storage.ParticipantInfo{
