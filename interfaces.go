@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
@@ -142,4 +143,19 @@ type MpcClientSign interface {
 
 type MpcClientResult interface {
 	Result(ctx context.Context, reqID string) (*core.Result, error)
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Interfaces regarding eth client
+
+type EthClientTransactionReceipt interface {
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+}
+
+type EthClientNonceAt interface {
+	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
+}
+
+type EthClientBalanceAt interface {
+	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error)
 }
