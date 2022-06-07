@@ -18,11 +18,11 @@ var _ ctlPk.MpcControllerService = (*Group)(nil)
 // Group instance watches ParticipantAdded event emitted from MpcManager contract,
 // which will result in local persistence of corresponding ParticipantInfo and GroupInfo datum.
 type Group struct {
-	Log           logger.Logger
 	PubKeyStr     string
 	PubKeyBytes   []byte
 	PubKeyHashStr string
 
+	logger.Logger
 	ctlPk.CallerGetGroup          // MpcManager contract caller
 	ctlPk.WatcherParticipantAdded // MpcManager filter
 
@@ -33,10 +33,13 @@ type Group struct {
 }
 
 func (p *Group) Start(ctx context.Context) error {
+	// Assign unexported fields
+	p.participantAddedEvt = make(chan *contract.MpcManagerParticipantAdded)
+
 	// Watch ParticipantAdded event
 	go func() {
 		err := p.watchParticipantAdded(ctx)
-		p.Log.ErrorOnError(err, "Got an error to watch ParticipantAdded event")
+		p.ErrorOnError(err, "Got an error to watch ParticipantAdded event")
 	}()
 
 	// Store participant added
@@ -46,7 +49,7 @@ func (p *Group) Start(ctx context.Context) error {
 			return nil
 		case evt := <-p.participantAddedEvt:
 			err := p.onParticipantAdded(evt)
-			p.Log.ErrorOnError(err, "Failed to process ParticipantAdded event")
+			p.ErrorOnError(err, "Failed to process ParticipantAdded event")
 		}
 	}
 }
@@ -67,7 +70,7 @@ func (p *Group) watchParticipantAdded(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case evt, ok := <-sink:
-			p.Log.WarnOnNotOk(ok, "Retrieve nothing from event channel of ParticipantAdded")
+			p.WarnOnNotOk(ok, "Retrieve nothing from event channel of ParticipantAdded")
 			if ok {
 				p.participantAddedEvt <- evt
 			}
@@ -88,7 +91,7 @@ func (p *Group) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) err
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	p.Log.Debug("Stored a participant", logger.Field{"participant", pt})
+	p.Debug("Stored a participant", logger.Field{"participant", pt})
 
 	// Store group
 	pubKeyBytes, threshold, err := p.GetGroup(evt.GroupId)
@@ -113,6 +116,6 @@ func (p *Group) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) err
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	p.Log.Debug("Stored a group", logger.Field{"group", p})
+	p.Debug("Stored a group", logger.Field{"group", p})
 	return nil
 }
