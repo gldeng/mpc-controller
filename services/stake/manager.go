@@ -1,4 +1,4 @@
-package task
+package stake
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"golang.org/x/sync/errgroup"
 
-	//"errors"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
@@ -81,7 +80,7 @@ func (r *PendingRequestId) ToString() string {
 	return fmt.Sprintf("%v"+sep+"%v", r.taskId, r.requestNumber)
 }
 
-type TaskManager struct {
+type Manager struct {
 	ctx    context.Context
 	config config.Config
 	log    logger.Logger
@@ -128,7 +127,7 @@ type TaskManager struct {
 	ctlPk.StorerGetPariticipantKeys
 }
 
-func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config, staker *Staker) (*TaskManager, error) {
+func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config, staker *Staker) (*Manager, error) {
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
@@ -137,7 +136,7 @@ func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config
 		logger.Field{"mpcControllerId", config.ControllerId()},
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", pubKeyHash})
-	m := &TaskManager{
+	m := &Manager{
 		ctx:                 ctx,
 		config:              config,
 		log:                 log,
@@ -162,7 +161,7 @@ func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config
 
 // todo: logic to quit for loop
 
-func (m *TaskManager) Start() error {
+func (m *Manager) Start(ctx context.Context) error {
 	// Initiate event subscription with mpc-coordinator
 	g, ctx := errgroup.WithContext(m.ctx)
 
@@ -225,7 +224,7 @@ func (m *TaskManager) Start() error {
 	return nil
 }
 
-func (m *TaskManager) tick() error {
+func (m *Manager) tick() error {
 	err := m.checkPendingJoins()
 	if err != nil {
 		return err
@@ -252,7 +251,7 @@ func sample(arr []common.Hash) []common.Hash {
 	return out
 }
 
-func (m *TaskManager) checkPendingJoins() error {
+func (m *Manager) checkPendingJoins() error {
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingJoins {
@@ -297,7 +296,7 @@ func (m *TaskManager) checkPendingJoins() error {
 }
 
 // todo: verify signature with third-party lib.
-func (m *TaskManager) checkSignResult(signReqId string) error {
+func (m *Manager) checkSignResult(signReqId string) error {
 	signResult, err := m.mpcClient.Result(m.ctx, signReqId) // todo: add shared context to task manager
 	m.log.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
@@ -431,7 +430,7 @@ func (m *TaskManager) checkSignResult(signReqId string) error {
 	return nil
 }
 
-func (m *TaskManager) subscribeStakeRequestAdded() error {
+func (m *Manager) subscribeStakeRequestAdded() error {
 	if m.subStA != nil {
 		m.subStA.Unsubscribe()
 		m.subStA = nil
@@ -449,7 +448,7 @@ func (m *TaskManager) subscribeStakeRequestAdded() error {
 	return nil
 }
 
-func (m *TaskManager) subscribeStakeRequestStarted() error {
+func (m *Manager) subscribeStakeRequestStarted() error {
 	if m.subStS != nil {
 		m.subStS.Unsubscribe()
 		m.subStS = nil
@@ -468,7 +467,7 @@ func (m *TaskManager) subscribeStakeRequestStarted() error {
 }
 
 // todo: store this event info
-func (m *TaskManager) onStakeRequestAdded(req *contract.MpcManagerStakeRequestAdded) error {
+func (m *Manager) onStakeRequestAdded(req *contract.MpcManagerStakeRequestAdded) error {
 	ind, err := m.GetIndex(m.myPubKeyHash.Hex(), req.PublicKey.Hex())
 	if err != nil {
 		return errors.WithStack(err)
@@ -487,7 +486,7 @@ func (m *TaskManager) onStakeRequestAdded(req *contract.MpcManagerStakeRequestAd
 	return nil
 }
 
-func (m *TaskManager) removePendingJoin(requestId *big.Int) error {
+func (m *Manager) removePendingJoin(requestId *big.Int) error {
 	var txHash *common.Hash = nil
 	for hash, req := range m.pendingJoins {
 		if req.requestId.Cmp(requestId) == 0 {
@@ -501,7 +500,7 @@ func (m *TaskManager) removePendingJoin(requestId *big.Int) error {
 	return nil
 }
 
-func (m *TaskManager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStarted) error {
+func (m *Manager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStarted) error {
 	m.removePendingJoin(req.RequestId)
 
 	myInd, err := m.GetIndex(m.myPubKeyHash.Hex(), req.PublicKey.Hex())
