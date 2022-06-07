@@ -116,6 +116,6 @@ func (p *Group) onParticipantAdded(ctx context.Context, evt *contract.MpcManager
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	p.Debug("Stored a group", logger.Field{"group", p})
+	p.Debug("Stored a group", logger.Field{"group", g})
 	return nil
 }
