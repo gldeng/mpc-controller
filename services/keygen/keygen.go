@@ -28,19 +28,18 @@ type ReportKeyTx struct {
 	generatedPublicKey []byte
 }
 
-// Keygen instance watches ParticipantAdded event emitted from MpcManager contract,
-// which will result in local persistence of corresponding ParticipantInfo and GroupInfo datum.
-// todo: consider break its responsibility
+// Keygen instance watches KeygenRequestAdded event emitted from MpcManager contract,
+// todo: consider break its responsibility with pipeline pattern
 type Keygen struct {
-	logger.Logger
 	PubKeyHashHex string
+
+	logger.Logger
 
 	ctlPk.MpcClientKeygen
 	ctlPk.MpcClientResult
 
-	ctlPk.TransactorReportGeneratedKey
-
 	ctlPk.WatcherKeygenRequestAdded // MpcManager filter
+	ctlPk.TransactorReportGeneratedKey
 
 	ctlPk.StorerGetGroupIds
 	ctlPk.StorerLoadParticipantInfo
@@ -57,12 +56,17 @@ type Keygen struct {
 	pendingKeygenRequests map[string]*core.KeygenRequest
 	pendingReports        map[common.Hash]*ReportKeyTx
 
-	signer *bind.TransactOpts
+	Signer *bind.TransactOpts
 }
 
 // todo: deal with ticking for checking keygen result, use pipeline pattern instead
 
 func (k *Keygen) Start(ctx context.Context) error {
+	// Assign unexported fields
+	k.keygenRequestAddedEvt = make(chan *contract.MpcManagerKeygenRequestAdded)
+	k.pendingKeygenRequests = make(map[string]*core.KeygenRequest)
+	k.pendingReports = make(map[common.Hash]*ReportKeyTx)
+
 	// Watch KeygenRequestAdded event
 	go func() {
 		err := k.watchKeygenRequestAdded(ctx)
@@ -183,7 +187,7 @@ func (k *Keygen) checkPendingReports(ctx context.Context) error {
 	for _, txHash := range sampledRetry {
 		req := k.pendingReports[txHash]
 		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
-		tx, err := k.ReportGeneratedKey(ctx, k.signer, groupId, ind, pubkey)
+		tx, err := k.ReportGeneratedKey(ctx, k.Signer, groupId, ind, pubkey)
 		k.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
 			myIndex:            ind,
@@ -259,7 +263,7 @@ func (k *Keygen) checkKeygenResult(ctx context.Context, requestId string) error 
 
 	// Report the generated public key, in denormalized format due to Ethereum compatibility
 	// Todo: establish a strategy to deal with "insufficient fund" error, maybe check account balance before report
-	tx, err := k.ReportGeneratedKey(ctx, k.signer, groupId, myIndex, dnmGenPubKeyBytes)
+	tx, err := k.ReportGeneratedKey(ctx, k.Signer, groupId, myIndex, dnmGenPubKeyBytes)
 	if err != nil {
 		k.Error("Failed to report public key", logger.Field{"error", err})
 		return errors.Wrap(err, "failed to report generated key")
