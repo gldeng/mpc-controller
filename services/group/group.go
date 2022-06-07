@@ -48,7 +48,7 @@ func (p *Group) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case evt := <-p.participantAddedEvt:
-			err := p.onParticipantAdded(evt)
+			err := p.onParticipantAdded(ctx, evt)
 			p.ErrorOnError(err, "Failed to process ParticipantAdded event")
 		}
 	}
@@ -59,7 +59,7 @@ func (p *Group) watchParticipantAdded(ctx context.Context) error {
 	pubKeys := [][]byte{
 		p.PubKeyBytes,
 	}
-	sink, err := p.WatchParticipantAdded(pubKeys)
+	sink, err := p.WatchParticipantAdded(ctx, pubKeys)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -78,7 +78,7 @@ func (p *Group) watchParticipantAdded(ctx context.Context) error {
 	}
 }
 
-func (p *Group) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) error {
+func (p *Group) onParticipantAdded(ctx context.Context, evt *contract.MpcManagerParticipantAdded) error {
 	// Store participant
 	groupId := common.Bytes2Hex(evt.GroupId[:])
 	pt := storage.ParticipantInfo{
@@ -87,14 +87,14 @@ func (p *Group) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) err
 		GroupIdHex:    groupId,
 		Index:         evt.Index.Uint64(),
 	}
-	err := p.StoreParticipantInfo(&pt)
+	err := p.StoreParticipantInfo(ctx, &pt)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	p.Debug("Stored a participant", logger.Field{"participant", pt})
 
 	// Store group
-	pubKeyBytes, threshold, err := p.GetGroup(evt.GroupId)
+	pubKeyBytes, threshold, err := p.GetGroup(ctx, evt.GroupId)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -112,7 +112,7 @@ func (p *Group) onParticipantAdded(evt *contract.MpcManagerParticipantAdded) err
 		PartPubKeyHexs: pubKeys,
 		Threshold:      t,
 	}
-	err = p.StoreGroupInfo(&g)
+	err = p.StoreGroupInfo(ctx, &g)
 	if err != nil {
 		return errors.WithStack(err)
 	}
