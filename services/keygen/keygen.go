@@ -83,12 +83,12 @@ func (k *Keygen) Start(ctx context.Context) error {
 
 func (k *Keygen) watchKeygenRequestAdded(ctx context.Context) error {
 	// Subscribe KeygenRequestAdded event
-	groupIds, err := k.GetGroupIds(k.PubKeyHashHex)
+	groupIds, err := k.GetGroupIds(ctx, k.PubKeyHashHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	sink, err := k.WatchKeygenRequestAdded(groupIds)
+	sink, err := k.WatchKeygenRequestAdded(ctx, groupIds)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -115,7 +115,7 @@ func (k *Keygen) watchKeygenRequestAdded(ctx context.Context) error {
 func (k *Keygen) onKeygenRequestAdded(ctx context.Context, evt *contract.MpcManagerKeygenRequestAdded) error {
 	groupIdHex := common.Bytes2Hex(evt.GroupId[:])
 
-	groupInfo, err := k.LoadGroupInfo(groupIdHex)
+	groupInfo, err := k.LoadGroupInfo(ctx, groupIdHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -141,7 +141,7 @@ func (k *Keygen) onKeygenRequestAdded(ctx context.Context, evt *contract.MpcMana
 		RequestAddedAt: time.Now(),
 	}
 
-	err = k.StoreKeygenRequestInfo(&keygenReqInfo)
+	err = k.StoreKeygenRequestInfo(ctx, &keygenReqInfo)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -183,7 +183,7 @@ func (k *Keygen) checkPendingReports(ctx context.Context) error {
 	for _, txHash := range sampledRetry {
 		req := k.pendingReports[txHash]
 		groupId, ind, pubkey := req.groupId, req.myIndex, req.generatedPublicKey
-		tx, err := k.ReportGeneratedKey(k.signer, groupId, ind, pubkey)
+		tx, err := k.ReportGeneratedKey(ctx, k.signer, groupId, ind, pubkey)
 		k.pendingReports[tx.Hash()] = &ReportKeyTx{
 			groupId:            groupId,
 			myIndex:            ind,
@@ -232,11 +232,11 @@ func (k *Keygen) checkKeygenResult(ctx context.Context, requestId string) error 
 	pubKeyHash := crypto.Keccak256Hash(dnmGenPubKeyBytes) // digest to identify generated public key
 
 	// Load pre-stored corresponding participant and keygen request information
-	keyGenInfo, err := k.LoadKeygenRequestInfo(requestId) // keygen request info
+	keyGenInfo, err := k.LoadKeygenRequestInfo(ctx, requestId) // keygen request info
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	partyInfo, err := k.LoadParticipantInfo(k.PubKeyHashHex, keyGenInfo.GroupIdHex) // participant info
+	partyInfo, err := k.LoadParticipantInfo(ctx, k.PubKeyHashHex, keyGenInfo.GroupIdHex) // participant info
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -252,14 +252,14 @@ func (k *Keygen) checkKeygenResult(ctx context.Context, requestId string) error 
 		PubKeyHex:     result.Result,
 		GroupIdHex:    keyGenInfo.GroupIdHex,
 	}
-	err = k.StoreGeneratedPubKeyInfo(&pk)
+	err = k.StoreGeneratedPubKeyInfo(ctx, &pk)
 	if err != nil {
 		return errors.Wrapf(err, "failed to store generated public key")
 	}
 
 	// Report the generated public key, in denormalized format due to Ethereum compatibility
 	// Todo: establish a strategy to deal with "insufficient fund" error, maybe check account balance before report
-	tx, err := k.ReportGeneratedKey(k.signer, groupId, myIndex, dnmGenPubKeyBytes)
+	tx, err := k.ReportGeneratedKey(ctx, k.signer, groupId, myIndex, dnmGenPubKeyBytes)
 	if err != nil {
 		k.Error("Failed to report public key", logger.Field{"error", err})
 		return errors.Wrap(err, "failed to report generated key")
@@ -268,7 +268,7 @@ func (k *Keygen) checkKeygenResult(ctx context.Context, requestId string) error 
 	// Locally update keygen request information
 	keyGenInfo.PubKeyReportedAt = time.Now()
 	keyGenInfo.PubKeyHashHex = pubKeyHash.Hex()
-	err = k.StoreKeygenRequestInfo(keyGenInfo)
+	err = k.StoreKeygenRequestInfo(ctx, keyGenInfo)
 	if err != nil {
 		return errors.WithStack(err)
 	}
