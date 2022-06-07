@@ -171,13 +171,13 @@ func (m *Manager) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case evt := <-m.stakeRequestAddedEvt:
-			err := m.onStakeRequestAdded(evt)
+			err := m.onStakeRequestAdded(ctx, evt)
 			m.log.ErrorOnError(err, "Failed to process StakeRequestAdded event")
 		case evt := <-m.stakeRequestStartedEvt:
-			err := m.onStakeRequestStarted(evt)
+			err := m.onStakeRequestStarted(ctx, evt)
 			m.log.ErrorOnError(err, "Failed to process StakeRequestStarted event")
 		case <-time.After(1 * time.Second):
-			err := m.tick()
+			err := m.tick(ctx)
 			if err != nil {
 				m.log.Error("Got an tick error", logger.Field{"error", err})
 			}
@@ -185,8 +185,8 @@ func (m *Manager) Start(ctx context.Context) error {
 	}
 }
 
-func (m *Manager) tick() error {
-	err := m.checkPendingJoins()
+func (m *Manager) tick(ctx context.Context) error {
+	err := m.checkPendingJoins(ctx)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (m *Manager) tick() error {
 	return nil
 }
 
-func (m *Manager) checkPendingJoins() error {
+func (m *Manager) checkPendingJoins(ctx context.Context) error {
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingJoins {
@@ -219,7 +219,7 @@ func (m *Manager) checkPendingJoins() error {
 	for _, txHash := range sampledRetry {
 		req := m.pendingJoins[txHash]
 		requestId, myIndex := req.requestId, req.myIndex
-		tx, err := m.JoinRequest(m.signer, requestId, myIndex)
+		tx, err := m.JoinRequest(ctx, m.signer, requestId, myIndex)
 		m.pendingJoins[tx.Hash()] = &JoinTx{
 			requestId: requestId,
 			myIndex:   myIndex,
@@ -380,18 +380,18 @@ func (m *Manager) checkSignResult(signReqId string) error {
 
 func (m *Manager) watchStakeRequest(ctx context.Context) error {
 	// Subscribe StakeRequestAdded event
-	pubkeys, err := m.GetPubKeys(m.myPubKeyHash.Hex())
+	pubkeys, err := m.GetPubKeys(ctx, m.myPubKeyHash.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	sinkAdded, err := m.WatchStakeRequestAdded(pubkeys)
+	sinkAdded, err := m.WatchStakeRequestAdded(ctx, pubkeys)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	// Subscribe StakeRequestStarted event
-	sinkStarted, err := m.WatchStakeRequestStarted(pubkeys)
+	sinkStarted, err := m.WatchStakeRequestStarted(ctx, pubkeys)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -416,13 +416,13 @@ func (m *Manager) watchStakeRequest(ctx context.Context) error {
 }
 
 // todo: store this event info
-func (m *Manager) onStakeRequestAdded(req *contract.MpcManagerStakeRequestAdded) error {
-	ind, err := m.GetIndex(m.myPubKeyHash.Hex(), req.PublicKey.Hex())
+func (m *Manager) onStakeRequestAdded(ctx context.Context, req *contract.MpcManagerStakeRequestAdded) error {
+	ind, err := m.GetIndex(ctx, m.myPubKeyHash.Hex(), req.PublicKey.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	tx, err := m.JoinRequest(m.signer, req.RequestId, ind)
+	tx, err := m.JoinRequest(ctx, m.signer, req.RequestId, ind)
 	if err != nil {
 		m.log.Error("Failed to join stake request", []logger.Field{{"error", err}, {"tx", tx}}...)
 		return errors.WithStack(err)
@@ -449,10 +449,10 @@ func (m *Manager) removePendingJoin(requestId *big.Int) error {
 	return nil
 }
 
-func (m *Manager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStarted) error {
+func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) error {
 	m.removePendingJoin(req.RequestId)
 
-	myInd, err := m.GetIndex(m.myPubKeyHash.Hex(), req.PublicKey.Hex())
+	myInd, err := m.GetIndex(ctx, m.myPubKeyHash.Hex(), req.PublicKey.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -475,7 +475,7 @@ func (m *Manager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStar
 	}
 
 	pkHashHex := req.PublicKey.Hex()
-	genPkInfo, err := m.LoadGeneratedPubKeyInfo(pkHashHex)
+	genPkInfo, err := m.LoadGeneratedPubKeyInfo(ctx, pkHashHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -517,7 +517,7 @@ func (m *Manager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStar
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	pariticipantKeys, err := m.GetPariticipantKeys(req.PublicKey.Hex(), req.ParticipantIndices)
+	pariticipantKeys, err := m.GetPariticipantKeys(ctx, req.PublicKey.Hex(), req.ParticipantIndices)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -531,7 +531,7 @@ func (m *Manager) onStakeRequestStarted(req *contract.MpcManagerStakeRequestStar
 		return errors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
 	}
 
-	genPkInfo, err = m.LoadGeneratedPubKeyInfo(pkHashHex)
+	genPkInfo, err = m.LoadGeneratedPubKeyInfo(ctx, pkHashHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
