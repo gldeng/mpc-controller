@@ -14,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/services"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
 	"math/big"
-	"math/rand"
 	"strings"
 	"time"
 )
@@ -199,19 +199,6 @@ func (m *Manager) tick() error {
 	return nil
 }
 
-func sample(arr []common.Hash) []common.Hash {
-	var out []common.Hash
-	s := rand.NewSource(time.Now().Unix())
-	r := rand.New(s) // initialize local pseudorandom generator
-
-	for _, txHash := range arr {
-		if r.Intn(1) == 0 {
-			out = append(out, txHash)
-		}
-	}
-	return out
-}
-
 func (m *Manager) checkPendingJoins() error {
 	var done []common.Hash
 	var retry []common.Hash
@@ -227,7 +214,7 @@ func (m *Manager) checkPendingJoins() error {
 	}
 	// TODO: Figure out why tx fails
 	// Suspect due to contention between different users, for now make retry random
-	sampledRetry := sample(retry)
+	sampledRetry := services.Sample(retry)
 
 	for _, txHash := range sampledRetry {
 		req := m.pendingJoins[txHash]
