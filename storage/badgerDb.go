@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/crypto"
@@ -35,7 +36,7 @@ func New(log logger.Logger, path string) Storer {
 	return &badgerDb{log, db}
 }
 
-func (b *badgerDb) StoreGroupInfo(g *GroupInfo) error {
+func (b *badgerDb) StoreGroupInfo(ctx context.Context, g *GroupInfo) error {
 	bytes, err := json.Marshal(g)
 	if err != nil {
 		b.Error("Failed to marshal", []logger.Field{{"groupInfo", g}, {"error", err}}...)
@@ -54,7 +55,7 @@ func (b *badgerDb) StoreGroupInfo(g *GroupInfo) error {
 	return nil
 }
 
-func (b *badgerDb) LoadGroupInfo(groupIdHex string) (*GroupInfo, error) {
+func (b *badgerDb) LoadGroupInfo(ctx context.Context, groupIdHex string) (*GroupInfo, error) {
 	var g GroupInfo
 
 	err := b.db.View(func(txn *badger.Txn) error {
@@ -81,7 +82,7 @@ func (b *badgerDb) LoadGroupInfo(groupIdHex string) (*GroupInfo, error) {
 	return &g, nil
 }
 
-func (b *badgerDb) LoadGroupInfos() ([]*GroupInfo, error) {
+func (b *badgerDb) LoadGroupInfos(ctx context.Context) ([]*GroupInfo, error) {
 	var gs []*GroupInfo
 	b.db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -108,7 +109,7 @@ func (b *badgerDb) LoadGroupInfos() ([]*GroupInfo, error) {
 	return gs, nil
 }
 
-func (b *badgerDb) StoreParticipantInfo(p *ParticipantInfo) error {
+func (b *badgerDb) StoreParticipantInfo(ctx context.Context, p *ParticipantInfo) error {
 	bytes, err := json.Marshal(p)
 	if err != nil {
 		b.Error("Failed to marshal", []logger.Field{{"participantInfo", p}, {"error", err}}...)
@@ -127,7 +128,7 @@ func (b *badgerDb) StoreParticipantInfo(p *ParticipantInfo) error {
 	return nil
 }
 
-func (b *badgerDb) LoadParticipantInfo(pubKeyHashHex, groupId string) (*ParticipantInfo, error) {
+func (b *badgerDb) LoadParticipantInfo(ctx context.Context, pubKeyHashHex, groupId string) (*ParticipantInfo, error) {
 	var v ParticipantInfo
 
 	key := prefixParticipantInfo + "-" + pubKeyHashHex + "-" + groupId
@@ -155,7 +156,7 @@ func (b *badgerDb) LoadParticipantInfo(pubKeyHashHex, groupId string) (*Particip
 	return &v, nil
 }
 
-func (b *badgerDb) LoadParticipantInfos(pubKeyHashHex string) ([]*ParticipantInfo, error) {
+func (b *badgerDb) LoadParticipantInfos(ctx context.Context, pubKeyHashHex string) ([]*ParticipantInfo, error) {
 	var ps []*ParticipantInfo
 	b.db.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -182,20 +183,20 @@ func (b *badgerDb) LoadParticipantInfos(pubKeyHashHex string) ([]*ParticipantInf
 	return ps, nil
 }
 
-func (b *badgerDb) GetIndex(partiPubKeyHashHex, genPubKeyHashHex string) (*big.Int, error) {
-	genPubKeyInfo, err := b.LoadGeneratedPubKeyInfo(genPubKeyHashHex)
+func (b *badgerDb) GetIndex(ctx context.Context, partiPubKeyHashHex, genPubKeyHashHex string) (*big.Int, error) {
+	genPubKeyInfo, err := b.LoadGeneratedPubKeyInfo(ctx, genPubKeyHashHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	partInfo, err := b.LoadParticipantInfo(partiPubKeyHashHex, genPubKeyInfo.GroupIdHex)
+	partInfo, err := b.LoadParticipantInfo(ctx, partiPubKeyHashHex, genPubKeyInfo.GroupIdHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	return big.NewInt(int64(partInfo.Index)), nil
 }
 
-func (b *badgerDb) GetGroupIds(partiPubKeyHashHex string) ([][32]byte, error) {
-	partInfos, err := b.LoadParticipantInfos(partiPubKeyHashHex)
+func (b *badgerDb) GetGroupIds(ctx context.Context, partiPubKeyHashHex string) ([][32]byte, error) {
+	partInfos, err := b.LoadParticipantInfos(ctx, partiPubKeyHashHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -212,8 +213,8 @@ func (b *badgerDb) GetGroupIds(partiPubKeyHashHex string) ([][32]byte, error) {
 	return groupIds, nil
 }
 
-func (b *badgerDb) GetPubKeys(partiPubKeyHashHex string) ([][]byte, error) {
-	partyInfos, err := b.LoadParticipantInfos(partiPubKeyHashHex)
+func (b *badgerDb) GetPubKeys(ctx context.Context, partiPubKeyHashHex string) ([][]byte, error) {
+	partyInfos, err := b.LoadParticipantInfos(ctx, partiPubKeyHashHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -226,7 +227,7 @@ func (b *badgerDb) GetPubKeys(partiPubKeyHashHex string) ([][]byte, error) {
 		return nil, errors.New("found no group")
 	}
 
-	genPubKeyInfos, err := b.LoadGeneratedPubKeyInfos(groupIdHexs)
+	genPubKeyInfos, err := b.LoadGeneratedPubKeyInfos(ctx, groupIdHexs)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -248,7 +249,7 @@ func (b *badgerDb) GetPubKeys(partiPubKeyHashHex string) ([][]byte, error) {
 
 //
 
-func (b *badgerDb) StoreGeneratedPubKeyInfo(pk *GeneratedPubKeyInfo) error {
+func (b *badgerDb) StoreGeneratedPubKeyInfo(ctx context.Context, pk *GeneratedPubKeyInfo) error {
 	bytes, err := json.Marshal(pk)
 	if err != nil {
 		b.Error("Failed to marshal", []logger.Field{{"generatedPubKeyInfo", pk}, {"error", err}}...)
@@ -267,7 +268,7 @@ func (b *badgerDb) StoreGeneratedPubKeyInfo(pk *GeneratedPubKeyInfo) error {
 	return nil
 }
 
-func (b *badgerDb) LoadGeneratedPubKeyInfo(pubKeyHashHex string) (*GeneratedPubKeyInfo, error) {
+func (b *badgerDb) LoadGeneratedPubKeyInfo(ctx context.Context, pubKeyHashHex string) (*GeneratedPubKeyInfo, error) {
 	var g GeneratedPubKeyInfo
 
 	err := b.db.View(func(txn *badger.Txn) error {
@@ -294,7 +295,7 @@ func (b *badgerDb) LoadGeneratedPubKeyInfo(pubKeyHashHex string) (*GeneratedPubK
 	return &g, nil
 }
 
-func (b *badgerDb) LoadGeneratedPubKeyInfos(groupIdHexs []string) ([]*GeneratedPubKeyInfo, error) {
+func (b *badgerDb) LoadGeneratedPubKeyInfos(ctx context.Context, groupIdHexs []string) ([]*GeneratedPubKeyInfo, error) {
 	var ps []*GeneratedPubKeyInfo
 
 	var groupIdHexMap = make(map[string]bool)
@@ -331,13 +332,13 @@ func (b *badgerDb) LoadGeneratedPubKeyInfos(groupIdHexs []string) ([]*GeneratedP
 	return ps, nil
 }
 
-func (b *badgerDb) GetPariticipantKeys(genPubKeyHashHex string, indices []*big.Int) ([]string, error) {
-	genPkInfo, err := b.LoadGeneratedPubKeyInfo(genPubKeyHashHex)
+func (b *badgerDb) GetPariticipantKeys(ctx context.Context, genPubKeyHashHex string, indices []*big.Int) ([]string, error) {
+	genPkInfo, err := b.LoadGeneratedPubKeyInfo(ctx, genPubKeyHashHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	groupInfo, err := b.LoadGroupInfo(genPkInfo.GroupIdHex)
+	groupInfo, err := b.LoadGroupInfo(ctx, genPkInfo.GroupIdHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -352,7 +353,7 @@ func (b *badgerDb) GetPariticipantKeys(genPubKeyHashHex string, indices []*big.I
 
 //
 
-func (b *badgerDb) StoreKeygenRequestInfo(k *KeygenRequestInfo) error {
+func (b *badgerDb) StoreKeygenRequestInfo(ctx context.Context, k *KeygenRequestInfo) error {
 	bytes, err := json.Marshal(k)
 	if err != nil {
 		b.Error("Failed to marshal", []logger.Field{{"keygenRequestInfo", k}, {"error", err}}...)
@@ -371,7 +372,7 @@ func (b *badgerDb) StoreKeygenRequestInfo(k *KeygenRequestInfo) error {
 	return nil
 }
 
-func (b *badgerDb) LoadKeygenRequestInfo(reqIdHex string) (*KeygenRequestInfo, error) {
+func (b *badgerDb) LoadKeygenRequestInfo(ctx context.Context, reqIdHex string) (*KeygenRequestInfo, error) {
 	var v KeygenRequestInfo
 
 	err := b.db.View(func(txn *badger.Txn) error {
