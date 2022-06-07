@@ -50,7 +50,7 @@ create_config 1
 create_config 2
 create_config 3
 
-MPC_CONTROLLER_REPO=/tmp/mpctest/mpc-controller/
+MPC_CONTROLLER_REPO=/tmp/mpctest/mpc-controller
 
 $MPC_CONTROLLER_REPO/mpc-controller --configFile configs/config1.yaml > logs/mpc-controller1.log 2>&1 &
 $MPC_CONTROLLER_REPO/mpc-controller --configFile configs/config2.yaml > logs/mpc-controller2.log 2>&1 &

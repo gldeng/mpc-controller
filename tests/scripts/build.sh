@@ -3,8 +3,10 @@
 # Build mpc-controller
 if [ ! -f "/tmp/mpctest/mpc-controller/mpc-controller" ]; then
   echo "Start building mpc-controller..."
+  cd ./cmd/mpc-controller
   go build
   mv mpc-controller /tmp/mpctest/mpc-controller/
+  cd ../../
 fi
 
 LAST_WD=$(pwd)
