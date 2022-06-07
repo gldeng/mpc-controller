@@ -1,4 +1,4 @@
-package task
+package stake
 
 import (
 	"crypto/ecdsa"
