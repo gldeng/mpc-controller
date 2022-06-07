@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/contract/wrappers"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/services/group"
+	"github.com/avalido/mpc-controller/services/keygen"
 	"github.com/avalido/mpc-controller/storage"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
@@ -54,17 +55,44 @@ func RunMpcController(c *cli.Context) error {
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
 	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
 
+	mpcManagerCallerWrapper := wrappers.MpcManagerCallerWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerCaller}
+	mpcManagerFilterWrapper := wrappers.MpcManagerFilterWrapper{myLogger, &myConfig.CoordinatorBoundListener().MpcManagerFilterer}
+	mpcManagerTransactorWrapper := wrappers.MpcManagerTransactorWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerTransactor}
+
 	// Build group service
 	groupService := group.Group{
 		PubKeyStr:               pubKeyHex,
 		PubKeyBytes:             pubKeyBytes,
 		PubKeyHashStr:           pubKeyHash.Hex(),
 		Logger:                  myLogger,
-		CallerGetGroup:          &wrappers.MpcManagerCallerWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerCaller},
-		WatcherParticipantAdded: &wrappers.MpcManagerFilterWrapper{myLogger, &myConfig.CoordinatorBoundListener().MpcManagerFilterer},
+		CallerGetGroup:          &mpcManagerCallerWrapper,
+		WatcherParticipantAdded: &mpcManagerFilterWrapper,
 
 		StorerStoreGroupInfo:       myStorer,
 		StorerStoreParticipantInfo: myStorer,
+	}
+
+	// Build keygen service
+	keygenService := keygen.Keygen{
+		PubKeyHashHex:                pubKeyHash.Hex(),
+		Logger:                       myLogger,
+		MpcClientKeygen:              myConfig.MpcClient(),
+		MpcClientResult:              myConfig.MpcClient(),
+		WatcherKeygenRequestAdded:    &mpcManagerFilterWrapper,
+		TransactorReportGeneratedKey: &mpcManagerTransactorWrapper,
+
+		StorerGetGroupIds:         myStorer,
+		StorerLoadParticipantInfo: myStorer,
+
+		StorerLoadKeygenRequestInfo:    myStorer,
+		StorerStoreGeneratedPubKeyInfo: myStorer,
+
+		StorerLoadGroupInfo:          myStorer,
+		StorerStoreKeygenRequestInfo: myStorer,
+
+		EthClientTransactionReceipt: myConfig.EthRpcClient(),
+
+		Signer: myConfig.ControllerSigner(),
 	}
 
 	// Handle graceful shutdown.
@@ -79,9 +107,10 @@ func RunMpcController(c *cli.Context) error {
 
 	// Run the mpc-controller
 	controller := MpcController{
+		ID: myConfig.ControllerId(),
 		Services: []mpc_controller.MpcControllerService{
 			&groupService,
-			//&keygen.Keygen{},
+			&keygenService,
 			//&stake.Manager{},
 			//&reward.Reward{},
 		},
