@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/services"
 	"github.com/avalido/mpc-controller/storage"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -102,6 +103,11 @@ func (k *Keygen) watchKeygenRequestAdded(ctx context.Context) error {
 			if ok {
 				k.keygenRequestAddedEvt <- evt
 			}
+		case <-time.After(1 * time.Second):
+			err := k.tick(ctx)
+			if err != nil {
+				k.Error("Got an tick error", logger.Field{"error", err})
+			}
 		}
 	}
 }
@@ -142,6 +148,20 @@ func (k *Keygen) onKeygenRequestAdded(ctx context.Context, evt *contract.MpcMana
 	return nil
 }
 
+func (m *Keygen) tick(ctx context.Context) error {
+	err := m.checkPendingReports(ctx)
+	if err != nil {
+		return err
+	}
+	for requestId, _ := range m.pendingKeygenRequests {
+		err := m.checkKeygenResult(ctx, requestId)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // todo: refactor ti into piple pattern.
 func (k *Keygen) checkPendingReports(ctx context.Context) error {
 	var done []common.Hash
@@ -158,7 +178,7 @@ func (k *Keygen) checkPendingReports(ctx context.Context) error {
 	}
 	// TODO: Figure out why tx fails
 	// Suspect due to contention between different users, for now make retry random
-	sampledRetry := sample(retry)
+	sampledRetry := services.Sample(retry)
 
 	for _, txHash := range sampledRetry {
 		req := k.pendingReports[txHash]
