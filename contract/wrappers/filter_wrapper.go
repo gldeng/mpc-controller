@@ -6,13 +6,11 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 type MpcManagerFilterWrapper struct {
 	logger.Logger
 	*contract.MpcManagerFilterer
-	ChainId *big.Int
 }
 
 // todo: deal with websocket network disconnection
