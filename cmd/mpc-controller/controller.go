@@ -1,8 +1,9 @@
-package mpc_controller
+package main
 
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/wrappers"
 	"github.com/avalido/mpc-controller/logger"
@@ -21,7 +22,7 @@ import (
 
 type MpcController struct {
 	ID       string
-	Services []MpcControllerService
+	Services []mpc_controller.MpcControllerService
 }
 
 func (c *MpcController) Run(ctx context.Context) error {
@@ -60,7 +61,7 @@ func RunMpcController(c *cli.Context) error {
 		PubKeyHashStr:           pubKeyHash.Hex(),
 		Logger:                  myLogger,
 		CallerGetGroup:          &wrappers.MpcManagerCallerWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerCaller},
-		WatcherParticipantAdded: &wrappers.MpcManagerFilterWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerFilterer},
+		WatcherParticipantAdded: &wrappers.MpcManagerFilterWrapper{myLogger, &myConfig.CoordinatorBoundListener().MpcManagerFilterer},
 
 		StorerStoreGroupInfo:       myStorer,
 		StorerStoreParticipantInfo: myStorer,
@@ -78,7 +79,7 @@ func RunMpcController(c *cli.Context) error {
 
 	// Run the mpc-controller
 	controller := MpcController{
-		Services: []MpcControllerService{
+		Services: []mpc_controller.MpcControllerService{
 			&groupService,
 			//&keygen.Keygen{},
 			//&stake.Manager{},

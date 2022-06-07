@@ -1,4 +1,4 @@
-package mpc_controller
+package main
 
 //
 //import (
