@@ -24,39 +24,39 @@ type MpcControllerService interface {
 // Callers
 
 type CallerGetGroup interface {
-	GetGroup(groupId [32]byte) (Participants [][]byte, Threshold *big.Int, err error)
+	GetGroup(ctx context.Context, groupId [32]byte) (Participants [][]byte, Threshold *big.Int, err error)
 }
 
 // Transactor
 
 type TransactorJoinRequest interface {
-	JoinRequest(opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error)
+	JoinRequest(ctx context.Context, opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error)
 }
 
 type TransactorReportGeneratedKey interface {
-	ReportGeneratedKey(opts *bind.TransactOpts, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
+	ReportGeneratedKey(ctx context.Context, opts *bind.TransactOpts, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
 }
 
 // Filters
 
 type WatcherParticipantAdded interface {
-	WatchParticipantAdded(publicKey [][]byte) (<-chan *contract.MpcManagerParticipantAdded, error)
+	WatchParticipantAdded(ctx context.Context, publicKey [][]byte) (<-chan *contract.MpcManagerParticipantAdded, error)
 }
 
 type WatcherKeygenRequestAdded interface {
-	WatchKeygenRequestAdded(groupId [][32]byte) (<-chan *contract.MpcManagerKeygenRequestAdded, error)
+	WatchKeygenRequestAdded(ctx context.Context, groupId [][32]byte) (<-chan *contract.MpcManagerKeygenRequestAdded, error)
 }
 
 type WatcherKeyGenerated interface {
-	WatchKeyGenerated(groupId [][32]byte) (<-chan *contract.MpcManagerKeyGenerated, error)
+	WatchKeyGenerated(ctx context.Context, groupId [][32]byte) (<-chan *contract.MpcManagerKeyGenerated, error)
 }
 
 type WatcherStakeRequestAdded interface {
-	WatchStakeRequestAdded(publicKey [][]byte) (<-chan *contract.MpcManagerStakeRequestAdded, error)
+	WatchStakeRequestAdded(ctx context.Context, publicKey [][]byte) (<-chan *contract.MpcManagerStakeRequestAdded, error)
 }
 
 type WatcherStakeRequestStarted interface {
-	WatchStakeRequestStarted(publicKey [][]byte) (<-chan *contract.MpcManagerStakeRequestStarted, error)
+	WatchStakeRequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *contract.MpcManagerStakeRequestStarted, error)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -65,69 +65,69 @@ type WatcherStakeRequestStarted interface {
 // Group
 
 type StorerStoreGroupInfo interface {
-	StoreGroupInfo(g *storage.GroupInfo) error
+	StoreGroupInfo(ctx context.Context, g *storage.GroupInfo) error
 }
 
 type StorerLoadGroupInfo interface {
-	LoadGroupInfo(groupIdHex string) (*storage.GroupInfo, error)
+	LoadGroupInfo(ctx context.Context, groupIdHex string) (*storage.GroupInfo, error)
 }
 
 type StorerLoadGroupInfos interface {
-	LoadGroupInfos() ([]*storage.GroupInfo, error)
+	LoadGroupInfos(ctx context.Context) ([]*storage.GroupInfo, error)
 }
 
 // Participant
 
 type StorerStoreParticipantInfo interface {
-	StoreParticipantInfo(p *storage.ParticipantInfo) error
+	StoreParticipantInfo(ctx context.Context, p *storage.ParticipantInfo) error
 }
 
 type StorerLoadParticipantInfo interface {
-	LoadParticipantInfo(pubKeyHashHex, groupId string) (*storage.ParticipantInfo, error)
+	LoadParticipantInfo(ctx context.Context, pubKeyHashHex, groupId string) (*storage.ParticipantInfo, error)
 }
 
 type StorerLoadParticipantInfos interface {
-	LoadParticipantInfos(pubKeyHashHex string) ([]*storage.ParticipantInfo, error)
+	LoadParticipantInfos(ctx context.Context, pubKeyHashHex string) ([]*storage.ParticipantInfo, error)
 }
 
 type StorerGetParticipantIndex interface {
-	GetIndex(partiPubKeyHashHex, genPubKeyHexHex string) (*big.Int, error)
+	GetIndex(ctx context.Context, partiPubKeyHashHex, genPubKeyHexHex string) (*big.Int, error)
 }
 
 type StorerGetGroupIds interface {
-	GetGroupIds(partiPubKeyHashHex string) ([][32]byte, error)
+	GetGroupIds(ctx context.Context, partiPubKeyHashHex string) ([][32]byte, error)
 }
 
 type StorerGetPubKeys interface {
-	GetPubKeys(partiPubKeyHashHex string) ([][]byte, error)
+	GetPubKeys(ctx context.Context, partiPubKeyHashHex string) ([][]byte, error)
 }
 
 // Generated public key
 
 type StorerStoreGeneratedPubKeyInfo interface {
-	StoreGeneratedPubKeyInfo(genPubKeyInfo *storage.GeneratedPubKeyInfo) error
+	StoreGeneratedPubKeyInfo(ctx context.Context, genPubKeyInfo *storage.GeneratedPubKeyInfo) error
 }
 
 type StorerLoadGeneratedPubKeyInfo interface {
-	LoadGeneratedPubKeyInfo(pubKeyHashHex string) (*storage.GeneratedPubKeyInfo, error)
+	LoadGeneratedPubKeyInfo(ctx context.Context, pubKeyHashHex string) (*storage.GeneratedPubKeyInfo, error)
 }
 
 type StorerLoadGeneratedPubKeyInfos interface {
-	LoadGeneratedPubKeyInfos(groupIdHexs []string) ([]*storage.GeneratedPubKeyInfo, error)
+	LoadGeneratedPubKeyInfos(ctx context.Context, groupIdHexs []string) ([]*storage.GeneratedPubKeyInfo, error)
 }
 
 type StorerGetPariticipantKeys interface {
-	GetPariticipantKeys(genPubKeyHashHex string, indices []*big.Int) ([]string, error)
+	GetPariticipantKeys(ctx context.Context, genPubKeyHashHex string, indices []*big.Int) ([]string, error)
 }
 
 // Keygen request info
 
 type StorerStoreKeygenRequestInfo interface {
-	StoreKeygenRequestInfo(keygenReqInfo *storage.KeygenRequestInfo) error
+	StoreKeygenRequestInfo(ctx context.Context, keygenReqInfo *storage.KeygenRequestInfo) error
 }
 
 type StorerLoadKeygenRequestInfo interface {
-	LoadKeygenRequestInfo(reqIdHex string) (*storage.KeygenRequestInfo, error)
+	LoadKeygenRequestInfo(ctx context.Context, reqIdHex string) (*storage.KeygenRequestInfo, error)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
