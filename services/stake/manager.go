@@ -4,19 +4,17 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	ctlPk "github.com/avalido/mpc-controller"
-	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
-	"golang.org/x/sync/errgroup"
-
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	avaEthclient "github.com/ava-labs/coreth/ethclient"
+	ctlPk "github.com/avalido/mpc-controller"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -98,8 +96,6 @@ type Manager struct {
 	avaEthclient    avaEthclient.Client
 	myAddr          ids.ShortID
 	coordinatorAddr common.Address
-	eventsStS       chan *contract.MpcManagerStakeRequestStarted
-	eventsStA       chan *contract.MpcManagerStakeRequestAdded
 
 	ctlPk.StorerGetGroupIds
 	ctlPk.TransactorJoinRequest
@@ -125,9 +121,12 @@ type Manager struct {
 
 	ctlPk.StorerGetParticipantIndex
 	ctlPk.StorerGetPariticipantKeys
+
+	stakeRequestAddedEvt   chan *contract.MpcManagerStakeRequestAdded
+	stakeRequestStartedEvt chan *contract.MpcManagerStakeRequestStarted
 }
 
-func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config, staker *Staker) (*Manager, error) {
+func NewManager(ctx context.Context, log logger.Logger, config config.Config, staker *Staker) (*Manager, error) {
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
@@ -153,8 +152,6 @@ func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config
 	}
 
 	m.chSigReceived = make(chan *SignatureReceived)
-	m.eventsStA = make(chan *contract.MpcManagerStakeRequestAdded)
-	m.eventsStS = make(chan *contract.MpcManagerStakeRequestStarted)
 	m.secpFactory = avaCrypto.FactorySECP256K1R{}
 	return m, nil
 }
@@ -162,66 +159,30 @@ func NewTaskManager(ctx context.Context, log logger.Logger, config config.Config
 // todo: logic to quit for loop
 
 func (m *Manager) Start(ctx context.Context) error {
-	// Initiate event subscription with mpc-coordinator
-	g, ctx := errgroup.WithContext(m.ctx)
+	// Watch StakeRequestAdded and StakeRequestStarted events
+	go func() {
+		err := m.watchStakeRequest(ctx)
+		m.log.ErrorOnError(err, "Got an error to watch state request events")
+	}()
 
-	// Do the heavy core service
-	g.Go(func() error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-
-			case evt, ok := <-m.eventsStA:
-				if !ok {
-					m.log.Debug("Retrieve nothing from StakeRequestAdded event channel")
-					break
-				}
-
-				m.log.Info("Received StakeRequestAdded event", logger.Field{"event", evt})
-
-				err := m.onStakeRequestAdded(evt)
-				if err != nil {
-					m.log.Error("Failed to respond to StakeRequestAdded event", []logger.Field{
-						{"event", evt},
-						{"error", err}}...)
-				}
-
-			case evt, ok := <-m.eventsStS:
-				if !ok {
-					m.log.Debug("Retrieve nothing from StakeRequestStarted event channel")
-					break
-				}
-
-				m.log.Info("Received StakeRequestStarted event", logger.Field{"event", evt})
-
-				//// Wait until the corresponding key has been generated
-				//<-time.After(time.Second * 20)
-
-				err := m.onStakeRequestStarted(evt)
-				if err != nil {
-					m.log.Error("Failed to respond to StakeRequestStarted event", logger.Field{"error", err})
-				}
-
-			case <-time.After(1 * time.Second):
-				err := m.tick()
-				if err != nil {
-					m.log.Error("Got an tick error", logger.Field{"error", err})
-				}
+	// Actions upon events happening
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case evt := <-m.stakeRequestAddedEvt:
+			err := m.onStakeRequestAdded(evt)
+			m.log.ErrorOnError(err, "Failed to process StakeRequestAdded event")
+		case evt := <-m.stakeRequestStartedEvt:
+			err := m.onStakeRequestStarted(evt)
+			m.log.ErrorOnError(err, "Failed to process StakeRequestStarted event")
+		case <-time.After(1 * time.Second):
+			err := m.tick()
+			if err != nil {
+				m.log.Error("Got an tick error", logger.Field{"error", err})
 			}
 		}
-	})
-
-	fmt.Printf("%v service started.\n", m.config.ControllerId())
-	if err := g.Wait(); err != nil {
-		return errors.WithStack(err)
 	}
-
-	// Release supportive resources after no further consumption
-	//m.ethWsClient.Close()
-
-	fmt.Printf("%v service closed.\n", m.config.ControllerId())
-	return nil
 }
 
 func (m *Manager) tick() error {
@@ -430,40 +391,41 @@ func (m *Manager) checkSignResult(signReqId string) error {
 	return nil
 }
 
-func (m *Manager) subscribeStakeRequestAdded() error {
-	if m.subStA != nil {
-		m.subStA.Unsubscribe()
-		m.subStA = nil
-	}
+func (m *Manager) watchStakeRequest(ctx context.Context) error {
+	// Subscribe StakeRequestAdded event
 	pubkeys, err := m.GetPubKeys(m.myPubKeyHash.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	sub, err := m.WatchStakeRequestAdded(pubkeys)
-	if err != nil {
-		return err
-	}
-	m.subStA = sub
-	return nil
-}
-
-func (m *Manager) subscribeStakeRequestStarted() error {
-	if m.subStS != nil {
-		m.subStS.Unsubscribe()
-		m.subStS = nil
-	}
-	pubkeys, err := m.GetPubKeys(m.myPubKeyHash.Hex())
+	sinkAdded, err := m.WatchStakeRequestAdded(pubkeys)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	sub, err := m.WatchStakeRequestStarted(pubkeys)
+	// Subscribe StakeRequestStarted event
+	sinkStarted, err := m.WatchStakeRequestStarted(pubkeys)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
-	m.subStS = sub
-	return nil
+
+	// Watch StakeRequestAdded and StakeRequestStarted event
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case evt, ok := <-sinkAdded:
+			m.log.WarnOnNotOk(ok, "Retrieve nothing from event channel of StakeRequestAdded")
+			if ok {
+				m.stakeRequestAddedEvt <- evt
+			}
+		case evt, ok := <-sinkStarted:
+			m.log.WarnOnNotOk(ok, "Retrieve nothing from event channel of StakeRequestStarted")
+			if ok {
+				m.stakeRequestStartedEvt <- evt
+			}
+		}
+	}
 }
 
 // todo: store this event info
