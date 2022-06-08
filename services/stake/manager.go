@@ -82,8 +82,7 @@ type Manager struct {
 	logger.Logger
 	staker *Staker
 
-	mpcControllerId string
-	networkContext  core.NetworkContext
+	core.NetworkContext
 
 	stakeTasks map[string]*StakeTask
 
@@ -131,7 +130,7 @@ func NewManager(config config.Config, staker *Staker) (*Manager, error) {
 	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
 	m := &Manager{
 		staker:              staker,
-		networkContext:      *config.NetworkContext(),
+		NetworkContext:      *config.NetworkContext(),
 		mpcClient:           config.MpcClient(),
 		signer:              config.ControllerSigner(),
 		myPubKey:            pubKeyHex,
@@ -498,7 +497,7 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 	if !nAVAXAmount.IsUint64() || !req.StartTime.IsUint64() || !req.EndTime.IsUint64() {
 		return errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(m.networkContext, *pubkey, nonce, nodeID, nAVAXAmount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
+	task, err := NewStakeTask(m.NetworkContext, *pubkey, nonce, nodeID, nAVAXAmount.Uint64(), req.StartTime.Uint64(), req.EndTime.Uint64(), baseFeeGwei)
 	if err != nil {
 		return errors.WithStack(err)
 	}
