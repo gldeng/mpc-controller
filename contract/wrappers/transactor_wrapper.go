@@ -16,10 +16,8 @@ type MpcManagerTransactorWrapper struct {
 	*contract.MpcManagerTransactor
 }
 
-func (m *MpcManagerTransactorWrapper) ReportGeneratedKey(ctx context.Context, opts *bind.TransactOpts, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error) {
-	var tx *types.Transaction
-
-	err := backoff.RetryFnExponentialForever(m.Logger, ctx, func() error {
+func (m *MpcManagerTransactorWrapper) ReportGeneratedKey(ctx context.Context, opts *bind.TransactOpts, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (tx *types.Transaction, err error) {
+	err = backoff.RetryFnExponentialForever(m.Logger, ctx, func() error {
 		var err error
 		tx, err = m.MpcManagerTransactor.ReportGeneratedKey(opts, groupId, myIndex, generatedPublicKey)
 		if err != nil {
@@ -29,10 +27,19 @@ func (m *MpcManagerTransactorWrapper) ReportGeneratedKey(ctx context.Context, op
 
 		return nil
 	})
+	return
+}
 
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+func (m *MpcManagerTransactorWrapper) JoinRequest(ctx context.Context, opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (tx *types.Transaction, err error) {
+	err = backoff.RetryFnExponentialForever(m.Logger, ctx, func() error {
+		var err error
+		tx, err = m.MpcManagerTransactor.JoinRequest(opts, requestId, myIndex)
+		if err != nil {
+			m.Error("Failed to join request", logger.Field{"error", err})
+			return errors.WithStack(err)
+		}
 
-	return tx, nil
+		return nil
+	})
+	return
 }
