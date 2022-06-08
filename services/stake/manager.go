@@ -79,7 +79,6 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type Manager struct {
-	config config.Config
 	log    logger.Logger
 	staker *Staker
 
@@ -135,7 +134,6 @@ func NewManager(log logger.Logger, config config.Config, staker *Staker) (*Manag
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", pubKeyHash})
 	m := &Manager{
-		config:              config,
 		log:                 log,
 		staker:              staker,
 		networkContext:      *config.NetworkContext(),
