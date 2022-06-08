@@ -1,4 +1,4 @@
-package core
+package chain
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
@@ -7,7 +7,7 @@ import (
 )
 
 type NetworkContext struct {
-	chainID *big.Int
+	chainID    *big.Int
 	networkID  uint32
 	cChainID   ids.ID
 	asset      avax.Asset
@@ -28,7 +28,7 @@ func NewNetworkContext(networkID uint32,
 	return NetworkContext{
 		networkID:  networkID,
 		cChainID:   cChainID,
-		chainID: chainID,
+		chainID:    chainID,
 		asset:      asset,
 		importFee:  importFee,
 		gasPerByte: gasPerByte,
@@ -45,7 +45,7 @@ func (c *NetworkContext) CChainID() ids.ID {
 	return c.cChainID
 }
 
-func (c *NetworkContext) ChainID() *big.Int{
+func (c *NetworkContext) ChainID() *big.Int {
 	return c.chainID
 }
 

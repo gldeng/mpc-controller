@@ -12,7 +12,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
-	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -25,7 +25,7 @@ const (
 )
 
 type StakeTask struct {
-	network            core.NetworkContext
+	network            chain.NetworkContext
 	nonce              uint64
 	delegateAmt        uint64
 	startTime          uint64
@@ -44,7 +44,7 @@ type StakeTask struct {
 	factory            avaCrypto.FactorySECP256K1R
 }
 
-func NewStakeTask(networkContext core.NetworkContext, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64,
+func NewStakeTask(networkContext chain.NetworkContext, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64,
 	startTime uint64, endTime uint64,
 	baseFeeGwei uint64) (*StakeTask, error) {
 	addr, err := ids.ToShortID(hashing.PubkeyBytesToAddress(serializeCompresed(&pubkey)))

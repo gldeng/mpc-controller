@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"github.com/avalido/mpc-controller/chain"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"golang.org/x/sync/errgroup"
 
@@ -91,7 +92,7 @@ type TaskManager struct {
 	staker *Staker
 
 	mpcControllerId string
-	networkContext  core.NetworkContext
+	networkContext  chain.NetworkContext
 
 	stakeTasks map[string]*StakeTask
 

@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
 	ctlPk "github.com/avalido/mpc-controller"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
@@ -37,7 +38,7 @@ type Manager struct {
 	*Staker
 
 	core.MpcClient
-	core.NetworkContext
+	chain.NetworkContext
 
 	ctlPk.TransactorJoinRequest
 	ctlPk.WatcherStakeRequestAdded

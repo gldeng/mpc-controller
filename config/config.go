@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/pkg/errors"
@@ -46,7 +47,7 @@ type Config interface {
 	CoordinatorBoundListener() *contract.MpcManager
 	CoordinatorBoundListenerRebuild(log logger.Logger, ctx context.Context) (*ethclient.Client, *contract.MpcManager, error)
 
-	NetworkContext() *core.NetworkContext
+	NetworkContext() *chain.NetworkContext
 
 	DatabasePath() string
 }
@@ -87,7 +88,7 @@ type ConfigImpl struct {
 
 	//
 	ConfigNetwork
-	networkContext *core.NetworkContext
+	networkContext *chain.NetworkContext
 
 	//
 	ConfigDbBadger
@@ -207,7 +208,7 @@ func InitConfig(log logger.Logger, c *ConfigImpl) Config {
 	logger.FatalOnError(err, "Failed to convert AVAX assetId ID", logger.Field{"error", err})
 	c.avaxId = &assetId
 
-	networkCtx := core.NewNetworkContext(
+	networkCtx := chain.NewNetworkContext(
 		c.NetworkId,
 		*c.cChainId,
 		c.chainId,
@@ -308,7 +309,7 @@ func (c *ConfigImpl) CoordinatorBoundListenerRebuild(log logger.Logger, ctx cont
 	return c.ethWsClient, c.coordinatorBoundListener, nil
 }
 
-func (c *ConfigImpl) NetworkContext() *core.NetworkContext {
+func (c *ConfigImpl) NetworkContext() *chain.NetworkContext {
 	return c.networkContext
 }
 
