@@ -76,3 +76,65 @@ func (m *MpcManagerFilterWrapper) WatchKeygenRequestAdded(ctx context.Context, g
 
 	return sink, nil
 }
+
+func (m *MpcManagerFilterWrapper) WatchStakeRequestAdded(ctx context.Context, publicKey [][]byte) (<-chan *contract.MpcManagerStakeRequestAdded, error) {
+	sink := make(chan *contract.MpcManagerStakeRequestAdded)
+
+	err := backoff.RetryFnExponentialForever(m.Logger, ctx, func() error {
+		sub, err := m.MpcManagerFilterer.WatchStakeRequestAdded(nil, sink, publicKey)
+		if err != nil {
+			m.Error("Failed to watch StakeRequestAdded event", logger.Field{"error", err})
+			return errors.WithStack(err)
+		}
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					sub.Unsubscribe()
+				case err := <-sub.Err():
+					m.ErrorOnError(err, "Got an error during watching WatchStakeRequestAdded event", logger.Field{"error", err})
+				}
+			}
+		}()
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return sink, nil
+}
+
+func (m *MpcManagerFilterWrapper) WatchStakeRequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *contract.MpcManagerStakeRequestStarted, error) {
+	sink := make(chan *contract.MpcManagerStakeRequestStarted)
+
+	err := backoff.RetryFnExponentialForever(m.Logger, ctx, func() error {
+		sub, err := m.MpcManagerFilterer.WatchStakeRequestStarted(nil, sink, publicKey)
+		if err != nil {
+			m.Error("Failed to watch WatchStakeRequestStarted event", logger.Field{"error", err})
+			return errors.WithStack(err)
+		}
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					sub.Unsubscribe()
+				case err := <-sub.Err():
+					m.ErrorOnError(err, "Got an error during watching WatchStakeRequestStarted event", logger.Field{"error", err})
+				}
+			}
+		}()
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return sink, nil
+}
