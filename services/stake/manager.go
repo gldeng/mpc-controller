@@ -2,8 +2,6 @@ package stake
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
@@ -15,7 +13,6 @@ import (
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
@@ -24,54 +21,14 @@ import (
 
 const sep = "-"
 
-type ReportKeyTx struct {
-	groupId            [32]byte
-	myIndex            *big.Int
-	generatedPublicKey []byte
-}
-
 type JoinTx struct {
 	requestId *big.Int
 	myIndex   *big.Int
 }
 
-type SignatureReceived struct {
-	requestId string
-	hash      string
-	signature string
-}
-
 type PendingRequestId struct {
 	taskId        string
 	requestNumber uint8
-}
-
-// TODO: Add startTime to handle timeouts
-
-type SignResult struct {
-	RequestId     string `json:"request_id"`
-	Result        string `json:"result"`
-	RequestType   string `json:"request_type"`
-	RequestStatus string `json:"request_status"`
-}
-
-func parsePendingRequestId(str string) (*PendingRequestId, error) {
-	var incorrectFormatErr = errors.New("PendingSignRequest is not in correct format")
-	parts := strings.Split(str, sep)
-	if len(parts) != 2 {
-		return nil, incorrectFormatErr
-	}
-	idIndex, requestNumberIndex := 0, 1
-	var requestNumber uint8
-	_, err := fmt.Sscan(parts[requestNumberIndex], &requestNumber)
-	if err != nil {
-		return nil, err
-	}
-	return &PendingRequestId{taskId: parts[idIndex], requestNumber: requestNumber}, nil
-}
-
-func (r *PendingRequestId) ToString() string {
-	return fmt.Sprintf("%v"+sep+"%v", r.taskId, r.requestNumber)
 }
 
 type Manager struct {
@@ -509,6 +466,21 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 	return nil
 }
 
-func marshalPubkey(pub *ecdsa.PublicKey) []byte {
-	return elliptic.Marshal(crypto.S256(), pub.X, pub.Y)
+func parsePendingRequestId(str string) (*PendingRequestId, error) {
+	var incorrectFormatErr = errors.New("PendingSignRequest is not in correct format")
+	parts := strings.Split(str, sep)
+	if len(parts) != 2 {
+		return nil, incorrectFormatErr
+	}
+	idIndex, requestNumberIndex := 0, 1
+	var requestNumber uint8
+	_, err := fmt.Sscan(parts[requestNumberIndex], &requestNumber)
+	if err != nil {
+		return nil, err
+	}
+	return &PendingRequestId{taskId: parts[idIndex], requestNumber: requestNumber}, nil
+}
+
+func (r *PendingRequestId) ToString() string {
+	return fmt.Sprintf("%v"+sep+"%v", r.taskId, r.requestNumber)
 }
