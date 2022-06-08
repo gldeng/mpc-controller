@@ -79,7 +79,6 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type Manager struct {
-	ctx    context.Context
 	config config.Config
 	log    logger.Logger
 	staker *Staker
@@ -126,7 +125,7 @@ type Manager struct {
 	stakeRequestStartedEvt chan *contract.MpcManagerStakeRequestStarted
 }
 
-func NewManager(ctx context.Context, log logger.Logger, config config.Config, staker *Staker) (*Manager, error) {
+func NewManager(log logger.Logger, config config.Config, staker *Staker) (*Manager, error) {
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
@@ -136,7 +135,6 @@ func NewManager(ctx context.Context, log logger.Logger, config config.Config, st
 		logger.Field{"pubKey", pubKeyHex},
 		logger.Field{"pubKeyTopic", pubKeyHash})
 	m := &Manager{
-		ctx:                 ctx,
 		config:              config,
 		log:                 log,
 		staker:              staker,
@@ -191,7 +189,7 @@ func (m *Manager) tick(ctx context.Context) error {
 		return err
 	}
 	for requestId, _ := range m.pendingSignRequests {
-		err := m.checkSignResult(requestId)
+		err := m.checkSignResult(ctx, requestId)
 		if err != nil {
 			return err
 		}
@@ -203,7 +201,7 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 	var done []common.Hash
 	var retry []common.Hash
 	for txHash, _ := range m.pendingJoins {
-		rcp, err := m.TransactionReceipt(m.ctx, txHash)
+		rcp, err := m.TransactionReceipt(ctx, txHash)
 		if err == nil {
 			if rcp.Status == 1 {
 				done = append(done, txHash)
@@ -244,8 +242,8 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 }
 
 // todo: verify signature with third-party lib.
-func (m *Manager) checkSignResult(signReqId string) error {
-	signResult, err := m.mpcClient.Result(m.ctx, signReqId) // todo: add shared context to task manager
+func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
+	signResult, err := m.mpcClient.Result(ctx, signReqId) // todo: add shared context to task manager
 	m.log.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
 	if err != nil {
@@ -297,7 +295,7 @@ func (m *Manager) checkSignResult(signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.mpcClient.Sign(m.ctx, nextPendingSignReq) // todo: add shared context to task manager
+			err = m.mpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -335,7 +333,7 @@ func (m *Manager) checkSignResult(signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.mpcClient.Sign(m.ctx, nextPendingSignReq) // todo: add shared context to task manager
+			err = m.mpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -359,7 +357,7 @@ func (m *Manager) checkSignResult(signReqId string) error {
 			delete(m.pendingSignRequests, signReqId)
 			m.log.Info("Mpc-manager: Cool! All signings for a stake task all done.")
 
-			ids, err := m.staker.IssueStakeTaskTxs(m.ctx, task)
+			ids, err := m.staker.IssueStakeTaskTxs(ctx, task)
 
 			//err = doStake(task)
 			if err != nil {
@@ -491,12 +489,12 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 
 	address := myCrypto.PubkeyToAddresse(pubkey)
 
-	nonce, err := m.NonceAt(m.ctx, *address, nil)
+	nonce, err := m.NonceAt(ctx, *address, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	bl, _ := m.BalanceAt(m.ctx, *address, nil)
+	bl, _ := m.BalanceAt(ctx, *address, nil)
 	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{
 		{"address", *address},
 		{"balance", bl.Uint64()}}...)
@@ -545,7 +543,7 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 		ParticipantKeys: normalized,
 		Hash:            hash,
 	}
-	err = m.mpcClient.Sign(m.ctx, request) // todo: add shared context to task manager
+	err = m.mpcClient.Sign(ctx, request) // todo: add shared context to task manager
 	if err != nil {
 		return errors.WithStack(err)
 	}
