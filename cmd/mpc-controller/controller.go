@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/avalido/mpc-controller"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/wrappers"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/services/group"
 	"github.com/avalido/mpc-controller/services/keygen"
+	"github.com/avalido/mpc-controller/services/stake"
 	"github.com/avalido/mpc-controller/storage"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,16 +51,27 @@ func NewController(c *cli.Context) *MpcController {
 	pubKeyBytes := myCrypto.MarshalPubkey(&privateKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
 	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
+	pubKeyHashHex := pubKeyHash.Hex()
+
+	signer := myConfig.ControllerSigner()
 
 	mpcManagerCallerWrapper := wrappers.MpcManagerCallerWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerCaller}
 	mpcManagerFilterWrapper := wrappers.MpcManagerFilterWrapper{myLogger, &myConfig.CoordinatorBoundListener().MpcManagerFilterer}
 	mpcManagerTransactorWrapper := wrappers.MpcManagerTransactorWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerTransactor}
 
+	mpcClient := myConfig.MpcClient()
+
+	rpcEthClient := myConfig.EthRpcClient()
+	rpcEthClientWrapper := chain.RpcEthClientWrapper{myLogger, rpcEthClient}
+
+	cChainIssueClient := myConfig.CChainIssueClient()
+	pChainIssueClient := myConfig.PChainIssueClient()
+
 	// Build group service
 	groupService := group.Group{
 		PubKeyStr:               pubKeyHex,
 		PubKeyBytes:             pubKeyBytes,
-		PubKeyHashStr:           pubKeyHash.Hex(),
+		PubKeyHashStr:           pubKeyHashHex,
 		Logger:                  myLogger,
 		CallerGetGroup:          &mpcManagerCallerWrapper,
 		WatcherParticipantAdded: &mpcManagerFilterWrapper,
@@ -69,10 +82,10 @@ func NewController(c *cli.Context) *MpcController {
 
 	// Build keygen service
 	keygenService := keygen.Keygen{
-		PubKeyHashHex:                pubKeyHash.Hex(),
+		PubKeyHashHex:                pubKeyHashHex,
 		Logger:                       myLogger,
-		MpcClientKeygen:              myConfig.MpcClient(),
-		MpcClientResult:              myConfig.MpcClient(),
+		MpcClientKeygen:              mpcClient,
+		MpcClientResult:              mpcClient,
 		WatcherKeygenRequestAdded:    &mpcManagerFilterWrapper,
 		TransactorReportGeneratedKey: &mpcManagerTransactorWrapper,
 
@@ -85,9 +98,37 @@ func NewController(c *cli.Context) *MpcController {
 		StorerLoadGroupInfo:          myStorer,
 		StorerStoreKeygenRequestInfo: myStorer,
 
-		EthClientTransactionReceipt: myConfig.EthRpcClient(),
+		EthClientTransactionReceipt: rpcEthClient,
 
-		Signer: myConfig.ControllerSigner(),
+		Signer: signer,
+	}
+
+	// Build stake service
+
+	stakeService := stake.Manager{
+		Logger: myLogger,
+
+		Staker: &stake.Staker{myLogger, cChainIssueClient, pChainIssueClient},
+
+		MpcClientSign:   mpcClient,
+		MpcClientResult: mpcClient,
+		NetworkContext:  *myConfig.NetworkContext(),
+
+		TransactorJoinRequest:      &mpcManagerTransactorWrapper,
+		WatcherStakeRequestAdded:   &mpcManagerFilterWrapper,
+		WatcherStakeRequestStarted: &mpcManagerFilterWrapper,
+
+		EthClientTransactionReceipt: &rpcEthClientWrapper,
+		EthClientNonceAt:            &rpcEthClientWrapper,
+		EthClientBalanceAt:          &rpcEthClientWrapper,
+
+		StorerGetParticipantIndex:     myStorer,
+		StorerGetPariticipantKeys:     myStorer,
+		StorerGetPubKeys:              myStorer,
+		StorerLoadGeneratedPubKeyInfo: myStorer,
+
+		Signer:     signer,
+		PubKeyHash: pubKeyHash,
 	}
 
 	controller := MpcController{
@@ -95,7 +136,7 @@ func NewController(c *cli.Context) *MpcController {
 		Services: []mpc_controller.MpcControllerService{
 			&groupService,
 			&keygenService,
-			//&stake.Manager{},
+			&stakeService,
 			//&reward.Reward{},
 		},
 	}
