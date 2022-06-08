@@ -79,7 +79,7 @@ func (r *PendingRequestId) ToString() string {
 }
 
 type Manager struct {
-	log    logger.Logger
+	logger.Logger
 	staker *Staker
 
 	mpcControllerId string
@@ -124,17 +124,12 @@ type Manager struct {
 	stakeRequestStartedEvt chan *contract.MpcManagerStakeRequestStarted
 }
 
-func NewManager(log logger.Logger, config config.Config, staker *Staker) (*Manager, error) {
+func NewManager(config config.Config, staker *Staker) (*Manager, error) {
 	privKey := config.ControllerKey()
 	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
 	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
 	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
-	log.Debug("parsed task manager key info",
-		logger.Field{"mpcControllerId", config.ControllerId()},
-		logger.Field{"pubKey", pubKeyHex},
-		logger.Field{"pubKeyTopic", pubKeyHash})
 	m := &Manager{
-		log:                 log,
 		staker:              staker,
 		networkContext:      *config.NetworkContext(),
 		mpcClient:           config.MpcClient(),
@@ -158,7 +153,7 @@ func (m *Manager) Start(ctx context.Context) error {
 	// Watch StakeRequestAdded and StakeRequestStarted events
 	go func() {
 		err := m.watchStakeRequest(ctx)
-		m.log.ErrorOnError(err, "Got an error to watch state request events")
+		m.ErrorOnError(err, "Got an error to watch state request events")
 	}()
 
 	// Actions upon events happening
@@ -168,14 +163,14 @@ func (m *Manager) Start(ctx context.Context) error {
 			return nil
 		case evt := <-m.stakeRequestAddedEvt:
 			err := m.onStakeRequestAdded(ctx, evt)
-			m.log.ErrorOnError(err, "Failed to process StakeRequestAdded event")
+			m.ErrorOnError(err, "Failed to process StakeRequestAdded event")
 		case evt := <-m.stakeRequestStartedEvt:
 			err := m.onStakeRequestStarted(ctx, evt)
-			m.log.ErrorOnError(err, "Failed to process StakeRequestStarted event")
+			m.ErrorOnError(err, "Failed to process StakeRequestStarted event")
 		case <-time.After(1 * time.Second):
 			err := m.tick(ctx)
 			if err != nil {
-				m.log.Error("Got an tick error", logger.Field{"error", err})
+				m.Error("Got an tick error", logger.Field{"error", err})
 			}
 		}
 	}
@@ -221,11 +216,11 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 			myIndex:   myIndex,
 		}
 		if err != nil {
-			m.log.Error("Failed to join request", logger.Field{"error", err})
+			m.Error("Failed to join request", logger.Field{"error", err})
 			return errors.WithStack(err)
 		}
 
-		m.log.Info("Retry join request.", []logger.Field{
+		m.Info("Retry join request.", []logger.Field{
 			{"reqId", requestId},
 			{"myIndex", myIndex},
 			{"txHash", tx.Hash()}}...)
@@ -242,7 +237,7 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 // todo: verify signature with third-party lib.
 func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 	signResult, err := m.mpcClient.Result(ctx, signReqId) // todo: add shared context to task manager
-	m.log.Debug("Task-manager got sign result from mpc-server",
+	m.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
 	if err != nil {
 		return err
@@ -270,7 +265,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				m.log.Error("Hash doesn't match")
+				m.Error("Hash doesn't match")
 				return hashMismatchErr
 			}
 			err = task.SetExportTxSig(sig)
@@ -294,7 +289,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
 			err = m.mpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
-			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
+			m.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -310,7 +305,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				m.log.Error("Hash doesn't match")
+				m.Error("Hash doesn't match")
 				return hashMismatchErr
 			}
 			err = task.SetImportTxSig(sig)
@@ -332,7 +327,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
 			err = m.mpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
-			m.log.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
+			m.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -345,7 +340,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			hashHex := common.Bytes2Hex(hashBytes)
 			if pendingSignReq.Hash != hashHex {
-				m.log.Error("Hash doesn't match")
+				m.Error("Hash doesn't match")
 				return hashMismatchErr
 			}
 			err = task.SetAddDelegatorTxSig(sig)
@@ -353,21 +348,21 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 				return err
 			}
 			delete(m.pendingSignRequests, signReqId)
-			m.log.Info("Mpc-manager: Cool! All signings for a stake task all done.")
+			m.Info("Mpc-manager: Cool! All signings for a stake task all done.")
 
 			ids, err := m.staker.IssueStakeTaskTxs(ctx, task)
 
 			//err = doStake(task)
 			if err != nil {
-				m.log.Error("Failed to doStake",
+				m.Error("Failed to doStake",
 					logger.Field{"error", err})
 				return errors.WithStack(err)
 			}
-			m.log.Info("Mpc-manager: Cool! Success to add delegator!",
+			m.Info("Mpc-manager: Cool! Success to add delegator!",
 				logger.Field{"stakeTaske", task},
 				logger.Field{"ids", ids})
 		} else {
-			m.log.Error("Hash doesn't match")
+			m.Error("Hash doesn't match")
 			return wrongRequestNumberErr
 		}
 	}
@@ -398,12 +393,12 @@ func (m *Manager) watchStakeRequest(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case evt, ok := <-sinkAdded:
-			m.log.WarnOnNotOk(ok, "Retrieve nothing from event channel of StakeRequestAdded")
+			m.WarnOnNotOk(ok, "Retrieve nothing from event channel of StakeRequestAdded")
 			if ok {
 				m.stakeRequestAddedEvt <- evt
 			}
 		case evt, ok := <-sinkStarted:
-			m.log.WarnOnNotOk(ok, "Retrieve nothing from event channel of StakeRequestStarted")
+			m.WarnOnNotOk(ok, "Retrieve nothing from event channel of StakeRequestStarted")
 			if ok {
 				m.stakeRequestStartedEvt <- evt
 			}
@@ -420,7 +415,7 @@ func (m *Manager) onStakeRequestAdded(ctx context.Context, req *contract.MpcMana
 
 	tx, err := m.JoinRequest(ctx, m.signer, req.RequestId, ind)
 	if err != nil {
-		m.log.Error("Failed to join stake request", []logger.Field{{"error", err}, {"tx", tx}}...)
+		m.Error("Failed to join stake request", []logger.Field{{"error", err}, {"tx", tx}}...)
 		return errors.WithStack(err)
 	}
 	j := &JoinTx{
@@ -460,7 +455,7 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 
 	if !participating {
 		// Not Participating, Ignore
-		m.log.Info("Not participated to stake request", logger.Field{"stakeReqId", req.RequestId})
+		m.Info("Not participated to stake request", logger.Field{"stakeReqId", req.RequestId})
 		return nil
 	}
 
@@ -493,7 +488,7 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 	}
 
 	bl, _ := m.BalanceAt(ctx, *address, nil)
-	m.log.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{
+	m.Debug("$$$$$$$$$C Balance of C-Chain address before export", []logger.Field{
 		{"address", *address},
 		{"balance", bl.Uint64()}}...)
 
@@ -518,10 +513,10 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 		return errors.WithStack(err)
 	}
 
-	m.log.Debug("Task-manager got participant public keys", logger.Field{"participantPubKeys", pariticipantKeys})
+	m.Debug("Task-manager got participant public keys", logger.Field{"participantPubKeys", pariticipantKeys})
 
 	normalized, err := myCrypto.NormalizePubKeys(pariticipantKeys)
-	m.log.Debug("Task-manager normalized participant public keys",
+	m.Debug("Task-manager normalized participant public keys",
 		logger.Field{"normalizedParticipantPubKeys", normalized})
 	if err != nil {
 		return errors.Wrapf(err, "failed to normalized participant public keys: %v", pariticipantKeys)
