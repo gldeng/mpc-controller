@@ -95,14 +95,38 @@ package main
 //}
 
 import (
+	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
 	configFile = "configFile"
 )
+
+func RunMpcController(c *cli.Context) error {
+	controller := NewController(c)
+
+	// Handle graceful shutdown.
+	shutdownCtx, shutdown := context.WithCancel(context.Background())
+	go func() {
+		quit := make(chan os.Signal)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+
+		shutdown()
+	}()
+
+	if err := controller.Run(shutdownCtx); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
 
 func main() {
 	app := &cli.App{

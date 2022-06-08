@@ -16,9 +16,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type MpcController struct {
@@ -43,9 +40,7 @@ func (c *MpcController) Run(ctx context.Context) error {
 	return nil
 }
 
-// todo: add concrete services and necessary configs
-
-func RunMpcController(c *cli.Context) error {
+func NewController(c *cli.Context) *MpcController {
 	// Initiate config
 	myLogger, myConfig, myStorer := initConfig(c)
 
@@ -95,17 +90,6 @@ func RunMpcController(c *cli.Context) error {
 		Signer: myConfig.ControllerSigner(),
 	}
 
-	// Handle graceful shutdown.
-	shutdownCtx, shutdown := context.WithCancel(context.Background())
-	go func() {
-		quit := make(chan os.Signal)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		<-quit
-
-		shutdown()
-	}()
-
-	// Run the mpc-controller
 	controller := MpcController{
 		ID: myConfig.ControllerId(),
 		Services: []mpc_controller.MpcControllerService{
@@ -116,11 +100,7 @@ func RunMpcController(c *cli.Context) error {
 		},
 	}
 
-	if err := controller.Run(shutdownCtx); err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
+	return &controller
 }
 
 func initConfig(c *cli.Context) (logger.Logger, config.Config, storage.Storer) {
@@ -134,9 +114,7 @@ func initConfig(c *cli.Context) (logger.Logger, config.Config, storage.Storer) {
 	// Initialize config
 	configInterface := config.InitConfig(log, configImpl)
 
-	// Start task manager
-	//ctx, shutdown := context.WithCancel(context.Background())
-	//staker := task.NewStaker(log, configInterface.CChainIssueClient(), configInterface.PChainIssueClient())
+	// Initiate storer
 	storer := storage.New(log, configImpl.DatabasePath())
 
 	return log, configInterface, storer
