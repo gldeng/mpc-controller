@@ -37,7 +37,9 @@ type Manager struct {
 
 	*Staker
 
-	core.MpcClient
+	ctlPk.MpcClientSign
+	ctlPk.MpcClientResult
+
 	chain.NetworkContext
 
 	ctlPk.TransactorJoinRequest
@@ -159,7 +161,7 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 
 // todo: verify signature with third-party lib.
 func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
-	signResult, err := m.MpcClient.Result(ctx, signReqId) // todo: add shared context to task manager
+	signResult, err := m.Result(ctx, signReqId) // todo: add shared context to task manager
 	m.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
 	if err != nil {
@@ -211,7 +213,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.MpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
+			err = m.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -249,7 +251,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.MpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
+			err = m.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -459,7 +461,7 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 		ParticipantKeys: normalized,
 		Hash:            hash,
 	}
-	err = m.MpcClient.Sign(ctx, request) // todo: add shared context to task manager
+	err = m.Sign(ctx, request) // todo: add shared context to task manager
 	if err != nil {
 		return errors.WithStack(err)
 	}
