@@ -39,7 +39,7 @@ func (p *Group) Start(ctx context.Context) error {
 	// Watch ParticipantAdded event
 	go func() {
 		err := p.watchParticipantAdded(ctx)
-		p.ErrorOnError(err, "Got an error to watch ParticipantAdded event")
+		p.ErrorOnError(err, "Got an error to watch ParticipantAdded event", logger.Field{"error", err})
 	}()
 
 	// Store participant added
@@ -49,7 +49,7 @@ func (p *Group) Start(ctx context.Context) error {
 			return nil
 		case evt := <-p.participantAddedEvt:
 			err := p.onParticipantAdded(ctx, evt)
-			p.ErrorOnError(err, "Failed to process ParticipantAdded event")
+			p.ErrorOnError(err, "Failed to process ParticipantAdded event", logger.Field{"error", err})
 		}
 	}
 }

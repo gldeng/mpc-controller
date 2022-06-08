@@ -78,7 +78,7 @@ func (m *Manager) Start(ctx context.Context) error {
 	// Watch StakeRequestAdded and StakeRequestStarted events
 	go func() {
 		err := m.watchStakeRequest(ctx)
-		m.ErrorOnError(err, "Got an error to watch state request events")
+		m.ErrorOnError(err, "Got an error to watch state request events", logger.Field{"error", err})
 	}()
 
 	// Actions upon events happening
@@ -88,15 +88,13 @@ func (m *Manager) Start(ctx context.Context) error {
 			return nil
 		case evt := <-m.stakeRequestAddedEvt:
 			err := m.onStakeRequestAdded(ctx, evt)
-			m.ErrorOnError(err, "Failed to process StakeRequestAdded event")
+			m.ErrorOnError(err, "Failed to process StakeRequestAdded event", logger.Field{"error", err})
 		case evt := <-m.stakeRequestStartedEvt:
 			err := m.onStakeRequestStarted(ctx, evt)
-			m.ErrorOnError(err, "Failed to process StakeRequestStarted event")
+			m.ErrorOnError(err, "Failed to process StakeRequestStarted event", logger.Field{"error", err})
 		case <-time.After(1 * time.Second):
 			err := m.tick(ctx)
-			if err != nil {
-				m.Error("Got an tick error", logger.Field{"error", err})
-			}
+			m.ErrorOnError(err, "Got an tick error", logger.Field{"error", err})
 		}
 	}
 }

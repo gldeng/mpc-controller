@@ -70,7 +70,7 @@ func (k *Keygen) Start(ctx context.Context) error {
 	// Watch KeygenRequestAdded event
 	go func() {
 		err := k.watchKeygenRequestAdded(ctx)
-		k.ErrorOnError(err, "Got an error to watch KeygenRequestAdded event")
+		k.ErrorOnError(err, "Got an error to watch KeygenRequestAdded event", logger.Field{"error", err})
 	}()
 
 	// Action upon KeygenRequestAdded
@@ -80,7 +80,7 @@ func (k *Keygen) Start(ctx context.Context) error {
 			return nil
 		case evt := <-k.keygenRequestAddedEvt:
 			err := k.onKeygenRequestAdded(ctx, evt)
-			k.ErrorOnError(err, "Failed to process ParticipantAdded event")
+			k.ErrorOnError(err, "Failed to process ParticipantAdded event", logger.Field{"error", err})
 		}
 	}
 }
@@ -109,9 +109,7 @@ func (k *Keygen) watchKeygenRequestAdded(ctx context.Context) error {
 			}
 		case <-time.After(1 * time.Second):
 			err := k.tick(ctx)
-			if err != nil {
-				k.Error("Got an tick error", logger.Field{"error", err})
-			}
+			k.ErrorOnError(err, "Got an tick error", logger.Field{"error", err})
 		}
 	}
 }
