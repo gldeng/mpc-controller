@@ -11,13 +11,9 @@ import (
 )
 
 type Staker struct {
-	log               logger.Logger
-	cChainIssueClient evm.Client
-	pChainIssueClient platformvm.Client
-}
-
-func NewStaker(log logger.Logger, cChainIssueClient evm.Client, pChainIssueClient platformvm.Client) *Staker {
-	return &Staker{log, cChainIssueClient, pChainIssueClient}
+	logger.Logger
+	CChainIssueClient evm.Client
+	PChainIssueClient platformvm.Client
 }
 
 func (s *Staker) IssueStakeTaskTxs(ctx context.Context, task *StakeTask) ([]ids.ID, error) {
@@ -41,25 +37,25 @@ func (s *Staker) IssueStakeTaskTxs(ctx context.Context, task *StakeTask) ([]ids.
 }
 
 func (s *Staker) IssueSignedStakeTxs(ctx context.Context, exportTx, importTx, addDelegatorTx []byte) ([]ids.ID, error) {
-	exportId, err := s.cChainIssueClient.IssueTx(ctx, exportTx)
+	exportId, err := s.CChainIssueClient.IssueTx(ctx, exportTx)
 	if err != nil {
-		logger.Error("Staker failed to issue signed exportTx", logger.Field{"error", err})
+		s.Error("Staker failed to issue signed exportTx", logger.Field{"error", err})
 		return nil, errors.Wrap(err, "failed to issue signed exportTx")
 	}
 
 	// sleep to avoid error: "failed to get shared memory: not found"
 	time.Sleep(time.Second * 5)
-	importId, err := s.pChainIssueClient.IssueTx(ctx, importTx)
+	importId, err := s.PChainIssueClient.IssueTx(ctx, importTx)
 	if err != nil {
-		logger.Error("Stake failed to issue signed importTx", logger.Field{"error", err})
+		s.Error("Stake failed to issue signed importTx", logger.Field{"error", err})
 		return nil, errors.Wrap(err, "failed to issue signed importTx")
 	}
 
 	// sleep to avoid error: "failed to get shared memory: not found"
 	time.Sleep(time.Second * 5)
-	addDelegatorId, err := s.pChainIssueClient.IssueTx(ctx, addDelegatorTx)
+	addDelegatorId, err := s.PChainIssueClient.IssueTx(ctx, addDelegatorTx)
 	if err != nil {
-		logger.Error("Stake failed to issue signed addDelegatorTx", logger.Field{"error", err})
+		s.Error("Stake failed to issue signed addDelegatorTx", logger.Field{"error", err})
 		return nil, errors.Wrap(err, "failed to issue signed importTx")
 	}
 

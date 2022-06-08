@@ -7,10 +7,7 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/constants"
-	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
-	avaEthclient "github.com/ava-labs/coreth/ethclient"
 	ctlPk "github.com/avalido/mpc-controller"
-	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
@@ -19,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
@@ -80,75 +76,45 @@ func (r *PendingRequestId) ToString() string {
 
 type Manager struct {
 	logger.Logger
-	staker *Staker
 
+	*Staker
+
+	core.MpcClient
 	core.NetworkContext
 
-	stakeTasks map[string]*StakeTask
-
-	pendingSignRequests map[string]*core.SignRequest
-
-	pendingJoins map[common.Hash]*JoinTx
-
-	avaEthclient    avaEthclient.Client
-	myAddr          ids.ShortID
-	coordinatorAddr common.Address
-
-	ctlPk.StorerGetGroupIds
 	ctlPk.TransactorJoinRequest
-	ctlPk.StorerGetPubKeys
 	ctlPk.WatcherStakeRequestAdded
 	ctlPk.WatcherStakeRequestStarted
-	ctlPk.CallerGetGroup
-	ctlPk.StorerLoadGeneratedPubKeyInfo
 
 	ctlPk.EthClientTransactionReceipt
 	ctlPk.EthClientNonceAt
 	ctlPk.EthClientBalanceAt
 
-	secpFactory   avaCrypto.FactorySECP256K1R
-	chSigReceived chan *SignatureReceived
-	mpcClient     core.MpcClient
-	signer        *bind.TransactOpts
-	myPubKey      string
-	myPubKeyHash  common.Hash
-
-	subStA event.Subscription
-	subStS event.Subscription
-
 	ctlPk.StorerGetParticipantIndex
 	ctlPk.StorerGetPariticipantKeys
+	ctlPk.StorerGetPubKeys
+	ctlPk.StorerLoadGeneratedPubKeyInfo
+
+	Signer     *bind.TransactOpts
+	PubKeyHash common.Hash
+
+	stakeTasks map[string]*StakeTask
+
+	pendingSignRequests map[string]*core.SignRequest
+	pendingJoins        map[common.Hash]*JoinTx
 
 	stakeRequestAddedEvt   chan *contract.MpcManagerStakeRequestAdded
 	stakeRequestStartedEvt chan *contract.MpcManagerStakeRequestStarted
 }
 
-func NewManager(config config.Config, staker *Staker) (*Manager, error) {
-	privKey := config.ControllerKey()
-	pubKeyBytes := marshalPubkey(&privKey.PublicKey)[1:]
-	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
-	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
-	m := &Manager{
-		staker:              staker,
-		NetworkContext:      *config.NetworkContext(),
-		mpcClient:           config.MpcClient(),
-		signer:              config.ControllerSigner(),
-		myPubKey:            pubKeyHex,
-		myPubKeyHash:        pubKeyHash,
-		coordinatorAddr:     *config.CoordinatorAddress(),
-		stakeTasks:          make(map[string]*StakeTask),
-		pendingSignRequests: make(map[string]*core.SignRequest),
-		pendingJoins:        make(map[common.Hash]*JoinTx),
-	}
-
-	m.chSigReceived = make(chan *SignatureReceived)
-	m.secpFactory = avaCrypto.FactorySECP256K1R{}
-	return m, nil
-}
-
-// todo: logic to quit for loop
-
 func (m *Manager) Start(ctx context.Context) error {
+	// Assign unexported fileds
+	m.stakeTasks = make(map[string]*StakeTask)
+	m.pendingSignRequests = make(map[string]*core.SignRequest)
+	m.pendingJoins = make(map[common.Hash]*JoinTx)
+	m.stakeRequestAddedEvt = make(chan *contract.MpcManagerStakeRequestAdded)
+	m.stakeRequestStartedEvt = make(chan *contract.MpcManagerStakeRequestStarted)
+
 	// Watch StakeRequestAdded and StakeRequestStarted events
 	go func() {
 		err := m.watchStakeRequest(ctx)
@@ -209,7 +175,7 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 	for _, txHash := range sampledRetry {
 		req := m.pendingJoins[txHash]
 		requestId, myIndex := req.requestId, req.myIndex
-		tx, err := m.JoinRequest(ctx, m.signer, requestId, myIndex)
+		tx, err := m.JoinRequest(ctx, m.Signer, requestId, myIndex)
 		m.pendingJoins[tx.Hash()] = &JoinTx{
 			requestId: requestId,
 			myIndex:   myIndex,
@@ -235,7 +201,7 @@ func (m *Manager) checkPendingJoins(ctx context.Context) error {
 
 // todo: verify signature with third-party lib.
 func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
-	signResult, err := m.mpcClient.Result(ctx, signReqId) // todo: add shared context to task manager
+	signResult, err := m.MpcClient.Result(ctx, signReqId) // todo: add shared context to task manager
 	m.Debug("Task-manager got sign result from mpc-server",
 		logger.Field{"signResult", signResult})
 	if err != nil {
@@ -287,7 +253,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.mpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
+			err = m.MpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -325,7 +291,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			}
 			nextPendingSignReq.Hash = common.Bytes2Hex(hashBytes)
 
-			err = m.mpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
+			err = m.MpcClient.Sign(ctx, nextPendingSignReq) // todo: add shared context to task manager
 			m.Debug("Task-manager sent next sign request", logger.Field{"nextSignRequest", nextPendingSignReq})
 			if err != nil {
 				return errors.WithStack(err)
@@ -349,7 +315,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 			delete(m.pendingSignRequests, signReqId)
 			m.Info("Mpc-manager: Cool! All signings for a stake task all done.")
 
-			ids, err := m.staker.IssueStakeTaskTxs(ctx, task)
+			ids, err := m.Staker.IssueStakeTaskTxs(ctx, task)
 
 			//err = doStake(task)
 			if err != nil {
@@ -370,7 +336,7 @@ func (m *Manager) checkSignResult(ctx context.Context, signReqId string) error {
 
 func (m *Manager) watchStakeRequest(ctx context.Context) error {
 	// Subscribe StakeRequestAdded event
-	pubkeys, err := m.GetPubKeys(ctx, m.myPubKeyHash.Hex())
+	pubkeys, err := m.GetPubKeys(ctx, m.PubKeyHash.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -407,12 +373,12 @@ func (m *Manager) watchStakeRequest(ctx context.Context) error {
 
 // todo: store this event info
 func (m *Manager) onStakeRequestAdded(ctx context.Context, req *contract.MpcManagerStakeRequestAdded) error {
-	ind, err := m.GetIndex(ctx, m.myPubKeyHash.Hex(), req.PublicKey.Hex())
+	ind, err := m.GetIndex(ctx, m.PubKeyHash.Hex(), req.PublicKey.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	tx, err := m.JoinRequest(ctx, m.signer, req.RequestId, ind)
+	tx, err := m.JoinRequest(ctx, m.Signer, req.RequestId, ind)
 	if err != nil {
 		m.Error("Failed to join stake request", []logger.Field{{"error", err}, {"tx", tx}}...)
 		return errors.WithStack(err)
@@ -442,7 +408,7 @@ func (m *Manager) removePendingJoin(requestId *big.Int) error {
 func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) error {
 	m.removePendingJoin(req.RequestId)
 
-	myInd, err := m.GetIndex(ctx, m.myPubKeyHash.Hex(), req.PublicKey.Hex())
+	myInd, err := m.GetIndex(ctx, m.PubKeyHash.Hex(), req.PublicKey.Hex())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -535,7 +501,7 @@ func (m *Manager) onStakeRequestStarted(ctx context.Context, req *contract.MpcMa
 		ParticipantKeys: normalized,
 		Hash:            hash,
 	}
-	err = m.mpcClient.Sign(ctx, request) // todo: add shared context to task manager
+	err = m.MpcClient.Sign(ctx, request) // todo: add shared context to task manager
 	if err != nil {
 		return errors.WithStack(err)
 	}
