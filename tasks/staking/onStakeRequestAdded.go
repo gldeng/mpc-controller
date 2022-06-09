@@ -4,6 +4,8 @@ import (
 	"context"
 	ctlPk "github.com/avalido/mpc-controller"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -16,19 +18,29 @@ type OnStakeRequestAddedTask struct {
 	PubKeyHashHex string
 	Signer        *bind.TransactOpts
 	CheckRcptDur  time.Duration // duration to check transaction to see whether it is successful
+	logger.Logger
 	ctlPk.Manager
 }
 
-// todo: introduce effective strategy to deal with failed transaction
-
 func (s *OnStakeRequestAddedTask) Do(ctx context.Context, evt ctlPk.EvtFromContractStakeRequestAdded) {
 	// Join request
-	err := s.joinRequest(ctx, evt.Evt)
+	err := backoff.RetryFnExponentialForever(s.Logger, ctx, func() error {
+		err := s.joinRequest(ctx, evt.Evt)
+		if err != nil {
+			s.Error("Failed to join request", []logger.Field{{"error", err}, {"reqId", evt.Evt.RequestId}}...)
+			return errors.WithStack(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		err = errors.Wrapf(err, "failed to join request")
 		evt.ReplyCh <- struct{ Error error }{Error: err}
 		return
 	}
+
+	evt.ReplyCh <- struct{ Error error }{Error: nil}
+	s.Info("Joined request upon StakeRequestAdded event", []logger.Field{{"reqId", evt.Evt.RequestId}}...)
 }
 
 func (s *OnStakeRequestAddedTask) joinRequest(ctx context.Context, req *contract.MpcManagerStakeRequestAdded) error {
