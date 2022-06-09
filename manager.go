@@ -2,7 +2,6 @@ package mpc_controller
 
 import (
 	"context"
-	"net/http"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -22,10 +21,9 @@ type Serve func(ctx context.Context, req Request)
 type Manager interface {
 	Start(ctx context.Context) error
 
-	RegisterEvent(task Task, evt ...Event)
-	Event(ctx context.Context, evt Event) // emit an event by the caller
+	SubscribeEvent(task Task, evt ...Event) error
+	Event(ctx context.Context, evt Event) error // emit an event by the caller
 
-	RegisterRequest(srv Serve, req ...Request)
-	Request(ctx context.Context, req Request) // issue a request by the caller
-	http.ServeMux
+	RegisterRequest(srv Serve, req ...Request) error
+	Request(ctx context.Context, req Request) error // issue a request by the caller
 }
