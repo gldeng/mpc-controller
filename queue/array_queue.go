@@ -4,7 +4,7 @@ import (
 	ctlPk "github.com/avalido/mpc-controller"
 )
 
-var _ ctlPk.Queue
+var _ ctlPk.Queue = (*queueArray)(nil)
 
 type queueArray []interface{}
 
