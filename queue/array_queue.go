@@ -6,18 +6,18 @@ import (
 
 var _ ctlPk.Queue
 
-type queueArray []any
+type queueArray []interface{}
 
 func NewQueueArray() *queueArray {
 	queue := make(queueArray, 0, 64)
 	return &queue
 }
 
-func (q *queueArray) Enqueue(e any) {
+func (q *queueArray) Enqueue(e interface{}) {
 	*q = append(*q, e)
 }
 
-func (q *queueArray) Dequeue() any {
+func (q *queueArray) Dequeue() interface{} {
 	if len(*q) == 0 {
 		return nil
 	}
@@ -26,7 +26,7 @@ func (q *queueArray) Dequeue() any {
 	return e
 }
 
-func (q *queueArray) Peek() any {
+func (q *queueArray) Peek() interface{} {
 	if len(*q) == 0 {
 		return nil
 	}

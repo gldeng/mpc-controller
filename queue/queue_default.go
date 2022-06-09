@@ -12,17 +12,17 @@ func initDefaultQueue() {
 	})
 }
 
-func Enqueue(e any) {
+func Enqueue(e interface{}) {
 	initDefaultQueue()
 	defaultQueue.Enqueue(e)
 }
 
-func Dequeue() any {
+func Dequeue() interface{} {
 	initDefaultQueue()
 	return defaultQueue.Dequeue()
 }
 
-func Peek() any {
+func Peek() interface{} {
 	initDefaultQueue()
 	return defaultQueue.Peek()
 }
