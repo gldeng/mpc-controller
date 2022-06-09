@@ -22,7 +22,7 @@ type ReqToContractJoinRequest struct {
 	ReqId  *big.Int
 	Index  *big.Int
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Tx    *types.Transaction
 		Error error
 	}
@@ -35,7 +35,7 @@ type ReqToCChainGetNonce struct {
 	Account     common.Address
 	BlockNumber *big.Int
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Nonce uint64
 		Error error
 	}
@@ -45,7 +45,7 @@ type ReqToCChainGetBalance struct {
 	Account     common.Address
 	BlockNumber *big.Int
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Balance *big.Int
 		Error   error
 	}
@@ -54,7 +54,7 @@ type ReqToCChainGetBalance struct {
 type ReqToCChainTransactionReceipt struct {
 	TxHash common.Hash
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Receipt *types.Receipt
 		Error   error
 	}
@@ -67,7 +67,7 @@ type ReqToPChainIssueTx struct {
 	ToChain string // enum: "C-Chain", "P-Chain"
 	TxBytes []byte
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		ID    ids.ID
 		Error error
 	}
@@ -79,7 +79,7 @@ type ReqToPChainIssueTx struct {
 type ReqToMpcServerReqKeygen struct {
 	KeygenReq *core.KeygenRequest
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Error error
 	}
 }
@@ -87,7 +87,7 @@ type ReqToMpcServerReqKeygen struct {
 type ReqToMpcServerReqSign struct {
 	SignReq *core.SignRequest
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Error error
 	}
 }
@@ -95,7 +95,7 @@ type ReqToMpcServerReqSign struct {
 type ReqToMpcServerGetResult struct {
 	ReqId string // request id
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Result *core.Result
 		Error  error
 	}
@@ -107,7 +107,7 @@ type ReqToMpcServerGetResult struct {
 type ReqToStorerStoreGroupInfo struct {
 	Group *storage.GroupInfo
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Error error
 	}
 }
@@ -115,14 +115,14 @@ type ReqToStorerStoreGroupInfo struct {
 type ReqToStorerLoadGroupInfo struct {
 	GroupIdHex string
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		*storage.GroupInfo
 		Error error
 	}
 }
 
 type ReqToStorerLoadGroupInfos struct {
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Groups []*storage.GroupInfo
 		Error  error
 	}
@@ -131,7 +131,7 @@ type ReqToStorerLoadGroupInfos struct {
 type ReqToStorerStoreParticipantInfo struct {
 	*storage.ParticipantInfo
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Error error
 	}
 }
@@ -140,7 +140,7 @@ type ReqToStorerLoadParticipantInfo struct {
 	PubKeyHashHex string
 	GroupId       string
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		*storage.ParticipantInfo
 		Error error
 	}
@@ -149,7 +149,7 @@ type ReqToStorerLoadParticipantInfo struct {
 type ReqToStorerLoadParticipantInfos struct {
 	PubKeyHashHex string
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Partis []*storage.ParticipantInfo
 		Error  error
 	}
@@ -159,7 +159,7 @@ type ReqToStorerGetParticipantIndex struct {
 	PartiPubKeyHashHex string
 	GenPubKeyHexHex    string
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		Index *big.Int
 		Error error
 	}
@@ -168,7 +168,7 @@ type ReqToStorerGetParticipantIndex struct {
 type ReqToStorerGetGroupIds struct {
 	PartiPubKeyHashHex string
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		GroupIds [][32]byte
 		Error    error
 	}
@@ -177,7 +177,7 @@ type ReqToStorerGetGroupIds struct {
 type ReqToStorerGetPubKeys struct {
 	PartiPubKeyHashHex string
 
-	ReplyCh chan<- struct {
+	ReplyCh chan struct {
 		PubKeys [][]byte
 		Error   error
 	}
