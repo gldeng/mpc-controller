@@ -17,6 +17,12 @@ const (
 )
 
 type Task struct {
+	// Creator who creates this task
+	Creator string `json:"creator"`
+
+	// Executors stands for number of concurrent task executors, it defaults to 1
+	Executors int `json:"executors"`
+
 	// ID is the unique database ID of the Task.
 	ID string `json:"id"`
 
@@ -41,14 +47,25 @@ type Task struct {
 	Args interface{} `json:"-"`
 
 	// ArgBytes must be the bytes of a valid JSON string
-	ArgBytes []byte `json:"argBytes"`
+	ArgBytes []byte `json:"argBytes,omitempty"`
 
 	// ReplyCh replies the result of the task
 	// Returns is effective only when Error is nil.
+	// Note: if a task received by multiple WorkFunc concurrently, ReplyCh can pass value several times.
 	ReplyCh chan struct {
-		Returns interface{}
-		Error   error
+		Executor string
+		Returns  interface{}
+		Error    error
 	} `json:"-"`
+
+	// ReturnBytes is bytes of last returns of the task
+	ReturnBytes []byte `json:"returnBytes,omitempty"`
+
+	// TaskCh is for delegating a task, which will be eventually executed by WorkFunc
+	TaskCh chan *Task `json:"-"`
+
+	// EventCh is for emitting an event, which will be immediately processed by EventDispatcher
+	EventCh chan *Event `json:"-"`
 
 	// ErrorCount is the number of times this task has attempted to run, but failed with an error.
 	// It is ignored on task creation.
