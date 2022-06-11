@@ -84,6 +84,12 @@ func run(ctx context.Context, publisher chan *EventObject) {
 
 // NewEventPublisher makes a new publisher channel for events,
 // which will run a goroutine for receiving and publishing events.
+// Note: it's more safe to use publisher channel than call Publish() directly to publish events,
+// when the length of buffered channel is smaller than the queue length limit value.
+// This is because channel is concurrently safe but too many enqueuing operation may cause queue to panic
+// especially when the queue is full.
+// But when the channel is full the sender will get blocked, which may cause the whole program stop still
+// if blocking problem does not be dealt properly.
 func NewEventPublisher(ctx context.Context, logger logger.Logger, q Queue, bufLen int) chan *EventObject {
 	once.Do(func() {
 		eventLog = logger
