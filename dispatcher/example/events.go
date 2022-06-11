@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/avalido/mpc-controller/event"
+	"github.com/avalido/mpc-controller/dispatcher"
 )
 
 // my event types, registering to dispatcher
 const (
-	MyMessage event.EventType = iota
-	MyWeather event.EventType = iota
+	MyMessage dispatcher.EventType = iota
+	MyWeather dispatcher.EventType = iota
 )
 
 // MessageEvent is an event type for messaging

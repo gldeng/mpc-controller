@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/event"
+	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
 	"github.com/google/uuid"
@@ -16,17 +16,17 @@ func main() {
 	defer cancel()
 	logger.DevMode = true
 	log := logger.Default()
-	publisher := event.NewEventPublisher(ctx, log, queue.NewArrayQueue(1024), 1024)
+	publisher := dispatcher.NewEventPublisher(ctx, log, queue.NewArrayQueue(1024), 1024)
 
 	// Subscribe events to event handlers
-	event.Subscribe(&MessageShower{publisher}, MyMessage)
-	event.Subscribe(&WeatherShower{}, MyWeather)
+	dispatcher.Subscribe(&MessageShower{publisher}, MyMessage)
+	dispatcher.Subscribe(&WeatherShower{}, MyWeather)
 
 	// Publish events.
 	// Events can also be published in event handler,
 	// by calling event.Publish() or write to publisher channel.
 	myUuid, _ := uuid.NewUUID()
-	publisher <- &event.EventObject{
+	publisher <- &dispatcher.EventObject{
 		EventID:   myUuid,
 		EventType: MyMessage,
 		CreatedBy: "MainFunction",
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	myUuid, _ = uuid.NewUUID()
-	publisher <- &event.EventObject{
+	publisher <- &dispatcher.EventObject{
 		EventID:   myUuid,
 		EventType: MyMessage,
 		CreatedBy: "MainFunction",
@@ -50,10 +50,10 @@ func main() {
 
 // MessageShower prints the message
 type MessageShower struct {
-	publisher chan *event.EventObject
+	publisher chan *dispatcher.EventObject
 }
 
-func (m *MessageShower) Do(evtObj *event.EventObject) {
+func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
 		fmt.Printf("Start taking action for event [%v]-%q from %q\n", evtObj.EventType, evtObj.EventID, evtObj.CreatedBy)
 
@@ -86,7 +86,7 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 func (m *MessageShower) publishWeatherEvent(condition string) {
 	uuid, _ := uuid.NewUUID()
 
-	weatherEvtObj := &event.EventObject{
+	weatherEvtObj := &dispatcher.EventObject{
 		EventID:   uuid,
 		EventType: MyWeather,
 		CreatedBy: "MessageShower",
@@ -107,7 +107,7 @@ func (m *MessageShower) publishWeatherEvent(condition string) {
 type WeatherShower struct {
 }
 
-func (m *WeatherShower) Do(evtObj *event.EventObject) {
+func (m *WeatherShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*WeatherEvent); ok {
 		fmt.Printf("Start taking action for event [%v]-%q from %q\n", evtObj.EventType, evtObj.EventID, evtObj.CreatedBy)
 		m.ShowWeather(evt)
