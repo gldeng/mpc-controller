@@ -2,6 +2,11 @@ package queue
 
 import "sync"
 
+const (
+	defaultMinLen = 64
+	defaultMaxLen = 1024
+)
+
 type ArrayQueue struct {
 	maxLen int
 	q      []interface{}
@@ -9,12 +14,17 @@ type ArrayQueue struct {
 }
 
 func NewArrayQueue(maxLen int) *ArrayQueue {
-	if maxLen <= 0 {
-		panic("Max length limit for a queue shouldn't less than zero")
+	maxLen_ := maxLen
+	if maxLen < defaultMinLen {
+		maxLen_ = defaultMinLen
 	}
+	if maxLen_ > defaultMaxLen {
+		maxLen_ = defaultMaxLen
+	}
+
 	queue := make([]interface{}, 0, 64)
 	return &ArrayQueue{
-		maxLen: maxLen,
+		maxLen: maxLen_,
 		q:      queue,
 		mu:     new(sync.RWMutex),
 	}

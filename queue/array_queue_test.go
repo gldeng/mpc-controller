@@ -1,7 +1,6 @@
 package queue
 
 import (
-	ctlPk "github.com/avalido/mpc-controller"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -11,7 +10,7 @@ func TestQueue(t *testing.T) {
 
 	type T struct {
 		name  string
-		queue ctlPk.Queue
+		queue *ArrayQueue
 	}
 
 	var ts = []*T{
