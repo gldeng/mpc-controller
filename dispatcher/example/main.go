@@ -64,15 +64,15 @@ func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 
 		m.showMessage(evt)
 
-		m.publishWeatherEvent("Sunny")
-		m.publishWeatherEvent("Rainy")
+		m.publishWeatherEvent(evtObj.Context, "Sunny")
+		m.publishWeatherEvent(evtObj.Context, "Rainy")
 
 		go func() {
-			m.publishWeatherEvent("Sunny")
+			m.publishWeatherEvent(evtObj.Context, "Sunny")
 		}()
 
 		go func() {
-			m.publishWeatherEvent("Rainy")
+			m.publishWeatherEvent(evtObj.Context, "Rainy")
 		}()
 	}
 }
@@ -83,7 +83,7 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 
 // Event handler can also publish event within its scope.
 // This is just a demonstration.
-func (m *MessageShower) publishWeatherEvent(condition string) {
+func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition string) {
 	uuid, _ := uuid.NewUUID()
 
 	weatherEvtObj := &dispatcher.EventObject{
@@ -100,7 +100,7 @@ func (m *MessageShower) publishWeatherEvent(condition string) {
 
 	// There are two ways to publish an event
 	//m.publisher <- weatherEvtObj // todo: deal with no-buffered channel block
-	dispatcher.Publish(weatherEvtObj) // this way also works.
+	dispatcher.Publish(ctx, weatherEvtObj) // this way also works.
 }
 
 // WeatherShower prints the weather condition

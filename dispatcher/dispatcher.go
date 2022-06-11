@@ -39,8 +39,8 @@ func Subscribe(eH EventHandler, eT EventType) {
 
 // Publish can also receive event object and enqueue it.
 // It is a package leve helper function to publish event without using a go channel.
-func Publish(evtObj *EventObject) {
-	enqueue(evtObj)
+func Publish(ctx context.Context, evtObj *EventObject) {
+	enqueue(ctx, evtObj)
 }
 
 // doPublish concurrently run event handlers to the same event type.
@@ -58,14 +58,13 @@ func doPublish(evtObj *EventObject) {
 	wg.Wait()
 }
 
-func enqueue(evtObj *EventObject) {
+func enqueue(ctx context.Context, evtObj *EventObject) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	err := backoff.RetryFnExponentialForever(eventLog, context.Background(), func() error {
+	err := backoff.RetryFnExponentialForever(eventLog, ctx, func() error {
 		if !eventQueue.Full() {
 			eventQueue.Enqueue(evtObj)
-
 			return nil
 		}
 		eventLog.Warn("The event queue is full!", []logger.Field{{"length", eventQueue.Count()}}...)
@@ -90,7 +89,7 @@ func run(ctx context.Context, publisher chan *EventObject) {
 		case <-ctx.Done():
 			return
 		case evtObj := <-publisher:
-			enqueue(evtObj)
+			enqueue(ctx, evtObj)
 		case <-time.Tick(time.Second):
 			if !eventQueue.Empty() {
 				if evtObj, ok := eventQueue.Dequeue().(*EventObject); ok {
