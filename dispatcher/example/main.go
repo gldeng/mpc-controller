@@ -99,8 +99,8 @@ func (m *MessageShower) publishWeatherEvent(condition string) {
 	}
 
 	// There are two ways to publish an event
-	m.publisher <- weatherEvtObj // todo: deal with no-buffered channel block
-	//event.Publish(weatherEvtObj) // this way also works.
+	//m.publisher <- weatherEvtObj // todo: deal with no-buffered channel block
+	dispatcher.Publish(weatherEvtObj) // this way also works.
 }
 
 // WeatherShower prints the weather condition

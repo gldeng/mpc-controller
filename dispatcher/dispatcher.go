@@ -3,6 +3,8 @@ package dispatcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
@@ -12,12 +14,15 @@ var (
 	eventMap   map[EventType][]EventHandler
 	eventLog   logger.Logger
 	once       = &sync.Once{}
+	mu         = &sync.Mutex{}
 )
 
 type Queue interface {
 	Enqueue(e interface{})
 	Dequeue() interface{}
 	Empty() bool
+	Full() bool
+	Count() int
 }
 
 func init() {
@@ -54,13 +59,27 @@ func doPublish(evtObj *EventObject) {
 }
 
 func enqueue(evtObj *EventObject) {
-	eventQueue.Enqueue(evtObj)
-	eventLog.Info("Event received and enqueued", []logger.Field{
-		{"eventID", evtObj.EventID},
-		{"eventType", evtObj.EventType},
-		{"event", evtObj.Event},
-		{"createdBy", evtObj.CreatedBy},
-		{"createdAt", evtObj.CreatedAt}}...)
+	mu.Lock()
+	defer mu.Unlock()
+
+	err := backoff.RetryFnExponentialForever(eventLog, context.Background(), func() error {
+		if !eventQueue.Full() {
+			eventQueue.Enqueue(evtObj)
+
+			return nil
+		}
+		eventLog.Warn("The event queue is full!", []logger.Field{{"length", eventQueue.Count()}}...)
+		return errors.New("The event queue is full!")
+	})
+
+	if err == nil {
+		eventLog.Info("Event received and enqueued", []logger.Field{
+			{"eventID", evtObj.EventID},
+			{"eventType", evtObj.EventType},
+			{"event", evtObj.Event},
+			{"createdBy", evtObj.CreatedBy},
+			{"createdAt", evtObj.CreatedAt}}...)
+	}
 }
 
 // run is a goroutine for receiving, enqueueing events.
@@ -87,7 +106,7 @@ func run(ctx context.Context, publisher chan *EventObject) {
 // Note: it's more safe to use publisher channel than call Publish() directly to publish events,
 // when the length of buffered channel is smaller than the queue length limit value.
 // This is because channel is concurrently safe but too many enqueuing operation may cause queue to panic
-// especially when the queue is full.
+// especially when the queue is full. (this problem has been fixed within enqueue function by RetryFnExponentialForever)
 // But when the channel is full the sender will get blocked, which may cause the whole program stop still
 // if blocking problem does not be dealt properly.
 func NewEventPublisher(ctx context.Context, logger logger.Logger, q Queue, bufLen int) chan *EventObject {
