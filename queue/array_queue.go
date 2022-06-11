@@ -1,46 +1,74 @@
 package queue
 
-import (
-	ctlPk "github.com/avalido/mpc-controller"
-)
+import "sync"
 
-var _ ctlPk.Queue = (*queueArray)(nil)
-
-type queueArray []interface{}
-
-func NewQueueArray() *queueArray {
-	queue := make(queueArray, 0, 64)
-	return &queue
+type ArrayQueue struct {
+	maxLen int
+	q      []interface{}
+	mu     *sync.RWMutex
 }
 
-func (q *queueArray) Enqueue(e interface{}) {
-	*q = append(*q, e)
+func NewArrayQueue(maxLen int) *ArrayQueue {
+	if maxLen <= 0 {
+		panic("Max length limit for a queue shouldn't less than zero")
+	}
+	queue := make([]interface{}, 0, 64)
+	return &ArrayQueue{
+		maxLen: maxLen,
+		q:      queue,
+		mu:     new(sync.RWMutex),
+	}
 }
 
-func (q *queueArray) Dequeue() interface{} {
-	if len(*q) == 0 {
+func (q *ArrayQueue) Enqueue(e interface{}) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if len(q.q) >= q.maxLen {
+		panic("The queue is full") // todo: deal with panic more elegantly
+	}
+	q.q = append(q.q, e)
+}
+
+func (q *ArrayQueue) Dequeue() interface{} {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if len(q.q) == 0 {
 		return nil
 	}
-	e := (*q)[0]
-	*q = (*q)[1:]
+	e := q.q[0]
+	q.q = q.q[1:]
 	return e
 }
 
-func (q *queueArray) Peek() interface{} {
-	if len(*q) == 0 {
+func (q *ArrayQueue) Peek() interface{} {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+
+	if len(q.q) == 0 {
 		return nil
 	}
-	return (*q)[len(*q)-1]
+	return (q.q)[len(q.q)-1]
 }
 
-func (q *queueArray) Count() int {
-	return len(*q)
+func (q *ArrayQueue) Count() int {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+
+	return len(q.q)
 }
 
-func (q *queueArray) Empty() bool {
-	return len(*q) == 0
+func (q *ArrayQueue) Empty() bool {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+
+	return len(q.q) == 0
 }
 
-func (q *queueArray) Clear() {
-	*q = make(queueArray, 0, 64)
+func (q *ArrayQueue) Clear() {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	q.q = make([]interface{}, 0, 64)
 }

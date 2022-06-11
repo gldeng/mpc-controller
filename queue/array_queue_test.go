@@ -15,7 +15,7 @@ func TestQueue(t *testing.T) {
 	}
 
 	var ts = []*T{
-		{"array queue", NewQueueArray()},
+		{"array queue", NewArrayQueue(64)},
 	}
 
 	for _, t_ := range ts {
