@@ -77,7 +77,7 @@ func (q *ArrayQueue) Empty() bool {
 }
 
 func (q *ArrayQueue) Full() bool {
-	q.mu.RUnlock()
+	q.mu.RLock()
 	defer q.mu.RUnlock()
 
 	return len(q.q) == q.maxLen
