@@ -66,6 +66,13 @@ func (q *ArrayQueue) Empty() bool {
 	return len(q.q) == 0
 }
 
+func (q *ArrayQueue) Full() bool {
+	q.mu.RUnlock()
+	defer q.mu.RUnlock()
+
+	return len(q.q) == q.maxLen
+}
+
 func (q *ArrayQueue) Clear() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
