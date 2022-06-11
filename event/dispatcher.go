@@ -49,8 +49,8 @@ func doPublish(evtObj *EventObject) {
 			defer wg.Done()
 			eH.Do(evtObj)
 		}()
-		wg.Wait()
 	}
+	wg.Wait()
 }
 
 func enqueue(evtObj *EventObject) {
