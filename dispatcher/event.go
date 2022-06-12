@@ -2,7 +2,6 @@ package dispatcher
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/utils/counter"
 	"github.com/google/uuid"
 	"time"
 )
@@ -43,7 +42,7 @@ func NewEventObject(lastEvtNo uint64, lastEvtID uuid.UUID, createdBy string, evt
 		ParentEventNo: lastEvtNo,
 		ParentEventID: lastEvtID,
 
-		EventNo:   counter.AddEventCount(),
+		EventNo:   AddEventCount(),
 		EventID:   myUuid,
 		CreatedBy: createdBy,
 		CreatedAt: time.Now(),

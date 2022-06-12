@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
-	"github.com/avalido/mpc-controller/utils/counter"
 	"github.com/google/uuid"
 	"time"
 )
@@ -32,7 +31,7 @@ func main() {
 		d.Publish(ctx, &dispatcher.EventObject{
 			ParentEventNo: uint64(0),
 			ParentEventID: uuid.UUID{},
-			EventNo:       counter.AddEventCount(),
+			EventNo:       dispatcher.AddEventCount(),
 			EventID:       myUuid,
 			CreatedBy:     "MainFunction====",
 			CreatedAt:     time.Now(),
@@ -72,7 +71,7 @@ func (m *MessageShower) publishWeatherEvent(lastEvtNo uint64, lastEvtID uuid.UUI
 	weatherEvtObj := &dispatcher.EventObject{
 		ParentEventNo: lastEvtNo,
 		ParentEventID: lastEvtID,
-		EventNo:       counter.AddEventCount(),
+		EventNo:       dispatcher.AddEventCount(),
 		EventID:       uuid,
 		CreatedBy:     "MessageShower",
 		CreatedAt:     time.Now(),

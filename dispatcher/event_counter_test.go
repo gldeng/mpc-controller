@@ -1,4 +1,4 @@
-package counter
+package dispatcher
 
 import (
 	"github.com/stretchr/testify/require"
