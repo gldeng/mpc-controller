@@ -36,11 +36,11 @@ type EventHandler interface {
 }
 
 // NewEventObject is convenience to create an EventObject.
-func NewEventObject(lastEvtNo uint64, lastEvtID uuid.UUID, createdBy string, evt Event, ctx context.Context) *EventObject {
+func NewEventObject(parentEvtNo uint64, parentEvtID uuid.UUID, createdBy string, evt Event, ctx context.Context) *EventObject {
 	myUuid, _ := uuid.NewUUID()
 	evtObj := EventObject{
-		ParentEventNo: lastEvtNo,
-		ParentEventID: lastEvtID,
+		ParentEventNo: parentEvtNo,
+		ParentEventID: parentEvtID,
 
 		EventNo:   AddEventCount(),
 		EventID:   myUuid,
