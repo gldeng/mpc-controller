@@ -38,7 +38,7 @@ func init() {
 // In this way users do not need to define extra event type using enum data type,
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
-func Subscribe(eH EventHandler, eT interface{}) {
+func Subscribe(eH EventHandler, eT Event) {
 	et := reflect.TypeOf(eT).String()
 
 	if len(eventMap[et]) == 0 {
