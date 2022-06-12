@@ -6,19 +6,19 @@ import (
 	"testing"
 )
 
-func TestStore(t *testing.T) {
+func TestSetEventCount(t *testing.T) {
 	SetEventCount(100)
 	require.Equal(t, uint64(100), LoadEventCount())
 }
 
-func TestAdd(t *testing.T) {
+func TestAddEventCount(t *testing.T) {
 	old := LoadEventCount()
 	AddEventCount()
 	new := LoadEventCount()
 	require.Equal(t, old+1, new)
 }
 
-func TestAddConcurrent(t *testing.T) {
+func TestAddEventCountConcurrent(t *testing.T) {
 	old := LoadEventCount()
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 100; i++ {
