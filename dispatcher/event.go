@@ -12,6 +12,8 @@ type Event interface{}
 // EventObject contains event ID, event type, event creator, event created time, event as well context.
 // Especially, context can convey extra necessary information, e.g. deadline, canceling, error and even k-v values.
 type EventObject struct {
+	LastEvent uuid.UUID
+
 	EventID   uuid.UUID
 	CreatedBy string
 	CreatedAt time.Time
@@ -30,9 +32,11 @@ type EventHandler interface {
 }
 
 // NewEventObject is convenience to create an EventObject.
-func NewEventObject(createdBy string, evt Event, ctx context.Context) *EventObject {
+func NewEventObject(lastEvt uuid.UUID, createdBy string, evt Event, ctx context.Context) *EventObject {
 	myUuid, _ := uuid.NewUUID()
 	evtObj := EventObject{
+		LastEvent: lastEvt,
+
 		EventID:   myUuid,
 		CreatedBy: createdBy,
 		CreatedAt: time.Now(),

@@ -23,17 +23,18 @@ func main() {
 	d.Subscribe(&WeatherShower{}, &WeatherEvent{})
 
 	// Publish events by Dispatcher channel.
-	d.Channel() <- dispatcher.NewEventObject("MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
+	d.Channel() <- dispatcher.NewEventObject(uuid.UUID{}, "MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
 
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
 		myUuid, _ := uuid.NewUUID()
 		d.Publish(ctx, &dispatcher.EventObject{
+			LastEvent: uuid.UUID{},
 			EventID:   myUuid,
 			CreatedBy: "MainFunction",
 			CreatedAt: time.Now(),
-			Event:     &MessageEvent{Message: "Nice to meet you!"},
-			Context:   context.WithValue(ctx, "requestId", "fakeRequestId"),
+			Event:     &WeatherEvent{Condition: "Cloudy"},
+			Context:   ctx,
 		})
 	}()
 
@@ -51,28 +52,22 @@ type MessageShower struct {
 
 func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
-		fmt.Printf("Start taking action for MessageEvent %q from %q\n", evtObj.EventID, evtObj.CreatedBy)
-
-		val := evtObj.Context.Value("requestId")
-		if valStr, ok := val.(string); ok {
-			fmt.Printf("RequestID: %q", valStr)
-		}
-
 		m.showMessage(evt)
 
-		m.publishWeatherEvent(evtObj.Context, "Sunny")
+		m.publishWeatherEvent(evtObj.EventID, evtObj.Context, "Sunny")
 	}
 }
 
 func (m *MessageShower) showMessage(evt *MessageEvent) {
-	fmt.Println(evt.Message)
+	fmt.Printf("\tMessage Content: %v\n", evt.Message)
 }
 
 // Event handler can also publish event within its scope.
-func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition string) {
+func (m *MessageShower) publishWeatherEvent(lastEvt uuid.UUID, ctx context.Context, condition string) {
 	uuid, _ := uuid.NewUUID()
 
 	weatherEvtObj := &dispatcher.EventObject{
+		LastEvent: lastEvt,
 		EventID:   uuid,
 		CreatedBy: "MessageShower",
 		CreatedAt: time.Now(),
@@ -92,11 +87,10 @@ type WeatherShower struct {
 
 func (m *WeatherShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*WeatherEvent); ok {
-		fmt.Printf("Start taking action for WeatherEvent -%q from %q\n", evtObj.EventID, evtObj.CreatedBy)
 		m.showWeather(evt)
 	}
 }
 
 func (m *WeatherShower) showWeather(evt *WeatherEvent) {
-	fmt.Println(evt.Condition)
+	fmt.Printf("\tWeather Condition: %v\n", evt.Condition)
 }
