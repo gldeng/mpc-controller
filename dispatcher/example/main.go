@@ -24,13 +24,7 @@ func main() {
 
 	// Publish events by Dispatcher channel.
 	myUuid, _ := uuid.NewUUID()
-	d.Channel() <- &dispatcher.EventObject{
-		EventID:   myUuid,
-		CreatedBy: "MainFunction",
-		CreatedAt: time.Now(),
-		Event:     &MessageEvent{Message: "Hello World"},
-		Context:   ctx,
-	}
+	d.Channel() <- dispatcher.NewEventObject("MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
 
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
