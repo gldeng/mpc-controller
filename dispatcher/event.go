@@ -29,11 +29,6 @@ type EventHandler interface {
 	Do(evtObj *EventObject)
 }
 
-// PublishEvent is helper function
-func (d *Dispatcher) PublishEvent(ctx context.Context, createdBy string, evt Event, evtCtx context.Context) {
-
-}
-
 // NewEventObject is convenience to create an EventObject.
 func NewEventObject(createdBy string, evt Event, ctx context.Context) *EventObject {
 	myUuid, _ := uuid.NewUUID()
