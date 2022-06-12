@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/utils/counter"
 	"github.com/google/uuid"
 	"time"
 )
@@ -11,9 +12,13 @@ type Event interface{}
 
 // EventObject contains event ID, event type, event creator, event created time, event as well context.
 // Especially, context can convey extra necessary information, e.g. deadline, canceling, error and even k-v values.
+// ParentEvent is the event that trigger the event handler to emit the current event.
+// If there's no parent, ParentEventNo and ParentEventID should be the default value, namely uuid.UUID{} and uint64(0)
 type EventObject struct {
-	LastEvent uuid.UUID
+	ParentEventNo uint64
+	ParentEventID uuid.UUID
 
+	EventNo   uint64
 	EventID   uuid.UUID
 	CreatedBy string
 	CreatedAt time.Time
@@ -32,11 +37,13 @@ type EventHandler interface {
 }
 
 // NewEventObject is convenience to create an EventObject.
-func NewEventObject(lastEvt uuid.UUID, createdBy string, evt Event, ctx context.Context) *EventObject {
+func NewEventObject(lastEvtNo uint64, lastEvtID uuid.UUID, createdBy string, evt Event, ctx context.Context) *EventObject {
 	myUuid, _ := uuid.NewUUID()
 	evtObj := EventObject{
-		LastEvent: lastEvt,
+		ParentEventNo: lastEvtNo,
+		ParentEventID: lastEvtID,
 
+		EventNo:   counter.AddEventCount(),
 		EventID:   myUuid,
 		CreatedBy: createdBy,
 		CreatedAt: time.Now(),

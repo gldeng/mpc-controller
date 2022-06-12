@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
+	"github.com/avalido/mpc-controller/utils/counter"
 	"github.com/google/uuid"
 	"time"
 )
@@ -23,18 +24,20 @@ func main() {
 	d.Subscribe(&WeatherShower{}, &WeatherEvent{})
 
 	// Publish events by Dispatcher channel.
-	d.Channel() <- dispatcher.NewEventObject(uuid.UUID{}, "MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
+	d.Channel() <- dispatcher.NewEventObject(uint64(0), uuid.UUID{}, "MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
 
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
 		myUuid, _ := uuid.NewUUID()
 		d.Publish(ctx, &dispatcher.EventObject{
-			LastEvent: uuid.UUID{},
-			EventID:   myUuid,
-			CreatedBy: "MainFunction",
-			CreatedAt: time.Now(),
-			Event:     &WeatherEvent{Condition: "Cloudy"},
-			Context:   ctx,
+			ParentEventNo: uint64(0),
+			ParentEventID: uuid.UUID{},
+			EventNo:       counter.AddEventCount(),
+			EventID:       myUuid,
+			CreatedBy:     "MainFunction====",
+			CreatedAt:     time.Now(),
+			Event:         &WeatherEvent{Condition: "Cloudy"},
+			Context:       ctx,
 		})
 	}()
 
@@ -54,7 +57,7 @@ func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
 		m.showMessage(evt)
 
-		m.publishWeatherEvent(evtObj.EventID, evtObj.Context, "Sunny")
+		m.publishWeatherEvent(evtObj.EventNo, evtObj.EventID, evtObj.Context, "Sunny")
 	}
 }
 
@@ -63,14 +66,16 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 }
 
 // Event handler can also publish event within its scope.
-func (m *MessageShower) publishWeatherEvent(lastEvt uuid.UUID, ctx context.Context, condition string) {
+func (m *MessageShower) publishWeatherEvent(lastEvtNo uint64, lastEvtID uuid.UUID, ctx context.Context, condition string) {
 	uuid, _ := uuid.NewUUID()
 
 	weatherEvtObj := &dispatcher.EventObject{
-		LastEvent: lastEvt,
-		EventID:   uuid,
-		CreatedBy: "MessageShower",
-		CreatedAt: time.Now(),
+		ParentEventNo: lastEvtNo,
+		ParentEventID: lastEvtID,
+		EventNo:       counter.AddEventCount(),
+		EventID:       uuid,
+		CreatedBy:     "MessageShower",
+		CreatedAt:     time.Now(),
 
 		Event: &WeatherEvent{
 			Condition: condition,

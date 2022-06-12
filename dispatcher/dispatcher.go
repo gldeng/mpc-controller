@@ -113,7 +113,9 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 		et := reflect.TypeOf(evtObj.Event).String()
 
 		d.eventLogger.Info("Event received and enqueued", []logger.Field{
-			{"lastEvent", evtObj.LastEvent},
+			{"ParentEventNo", evtObj.ParentEventNo},
+			{"ParentEventID", evtObj.ParentEventID},
+			{"EventNo", evtObj.EventNo},
 			{"eventID", evtObj.EventID},
 			{"eventType", et},
 			{"event", evtObj.Event},
