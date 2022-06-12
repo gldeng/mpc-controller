@@ -23,20 +23,23 @@ func main() {
 	d.Subscribe(&WeatherShower{}, &WeatherEvent{})
 
 	// Publish events by Dispatcher channel.
-	d.Channel() <- dispatcher.NewEventObject(uint64(0), uuid.UUID{}, "MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
+	d.Channel() <- dispatcher.NewRootEventObject("MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
 
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
-		myUuid, _ := uuid.NewUUID()
+		streamUuid, _ := uuid.NewUUID()
+		evtUuid, _ := uuid.NewUUID()
 		d.Publish(ctx, &dispatcher.EventObject{
-			ParentEventNo: uint64(0),
-			ParentEventID: uuid.UUID{},
-			EventNo:       dispatcher.AddEventCount(),
-			EventID:       myUuid,
-			CreatedBy:     "MainFunction====",
-			CreatedAt:     time.Now(),
-			Event:         &WeatherEvent{Condition: "Cloudy"},
-			Context:       ctx,
+			EvtStreamNo: dispatcher.AddEventStreamCount(),
+			EvtStreamID: streamUuid,
+			ParentEvtNo: uint64(0),
+			ParentEvtID: uuid.UUID{},
+			EventNo:     dispatcher.AddEventCount(),
+			EventID:     evtUuid,
+			CreatedBy:   "MainFunction",
+			CreatedAt:   time.Now(),
+			Event:       &WeatherEvent{Condition: "Cloudy"},
+			Context:     ctx,
 		})
 	}()
 
@@ -56,7 +59,7 @@ func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
 		m.showMessage(evt)
 
-		m.publishWeatherEvent(evtObj.EventNo, evtObj.EventID, evtObj.Context, "Sunny")
+		m.publishWeatherEvent(evtObj.EvtStreamNo, evtObj.EvtStreamID, evtObj.EventNo, evtObj.EventID, evtObj.Context, "Sunny")
 	}
 }
 
@@ -65,16 +68,18 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 }
 
 // Event handler can also publish event within its scope.
-func (m *MessageShower) publishWeatherEvent(lastEvtNo uint64, lastEvtID uuid.UUID, ctx context.Context, condition string) {
-	uuid, _ := uuid.NewUUID()
+func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID uuid.UUID, parentEvtNo uint64, parentEvtID uuid.UUID, ctx context.Context, condition string) {
+	evtUuid, _ := uuid.NewUUID()
 
 	weatherEvtObj := &dispatcher.EventObject{
-		ParentEventNo: lastEvtNo,
-		ParentEventID: lastEvtID,
-		EventNo:       dispatcher.AddEventCount(),
-		EventID:       uuid,
-		CreatedBy:     "MessageShower",
-		CreatedAt:     time.Now(),
+		EvtStreamNo: evtStreamNo,
+		EvtStreamID: evtStreamID,
+		ParentEvtNo: parentEvtNo,
+		ParentEvtID: parentEvtID,
+		EventNo:     dispatcher.AddEventCount(),
+		EventID:     evtUuid,
+		CreatedBy:   "MessageShower",
+		CreatedAt:   time.Now(),
 
 		Event: &WeatherEvent{
 			Condition: condition,
