@@ -23,12 +23,11 @@ func main() {
 	d.Subscribe(&WeatherShower{}, &WeatherEvent{})
 
 	// Publish events by Dispatcher channel.
-	myUuid, _ := uuid.NewUUID()
 	d.Channel() <- dispatcher.NewEventObject("MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
 
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
-		myUuid, _ = uuid.NewUUID()
+		myUuid, _ := uuid.NewUUID()
 		d.Publish(ctx, &dispatcher.EventObject{
 			EventID:   myUuid,
 			CreatedBy: "MainFunction",
