@@ -1,5 +1,3 @@
-// dispatcher is a lightweight in-memory event-driven framework for subscribing, publishing and dispatching events.
-
 package dispatcher
 
 import (
@@ -12,14 +10,6 @@ import (
 	"time"
 )
 
-var (
-	eventQueue Queue
-	eventMap   map[string][]EventHandler
-	eventLog   logger.Logger
-	once       = &sync.Once{}
-	mu         = &sync.Mutex{}
-)
-
 type Queue interface {
 	Enqueue(e interface{})
 	Dequeue() interface{}
@@ -28,8 +18,34 @@ type Queue interface {
 	Count() int
 }
 
-func init() {
-	eventMap = make(map[string][]EventHandler)
+// Dispatcher is a lightweight in-memory event-driven framework,
+// dedicated for subscribing, publishing and dispatching events.
+type Dispatcher struct {
+	eventLogger logger.Logger
+
+	publishChan chan *EventObject
+	eventQueue  Queue
+	eventMap    map[string][]EventHandler
+
+	once *sync.Once
+	mu   *sync.Mutex
+}
+
+// NewDispatcher makes a new dispatcher for users to subscribe events,
+// and runs a goroutine for receiving and publishing event objects.
+func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen int) *Dispatcher {
+	dispatcher := &Dispatcher{
+		eventLogger: logger,
+
+		publishChan: make(chan *EventObject, bufLen),
+		eventQueue:  q,
+		eventMap:    make(map[string][]EventHandler),
+
+		once: new(sync.Once),
+		mu:   new(sync.Mutex),
+	}
+	go dispatcher.run(ctx)
+	return dispatcher
 }
 
 // Subscribe to an event handler with any event.
@@ -38,58 +54,65 @@ func init() {
 // In this way users do not need to define extra event type using enum data type,
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
-func Subscribe(eH EventHandler, eT Event) {
+func (d *Dispatcher) Subscribe(eH EventHandler, eT Event) {
 	et := reflect.TypeOf(eT).String()
+	d.eventMap[et] = append(d.eventMap[et], eH)
+}
 
-	if len(eventMap[et]) == 0 {
-		eventMap[et] = make([]EventHandler, 0)
+// Publish sends the received event object to underlying channel.
+// All event objects will be serialized in a queue and published later in FIFO order.
+func (p *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
+	select {
+	case <-ctx.Done():
+		return
+	case p.publishChan <- evtObj:
 	}
-	eventMap[et] = append(eventMap[et], eH)
 }
 
-// Publish can also receive event object and enqueue it.
-// It is a package leve helper function to publish event without using a go channel.
-func Publish(ctx context.Context, evtObj *EventObject) {
-	enqueue(ctx, evtObj)
+// Channel exposes the underlying channel for users to send event objects externally,
+// e.g. Dispatcher.Channel <- &myEventObject
+func (d *Dispatcher) Channel() chan *EventObject {
+	return d.publishChan
 }
 
-// doPublish concurrently run event handlers to the same event type.
-// It waits until all the event handlers have returned.
-// Note: event handlers may haven't finished their jobs yet,
-// because they may run concurrently within their own gorutines.
-// But this part is out of the dispatcher's control.
-func doPublish(evtObj *EventObject) {
-	et := reflect.TypeOf(evtObj.Event).String()
-
-	wg := &sync.WaitGroup{}
-	for _, eH := range eventMap[et] {
-		wg.Add(1)
-		eH := eH
-		go func() {
-			defer wg.Done()
-			eH.Do(evtObj)
-		}()
+// run is a goroutine for receiving, enqueueing events.
+// It also regularly dequeues and publishes events every 500 milliseconds.
+func (d *Dispatcher) run(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case evtObj := <-d.publishChan:
+			d.enqueue(ctx, evtObj)
+		case <-time.Tick(time.Millisecond * 500):
+			if !d.eventQueue.Empty() {
+				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
+					d.publish(evtObj)
+				}
+			}
+		}
 	}
-	wg.Wait()
 }
 
-func enqueue(ctx context.Context, evtObj *EventObject) {
-	mu.Lock()
-	defer mu.Unlock()
+// enqueue receives and serializes the given event object in queue,
+// which will later be published  in FIFO order.
+func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-	err := backoff.RetryFnExponentialForever(eventLog, ctx, func() error {
-		if !eventQueue.Full() {
-			eventQueue.Enqueue(evtObj)
+	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
+		if !d.eventQueue.Full() {
+			d.eventQueue.Enqueue(evtObj)
 			return nil
 		}
-		eventLog.Warn("The event queue is full!", []logger.Field{{"length", eventQueue.Count()}}...)
+		d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
 		return errors.New("The event queue is full!")
 	})
 
 	if err == nil {
 		et := reflect.TypeOf(evtObj.Event).String()
 
-		eventLog.Info("Event received and enqueued", []logger.Field{
+		d.eventLogger.Info("Event received and enqueued", []logger.Field{
 			{"eventID", evtObj.EventID},
 			{"eventType", et},
 			{"event", evtObj.Event},
@@ -98,40 +121,22 @@ func enqueue(ctx context.Context, evtObj *EventObject) {
 	}
 }
 
-// run is a goroutine for receiving, enqueueing events.
-// It also regularly dequeues and publishes events every one second.
-func run(ctx context.Context, publisher chan *EventObject) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case evtObj := <-publisher:
-			enqueue(ctx, evtObj)
-		case <-time.Tick(time.Second):
-			if !eventQueue.Empty() {
-				if evtObj, ok := eventQueue.Dequeue().(*EventObject); ok {
-					doPublish(evtObj)
-				}
-			}
-		}
+// publish concurrently run event handlers to the same event type.
+// It waits until all the event handlers have returned.
+// Note: event handlers may haven't finished their jobs yet,
+// because they may run concurrently within their own gorutines.
+// But this part is out of the dispatcher's control.
+func (d *Dispatcher) publish(evtObj *EventObject) {
+	et := reflect.TypeOf(evtObj.Event).String()
+
+	wg := &sync.WaitGroup{}
+	for _, eH := range d.eventMap[et] {
+		wg.Add(1)
+		eH := eH
+		go func() {
+			defer wg.Done()
+			eH.Do(evtObj)
+		}()
 	}
-}
-
-// NewEventPublisher makes a new publisher channel for events,
-// which will run a goroutine for receiving and publishing events.
-// Note: it's more safe to use publisher channel than call Publish() directly to publish events,
-// when the length of buffered channel is smaller than the queue length limit value.
-// This is because channel is concurrently safe but too many enqueuing operation may cause queue to panic
-// especially when the queue is full. (this problem has been fixed within enqueue function by RetryFnExponentialForever)
-// But when the channel is full the sender will get blocked, which may cause the whole program stop still
-// if blocking problem does not be dealt properly.
-func NewEventPublisher(ctx context.Context, logger logger.Logger, q Queue, bufLen int) chan *EventObject {
-	once.Do(func() {
-		eventLog = logger
-		eventQueue = q
-	})
-
-	publisher := make(chan *EventObject, bufLen) // todo: deal with no-buffered channel block
-	go run(ctx, publisher)
-	return publisher
+	wg.Wait()
 }

@@ -11,22 +11,20 @@ import (
 )
 
 func main() {
-	// Create publisher
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*11)
+	// Create dispatcher
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	logger.DevMode = true
 	log := logger.Default()
-	publisher := dispatcher.NewEventPublisher(ctx, log, queue.NewArrayQueue(1024), 1024)
+	d := dispatcher.NewDispatcher(ctx, log, queue.NewArrayQueue(1024), 1024)
 
 	// Subscribe events to event handlers
-	dispatcher.Subscribe(&MessageShower{publisher}, &MessageEvent{})
-	dispatcher.Subscribe(&WeatherShower{}, &WeatherEvent{})
+	d.Subscribe(&MessageShower{d}, &MessageEvent{})
+	d.Subscribe(&WeatherShower{}, &WeatherEvent{})
 
-	// Publish events.
-	// Events can also be published in event handler,
-	// by calling event.Publish() or write to publisher channel.
+	// Publish events by Dispatcher channel.
 	myUuid, _ := uuid.NewUUID()
-	publisher <- &dispatcher.EventObject{
+	d.Channel() <- &dispatcher.EventObject{
 		EventID:   myUuid,
 		CreatedBy: "MainFunction",
 		CreatedAt: time.Now(),
@@ -34,21 +32,28 @@ func main() {
 		Context:   ctx,
 	}
 
-	myUuid, _ = uuid.NewUUID()
-	publisher <- &dispatcher.EventObject{
-		EventID:   myUuid,
-		CreatedBy: "MainFunction",
-		CreatedAt: time.Now(),
-		Event:     &MessageEvent{Message: "Nice to meet you!"},
-		Context:   context.WithValue(ctx, "requestId", "fakeRequestId"),
-	}
+	// Publish events by Dispatcher.Publish() method, in another gorutine
+	go func() {
+		myUuid, _ = uuid.NewUUID()
+		d.Publish(ctx, &dispatcher.EventObject{
+			EventID:   myUuid,
+			CreatedBy: "MainFunction",
+			CreatedAt: time.Now(),
+			Event:     &MessageEvent{Message: "Nice to meet you!"},
+			Context:   context.WithValue(ctx, "requestId", "fakeRequestId"),
+		})
+	}()
 
 	<-ctx.Done()
 }
 
+type Publisher interface {
+	Publish(ctx context.Context, evtObj *dispatcher.EventObject)
+}
+
 // MessageShower prints the message
 type MessageShower struct {
-	publisher chan *dispatcher.EventObject
+	Publisher
 }
 
 func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
@@ -63,15 +68,6 @@ func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 		m.showMessage(evt)
 
 		m.publishWeatherEvent(evtObj.Context, "Sunny")
-		m.publishWeatherEvent(evtObj.Context, "Rainy")
-
-		go func() {
-			m.publishWeatherEvent(evtObj.Context, "Sunny")
-		}()
-
-		go func() {
-			m.publishWeatherEvent(evtObj.Context, "Rainy")
-		}()
 	}
 }
 
@@ -80,7 +76,6 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 }
 
 // Event handler can also publish event within its scope.
-// This is just a demonstration.
 func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition string) {
 	uuid, _ := uuid.NewUUID()
 
@@ -95,9 +90,7 @@ func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition strin
 		Context: context.Background(),
 	}
 
-	// There are two ways to publish an event
-	//m.publisher <- weatherEvtObj // todo: deal with no-buffered channel block
-	dispatcher.Publish(ctx, weatherEvtObj) // this way also works.
+	m.Publish(ctx, weatherEvtObj)
 }
 
 // WeatherShower prints the weather condition
@@ -107,10 +100,10 @@ type WeatherShower struct {
 func (m *WeatherShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*WeatherEvent); ok {
 		fmt.Printf("Start taking action for WeatherEvent -%q from %q\n", evtObj.EventID, evtObj.CreatedBy)
-		m.ShowWeather(evt)
+		m.showWeather(evt)
 	}
 }
 
-func (m *WeatherShower) ShowWeather(evt *WeatherEvent) {
+func (m *WeatherShower) showWeather(evt *WeatherEvent) {
 	fmt.Println(evt.Condition)
 }
