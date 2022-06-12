@@ -1,3 +1,5 @@
+// dispatcher is a lightweight in-memory event-driven framework for subscribing, publishing and dispatching events.
+
 package dispatcher
 
 import (
@@ -44,7 +46,10 @@ func Publish(ctx context.Context, evtObj *EventObject) {
 }
 
 // doPublish concurrently run event handlers to the same event type.
-// It waits until all the event handlers have finished their jobs.
+// It waits until all the event handlers have returned.
+// Note: event handlers may haven't finished their jobs yet,
+// because they may run concurrently within their own gorutines.
+// But this part is out of the dispatcher's control.
 func doPublish(evtObj *EventObject) {
 	wg := &sync.WaitGroup{}
 	for _, eH := range eventMap[evtObj.EventType] {

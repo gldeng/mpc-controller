@@ -24,7 +24,11 @@ type EventObject struct {
 	Context context.Context
 }
 
-// EventHandler is handler for events and takes any arguments
+// EventHandler is handler for events and takes any arguments.
+// An event handler can be stateless or stateful.
+// It's better to take effective measures for state persistence and resume for a stateful event handler.
+// Besides, event handler can return immediately and choose to execute task in separate gorutines.
+// In this way keep in mind do not let gorutine leak. It's handler's responsibility to ensure this security.
 type EventHandler interface {
 	Do(evtObj *EventObject)
 }
