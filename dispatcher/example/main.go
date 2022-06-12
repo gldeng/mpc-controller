@@ -19,8 +19,8 @@ func main() {
 	publisher := dispatcher.NewEventPublisher(ctx, log, queue.NewArrayQueue(1024), 1024)
 
 	// Subscribe events to event handlers
-	dispatcher.Subscribe(&MessageShower{publisher}, MyMessage)
-	dispatcher.Subscribe(&WeatherShower{}, MyWeather)
+	dispatcher.Subscribe(&MessageShower{publisher}, &MessageEvent{})
+	dispatcher.Subscribe(&WeatherShower{}, &WeatherEvent{})
 
 	// Publish events.
 	// Events can also be published in event handler,
@@ -28,7 +28,6 @@ func main() {
 	myUuid, _ := uuid.NewUUID()
 	publisher <- &dispatcher.EventObject{
 		EventID:   myUuid,
-		EventType: MyMessage,
 		CreatedBy: "MainFunction",
 		CreatedAt: time.Now(),
 		Event:     &MessageEvent{Message: "Hello World"},
@@ -38,7 +37,6 @@ func main() {
 	myUuid, _ = uuid.NewUUID()
 	publisher <- &dispatcher.EventObject{
 		EventID:   myUuid,
-		EventType: MyMessage,
 		CreatedBy: "MainFunction",
 		CreatedAt: time.Now(),
 		Event:     &MessageEvent{Message: "Nice to meet you!"},
@@ -55,7 +53,7 @@ type MessageShower struct {
 
 func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
-		fmt.Printf("Start taking action for event [%v]-%q from %q\n", evtObj.EventType, evtObj.EventID, evtObj.CreatedBy)
+		fmt.Printf("Start taking action for MessageEvent %q from %q\n", evtObj.EventID, evtObj.CreatedBy)
 
 		val := evtObj.Context.Value("requestId")
 		if valStr, ok := val.(string); ok {
@@ -88,7 +86,6 @@ func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition strin
 
 	weatherEvtObj := &dispatcher.EventObject{
 		EventID:   uuid,
-		EventType: MyWeather,
 		CreatedBy: "MessageShower",
 		CreatedAt: time.Now(),
 
@@ -109,7 +106,7 @@ type WeatherShower struct {
 
 func (m *WeatherShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*WeatherEvent); ok {
-		fmt.Printf("Start taking action for event [%v]-%q from %q\n", evtObj.EventType, evtObj.EventID, evtObj.CreatedBy)
+		fmt.Printf("Start taking action for WeatherEvent -%q from %q\n", evtObj.EventID, evtObj.CreatedBy)
 		m.ShowWeather(evt)
 	}
 }

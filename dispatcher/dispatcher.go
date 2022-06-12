@@ -7,13 +7,14 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/pkg/errors"
+	"reflect"
 	"sync"
 	"time"
 )
 
 var (
 	eventQueue Queue
-	eventMap   map[EventType][]EventHandler
+	eventMap   map[string][]EventHandler
 	eventLog   logger.Logger
 	once       = &sync.Once{}
 	mu         = &sync.Mutex{}
@@ -28,15 +29,22 @@ type Queue interface {
 }
 
 func init() {
-	eventMap = make(map[EventType][]EventHandler)
+	eventMap = make(map[string][]EventHandler)
 }
 
-// Subscribe to an event handler
-func Subscribe(eH EventHandler, eT EventType) {
-	if len(eventMap[eT]) == 0 {
-		eventMap[eT] = make([]EventHandler, 0)
+// Subscribe to an event handler with any event.
+// Please pass the pointer of empty exported event struct as event, e.g. &MySpecialEvent{}.
+// Because underlying Subscribe use reflect to extract the type name of passed event as event type.
+// In this way users do not need to define extra event type using enum data type,
+// but must keep event type definition, or event schema as stable as possible,
+// or any change to event schema could cause damage to data consistency.
+func Subscribe(eH EventHandler, eT interface{}) {
+	et := reflect.TypeOf(eT).String()
+
+	if len(eventMap[et]) == 0 {
+		eventMap[et] = make([]EventHandler, 0)
 	}
-	eventMap[eT] = append(eventMap[eT], eH)
+	eventMap[et] = append(eventMap[et], eH)
 }
 
 // Publish can also receive event object and enqueue it.
@@ -51,8 +59,10 @@ func Publish(ctx context.Context, evtObj *EventObject) {
 // because they may run concurrently within their own gorutines.
 // But this part is out of the dispatcher's control.
 func doPublish(evtObj *EventObject) {
+	et := reflect.TypeOf(evtObj.Event).String()
+
 	wg := &sync.WaitGroup{}
-	for _, eH := range eventMap[evtObj.EventType] {
+	for _, eH := range eventMap[et] {
 		wg.Add(1)
 		eH := eH
 		go func() {
@@ -77,9 +87,11 @@ func enqueue(ctx context.Context, evtObj *EventObject) {
 	})
 
 	if err == nil {
+		et := reflect.TypeOf(evtObj.Event).String()
+
 		eventLog.Info("Event received and enqueued", []logger.Field{
 			{"eventID", evtObj.EventID},
-			{"eventType", evtObj.EventType},
+			{"eventType", et},
 			{"event", evtObj.Event},
 			{"createdBy", evtObj.CreatedBy},
 			{"createdAt", evtObj.CreatedAt}}...)
