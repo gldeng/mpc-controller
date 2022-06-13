@@ -44,6 +44,26 @@ func NewRootEventObject(createdBy string, evt Event, ctx context.Context) *Event
 		createdBy, evt, ctx)
 }
 
+// NewEventObjectFromParent is convenience to create child EventObject from given parent EventObject.
+func NewEventObjectFromParent(parentEvtObj *EventObject, createdBy string, evt Event, ctx context.Context) *EventObject {
+	childEvtObj := EventObject{
+		EvtStreamNo: parentEvtObj.EvtStreamNo,
+		EvtStreamID: parentEvtObj.EvtStreamID,
+
+		ParentEvtNo: parentEvtObj.ParentEvtNo,
+		ParentEvtID: parentEvtObj.ParentEvtID,
+
+		EventNo:   AddEventCount(),
+		EventID:   NewID(),
+		CreatedBy: createdBy,
+		CreatedAt: NewTimestamp(),
+
+		Event:   evt,
+		Context: ctx,
+	}
+	return &childEvtObj
+}
+
 // NewEventObject is convenience to create an EventObject.
 func NewEventObject(evtStreamNo uint64, evtStreamID string, parentEvtNo uint64, parentEvtID string,
 	createdBy string, evt Event, ctx context.Context) *EventObject {
