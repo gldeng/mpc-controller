@@ -73,8 +73,10 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen in
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
 func (d *Dispatcher) Subscribe(eT Event, eH EventHandler) {
-	et := reflect.TypeOf(eT).String()
-	d.eventMap[et] = append(d.eventMap[et], eH)
+	if eT != nil && eH != nil {
+		et := reflect.TypeOf(eT).String()
+		d.eventMap[et] = append(d.eventMap[et], eH)
+	}
 }
 
 // Publish sends the received event object to underlying channel.
