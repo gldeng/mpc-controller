@@ -51,13 +51,13 @@ func (o *KeygenRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (o *KeygenRequestAddedEventWatcher) subscribeKeygenRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupId [][32]byte) error {
+func (o *KeygenRequestAddedEventWatcher) subscribeKeygenRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupIds [][32]byte) error {
 	if o.sub != nil {
 		o.sub.Unsubscribe()
 	}
 
 	err := backoff.RetryFnExponentialForever(o.Logger, ctx, func() error {
-		newSub, err := o.Filter().WatchKeygenRequestAdded(o.Signer, sink, groupId)
+		newSub, err := o.Filter().WatchKeygenRequestAdded(o.Signer, sink, groupIds)
 		if err != nil {
 			o.Logger.Error("Failed to watch KeygenRequestAdded event", []logger.Field{{"error", err}}...)
 			return errors.WithStack(err)
