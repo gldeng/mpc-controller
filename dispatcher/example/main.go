@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
-	"github.com/google/uuid"
 	"time"
 )
 
@@ -27,17 +26,15 @@ func main() {
 
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
-		streamUuid, _ := uuid.NewUUID()
-		evtUuid, _ := uuid.NewUUID()
 		d.Publish(ctx, &dispatcher.EventObject{
 			EvtStreamNo: dispatcher.AddEventStreamCount(),
-			EvtStreamID: streamUuid,
+			EvtStreamID: dispatcher.NewID(),
 			ParentEvtNo: uint64(0),
-			ParentEvtID: uuid.UUID{},
+			ParentEvtID: "",
 			EventNo:     dispatcher.AddEventCount(),
-			EventID:     evtUuid,
+			EventID:     dispatcher.NewID(),
 			CreatedBy:   "MainFunction",
-			CreatedAt:   time.Now(),
+			CreatedAt:   dispatcher.NewTimestamp(),
 			Event:       &WeatherEvent{Condition: "Cloudy"},
 			Context:     ctx,
 		})
@@ -68,18 +65,16 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 }
 
 // Event handler can also publish event within its scope.
-func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID uuid.UUID, parentEvtNo uint64, parentEvtID uuid.UUID, ctx context.Context, condition string) {
-	evtUuid, _ := uuid.NewUUID()
-
+func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID string, parentEvtNo uint64, parentEvtID string, ctx context.Context, condition string) {
 	weatherEvtObj := &dispatcher.EventObject{
 		EvtStreamNo: evtStreamNo,
 		EvtStreamID: evtStreamID,
 		ParentEvtNo: parentEvtNo,
 		ParentEvtID: parentEvtID,
 		EventNo:     dispatcher.AddEventCount(),
-		EventID:     evtUuid,
+		EventID:     dispatcher.NewID(),
 		CreatedBy:   "MessageShower",
-		CreatedAt:   time.Now(),
+		CreatedAt:   dispatcher.NewTimestamp(),
 
 		Event: &WeatherEvent{
 			Condition: condition,
