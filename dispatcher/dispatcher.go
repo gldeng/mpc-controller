@@ -66,16 +66,20 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen in
 	return dispatcher
 }
 
-// Subscribe to an event handler with any event.
+// Subscribe to event handler(s) with any event.
 // Please pass the pointer of empty exported event struct as event, e.g. &MySpecialEvent{}.
 // Because underlying Subscribe use reflect to extract the type name of passed event as event type.
 // In this way users do not need to define extra event type using enum data type,
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
-func (d *Dispatcher) Subscribe(eT Event, eH EventHandler) {
-	if eT != nil && eH != nil {
+func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
+	if eT != nil && eHs != nil {
 		et := reflect.TypeOf(eT).String()
-		d.eventMap[et] = append(d.eventMap[et], eH)
+		for _, eH := range eHs {
+			if eH != nil {
+				d.eventMap[et] = append(d.eventMap[et], eH)
+			}
+		}
 	}
 }
 
