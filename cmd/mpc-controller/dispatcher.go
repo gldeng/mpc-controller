@@ -13,6 +13,9 @@ func Dispatcher(ctx context.Context, logger logger.Logger) *dispatcher.Dispatche
 	// Create New dispatcher
 	d := dispatcher.NewDispatcher(ctx, logger, queue.NewArrayQueue(1024), 1024)
 
+	// Subscribe events upon configurations
+	d.Subscribe(&events.MpcControllerPubKeyConfiguredEvent{}, &contractWatchers.ParticipantAddedEventWatcher{}) // Emit event: *contract.MpcManagerParticipantAdded
+
 	// Subscribe events concerning local storage
 	d.Subscribe(&events.GroupInfoStoredEvent{}, &contractWatchers.KeygenRequestAddedEventWatcher{}) // Emit event: *contract.MpcManagerKeygenRequestAdded
 	d.Subscribe(&events.ParticipantInfoStoredEvent{}, nil)
