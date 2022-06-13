@@ -18,8 +18,8 @@ func main() {
 	d := dispatcher.NewDispatcher(ctx, log, queue.NewArrayQueue(1024), 1024)
 
 	// Subscribe events to event handlers
-	d.Subscribe(&MessageShower{d}, &MessageEvent{})
-	d.Subscribe(&WeatherShower{}, &WeatherEvent{})
+	d.Subscribe(&MessageEvent{}, &MessageShower{d})
+	d.Subscribe(&WeatherEvent{}, &WeatherShower{})
 
 	// Publish events by Dispatcher channel.
 	d.Channel() <- dispatcher.NewRootEventObject("MainFunction", &MessageEvent{Message: "Hello World"}, ctx)

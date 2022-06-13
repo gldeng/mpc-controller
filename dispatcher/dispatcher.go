@@ -25,7 +25,7 @@ type Dispatcherrer interface {
 }
 
 type Subscriber interface {
-	Subscribe(eH EventHandler, eT Event)
+	Subscribe(eT Event, eH EventHandler)
 }
 
 type Publisher interface {
@@ -72,7 +72,7 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen in
 // In this way users do not need to define extra event type using enum data type,
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
-func (d *Dispatcher) Subscribe(eH EventHandler, eT Event) {
+func (d *Dispatcher) Subscribe(eT Event, eH EventHandler) {
 	et := reflect.TypeOf(eT).String()
 	d.eventMap[et] = append(d.eventMap[et], eH)
 }
