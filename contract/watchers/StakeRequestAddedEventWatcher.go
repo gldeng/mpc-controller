@@ -51,13 +51,13 @@ func (o *StakeRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (o *StakeRequestAddedEventWatcher) subscribeStakeRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerStakeRequestAdded, pubKey [][]byte) error {
+func (o *StakeRequestAddedEventWatcher) subscribeStakeRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerStakeRequestAdded, pubKeys [][]byte) error {
 	if o.sub != nil {
 		o.sub.Unsubscribe()
 	}
 
 	err := backoff.RetryFnExponentialForever(o.Logger, ctx, func() error {
-		newSub, err := o.Filter().WatchStakeRequestAdded(o.Signer, sink, pubKey)
+		newSub, err := o.Filter().WatchStakeRequestAdded(o.Signer, sink, pubKeys)
 		if err != nil {
 			o.Logger.Error("Failed to watch StakeRequestAdded event", []logger.Field{{"error", err}}...)
 			return errors.WithStack(err)
