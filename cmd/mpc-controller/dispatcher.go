@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/contract/wrappers"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
@@ -13,7 +14,7 @@ func Dispatcher(ctx context.Context, logger logger.Logger) *dispatcher.Dispatche
 	d := dispatcher.NewDispatcher(ctx, logger, queue.NewArrayQueue(1024), 1024)
 
 	// Subscribe events concerning local storage
-	d.Subscribe(nil, &events.ParticipantInfoStoredEvent{})
+	d.Subscribe(&wrappers.OnGroupInfoStoredEvtHandler{}, &events.GroupInfoStoredEvent{})
 	d.Subscribe(nil, &events.ParticipantInfoStoredEvent{})
 	d.Subscribe(nil, &events.GeneratedPubKeyInfoStoredEvent{})
 
