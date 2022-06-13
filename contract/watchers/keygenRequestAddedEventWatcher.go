@@ -1,4 +1,4 @@
-package contractWatchers
+package watchers
 
 import (
 	"context"

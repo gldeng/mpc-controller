@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/contract/contractWatchers"
+	contractWatchers "github.com/avalido/mpc-controller/contract/watchers"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
