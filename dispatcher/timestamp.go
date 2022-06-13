@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func NowTimestamp() string {
+func NewTimestamp() string {
 	timeString := strconv.Itoa(int(time.Now().UnixMilli()))
 	return timeString
 }

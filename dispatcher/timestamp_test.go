@@ -5,6 +5,6 @@ import (
 	"testing"
 )
 
-func TestNowTimestamp(t *testing.T) {
-	fmt.Println(NowTimestamp())
+func TestNewTimestamp(t *testing.T) {
+	fmt.Println(NewTimestamp())
 }
