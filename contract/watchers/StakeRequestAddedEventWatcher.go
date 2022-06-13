@@ -59,7 +59,7 @@ func (o *StakeRequestAddedEventWatcher) subscribeStakeRequestAdded(ctx context.C
 	err := backoff.RetryFnExponentialForever(o.Logger, ctx, func() error {
 		newSub, err := o.Filter().WatchStakeRequestAdded(o.Signer, sink, pubKey)
 		if err != nil {
-			o.Logger.Error("Failed to watch KeygenRequestAdded event", []logger.Field{{"error", err}}...)
+			o.Logger.Error("Failed to watch StakeRequestAdded event", []logger.Field{{"error", err}}...)
 			return errors.WithStack(err)
 		}
 
@@ -84,7 +84,7 @@ func (o *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Conte
 				o.Publisher.Publish(ctx, evtObj)
 
 			case err := <-o.sub.Err():
-				o.Logger.ErrorOnError(err, "Got an error during watching KeygenRequestAdded event", []logger.Field{{"error", err}}...)
+				o.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event", []logger.Field{{"error", err}}...)
 			}
 		}
 	}()
