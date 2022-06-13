@@ -1,4 +1,4 @@
-package wrappers
+package contractWatchers
 
 import (
 	"context"
@@ -17,7 +17,7 @@ type WatchKeygenRequestAddedFilter interface {
 	WatchKeygenRequestAdded(opts *bind.WatchOpts, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupId [][32]byte) (event.Subscription, error)
 }
 
-type OnGroupInfoStoredEvtHandler struct {
+type KeygenRequestAddedEventWatcher struct {
 	Logger logger.Logger
 	Filter func() WatchKeygenRequestAddedFilter
 	Signer *bind.WatchOpts
@@ -31,7 +31,7 @@ type OnGroupInfoStoredEvtHandler struct {
 	done chan struct{}
 }
 
-func (o *OnGroupInfoStoredEvtHandler) Do(evtObj *dispatcher.EventObject) {
+func (o *KeygenRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*events.GroupInfoStoredEvent); ok {
 		o.groupIdBytes = append(o.groupIdBytes, bytes.HexTo32Bytes(evt.GroupIdHex))
 
@@ -48,7 +48,7 @@ func (o *OnGroupInfoStoredEvtHandler) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (o *OnGroupInfoStoredEvtHandler) subscribeKeygenRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupId [][32]byte) error {
+func (o *KeygenRequestAddedEventWatcher) subscribeKeygenRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupId [][32]byte) error {
 	if o.sub != nil {
 		o.sub.Unsubscribe()
 	}
@@ -70,7 +70,7 @@ func (o *OnGroupInfoStoredEvtHandler) subscribeKeygenRequestAdded(ctx context.Co
 	return err
 }
 
-func (o *OnGroupInfoStoredEvtHandler) watchKeygenRequestAdded(ctx context.Context) {
+func (o *KeygenRequestAddedEventWatcher) watchKeygenRequestAdded(ctx context.Context) {
 	go func() {
 		for {
 			select {
@@ -80,7 +80,7 @@ func (o *OnGroupInfoStoredEvtHandler) watchKeygenRequestAdded(ctx context.Contex
 				return
 			case evt := <-o.sink:
 				_ = evt
-				evtObj := dispatcher.NewRootEventObject("OnGroupInfoStoredEvtHandler", evt, ctx)
+				evtObj := dispatcher.NewRootEventObject("KeygenRequestAddedEventWatcher", evt, ctx)
 				o.Publisher.Publish(ctx, evtObj)
 
 			case err := <-o.sub.Err():
