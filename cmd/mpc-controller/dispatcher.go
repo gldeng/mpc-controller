@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
+	storageHandlers "github.com/avalido/mpc-controller/storage/handlers"
 )
 
 func Dispatcher(ctx context.Context, logger logger.Logger) *dispatcher.Dispatcher {
@@ -24,7 +25,7 @@ func Dispatcher(ctx context.Context, logger logger.Logger) *dispatcher.Dispatche
 	d.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &contractWatchers.StakeRequestStartedEventWatcher{}) // Emit event: *contract.MpcManagerStakeRequestStarted
 
 	// Subscribe events from MpcManager
-	d.Subscribe(&contract.MpcManagerParticipantAdded{}, nil)
+	d.Subscribe(&contract.MpcManagerParticipantAdded{}, &storageHandlers.ParticipantInfoStorer{}) // Emit event: *events.ParticipantInfoStoredEvent
 	d.Subscribe(&contract.MpcManagerKeygenRequestAdded{}, nil)
 	d.Subscribe(&contract.MpcManagerKeyGenerated{}, nil)
 	d.Subscribe(&contract.MpcManagerStakeRequestAdded{}, nil)
