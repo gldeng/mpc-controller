@@ -16,7 +16,8 @@ func Dispatcher(ctx context.Context, logger logger.Logger) *dispatcher.Dispatche
 	// Subscribe events concerning local storage
 	d.Subscribe(&events.GroupInfoStoredEvent{}, &contractWatchers.KeygenRequestAddedEventWatcher{}) // Emit event: *contract.MpcManagerKeygenRequestAdded
 	d.Subscribe(&events.ParticipantInfoStoredEvent{}, nil)
-	d.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &contractWatchers.StakeRequestAddedEventWatcher{}) // Emit event: *contract.MpcManagerStakeRequestAdded
+	d.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &contractWatchers.StakeRequestAddedEventWatcher{})   // Emit event: *contract.MpcManagerStakeRequestAdded
+	d.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &contractWatchers.StakeRequestStartedEventWatcher{}) // Emit event: *contract.MpcManagerStakeRequestStarted
 
 	return d
 }
