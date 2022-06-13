@@ -31,6 +31,7 @@ func main() {
 			EvtStreamID: dispatcher.NewID(),
 			ParentEvtNo: uint64(0),
 			ParentEvtID: "",
+			EventStep:   1,
 			EventNo:     dispatcher.AddEventCount(),
 			EventID:     dispatcher.NewID(),
 			CreatedBy:   "MainFunction",
@@ -56,7 +57,7 @@ func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
 		m.showMessage(evt)
 
-		m.publishWeatherEvent(evtObj.EvtStreamNo, evtObj.EvtStreamID, evtObj.EventNo, evtObj.EventID, evtObj.Context, "Sunny")
+		m.publishWeatherEvent(evtObj.EvtStreamNo, evtObj.EvtStreamID, evtObj.EventNo, evtObj.EventID, evtObj.EventStep, evtObj.Context, "Sunny")
 	}
 }
 
@@ -65,12 +66,13 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 }
 
 // Event handler can also publish event within its scope.
-func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID string, parentEvtNo uint64, parentEvtID string, ctx context.Context, condition string) {
+func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID string, parentEvtNo uint64, parentEvtID string, parentEvtStep int, ctx context.Context, condition string) {
 	weatherEvtObj := &dispatcher.EventObject{
 		EvtStreamNo: evtStreamNo,
 		EvtStreamID: evtStreamID,
 		ParentEvtNo: parentEvtNo,
 		ParentEvtID: parentEvtID,
+		EventStep:   parentEvtStep + 1,
 		EventNo:     dispatcher.AddEventCount(),
 		EventID:     dispatcher.NewID(),
 		CreatedBy:   "MessageShower",
