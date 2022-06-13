@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/contract"
 	contractWatchers "github.com/avalido/mpc-controller/contract/watchers"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
@@ -21,6 +22,13 @@ func Dispatcher(ctx context.Context, logger logger.Logger) *dispatcher.Dispatche
 	d.Subscribe(&events.ParticipantInfoStoredEvent{}, nil)
 	d.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &contractWatchers.StakeRequestAddedEventWatcher{})   // Emit event: *contract.MpcManagerStakeRequestAdded
 	d.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &contractWatchers.StakeRequestStartedEventWatcher{}) // Emit event: *contract.MpcManagerStakeRequestStarted
+
+	// Subscribe events from MpcManager
+	d.Subscribe(&contract.MpcManagerParticipantAdded{}, nil)
+	d.Subscribe(&contract.MpcManagerKeygenRequestAdded{}, nil)
+	d.Subscribe(&contract.MpcManagerKeyGenerated{}, nil)
+	d.Subscribe(&contract.MpcManagerStakeRequestAdded{}, nil)
+	d.Subscribe(&contract.MpcManagerStakeRequestStarted{}, nil)
 
 	return d
 }
