@@ -18,6 +18,24 @@ type Queue interface {
 	Count() int
 }
 
+type Dispatcherrer interface {
+	Subscriber
+	Publisher
+	Channeller
+}
+
+type Subscriber interface {
+	Subscribe(eH EventHandler, eT Event)
+}
+
+type Publisher interface {
+	Publish(ctx context.Context, evtObj *EventObject)
+}
+
+type Channeller interface {
+	Channel() chan *EventObject
+}
+
 // Dispatcher is a lightweight in-memory event-driven framework,
 // dedicated for subscribing, publishing and dispatching events.
 type Dispatcher struct {
