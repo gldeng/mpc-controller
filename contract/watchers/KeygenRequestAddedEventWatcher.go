@@ -17,6 +17,9 @@ type WatchKeygenRequestAddedFilter interface {
 	WatchKeygenRequestAdded(opts *bind.WatchOpts, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupId [][32]byte) (event.Subscription, error)
 }
 
+// Trigger event: *events.GroupInfoStoredEvent
+// Emit event: *contract.MpcManagerKeygenRequestAdded
+
 type KeygenRequestAddedEventWatcher struct {
 	Logger logger.Logger
 	Filter func() WatchKeygenRequestAddedFilter
