@@ -64,9 +64,6 @@ func (o *KeygenRequestAddedEventWatcher) subscribeKeygenRequestAdded(ctx context
 		return nil
 	})
 
-	newSub, err := o.Filter().WatchKeygenRequestAdded(o.Signer, sink, groupId)
-	o.sub = newSub
-
 	return err
 }
 
