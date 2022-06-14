@@ -1,4 +1,4 @@
-package staking
+package joining
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func (s *OnStakeRequestAddedTask) Do(ctx context.Context, evt ctlPk.EvtFromContr
 		return
 	}
 
-	evt.ReplyCh <- struct{ Error error }{Error: nil}
+	evt.ReplyCh <- struct{ Error error }{Error: nil} // emit event
 	s.Info("Joined request upon StakeRequestAdded event", []logger.Field{{"reqId", evt.Evt.RequestId}}...)
 }
 
