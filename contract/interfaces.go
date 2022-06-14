@@ -2,7 +2,6 @@ package contract
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
@@ -19,11 +18,11 @@ type CallerGetGroup interface {
 // Transactor
 
 type TransactorJoinRequest interface {
-	JoinRequest(ctx context.Context, opts *bind.TransactOpts, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error)
+	JoinRequest(ctx context.Context, requestId *big.Int, myIndex *big.Int) (*types.Transaction, error)
 }
 
 type TransactorReportGeneratedKey interface {
-	ReportGeneratedKey(ctx context.Context, opts *bind.TransactOpts, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
+	ReportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
 }
 
 // Filters
