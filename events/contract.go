@@ -7,7 +7,13 @@ import "math/big"
 
 // MpcManager transactor
 
-type RequestJoinRequestEvent struct {
+type JoinRequestEvent struct {
+	RequestId *big.Int
+	Index     *big.Int
+}
+
+type JoinedRequestEvent struct {
+	TxHashHex string
 	RequestId *big.Int
 	Index     *big.Int
 }
