@@ -141,7 +141,8 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, reqId string) (res *Resul
 		}
 
 		if res.RequestStatus != "DONE" {
-			return errors.New("Result status not DONE")
+			c.log.Warn("Request not Done.", []logger.Field{{"reqId", reqId}}...)
+			return errors.Errorf("Request not DONE. ReqId: %q", reqId)
 		}
 		return nil
 	})
