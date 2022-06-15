@@ -102,13 +102,13 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
 	return nil
 }
 
-func (c *MpcClientImp) Result(ctx context.Context, requestId string) (*Result, error) {
+func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error) {
 	payload := strings.NewReader("")
 
 	var res *http.Response
 
 	err := backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		res_, err := http.Post(c.url+"/result/"+requestId, "application/json", payload)
+		res_, err := http.Post(c.url+"/result/"+reqId, "application/json", payload)
 		if err != nil {
 			c.log.Error("Failed to post result request", logger.Field{"error", err})
 			return errors.WithStack(err)
@@ -131,4 +131,20 @@ func (c *MpcClientImp) Result(ctx context.Context, requestId string) (*Result, e
 
 	}
 	return &result, nil
+}
+
+func (c *MpcClientImp) ResultDone(ctx context.Context, reqId string) (res *Result, err error) {
+	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
+		res, err = c.Result(ctx, reqId)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if res.RequestStatus != "DONE" {
+			return errors.New("Result status not DONE")
+		}
+		return nil
+	})
+
+	return
 }
