@@ -3,8 +3,7 @@ package staking
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/vms/platformvm"
-	"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/pkg/errors"
 	"time"
@@ -12,8 +11,8 @@ import (
 
 type Issuer struct {
 	logger.Logger
-	CChainIssueClient evm.Client
-	PChainIssueClient platformvm.Client
+	CChainIssueClient chain.Issuer
+	PChainIssueClient chain.Issuer
 }
 
 func (i *Issuer) IssueTask(ctx context.Context, task *StakeTask) ([]ids.ID, error) {
