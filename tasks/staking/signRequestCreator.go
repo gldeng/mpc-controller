@@ -7,14 +7,14 @@ import (
 	"strconv"
 )
 
-type stakeTask interface {
+type StakeTasker interface {
 	ExportTxHash() ([]byte, error)
 	ImportTxHash() ([]byte, error)
 	AddDelegatorTxHash() ([]byte, error)
 }
 
-type signRequestCreator struct {
-	Task   stakeTask
+type SignRequestCreator struct {
+	Task   StakeTasker
 	TaskID string
 
 	NormalizedParticipantKeys []string
@@ -26,7 +26,7 @@ type signRequestCreator struct {
 
 // Todo: Consider applying State design pattern
 
-func (s *signRequestCreator) createSignRequest() (*core.SignRequest, error) {
+func (s *SignRequestCreator) CreateSignRequest() (*core.SignRequest, error) {
 	switch s.reqNum {
 	case 0:
 		txHashBytes, err := s.Task.ExportTxHash()

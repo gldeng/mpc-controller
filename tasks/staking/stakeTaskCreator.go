@@ -10,14 +10,14 @@ import (
 	"math/big"
 )
 
-type stakeTaskCreator struct {
+type StakeTaskCreator struct {
 	*contract.MpcManagerStakeRequestStarted
 	chain.NetworkContext
 	PubKeyHex string
 	Nonce     uint64
 }
 
-func (s *stakeTaskCreator) createStakeTask() (*StakeTask, error) {
+func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
 	nodeID, err := ids.ShortFromPrefixedString(s.NodeID, constants.NodeIDPrefix)
 	if err != nil {
 		return nil, errors.WithStack(err)
