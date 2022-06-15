@@ -11,15 +11,15 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding chain status
 
-type TransactionReceipt interface {
+type Receipter interface {
 	TransactionReceipt(ctx context.Context, txHash common.Hash) (r *types.Receipt, err error)
 }
 
-type NonceAt interface {
+type Noncer interface {
 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (nonce uint64, err error)
 }
 
-type BalanceAt interface {
+type Balancer interface {
 	BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (bl *big.Int, err error)
 }
 
