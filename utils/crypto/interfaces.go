@@ -3,18 +3,18 @@ package crypto
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding signing and verification
 
-type Sign interface {
+type Signer interface {
 	Sign(message []byte) ([]byte, error)
 }
 
-type SignHash interface {
+type SignHasher interface {
 	SignHash(hash []byte) ([]byte, error)
 }
 
-type Verify interface {
+type Verifier interface {
 	Verify(message, signature []byte) bool
 }
 
-type VerifyHash interface {
+type VerifyHasher interface {
 	VerifyHash(hash, signature []byte) bool
 }

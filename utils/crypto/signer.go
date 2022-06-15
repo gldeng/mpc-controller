@@ -7,7 +7,7 @@ import (
 
 var _ Signer = (*SECP256K1RSigner)(nil)
 
-type Signer interface {
+type Signer_ interface {
 	Sign(message []byte) ([]byte, error)
 	SignHash(hash []byte) ([]byte, error)
 
