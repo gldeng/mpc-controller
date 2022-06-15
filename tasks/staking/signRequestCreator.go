@@ -7,8 +7,14 @@ import (
 	"strconv"
 )
 
+type stakeTask interface {
+	ExportTxHash() ([]byte, error)
+	ImportTxHash() ([]byte, error)
+	AddDelegatorTxHash() ([]byte, error)
+}
+
 type signRequestCreator struct {
-	Task   *StakeTask
+	Task   stakeTask
 	TaskID string
 	Nonce  uint64
 
