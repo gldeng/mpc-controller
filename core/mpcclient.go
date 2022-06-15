@@ -102,6 +102,16 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
 	return nil
 }
 
+func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
+	err = c.Sign(ctx, request)
+	if err != nil {
+		return
+	}
+
+	res, err = c.ResultDone(ctx, request.RequestId)
+	return
+}
+
 func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error) {
 	payload := strings.NewReader("")
 
