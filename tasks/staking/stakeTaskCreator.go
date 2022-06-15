@@ -17,24 +17,24 @@ type stakeTaskCreator struct {
 	Nonce     uint64
 }
 
-func (m *stakeTaskCreator) createStakeTask() (*StakeTask, error) {
-	nodeID, err := ids.ShortFromPrefixedString(m.NodeID, constants.NodeIDPrefix)
+func (s *stakeTaskCreator) createStakeTask() (*StakeTask, error) {
+	nodeID, err := ids.ShortFromPrefixedString(s.NodeID, constants.NodeIDPrefix)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	pubKey, err := crypto.UnmarshalPubKeyHex(m.PubKeyHex)
+	pubKey, err := crypto.UnmarshalPubKeyHex(s.PubKeyHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	baseFeeGwei := uint64(300) // TODO: It should be given by the contract
 
-	nAVAXAmount := new(big.Int).Div(m.Amount, big.NewInt(1_000_000_000))
-	if !nAVAXAmount.IsUint64() || !m.StartTime.IsUint64() || !m.EndTime.IsUint64() {
+	nAVAXAmount := new(big.Int).Div(s.Amount, big.NewInt(1_000_000_000))
+	if !nAVAXAmount.IsUint64() || !s.StartTime.IsUint64() || !s.EndTime.IsUint64() {
 		return nil, errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(m.NetworkContext, *pubKey, m.Nonce, nodeID, nAVAXAmount.Uint64(), m.StartTime.Uint64(), m.EndTime.Uint64(), baseFeeGwei)
+	task, err := NewStakeTask(s.NetworkContext, *pubKey, s.Nonce, nodeID, nAVAXAmount.Uint64(), s.StartTime.Uint64(), s.EndTime.Uint64(), baseFeeGwei)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
