@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type StakingFactory struct {
+type StakingService struct {
 	Logger       logger.Logger
 	ContractAddr common.Address
 
@@ -33,12 +33,12 @@ type StakingFactory struct {
 	PChainIssueClient chain.Issuer
 }
 
-func (s *StakingFactory) Start(_ context.Context) error {
+func (s *StakingService) Start(_ context.Context) error {
 	s.subscribe()
 	return nil
 }
 
-func (s *StakingFactory) subscribe() {
+func (s *StakingService) subscribe() {
 	taskStartedWatcher := StakeRequestStartedEventWatcher{
 		Logger:       s.Logger,
 		ContractAddr: s.ContractAddr,
