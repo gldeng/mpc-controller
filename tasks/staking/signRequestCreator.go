@@ -26,37 +26,37 @@ type signRequestCreator struct {
 
 // Todo: Consider applying State design pattern
 
-func (m *signRequestCreator) CreateSignRequest() (*core.SignRequest, error) {
-	switch m.reqNum {
+func (s *signRequestCreator) createSignRequest() (*core.SignRequest, error) {
+	switch s.reqNum {
 	case 0:
-		txHashBytes, err := m.Task.ExportTxHash()
+		txHashBytes, err := s.Task.ExportTxHash()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create ExportTxHash")
 		}
-		m.txHashHex = bytes.BytesToHex(txHashBytes)
+		s.txHashHex = bytes.BytesToHex(txHashBytes)
 
-		m.reqNum++
+		s.reqNum++
 	case 1:
-		txHashBytes, err := m.Task.ImportTxHash()
+		txHashBytes, err := s.Task.ImportTxHash()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create ImportTxHash")
 		}
-		m.txHashHex = bytes.BytesToHex(txHashBytes)
+		s.txHashHex = bytes.BytesToHex(txHashBytes)
 
-		m.reqNum++
+		s.reqNum++
 	case 2:
-		txHashBytes, err := m.Task.AddDelegatorTxHash()
+		txHashBytes, err := s.Task.AddDelegatorTxHash()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create AddDelegatorTxHash")
 		}
-		m.txHashHex = bytes.BytesToHex(txHashBytes)
+		s.txHashHex = bytes.BytesToHex(txHashBytes)
 	}
 
 	request := core.SignRequest{
-		RequestId:       m.TaskID + "-" + strconv.Itoa(int(m.reqNum)),
-		PublicKey:       m.PubKeyHex,
-		ParticipantKeys: m.NormalizedParticipantKeys,
-		Hash:            m.txHashHex,
+		RequestId:       s.TaskID + "-" + strconv.Itoa(int(s.reqNum)),
+		PublicKey:       s.PubKeyHex,
+		ParticipantKeys: s.NormalizedParticipantKeys,
+		Hash:            s.txHashHex,
 	}
 
 	return &request, nil
