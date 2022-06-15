@@ -24,6 +24,11 @@ type Dispatcherrer interface {
 	Channeller
 }
 
+type DispatcherClaasic interface {
+	Subscriber
+	Publisher
+}
+
 type Subscriber interface {
 	Subscribe(eT Event, eH EventHandler)
 }
