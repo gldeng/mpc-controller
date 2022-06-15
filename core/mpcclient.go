@@ -50,6 +50,9 @@ func NewMpcClient(log logger.Logger, url string) (*MpcClientImp, error) {
 	return &MpcClientImp{url, log}, nil
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Request
+
 func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error {
 	normalized, err := crypto.NormalizePubKeys(request.ParticipantKeys)
 	if err != nil {
@@ -102,16 +105,6 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
 	return nil
 }
 
-func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
-	err = c.Sign(ctx, request)
-	if err != nil {
-		return
-	}
-
-	res, err = c.ResultDone(ctx, request.RequestId)
-	return
-}
-
 func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error) {
 	payload := strings.NewReader("")
 
@@ -141,6 +134,29 @@ func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error
 
 	}
 	return &result, nil
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Request and wait until it's DONE
+
+func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (res *Result, err error) {
+	err = c.Keygen(ctx, request)
+	if err != nil {
+		return
+	}
+
+	res, err = c.ResultDone(ctx, request.RequestId)
+	return
+}
+
+func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
+	err = c.Sign(ctx, request)
+	if err != nil {
+		return
+	}
+
+	res, err = c.ResultDone(ctx, request.RequestId)
+	return
 }
 
 func (c *MpcClientImp) ResultDone(ctx context.Context, reqId string) (res *Result, err error) {
