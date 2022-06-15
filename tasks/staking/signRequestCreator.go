@@ -16,7 +16,6 @@ type stakeTask interface {
 type signRequestCreator struct {
 	Task   stakeTask
 	TaskID string
-	Nonce  uint64
 
 	NormalizedParticipantKeys []string
 	PubKeyHex                 string
