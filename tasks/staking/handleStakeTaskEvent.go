@@ -43,7 +43,7 @@ type StakeRequestStartedEventHandler struct {
 func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestStarted:
-		ok, err := eh.participant(evtObj.Context, evt)
+		ok, err := eh.isParticipant(evtObj.Context, evt)
 		eh.Logger.ErrorOnError(err, "Failed to check participant", []logger.Field{{"error", err}}...)
 		if ok {
 			nonce, err := eh.getNonce(evtObj.Context)
@@ -93,7 +93,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) participant(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) (bool, error) {
+func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) (bool, error) {
 	myIndex, err := eh.getMyIndex(ctx, req.PublicKey.Hex())
 	if err != nil {
 		return false, errors.WithStack(err)
