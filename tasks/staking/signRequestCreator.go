@@ -14,7 +14,6 @@ type StakeTasker interface {
 }
 
 type SignRequestCreator struct {
-	Task   StakeTasker
 	TaskID string
 
 	NormalizedParticipantKeys []string
@@ -26,10 +25,10 @@ type SignRequestCreator struct {
 
 // Todo: Consider applying State design pattern
 
-func (s *SignRequestCreator) CreateSignRequest() (*core.SignRequest, error) {
+func (s *SignRequestCreator) CreateSignRequest(task StakeTasker) (*core.SignRequest, error) {
 	switch s.reqNum {
 	case 0:
-		txHashBytes, err := s.Task.ExportTxHash()
+		txHashBytes, err := task.ExportTxHash()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create ExportTxHash")
 		}
@@ -37,7 +36,7 @@ func (s *SignRequestCreator) CreateSignRequest() (*core.SignRequest, error) {
 
 		s.reqNum++
 	case 1:
-		txHashBytes, err := s.Task.ImportTxHash()
+		txHashBytes, err := task.ImportTxHash()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create ImportTxHash")
 		}
@@ -45,7 +44,7 @@ func (s *SignRequestCreator) CreateSignRequest() (*core.SignRequest, error) {
 
 		s.reqNum++
 	case 2:
-		txHashBytes, err := s.Task.AddDelegatorTxHash()
+		txHashBytes, err := task.AddDelegatorTxHash()
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create AddDelegatorTxHash")
 		}
