@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+type Issuerer interface {
+	IssueTask(ctx context.Context, task *StakeTask) ([]ids.ID, error)
+}
+
 type Issuer struct {
 	logger.Logger
 	CChainIssueClient chain.Issuer
