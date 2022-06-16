@@ -10,7 +10,7 @@ type GroupInfoStoredEvent struct {
 
 type ParticipantInfoStoredEvent struct {
 	Key string
-	Val ParticipantInfoStored
+	Val ParticipantInfo
 }
 
 type GeneratedPubKeyInfoStoredEvent struct {
@@ -26,7 +26,7 @@ type GroupInfo struct {
 	Threshold      uint64
 }
 
-type ParticipantInfoStored struct {
+type ParticipantInfo struct {
 	PubKeyHashHex string
 	PubKeyHex     string
 	GroupIdHex    string
