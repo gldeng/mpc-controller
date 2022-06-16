@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Accept event: *events.ContractFiltererReconnectedEvent
 // Accept event:  *events.GeneratedPubKeyInfoStoredEvent
 
 // Emit event:  *contract.MpcManagerStakeRequestAdded
