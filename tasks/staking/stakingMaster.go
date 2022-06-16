@@ -31,6 +31,9 @@ type StakingMaster struct {
 
 	CChainIssueClient chain.Issuer
 	PChainIssueClient chain.Issuer
+
+	stakingWatcher *StakeRequestStartedEventWatcher
+	stakingDealer  *StakeRequestStartedEventHandler
 }
 
 func (s *StakingMaster) Start(_ context.Context) error {
@@ -62,8 +65,11 @@ func (s *StakingMaster) subscribe() {
 		Issuer:          &issuer,
 	}
 
-	s.Dispatcher.Subscribe(&events.ContractFiltererReconnectedEvent{}, &taskStartedWatcher)
-	s.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &taskStartedWatcher) // Emit event: *contract.MpcManagerStakeRequestStarted
+	s.stakingWatcher = &taskStartedWatcher
+	s.stakingDealer = &taskStartedDealer
 
-	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, &taskStartedDealer)
+	s.Dispatcher.Subscribe(&events.ContractFiltererReconnectedEvent{}, s.stakingWatcher)
+	s.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, s.stakingWatcher) // Emit event: *contract.MpcManagerStakeRequestStarted
+
+	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, s.stakingDealer)
 }
