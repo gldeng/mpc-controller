@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type JoiningService struct {
+type JoiningMaster struct {
 	Logger       logger.Logger
 	ContractAddr common.Address
 
@@ -28,12 +28,12 @@ type JoiningService struct {
 	Transactor bind.ContractTransactor
 }
 
-func (s *JoiningService) Start(_ context.Context) error {
+func (s *JoiningMaster) Start(_ context.Context) error {
 	s.subscribe()
 	return nil
 }
 
-func (s *JoiningService) subscribe() {
+func (s *JoiningMaster) subscribe() {
 	stakeAddedWatcher := StakeRequestAddedEventWatcher{
 		Logger:       s.Logger,
 		ContractAddr: s.ContractAddr,
