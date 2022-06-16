@@ -8,15 +8,15 @@ const (
 
 // GroupInfo stored key format: prefixGroupInfo-GroupIdHex
 type GroupInfo struct {
-	GroupIdHex     string
-	PartPubKeyHexs []string
-	Threshold      uint64
+	GroupIdHex     string   `json:"groupIdHex"`
+	PartPubKeyHexs []string `json:"partPubKeyHexs"`
+	Threshold      uint64   `json:"threshold"`
 }
 
 // ParticipantInfo stored key format: prefixParticipantInfo-PubKeyHashHex-GroupIdHex
 type ParticipantInfo struct {
-	PubKeyHashHex string
-	PubKeyHex     string
-	GroupIdHex    string
-	Index         uint64
+	PubKeyHashHex string `json:"pubKeyHashHex"`
+	PubKeyHex     string `json:"pubKeyHex"`
+	GroupIdHex    string `json:"groupIdHex"`
+	Index         uint64 `json:"index"`
 }
