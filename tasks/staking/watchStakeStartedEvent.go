@@ -41,7 +41,9 @@ func (eh *StakeRequestStartedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	case *events.GeneratedPubKeyInfoStoredEvent:
 		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.Val.PubKeyHex))
 	}
-	eh.doWatchStakeRequestStarted(evtObj.Context)
+	if len(eh.pubKeyBytes) > 0 {
+		eh.doWatchStakeRequestStarted(evtObj.Context)
+	}
 }
 
 func (eh *StakeRequestStartedEventWatcher) doWatchStakeRequestStarted(ctx context.Context) {
