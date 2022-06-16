@@ -38,11 +38,10 @@ func (eh *StakeRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererReconnectedEvent:
 		eh.filterer = evt.Filterer
-		eh.doWatchStakeRequestAdded(evtObj.Context)
 	case *events.GeneratedPubKeyInfoStoredEvent:
 		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.PubKeyHex))
-		eh.doWatchStakeRequestAdded(evtObj.Context)
 	}
+	eh.doWatchStakeRequestAdded(evtObj.Context)
 }
 
 func (eh *StakeRequestAddedEventWatcher) doWatchStakeRequestAdded(ctx context.Context) {
