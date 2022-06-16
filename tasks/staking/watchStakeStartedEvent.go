@@ -39,7 +39,7 @@ func (eh *StakeRequestStartedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
 	case *events.GeneratedPubKeyInfoStoredEvent:
-		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.PubKeyHex))
+		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.Val.PubKeyHex))
 	}
 	eh.doWatchStakeRequestStarted(evtObj.Context)
 }
