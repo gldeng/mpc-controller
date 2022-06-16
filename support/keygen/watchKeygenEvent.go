@@ -1,4 +1,4 @@
-package staking
+package keygen
 
 import (
 	"context"
