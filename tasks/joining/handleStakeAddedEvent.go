@@ -71,9 +71,7 @@ func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			Index:     myIndex,
 		}
 
-		if err == nil {
-			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", newEvt, evtObj.Context))
-		}
+		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", newEvt, evtObj.Context))
 	}
 }
 
