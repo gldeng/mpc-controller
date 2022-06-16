@@ -27,16 +27,16 @@ type ParticipantInfoStorer struct {
 func (p *ParticipantInfoStorer) Do(evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerParticipantAdded:
-		pt, err := p.storeParticipantInfo(evtObj.Context, evt)
+		key, pt, err := p.storeParticipantInfo(evtObj.Context, evt)
 		if err != nil {
 			p.Logger.Error("Fail to store participantInfo", []logger.Field{{"error", err}, {"participantInfo", &pt}}...)
 			break
 		}
-		p.publishStoredEvent(evtObj.Context, pt, evtObj)
+		p.publishStoredEvent(evtObj.Context, key, pt, evtObj)
 	}
 }
 
-func (p *ParticipantInfoStorer) storeParticipantInfo(ctx context.Context, evt *contract.MpcManagerParticipantAdded) (*ParticipantInfo, error) {
+func (p *ParticipantInfoStorer) storeParticipantInfo(ctx context.Context, evt *contract.MpcManagerParticipantAdded) (string, *ParticipantInfo, error) {
 	pt := ParticipantInfo{
 		PubKeyHashHex: p.MyPubKeyHashHex,
 		PubKeyHex:     p.MyPubKeyHex,
@@ -47,14 +47,18 @@ func (p *ParticipantInfoStorer) storeParticipantInfo(ctx context.Context, evt *c
 	key := prefixParticipantInfo + "-" + pt.PubKeyHashHex + "-" + pt.GroupIdHex
 	err := p.Storer.Set(ctx, []byte(key), p)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return "", nil, errors.WithStack(err)
 	}
 
-	return &pt, nil
+	return key, &pt, nil
 }
 
-func (p *ParticipantInfoStorer) publishStoredEvent(ctx context.Context, pt *ParticipantInfo, parentEvtObj *dispatcher.EventObject) {
-	newEvt := events.ParticipantInfoStoredEvent(*pt)
+func (p *ParticipantInfoStorer) publishStoredEvent(ctx context.Context, key string, pt *ParticipantInfo, parentEvtObj *dispatcher.EventObject) {
+	val := events.ParticipantInfo(*pt)
+	newEvt := events.ParticipantInfoStoredEvent{
+		Key: key,
+		Val: val,
+	}
 
 	p.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "ParticipantInfoStorer", &newEvt, parentEvtObj.Context))
 }
