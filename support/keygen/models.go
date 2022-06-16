@@ -7,7 +7,7 @@ const (
 
 // GeneratedPubKeyInfo stored key format: prefixGeneratedPubKeyInfo-GenPubKeyHashHex
 type GeneratedPubKeyInfo struct {
-	GenPubKeyHashHex string
-	GenPubKeyHex     string
-	GroupIdHex       string
+	GenPubKeyHashHex string `json:"genPubKeyHashHex"`
+	GenPubKeyHex     string `json:"genPubKeyHex"`
+	GroupIdHex       string `json:"groupIdHex"`
 }
