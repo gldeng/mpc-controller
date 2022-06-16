@@ -20,7 +20,7 @@ import (
 type ParticipantAddedEventWatcher struct {
 	Logger logger.Logger
 
-	MyPubKeyBytes [][]byte
+	MyPubKeyBytes []byte
 	ContractAddr  common.Address
 
 	Publisher dispatcher.Publisher
@@ -42,7 +42,7 @@ func (eh *ParticipantAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 
 func (eh *ParticipantAddedEventWatcher) doWatchParticipantAdded(ctx context.Context) {
 	newSink := make(chan *contract.MpcManagerParticipantAdded)
-	err := eh.subscribeParticipantAdded(ctx, newSink, eh.MyPubKeyBytes)
+	err := eh.subscribeParticipantAdded(ctx, newSink, [][]byte{eh.MyPubKeyBytes})
 	if err == nil {
 		eh.sink = newSink
 		if eh.done != nil {
