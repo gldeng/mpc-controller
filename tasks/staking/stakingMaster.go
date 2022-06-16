@@ -68,7 +68,7 @@ func (s *StakingMaster) subscribe() {
 	s.stakingWatcher = &taskStartedWatcher
 	s.stakingDealer = &taskStartedDealer
 
-	s.Dispatcher.Subscribe(&events.ContractFiltererReconnectedEvent{}, s.stakingWatcher)
+	s.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, s.stakingWatcher)
 	s.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, s.stakingWatcher) // Emit event: *contract.MpcManagerStakeRequestStarted
 
 	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, s.stakingDealer)

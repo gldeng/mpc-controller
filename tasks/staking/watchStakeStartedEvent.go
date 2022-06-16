@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Accept event: *events.ContractFiltererReconnectedEvent
+// Accept event: *events.ContractFiltererCreatedEvent
 // Accept event: *events.GeneratedPubKeyInfoStoredEvent
 
 // Emit event: *contract.MpcManagerStakeRequestStarted
@@ -36,7 +36,7 @@ type StakeRequestStartedEventWatcher struct {
 
 func (eh *StakeRequestStartedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.ContractFiltererReconnectedEvent:
+	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
 	case *events.GeneratedPubKeyInfoStoredEvent:
 		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.PubKeyHex))

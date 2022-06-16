@@ -7,6 +7,6 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning network
 
-type ContractFiltererReconnectedEvent struct {
+type ContractFiltererCreatedEvent struct {
 	Filterer bind.ContractFilterer
 }
