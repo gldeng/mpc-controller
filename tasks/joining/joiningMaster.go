@@ -26,32 +26,38 @@ type JoiningMaster struct {
 	Receipter chain.Receipter
 
 	Transactor bind.ContractTransactor
+
+	joiningWatcher *StakeRequestAddedEventWatcher
+	joiningDealer  *StakeRequestAddedEventHandler
 }
 
-func (s *JoiningMaster) Start(_ context.Context) error {
-	s.subscribe()
+func (j *JoiningMaster) Start(_ context.Context) error {
+	j.subscribe()
 	return nil
 }
 
-func (s *JoiningMaster) subscribe() {
+func (j *JoiningMaster) subscribe() {
 	stakeAddedWatcher := StakeRequestAddedEventWatcher{
-		Logger:       s.Logger,
-		ContractAddr: s.ContractAddr,
-		Publisher:    s.Dispatcher,
+		Logger:       j.Logger,
+		ContractAddr: j.ContractAddr,
+		Publisher:    j.Dispatcher,
 	}
 
 	stakeAddedHandler := StakeRequestAddedEventHandler{
-		Logger:          s.Logger,
-		MyPubKeyHashHex: s.MyPubKeyHashHex,
-		Signer:          s.Signer,
-		Storer:          s.Storer,
-		Receipter:       s.Receipter,
-		ContractAddr:    s.ContractAddr,
-		Transactor:      s.Transactor,
-		Publisher:       s.Dispatcher,
+		Logger:          j.Logger,
+		MyPubKeyHashHex: j.MyPubKeyHashHex,
+		Signer:          j.Signer,
+		Storer:          j.Storer,
+		Receipter:       j.Receipter,
+		ContractAddr:    j.ContractAddr,
+		Transactor:      j.Transactor,
+		Publisher:       j.Dispatcher,
 	}
 
-	s.Dispatcher.Subscribe(&events.ContractFiltererReconnectedEvent{}, &stakeAddedWatcher)
-	s.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, &stakeAddedWatcher) // Emit event:  *contract.MpcManagerStakeRequestAdded
-	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, &stakeAddedHandler)  // Emit event: *events.JoinedRequestEvent
+	j.joiningWatcher = &stakeAddedWatcher
+	j.joiningDealer = &stakeAddedHandler
+
+	j.Dispatcher.Subscribe(&events.ContractFiltererReconnectedEvent{}, j.joiningWatcher)
+	j.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, j.joiningWatcher) // Emit event:  *contract.MpcManagerStakeRequestAdded
+	j.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, j.joiningDealer)   // Emit event: *events.JoinedRequestEvent
 }
