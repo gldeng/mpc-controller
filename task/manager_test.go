@@ -198,7 +198,7 @@ func (suite *TaskManagerTestSuite) TestTaskManagerGroup() {
 	}
 
 	for _, configFile := range configFiles {
-		configImpl := config.ParseConfigFromFile(configFile)
+		configImpl := config.ParseFile(configFile)
 		logger.DevMode = configImpl.IsDevMode()
 		log := logger.Default()
 		configImpl.SetCoordinatorAddress(suite.coordinatorAddr.Hex())

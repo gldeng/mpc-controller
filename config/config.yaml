@@ -1,13 +1,13 @@
 enableDevMode: true
 controllerId: "mpc-controller-01"
 controllerKey: "59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21"
-coordinatorAddress: "0x273487EfaC011cfb62361f7b3E3763A54A03D1d3"
+mpcManagerAddress: "0x273487EfaC011cfb62361f7b3E3763A54A03D1d3"
 mpcServerUrl: "http://localhost:9000"
 ethRpcUrl: "http://localhost:9650/ext/bc/C/rpc"
 ethWsUrl: "ws://127.0.0.1:9650/ext/bc/C/ws"
 cChainIssueUrl: "http://localhost:9650"
 pChainIssueUrl: "http://localhost:9650"
-confignetwork:
+networkConfig:
   networkId: 12345
   chainId: 43112
   cChainId: "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU"
@@ -16,5 +16,5 @@ confignetwork:
   gasPerByte: 1
   gasPerSig: 1000
   gasFixed: 10000
-configdbbadger:
+databaseConfig:
   badgerDbPath: "./db/mpc_controller_db1"
