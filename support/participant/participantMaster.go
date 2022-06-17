@@ -18,8 +18,8 @@ type ParticipantMaster struct {
 	MyPubKeyHashHex string
 	MyPubKeyBytes   []byte
 
-	ContractAddr common.Address
-	Caller       bind.ContractCaller
+	ContractAddr   common.Address
+	ContractCaller bind.ContractCaller
 
 	Dispatcher dispatcher.DispatcherClaasic
 	Storer     storage.MarshalSetter
@@ -53,7 +53,7 @@ func (p *ParticipantMaster) subscribe() {
 	groupInfoStorer := GroupInfoStorer{
 		Logger:       p.Logger,
 		ContractAddr: p.ContractAddr,
-		Caller:       p.Caller,
+		Caller:       p.ContractCaller,
 		Publisher:    p.Dispatcher,
 		Storer:       p.Storer,
 	}
