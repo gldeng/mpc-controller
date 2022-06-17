@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type participantMaster struct {
+type ParticipantMaster struct {
 	Logger logger.Logger
 
 	MyPubKeyHex     string
@@ -29,12 +29,12 @@ type participantMaster struct {
 	groupInfoStorer *GroupInfoStorer
 }
 
-func (p *participantMaster) Start(_ context.Context) error {
+func (p *ParticipantMaster) Start(_ context.Context) error {
 	p.subscribe()
 	return nil
 }
 
-func (p *participantMaster) subscribe() {
+func (p *ParticipantMaster) subscribe() {
 	partiWatcher := ParticipantAddedEventWatcher{
 		Logger:        p.Logger,
 		MyPubKeyBytes: p.MyPubKeyBytes,
