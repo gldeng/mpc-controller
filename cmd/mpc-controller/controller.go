@@ -3,16 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller"
-	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/config"
-	"github.com/avalido/mpc-controller/contract/wrappers"
-	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/services/group"
-	"github.com/avalido/mpc-controller/services/keygen"
-	"github.com/avalido/mpc-controller/services/stake"
-	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/dispatcher"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+
+	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/queue"
+	"github.com/ethereum/go-ethereum/ethclient"
+
+	"github.com/avalido/mpc-controller/storage/badgerDB"
+	"github.com/avalido/mpc-controller/support/participant"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -20,14 +22,19 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type Service interface {
+	Start(ctx context.Context) error
+}
+
 type MpcController struct {
 	ID       string
-	Services []mpc_controller.MpcControllerService
+	Services []Service
 }
 
 func (c *MpcController) Run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 	for _, service := range c.Services {
+		service := service
 		g.Go(func() error {
 			return service.Start(ctx)
 		})
@@ -42,121 +49,72 @@ func (c *MpcController) Run(ctx context.Context) error {
 	return nil
 }
 
-func NewController(c *cli.Context) *MpcController {
-	// Initiate config
-	myLogger, myConfig, myStorer := initConfig(c)
+func NewController(ctx context.Context, c *cli.Context) *MpcController {
+	// Parse config
+	config := config.ParseFile(c.String(configFile))
 
-	// Build services
-	privateKey := myConfig.ControllerKey()
-	pubKeyBytes := myCrypto.MarshalPubkey(&privateKey.PublicKey)[1:]
-	pubKeyHex := common.Bytes2Hex(pubKeyBytes)
-	pubKeyHash := crypto.Keccak256Hash(pubKeyBytes)
-	pubKeyHashHex := pubKeyHash.Hex()
+	// Create logger
+	logger.DevMode = config.EnableDevMode
+	myLogger := logger.Default()
 
-	signer := myConfig.ControllerSigner()
-
-	mpcManagerCallerWrapper := wrappers.MpcManagerCallerWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerCaller}
-	mpcManagerFilterWrapper := wrappers.MpcManagerFilterWrapper{myLogger, &myConfig.CoordinatorBoundListener().MpcManagerFilterer}
-	mpcManagerTransactorWrapper := wrappers.MpcManagerTransactorWrapper{myLogger, &myConfig.CoordinatorBoundInstance().MpcManagerTransactor}
-
-	mpcClient := myConfig.MpcClient()
-
-	rpcEthClient := myConfig.EthRpcClient()
-	rpcEthClientWrapper := chain.RpcEthClientWrapper{myLogger, rpcEthClient}
-
-	cChainIssueClient := myConfig.CChainIssueClient()
-	pChainIssueClient := myConfig.PChainIssueClient()
-
-	// Build group service
-	groupService := group.Group{
-		PubKeyStr:               pubKeyHex,
-		PubKeyBytes:             pubKeyBytes,
-		PubKeyHashStr:           pubKeyHashHex,
-		Logger:                  myLogger,
-		CallerGetGroup:          &mpcManagerCallerWrapper,
-		WatcherParticipantAdded: &mpcManagerFilterWrapper,
-
-		StorerStoreGroupInfo:       myStorer,
-		StorerStoreParticipantInfo: myStorer,
-	}
-
-	// Build keygen service
-	keygenService := keygen.Keygen{
-		PubKeyHashHex:                pubKeyHashHex,
-		Logger:                       myLogger,
-		MpcClientKeygen:              mpcClient,
-		MpcClientResult:              mpcClient,
-		WatcherKeygenRequestAdded:    &mpcManagerFilterWrapper,
-		TransactorReportGeneratedKey: &mpcManagerTransactorWrapper,
-
-		StorerGetGroupIds:         myStorer,
-		StorerLoadParticipantInfo: myStorer,
-
-		StorerLoadKeygenRequestInfo:    myStorer,
-		StorerStoreGeneratedPubKeyInfo: myStorer,
-
-		StorerLoadGroupInfo:          myStorer,
-		StorerStoreKeygenRequestInfo: myStorer,
-
-		EthClientTransactionReceipt: rpcEthClient,
-
-		Signer: signer,
-	}
-
-	// Build stake service
-
-	stakeService := stake.Manager{
+	// Create database
+	myDB := &badgerDB.BadgerDB{
 		Logger: myLogger,
+		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath),
+	}
 
-		Staker: &stake.Staker{myLogger, cChainIssueClient, pChainIssueClient},
+	// Create dispatcher
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, queue.NewArrayQueue(1024), 1024)
 
-		MpcClientSign:   mpcClient,
-		MpcClientResult: mpcClient,
-		NetworkContext:  *myConfig.NetworkContext(),
+	// Get MpcManager contract address
+	contractAddr := common.HexToAddress(config.MpcManagerAddress)
 
-		TransactorJoinRequest:      &mpcManagerTransactorWrapper,
-		WatcherStakeRequestAdded:   &mpcManagerFilterWrapper,
-		WatcherStakeRequestStarted: &mpcManagerFilterWrapper,
+	//// Create mpcClient
+	//mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
 
-		EthClientTransactionReceipt: &rpcEthClientWrapper,
-		EthClientNonceAt:            &rpcEthClientWrapper,
-		EthClientBalanceAt:          &rpcEthClientWrapper,
+	// Parse private myPrivKey
+	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
+	if err != nil {
+		panic(errors.Wrapf(err, "Failed to parse private myPrivKey", logger.Field{"error", err}))
+	}
 
-		StorerGetParticipantIndex:     myStorer,
-		StorerGetPariticipantKeys:     myStorer,
-		StorerGetPubKeys:              myStorer,
-		StorerLoadGeneratedPubKeyInfo: myStorer,
+	// Parse public myPrivKey
+	myPubKeyBytes := myCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
+	myPubKeyHex := bytes.BytesToHex(myPubKeyBytes)
+	myPubKeyHash := hash256.FromBytes(myPubKeyBytes)
 
-		Signer:     signer,
-		PubKeyHash: pubKeyHash,
+	//// Convert chain ID
+	//chainId := big.NewInt(config.ChainId)
+
+	//// Create controller transaction signer
+	//signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
+	//if err != nil {
+	//	panic(errors.Wrapf(err, "Failed to create controller transaction signer", logger.Field{"error", err}))
+	//}
+
+	// Create eth rpc client
+	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl)
+	if err != nil {
+		panic(errors.Wrapf(err, "Failed to connect eth rpc client", logger.Field{"error", err}))
+	}
+
+	participantMaster := participant.ParticipantMaster{
+		Logger:          myLogger,
+		MyPubKeyHex:     myPubKeyHex,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		MyPubKeyBytes:   myPubKeyBytes,
+		ContractAddr:    contractAddr,
+		ContractCaller:  ethRpcClient,
+		Dispatcher:      myDispatcher,
+		Storer:          myDB,
 	}
 
 	controller := MpcController{
-		ID: myConfig.ControllerId(),
-		Services: []mpc_controller.MpcControllerService{
-			&groupService,
-			&keygenService,
-			&stakeService,
-			//&reward.Reward{},
+		ID: config.ControllerId,
+		Services: []Service{
+			&participantMaster,
 		},
 	}
 
 	return &controller
-}
-
-func initConfig(c *cli.Context) (logger.Logger, config.Config, storage.Storer) {
-	// Parse config file
-	configImpl := config.ParseConfigFromFile(c.String(configFile))
-
-	// Create globally shared logger
-	logger.DevMode = configImpl.IsDevMode()
-	log := logger.Default()
-
-	// Initialize config
-	configInterface := config.InitConfig(log, configImpl)
-
-	// Initiate storer
-	storer := storage.New(log, configImpl.DatabasePath())
-
-	return log, configInterface, storer
 }
