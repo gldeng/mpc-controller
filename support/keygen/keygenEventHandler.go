@@ -90,7 +90,7 @@ func (eh *KeygenRequestAddedEventHandler) keygen(ctx context.Context, req *core.
 func (eh *KeygenRequestAddedEventHandler) storeGenKenInfo(ctx context.Context, genkenInfo *GeneratedPubKeyInfo) (string, error) {
 	key := prefixGeneratedPubKeyInfo + "-" + genkenInfo.GenPubKeyHashHex
 
-	err := eh.Storer.Set(ctx, []byte(key), genkenInfo)
+	err := eh.Storer.MarshalSet(ctx, []byte(key), genkenInfo)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

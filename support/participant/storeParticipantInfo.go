@@ -45,7 +45,7 @@ func (p *ParticipantInfoStorer) storeParticipantInfo(ctx context.Context, evt *c
 	}
 
 	key := prefixParticipantInfo + "-" + pt.PubKeyHashHex + "-" + pt.GroupIdHex
-	err := p.Storer.Set(ctx, []byte(key), p)
+	err := p.Storer.MarshalSet(ctx, []byte(key), p)
 	if err != nil {
 		return "", nil, errors.WithStack(err)
 	}

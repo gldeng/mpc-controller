@@ -72,7 +72,7 @@ func (g *GroupInfoStorer) getGroupData(groupID [32]byte) (partiPubKeyHexArr []st
 
 func (g *GroupInfoStorer) storeGroupInfo(ctx context.Context, groupInfo *GroupInfo) (key string, err error) {
 	key = prefixGroupInfo + "-" + groupInfo.GroupIdHex
-	err = g.Storer.Set(ctx, []byte(key), groupInfo)
+	err = g.Storer.MarshalSet(ctx, []byte(key), groupInfo)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
