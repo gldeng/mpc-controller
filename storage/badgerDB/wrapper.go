@@ -1,4 +1,4 @@
-package storage
+package badgerDB
 
 import (
 	"context"
