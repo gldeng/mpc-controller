@@ -24,13 +24,13 @@ type Lister interface {
 // With marshal and unmarshal support
 
 type MarshalSetter interface {
-	Set(ctx context.Context, key []byte, val interface{}) error
+	MarshalSet(ctx context.Context, key []byte, val interface{}) error
 }
 
 type UnmarshalGetter interface {
-	Get(ctx context.Context, key []byte, val interface{}) error
+	MarshalGet(ctx context.Context, key []byte, val interface{}) error
 }
 
 type UnmarshalLister interface {
-	List(ctx context.Context, prefix []byte, val interface{}) error
+	MarshalList(ctx context.Context, prefix []byte, val interface{}) error
 }
