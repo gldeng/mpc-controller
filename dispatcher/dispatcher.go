@@ -30,7 +30,7 @@ type DispatcherClaasic interface {
 }
 
 type Subscriber interface {
-	Subscribe(eT Event, eH EventHandler)
+	Subscribe(eT Event, eHs ...EventHandler)
 }
 
 type Publisher interface {
