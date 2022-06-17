@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/config"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
+	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -69,8 +72,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
 
-	//// Create mpcClient
-	//mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
+	// Create mpcClient
+	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
 
 	// Parse private myPrivKey
 	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
@@ -98,6 +101,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		panic(errors.Wrapf(err, "Failed to connect eth rpc client", logger.Field{"error", err}))
 	}
 
+	// Create P-Chain issue client
+	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
+
 	participantMaster := participant.ParticipantMaster{
 		Logger:          myLogger,
 		MyPubKeyHex:     myPubKeyHex,
@@ -109,10 +115,20 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Storer:          myDB,
 	}
 
+	keygenMaster := keygen.KeygenMaster{
+		Logger:            myLogger,
+		ContractAddr:      contractAddr,
+		Dispatcher:        myDispatcher,
+		KeygenDoner:       mpcClient,
+		Storer:            myDB,
+		PChainIssueClient: pChainIssueCli,
+	}
+
 	controller := MpcController{
 		ID: config.ControllerId,
 		Services: []Service{
 			&participantMaster,
+			&keygenMaster,
 		},
 	}
 
