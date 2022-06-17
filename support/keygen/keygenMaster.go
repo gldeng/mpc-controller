@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type StakingMaster struct {
+type KeygenMaster struct {
 	Logger       logger.Logger
 	ContractAddr common.Address
 
@@ -27,12 +27,12 @@ type StakingMaster struct {
 	keygenDealer  *KeygenRequestAddedEventHandler
 }
 
-func (s *StakingMaster) Start(_ context.Context) error {
+func (s *KeygenMaster) Start(_ context.Context) error {
 	s.subscribe()
 	return nil
 }
 
-func (s *StakingMaster) subscribe() {
+func (s *KeygenMaster) subscribe() {
 	keygenWatcher := KeygenRequestAddedEventWatcher{
 		Logger:       s.Logger,
 		ContractAddr: s.ContractAddr,
