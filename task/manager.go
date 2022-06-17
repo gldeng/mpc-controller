@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/storage"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"golang.org/x/sync/errgroup"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
