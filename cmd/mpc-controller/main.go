@@ -109,10 +109,11 @@ const (
 )
 
 func RunMpcController(c *cli.Context) error {
-	controller := NewController(c)
+	shutdownCtx, shutdown := context.WithCancel(context.Background())
+
+	controller := NewController(shutdownCtx, c)
 
 	// Handle graceful shutdown.
-	shutdownCtx, shutdown := context.WithCancel(context.Background())
 	go func() {
 		quit := make(chan os.Signal)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
