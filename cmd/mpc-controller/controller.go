@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/config"
+	"github.com/avalido/mpc-controller/contract/reconnector"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/avalido/mpc-controller/utils/network"
 
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
@@ -78,7 +80,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Parse private myPrivKey
 	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
 	if err != nil {
-		panic(errors.Wrapf(err, "Failed to parse private myPrivKey", logger.Field{"error", err}))
+		panic(errors.Wrapf(err, "Failed to parse controller private key %q", config.ControllerKey))
 	}
 
 	// Parse public myPrivKey
@@ -98,11 +100,24 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Create eth rpc client
 	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl)
 	if err != nil {
-		panic(errors.Wrapf(err, "Failed to connect eth rpc client", logger.Field{"error", err}))
+		panic(errors.Wrapf(err, "Failed to connect eth rpc client, url: %q", config.EthRpcUrl))
+	}
+
+	// Create eth ws client
+	ethWsClient, err := ethclient.Dial(config.EthWsUrl)
+	if err != nil {
+		panic(errors.Wrapf(err, "Failed to connect eth ws client, url: %q", config.EthWsUrl))
 	}
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
+
+	// Create contract filterer reconnector
+	filterReconnector := reconnector.ContractFilterReconnector{
+		Logger:    myLogger,
+		Updater:   &network.EthClientDialerImpl{myLogger, config.EthWsUrl, ethWsClient},
+		Publisher: myDispatcher,
+	}
 
 	participantMaster := participant.ParticipantMaster{
 		Logger:          myLogger,
@@ -127,10 +142,12 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	controller := MpcController{
 		ID: config.ControllerId,
 		Services: []Service{
+			&filterReconnector,
 			&participantMaster,
-			&keygenMaster,
+			//&keygenMaster,
 		},
 	}
 
+	_ = keygenMaster
 	return &controller
 }
