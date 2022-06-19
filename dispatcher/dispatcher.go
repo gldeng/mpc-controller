@@ -83,6 +83,10 @@ func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 		for _, eH := range eHs {
 			if eH != nil {
 				d.eventMap[et] = append(d.eventMap[et], eH)
+				eh := reflect.TypeOf(eH).String()
+				d.eventLogger.Info("Subscribed an event", []logger.Field{
+					{"event", et},
+					{"handler", eh}}...)
 			}
 		}
 	}
