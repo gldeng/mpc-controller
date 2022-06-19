@@ -7,18 +7,18 @@ import (
 	"sync"
 )
 
-type CacheMaster struct {
+type CacheWrapper struct {
 	Dispatcher dispatcher.DispatcherClaasic
 	*Cache
 }
 
-func (c *CacheMaster) Start(ctx context.Context) error {
+func (c *CacheWrapper) Start(ctx context.Context) error {
 	c.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (c *CacheMaster) subscribe() {
+func (c *CacheWrapper) subscribe() {
 	cache := Cache{
 		RWMutex:                new(sync.RWMutex),
 		GroupInfoMap:           make(map[string]events.GroupInfo),
