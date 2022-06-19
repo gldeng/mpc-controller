@@ -8,6 +8,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+type EthClientGetter interface {
+	GetEthWsClient(ctx context.Context) (*ethclient.Client, error)
+}
+
+type EthWsClientUpdater interface {
+	NewEthWsClient(ctx context.Context) (c *ethclient.Client, isUpdated bool, err error)
+}
+
 type EthWsClientDialer interface {
 	GetEthWsClient() (*ethclient.Client, error)
 }
@@ -36,7 +44,7 @@ func (e *EthClientDialerImpl) GetEthWsClient(ctx context.Context) (*ethclient.Cl
 	return e.EthWsClient, errors.WithStack(err)
 }
 
-func (e *EthClientDialerImpl) NewEthWsClient(ctx context.Context) (c *ethclient.Client, updated bool, err error) {
+func (e *EthClientDialerImpl) NewEthWsClient(ctx context.Context) (c *ethclient.Client, isUpdated bool, err error) {
 	err = backoff.RetryFn(e.Logger, ctx, backoff.ExponentialForever(), func() error {
 		_, err = e.EthWsClient.NetworkID(ctx)
 		if err == nil {
@@ -47,7 +55,7 @@ func (e *EthClientDialerImpl) NewEthWsClient(ctx context.Context) (c *ethclient.
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		updated = true
+		isUpdated = true
 		e.EthWsClient = newClient
 		return nil
 	})
