@@ -48,7 +48,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	reqId := req.Raw.TxHash.Hex()
 
 	groupIdHex := bytes.Bytes32ToHex(req.GroupId)
-	group := eh.groupInfoMap[groupIdHex]
+	group := eh.groupInfoMap[events.PrefixGroupInfo+"-"+groupIdHex]
 
 	keyGenReq := &core.KeygenRequest{
 		RequestId:       reqId,
