@@ -35,3 +35,22 @@ func (e *EthClientDialerImpl) GetEthWsClient(ctx context.Context) (*ethclient.Cl
 	})
 	return e.EthWsClient, errors.WithStack(err)
 }
+
+func (e *EthClientDialerImpl) NewEthWsClient(ctx context.Context) (c *ethclient.Client, updated bool, err error) {
+	err = backoff.RetryFn(e.Logger, ctx, backoff.ExponentialForever(), func() error {
+		_, err = e.EthWsClient.NetworkID(ctx)
+		if err == nil {
+			return nil
+		}
+
+		newClient, err := ethclient.Dial(e.EthWsUrl)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		updated = true
+		e.EthWsClient = newClient
+		return nil
+	})
+	c = e.EthWsClient
+	return
+}
