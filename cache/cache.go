@@ -22,23 +22,14 @@ type Cache struct {
 func (c *Cache) Do(evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.GroupInfoStoredEvent:
-		if len(c.GroupInfoMap) == 0 {
-			c.GroupInfoMap = make(map[string]events.GroupInfo)
-		}
 		c.Lock()
 		c.GroupInfoMap[evt.Key] = evt.Val
 		c.Unlock()
 	case *events.ParticipantInfoStoredEvent:
-		if len(c.ParticipantInfoMap) == 0 {
-			c.ParticipantInfoMap = make(map[string]events.ParticipantInfo)
-		}
 		c.Lock()
 		c.ParticipantInfoMap[evt.Key] = evt.Val
 		c.Unlock()
 	case *events.GeneratedPubKeyInfoStoredEvent:
-		if len(c.GeneratedPubKeyInfoMap) == 0 {
-			c.GeneratedPubKeyInfoMap = make(map[string]events.GeneratedPubKeyInfo)
-		}
 		c.Lock()
 		c.GeneratedPubKeyInfoMap[evt.Key] = evt.Val
 		c.Unlock()
