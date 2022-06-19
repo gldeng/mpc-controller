@@ -2,7 +2,6 @@ package participant
 
 import (
 	"context"
-	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
@@ -10,7 +9,6 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"time"
 )
 
 type ParticipantMaster struct {
@@ -32,13 +30,8 @@ type ParticipantMaster struct {
 }
 
 func (p *ParticipantMaster) Start(ctx context.Context) error {
-	fmt.Printf("ParticipantMaster enered at: %v", time.Now())
-
 	p.subscribe()
-
 	<-ctx.Done()
-	fmt.Printf("ParticipantMaster exited at: %v", time.Now())
-
 	return nil
 }
 
