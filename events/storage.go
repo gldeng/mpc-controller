@@ -22,19 +22,19 @@ type GeneratedPubKeyInfoStoredEvent struct {
 
 // Prefixes
 const (
-	prefixGroupInfo           = "groupInfo"
-	prefixParticipantInfo     = "partyInfo"
-	prefixGeneratedPubKeyInfo = "genPubKeyInfo"
+	PrefixGroupInfo           = "groupInfo"
+	PrefixParticipantInfo     = "partyInfo"
+	PrefixGeneratedPubKeyInfo = "genPubKeyInfo"
 )
 
-// GroupInfo stored key format: prefixGroupInfo-GroupIdHex
+// GroupInfo stored key format: PrefixGroupInfo-GroupIdHex
 type GroupInfo struct {
 	GroupIdHex     string
 	PartPubKeyHexs []string
 	Threshold      uint64
 }
 
-// ParticipantInfo stored key format: prefixParticipantInfo-PubKeyHashHex-GroupIdHex
+// ParticipantInfo stored key format: PrefixParticipantInfo-PubKeyHashHex-GroupIdHex
 type ParticipantInfo struct {
 	PubKeyHashHex string
 	PubKeyHex     string
@@ -42,7 +42,7 @@ type ParticipantInfo struct {
 	Index         uint64
 }
 
-// GeneratedPubKeyInfo stored key format: prefixGeneratedPubKeyInfo-GenPubKeyHashHex
+// GeneratedPubKeyInfo stored key format: PrefixGeneratedPubKeyInfo-GenPubKeyHashHex
 type GeneratedPubKeyInfo struct {
 	GenPubKeyHashHex string
 	GenPubKeyHex     string
