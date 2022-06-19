@@ -53,6 +53,9 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 			}
 		}
 	}()
+
+	<-ctx.Done()
+
 	return nil
 }
 
