@@ -31,8 +31,9 @@ type JoiningMaster struct {
 	joiningDealer  *StakeRequestAddedEventHandler
 }
 
-func (j *JoiningMaster) Start(_ context.Context) error {
+func (j *JoiningMaster) Start(ctx context.Context) error {
 	j.subscribe()
+	<-ctx.Done()
 	return nil
 }
 

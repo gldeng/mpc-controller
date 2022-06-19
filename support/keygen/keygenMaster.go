@@ -29,9 +29,7 @@ type KeygenMaster struct {
 
 func (s *KeygenMaster) Start(ctx context.Context) error {
 	s.subscribe()
-
 	<-ctx.Done()
-
 	return nil
 }
 

@@ -36,8 +36,9 @@ type StakingMaster struct {
 	stakingDealer  *StakeRequestStartedEventHandler
 }
 
-func (s *StakingMaster) Start(_ context.Context) error {
+func (s *StakingMaster) Start(ctx context.Context) error {
 	s.subscribe()
+	<-ctx.Done()
 	return nil
 }
 
