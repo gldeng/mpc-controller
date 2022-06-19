@@ -20,6 +20,8 @@ type ContractFilterReconnector struct {
 	Updater network.EthWsClientUpdater
 
 	Publisher dispatcher.Publisher
+
+	createdNo int
 }
 
 func (c *ContractFilterReconnector) Start(ctx context.Context) error {
@@ -36,8 +38,17 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 					c.Error("Failed to check check connectivity of EthWsClient", []logger.Field{{"error", err}}...)
 					break
 				}
+
+				if c.createdNo == 0 {
+					time.Sleep(2) // wait for the event subscriber to get ready.
+					c.publishEvent(ctx, client)
+					c.createdNo++
+					break
+				}
+
 				if isUpdated {
-					c.PublishCreatedEvent(ctx, client)
+					c.publishEvent(ctx, client)
+					c.createdNo++
 				}
 			}
 		}
@@ -45,7 +56,7 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 	return nil
 }
 
-func (c *ContractFilterReconnector) PublishCreatedEvent(ctx context.Context, client *ethclient.Client) {
+func (c *ContractFilterReconnector) publishEvent(ctx context.Context, client *ethclient.Client) {
 	newEvt := events.ContractFiltererCreatedEvent{
 		Filterer: client,
 	}
