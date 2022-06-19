@@ -10,11 +10,14 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/support/keygen"
+	"github.com/avalido/mpc-controller/tasks/joining"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/network"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"golang.org/x/sync/errgroup"
+	"math/big"
 	"reflect"
 	"time"
 
@@ -96,14 +99,14 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	myPubKeyHex := bytes.BytesToHex(myPubKeyBytes)
 	myPubKeyHash := hash256.FromBytes(myPubKeyBytes)
 
-	//// Convert chain ID
-	//chainId := big.NewInt(config.ChainId)
+	// Convert chain ID
+	chainId := big.NewInt(config.ChainId)
 
-	//// Create controller transaction signer
-	//signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
-	//if err != nil {
-	//	panic(errors.Wrapf(err, "Failed to create controller transaction signer", logger.Field{"error", err}))
-	//}
+	// Create controller transaction signer
+	signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
+	if err != nil {
+		panic(errors.Wrapf(err, "Failed to create controller transaction signer", logger.Field{"error", err}))
+	}
 
 	// Create eth rpc client
 	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl)
@@ -151,6 +154,17 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		PChainIssueClient: pChainIssueCli,
 	}
 
+	joiningMaster := joining.JoiningMaster{
+		Logger:          myLogger,
+		ContractAddr:    contractAddr,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		MyIndexGetter:   cacheWrapper,
+		Dispatcher:      myDispatcher,
+		Signer:          signer,
+		Receipter:       ethRpcClient,
+		Transactor:      ethRpcClient,
+	}
+
 	controller := MpcController{
 		ID: config.ControllerId,
 		Services: []Service{
@@ -158,6 +172,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 			&filterReconnector,
 			&participantMaster,
 			&keygenMaster,
+			&joiningMaster,
 		},
 	}
 

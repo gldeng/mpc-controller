@@ -2,6 +2,7 @@ package joining
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/dispatcher"
@@ -16,10 +17,9 @@ type JoiningMaster struct {
 	ContractAddr common.Address
 
 	MyPubKeyHashHex string
+	MyIndexGetter   cache.MyIndexGetter
 
 	Dispatcher dispatcher.DispatcherClaasic
-
-	Storer Storer
 
 	Signer *bind.TransactOpts
 
@@ -48,7 +48,7 @@ func (j *JoiningMaster) subscribe() {
 		Logger:          j.Logger,
 		MyPubKeyHashHex: j.MyPubKeyHashHex,
 		Signer:          j.Signer,
-		Storer:          j.Storer,
+		MyIndexGetter:   j.MyIndexGetter,
 		Receipter:       j.Receipter,
 		ContractAddr:    j.ContractAddr,
 		Transactor:      j.Transactor,
