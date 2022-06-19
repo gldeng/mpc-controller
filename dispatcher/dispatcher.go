@@ -145,7 +145,7 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 	if err == nil {
 		et := reflect.TypeOf(evtObj.Event).String()
 
-		d.eventLogger.Info("Event received and enqueued", []logger.Field{
+		d.eventLogger.Info("Received an event", []logger.Field{
 			{"eventType", et},
 			{"eventStep", evtObj.EventStep},
 			{"event", evtObj.Event},
