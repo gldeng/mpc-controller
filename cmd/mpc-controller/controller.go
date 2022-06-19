@@ -13,6 +13,8 @@ import (
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/network"
+	"golang.org/x/sync/errgroup"
+	"reflect"
 	"time"
 
 	"github.com/avalido/mpc-controller/logger"
@@ -25,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/sync/errgroup"
 )
 
 type Service interface {
@@ -40,18 +41,23 @@ type MpcController struct {
 func (c *MpcController) Run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 	for _, service := range c.Services {
+		name := reflect.TypeOf(service).String()
+
 		service := service
 		g.Go(func() error {
-			return service.Start(ctx)
+			fmt.Printf("Service %q started at: %v \n", name, time.Now())
+			if err := service.Start(ctx); err != nil {
+				return errors.Wrapf(err, "failed starting service: %v", name)
+			}
+			fmt.Printf("Service %q stopped at: %v\n", name, time.Now())
+			return nil
 		})
 	}
 
-	fmt.Printf("%v services started at: %v.\n", c.ID, time.Now())
 	if err := g.Wait(); err != nil {
 		return errors.WithStack(err)
 	}
 
-	fmt.Printf("%v services closed at: %v.\n", c.ID, time.Now())
 	return nil
 }
 
