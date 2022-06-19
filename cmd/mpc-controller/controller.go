@@ -13,6 +13,7 @@ import (
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/network"
+	"time"
 
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/queue"
@@ -45,12 +46,12 @@ func (c *MpcController) Run(ctx context.Context) error {
 		})
 	}
 
-	fmt.Printf("%v services started.\n", c.ID)
+	fmt.Printf("%v services started at: %v.\n", c.ID, time.Now())
 	if err := g.Wait(); err != nil {
 		return errors.WithStack(err)
 	}
 
-	fmt.Printf("%v services closed.\n", c.ID)
+	fmt.Printf("%v services closed at: %v.\n", c.ID, time.Now())
 	return nil
 }
 
