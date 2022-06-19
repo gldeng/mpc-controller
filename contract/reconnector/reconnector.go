@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/network"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"time"
 )
 
@@ -36,13 +37,17 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 					break
 				}
 				if isUpdated {
-					newEvt := events.ContractFiltererCreatedEvent{
-						Filterer: client,
-					}
-					c.Publisher.Publish(ctx, dispatcher.NewRootEventObject("ContractFilterReconnector", &newEvt, ctx))
+					c.PublishCreatedEvent(ctx, client)
 				}
 			}
 		}
 	}()
 	return nil
+}
+
+func (c *ContractFilterReconnector) PublishCreatedEvent(ctx context.Context, client *ethclient.Client) {
+	newEvt := events.ContractFiltererCreatedEvent{
+		Filterer: client,
+	}
+	c.Publisher.Publish(ctx, dispatcher.NewRootEventObject("ContractFilterReconnector", &newEvt, ctx))
 }
