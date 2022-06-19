@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/reconnector"
 	"github.com/avalido/mpc-controller/core"
@@ -126,6 +127,10 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Publisher: myDispatcher,
 	}
 
+	cacheWrapper := cache.CacheWrapper{
+		Dispatcher: myDispatcher,
+	}
+
 	participantMaster := participant.ParticipantMaster{
 		Logger:          myLogger,
 		MyPubKeyHex:     myPubKeyHex,
@@ -149,12 +154,12 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	controller := MpcController{
 		ID: config.ControllerId,
 		Services: []Service{
+			&cacheWrapper,
 			&filterReconnector,
 			&participantMaster,
-			//&keygenMaster,
+			&keygenMaster,
 		},
 	}
 
-	_ = keygenMaster
 	return &controller
 }
