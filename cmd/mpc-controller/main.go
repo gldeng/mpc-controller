@@ -102,6 +102,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 const (
@@ -126,6 +127,7 @@ func RunMpcController(c *cli.Context) error {
 		return errors.WithStack(err)
 	}
 
+	time.Sleep(time.Second * 5)
 	return nil
 }
 
