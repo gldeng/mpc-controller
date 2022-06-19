@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type KeygenRequest struct {
@@ -145,6 +146,7 @@ func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (
 		return
 	}
 
+	time.Sleep(time.Second * 2)
 	res, err = c.ResultDone(ctx, request.RequestId)
 	return
 }
@@ -155,6 +157,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 		return
 	}
 
+	time.Sleep(time.Second * 2)
 	res, err = c.ResultDone(ctx, request.RequestId)
 	return
 }
