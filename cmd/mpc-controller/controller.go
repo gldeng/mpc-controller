@@ -3,14 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/cache"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/reconnector"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/tasks/joining"
+	"github.com/avalido/mpc-controller/tasks/staking"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -169,6 +173,18 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Transactor:      ethRpcClient,
 	}
 
+	stakingMaster := staking.StakingMaster{
+		Logger:          myLogger,
+		ContractAddr:    contractAddr,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		Dispatcher:      myDispatcher,
+		NetworkContext:  networkCtx(config),
+		Cache:           cacheWrapper,
+		SignDoner:       mpcClient,
+		Verifyier:       nil,
+		Noncer:          ethRpcClient,
+	}
+
 	controller := MpcController{
 		ID: config.ControllerId,
 		Services: []Service{
@@ -177,8 +193,41 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 			&participantMaster,
 			&keygenMaster,
 			&joiningMaster,
+			&stakingMaster,
 		},
 	}
 
 	return &controller
+}
+
+func networkCtx(config *config.Config) chain.NetworkContext {
+	// Convert C-Chain ID
+	cchainID, err := ids.FromString(config.CChainId)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to convert C-Chain ID"))
+	}
+
+	// Convert chain ID
+	chainIdBigInt := big.NewInt(config.ChainId)
+
+	// Convert AVAX assetId ID
+	assetId, err := ids.FromString(config.AvaxId)
+	if err != nil {
+		panic(errors.Wrap(err, "Failed to convert AVAX assetId"))
+	}
+
+	// Create NetworkContext
+	networkCtx := chain.NewNetworkContext(
+		config.NetworkId,
+		cchainID,
+		chainIdBigInt,
+		avax.Asset{
+			ID: assetId,
+		},
+		config.ImportFee,
+		config.GasPerByte,
+		config.GasPerSig,
+		config.GasFixed,
+	)
+	return networkCtx
 }
