@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"math/big"
+	"strings"
 	"time"
 )
 
@@ -46,7 +47,7 @@ func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			break
 		}
 		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
-		if err != nil || eh.checkReceipt(*txHash) != nil {
+		if err != nil {
 			eh.Logger.Error("Failed to join request", []logger.Field{
 				{"error", err},
 				{"reqId", evt.RequestId},
@@ -54,17 +55,19 @@ func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			break
 		}
 
-		newEvt := events.JoinedRequestEvent{
-			TxHashHex: txHash.Hex(),
-			RequestId: evt.RequestId,
-			Index:     myIndex,
-		}
+		if txHash != nil {
+			newEvt := events.JoinedRequestEvent{
+				TxHashHex: txHash.Hex(),
+				RequestId: evt.RequestId,
+				Index:     myIndex,
+			}
 
-		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", newEvt, evtObj.Context))
+			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", newEvt, evtObj.Context))
+		}
 	}
 }
 
-func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (*common.Hash, error) {
+func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (txHash *common.Hash, err error) {
 	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -76,27 +79,17 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 		var err error
 		tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
 		if err != nil {
+			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
+				tx = nil
+				eh.Logger.Info("Cannot join anymore", []logger.Field{{"reqId", req.RequestId}, {"myIndex", myIndex}}...)
+				return nil
+			}
 			return errors.Wrapf(err, "failed to join request. ReqId: %v, Index: %v", req.RequestId, myIndex)
 		}
 
-		return nil
-	})
+		time.Sleep(time.Second * 3)
 
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	txHash := tx.Hash()
-	return &txHash, nil
-}
-
-func (eh *StakeRequestAddedEventHandler) checkReceipt(txHash common.Hash) error {
-	rCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-
-	err := backoff.RetryFnExponentialForever(eh.Logger, rCtx, func() error {
-
-		rcpt, err := eh.Receipter.TransactionReceipt(rCtx, txHash)
+		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -109,8 +102,14 @@ func (eh *StakeRequestAddedEventHandler) checkReceipt(txHash common.Hash) error 
 	})
 
 	if err != nil {
-		return errors.Wrapf(err, "transaction %q failed", txHash)
+		return nil, errors.WithStack(err)
 	}
 
-	return nil
+	if tx != nil {
+		txHash_ := tx.Hash()
+		return &txHash_, nil
+
+	}
+
+	return nil, err
 }

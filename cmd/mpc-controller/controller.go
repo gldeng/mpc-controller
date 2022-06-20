@@ -162,7 +162,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Logger:          myLogger,
 		ContractAddr:    contractAddr,
 		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyIndexGetter:   cacheWrapper,
+		MyIndexGetter:   &cacheWrapper,
 		Dispatcher:      myDispatcher,
 		Signer:          signer,
 		Receipter:       ethRpcClient,
