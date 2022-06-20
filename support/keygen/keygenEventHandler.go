@@ -91,16 +91,9 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	}
 	myIndex := eh.participantInfoMap[events.PrefixParticipantInfo+"-"+eh.MyPubKeyHashHex+"-"+groupIdHex].Index
 	dur := rand.Intn(5000)
-	time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent reporting can cause failure. todo: make sure 100% success
-	txHash, err := eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
+	time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent reporting can cause failure.
+	err = eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
 	if err != nil {
-		eh.Logger.Debug("Failed to report generated public key", []logger.Field{
-			{"error", err},
-			{"genPubKey", bytes.BytesToHex(dnmGenPubKeyBytes)}}...)
-		return errors.WithStack(err)
-	}
-	time.Sleep(time.Second * 2)
-	if eh.checkReceipt(*txHash) != nil {
 		return errors.WithStack(err)
 	}
 
@@ -148,6 +141,38 @@ func (eh *KeygenRequestAddedEventHandler) storeGenKenInfo(ctx context.Context, g
 	return key, nil
 }
 
+func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte) (err error) {
+	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	var tx *types.Transaction
+
+	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
+		var err error
+		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
+		if err != nil {
+			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, MyIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
+		}
+
+		time.Sleep(time.Second * 3)
+
+		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if rcpt.Status != 1 {
+			return errors.New("Transaction failed")
+		}
+
+		return nil
+	})
+
+	return
+}
+
 func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context, key string, genPubKeyInfo *GeneratedPubKeyInfo, parentEvtObj *dispatcher.EventObject) {
 	val := events.GeneratedPubKeyInfo(*genPubKeyInfo)
 	newEvt := events.GeneratedPubKeyInfoStoredEvent{
@@ -160,55 +185,4 @@ func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context
 
 func (eh *KeygenRequestAddedEventHandler) publishReportedEvent(ctx context.Context, evt *events.ReportedGenPubKeyEvent, parentEvtObj *dispatcher.EventObject) {
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "KeygenRequestAddedEventHandler", evt, parentEvtObj.Context))
-}
-
-func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte) (*common.Hash, error) {
-	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var tx *types.Transaction
-
-	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
-		var err error
-		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
-		if err != nil {
-			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, MyIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	txHash := tx.Hash()
-	return &txHash, nil
-}
-
-func (eh *KeygenRequestAddedEventHandler) checkReceipt(txHash common.Hash) error {
-	rCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-
-	err := backoff.RetryFnExponentialForever(eh.Logger, rCtx, func() error {
-
-		rcpt, err := eh.Receipter.TransactionReceipt(rCtx, txHash)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		if rcpt.Status != 1 {
-			return errors.New("Transaction failed")
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return errors.Wrapf(err, "transaction %q failed", txHash)
-	}
-
-	return nil
 }
