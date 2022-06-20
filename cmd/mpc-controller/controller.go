@@ -179,7 +179,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		MyPubKeyHashHex: myPubKeyHash.Hex(),
 		Dispatcher:      myDispatcher,
 		NetworkContext:  networkCtx(config),
-		Cache:           cacheWrapper,
+		Cache:           &cacheWrapper,
 		SignDoner:       mpcClient,
 		Verifyier:       nil,
 		Noncer:          ethRpcClient,
