@@ -7,7 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
@@ -39,7 +39,13 @@ func (eh *StakeRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
 	case *events.GeneratedPubKeyInfoStoredEvent:
-		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.Val.PubKeyHex))
+		dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.GenPubKeyHex)
+		if err != nil {
+			eh.Logger.Error("Failed to denormalized generated public key", []logger.Field{{"error", err}}...)
+			break
+		}
+
+		eh.pubKeyBytes = append(eh.pubKeyBytes, dnmPubKeyBtes)
 	}
 	if len(eh.pubKeyBytes) > 0 {
 		eh.doWatchStakeRequestAdded(evtObj.Context)
