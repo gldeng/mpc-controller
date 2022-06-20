@@ -67,5 +67,5 @@ func (s *KeygenMaster) subscribe() {
 
 	s.Dispatcher.Subscribe(&events.GroupInfoStoredEvent{}, s.keygenDealer)
 	s.Dispatcher.Subscribe(&events.ParticipantInfoStoredEvent{}, s.keygenDealer)
-	s.Dispatcher.Subscribe(&contract.MpcManagerKeygenRequestAdded{}, s.keygenDealer) // Emit event: *events.GeneratedPubKeyInfoStoredEvent
+	s.Dispatcher.Subscribe(&contract.MpcManagerKeygenRequestAdded{}, s.keygenDealer) // Emit event: *events.GeneratedPubKeyInfoStoredEvent, *events.ReportedGenPubKeyEvent
 }

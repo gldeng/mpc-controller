@@ -26,6 +26,7 @@ import (
 // Accept event: *contract.MpcManagerKeygenRequestAdded
 
 // Emit event: *events.GeneratedPubKeyInfoStoredEvent
+// Emit event: *events.ReportedGenPubKeyEvent
 
 type KeygenRequestAddedEventHandler struct {
 	Logger logger.Logger
@@ -99,6 +100,14 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 		return errors.WithStack(err)
 	}
 
+	reportedEvt := events.ReportedGenPubKeyEvent{
+		GroupIdHex:   groupIdHex,
+		Index:        big.NewInt(int64(myIndex)),
+		GenPubKeyHex: bytes.BytesToHex(dnmGenPubKeyBytes),
+	}
+
+	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
+
 	dnmGenPubKeyHash := hash256.FromHex(bytes.BytesToHex(dnmGenPubKeyBytes))
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
@@ -142,7 +151,11 @@ func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context
 		Val: val,
 	}
 
-	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "GroupInfoStorer", &newEvt, parentEvtObj.Context))
+	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "KeygenRequestAddedEventHandler", &newEvt, parentEvtObj.Context))
+}
+
+func (eh *KeygenRequestAddedEventHandler) publishReportedEvent(ctx context.Context, evt *events.ReportedGenPubKeyEvent, parentEvtObj *dispatcher.EventObject) {
+	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "KeygenRequestAddedEventHandler", evt, parentEvtObj.Context))
 }
 
 func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte) (*common.Hash, error) {
