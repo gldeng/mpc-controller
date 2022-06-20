@@ -53,6 +53,7 @@ func (s *KeygenMaster) subscribe() {
 		Storer:          s.Storer,
 		Publisher:       s.Dispatcher,
 		MyPubKeyHashHex: s.MyPubKeyHashHex,
+		ContractAddr:    s.ContractAddr,
 		Transactor:      s.Transactor,
 		Signer:          s.Signer,
 		Receipter:       s.Receipter,
