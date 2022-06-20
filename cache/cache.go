@@ -48,3 +48,12 @@ func (c *Cache) GetMyIndex(myPubKeyHashHex, genPubKeyHashHex string) *big.Int {
 
 	return big.NewInt(int64(myIndex))
 }
+
+func (c *Cache) GetGeneratedPubKeyInfo(genPubKeyHashHex string) *events.GeneratedPubKeyInfo {
+	c.RLock()
+	defer c.RUnlock()
+
+	genPubKeyInfoStoredKey := events.PrefixGeneratedPubKeyInfo + "-" + genPubKeyHashHex
+	info := c.GeneratedPubKeyInfoMap[genPubKeyInfoStoredKey]
+	return &info
+}
