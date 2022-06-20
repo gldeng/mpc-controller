@@ -57,8 +57,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 		}
 		eh.myIndex = index
 
-		ok, err := eh.isParticipant(evtObj.Context, evt)
-		eh.Logger.ErrorOnError(err, "Failed to check participant", []logger.Field{{"error", err}}...)
+		ok := eh.isParticipant(evtObj.Context, evt)
 		if ok {
 			nonce, err := eh.getNonce(evtObj.Context)
 			if err != err {
@@ -107,7 +106,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) (bool, error) {
+func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) bool {
 	var participating bool
 	for _, index := range req.ParticipantIndices {
 		if index.Cmp(eh.myIndex) == 0 {
@@ -118,10 +117,10 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, re
 
 	if !participating {
 		eh.Logger.Info("Not participated to stake request", []logger.Field{{"stakeReqId", req.RequestId}}...)
-		return false, nil
+		return false
 	}
 
-	return true, nil
+	return true
 }
 
 func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
