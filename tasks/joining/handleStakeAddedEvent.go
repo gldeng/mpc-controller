@@ -35,8 +35,6 @@ type StakeRequestAddedEventHandler struct {
 	Transactor   bind.ContractTransactor
 
 	Publisher dispatcher.Publisher
-
-	participantInfoMap map[string]events.ParticipantInfo
 }
 
 func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
