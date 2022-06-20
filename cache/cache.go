@@ -4,6 +4,7 @@ import "C"
 import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"sync"
 )
@@ -36,6 +37,15 @@ func (c *Cache) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
+func (c *Cache) LoadGroupInfo(groupIdHex string) *events.GroupInfo {
+	c.RLock()
+	defer c.RUnlock()
+
+	key := events.PrefixGroupInfo + "-" + groupIdHex
+	val := c.GroupInfoMap[key]
+	return &val
+}
+
 func (c *Cache) GetMyIndex(myPubKeyHashHex, genPubKeyHashHex string) *big.Int {
 	c.RLock()
 	defer c.RUnlock()
@@ -56,4 +66,23 @@ func (c *Cache) GetGeneratedPubKeyInfo(genPubKeyHashHex string) *events.Generate
 	genPubKeyInfoStoredKey := events.PrefixGeneratedPubKeyInfo + "-" + genPubKeyHashHex
 	info := c.GeneratedPubKeyInfoMap[genPubKeyInfoStoredKey]
 	return &info
+}
+
+func (c *Cache) GetParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) []string {
+	pubKeyInfo := c.GetGeneratedPubKeyInfo(genPubKeyHash.Hex())
+	if pubKeyInfo != nil {
+		return nil
+	}
+
+	groupInfo := c.LoadGroupInfo(pubKeyInfo.GroupIdHex)
+	if groupInfo == nil {
+		return nil
+	}
+
+	var partPubKeyHexArr []string
+	for _, ind := range indices {
+		partPubKeyHex := groupInfo.PartPubKeyHexs[ind.Uint64()-1]
+		partPubKeyHexArr = append(partPubKeyHexArr, partPubKeyHex)
+	}
+	return partPubKeyHexArr
 }
