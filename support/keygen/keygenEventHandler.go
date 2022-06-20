@@ -96,6 +96,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 			{"genPubKey", bytes.BytesToHex(dnmGenPubKeyBytes)}}...)
 		return errors.WithStack(err)
 	}
+	time.Sleep(time.Second * 2)
 	if eh.checkReceipt(*txHash) != nil {
 		return errors.WithStack(err)
 	}
