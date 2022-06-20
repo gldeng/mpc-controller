@@ -89,7 +89,13 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	}
 	myIndex := eh.participantInfoMap[events.PrefixParticipantInfo+"-"+eh.MyPubKeyHashHex+"-"+groupIdHex].Index
 	txHash, err := eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
-	if err != nil || eh.checkReceipt(*txHash) != nil {
+	if err != nil {
+		eh.Logger.Debug("Failed to report generated public key", []logger.Field{
+			{"error", err},
+			{"genPubKey", bytes.BytesToHex(dnmGenPubKeyBytes)}}...)
+		return errors.WithStack(err)
+	}
+	if eh.checkReceipt(*txHash) != nil {
 		return errors.WithStack(err)
 	}
 
