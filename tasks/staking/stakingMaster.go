@@ -22,7 +22,7 @@ type StakingMaster struct {
 
 	chain.NetworkContext
 
-	Storer Storer
+	Cache Cache
 
 	SignDoner core.SignDoner
 	Verifyier crypto.VerifyHasher
@@ -59,7 +59,7 @@ func (s *StakingMaster) subscribe() {
 		Logger:          s.Logger,
 		NetworkContext:  s.NetworkContext,
 		MyPubKeyHashHex: s.MyPubKeyHashHex,
-		Storer:          s.Storer,
+		Cache:           s.Cache,
 		SignDoner:       s.SignDoner,
 		Verifyier:       s.Verifyier,
 		Noncer:          s.Noncer,

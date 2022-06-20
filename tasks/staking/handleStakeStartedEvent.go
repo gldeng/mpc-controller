@@ -2,21 +2,21 @@ package staking
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
+	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/pkg/errors"
 	"math/big"
 )
 
-type Storer interface {
-	storage.StorerLoadGeneratedPubKeyInfo
-	storage.StorerLoadParticipantInfo
-	storage.StorerGetPariticipantKeys
+type Cache interface {
+	cache.MyIndexGetter
+	cache.GeneratedPubKeyInfoGetter
 }
 
 // Accept event: *contract.MpcManagerStakeRequestStarted
@@ -29,7 +29,7 @@ type StakeRequestStartedEventHandler struct {
 
 	MyPubKeyHashHex string
 
-	Storer Storer
+	Cache Cache
 
 	SignDoner core.SignDoner
 	Verifyier crypto.VerifyHasher
@@ -37,12 +37,26 @@ type StakeRequestStartedEventHandler struct {
 	Noncer chain.Noncer
 	Issuer Issuerer
 
-	genPubKeyInfo *storage.GeneratedPubKeyInfo
+	genPubKeyInfo *events.GeneratedPubKeyInfo
+	myIndex       *big.Int
 }
 
 func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestStarted:
+		pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
+		if pubKeyInfo == nil {
+			eh.Logger.Error("No GeneratedPubKeyInfo found")
+			break
+		}
+		eh.genPubKeyInfo = pubKeyInfo
+		index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
+		if pubKeyInfo == nil {
+			eh.Logger.Error("Not found my index.")
+			break
+		}
+		eh.myIndex = index
+
 		ok, err := eh.isParticipant(evtObj.Context, evt)
 		eh.Logger.ErrorOnError(err, "Failed to check participant", []logger.Field{{"error", err}}...)
 		if ok {
@@ -55,7 +69,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			taskCreator := StakeTaskCreator{
 				MpcManagerStakeRequestStarted: evt,
 				NetworkContext:                eh.NetworkContext,
-				PubKeyHex:                     eh.genPubKeyInfo.PubKeyHex,
+				PubKeyHex:                     eh.genPubKeyInfo.GenPubKeyHex,
 				Nonce:                         nonce,
 			}
 
@@ -68,7 +82,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			signReqCreator := SignRequestCreator{
 				TaskID:                    evt.Raw.TxHash.Hex(),
 				NormalizedParticipantKeys: partiKeys,
-				PubKeyHex:                 eh.genPubKeyInfo.PubKeyHex,
+				PubKeyHex:                 eh.genPubKeyInfo.GenPubKeyHex,
 			}
 
 			taskSignRequester := StakeTaskSignRequester{
@@ -94,14 +108,9 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 }
 
 func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) (bool, error) {
-	myIndex, err := eh.getMyIndex(ctx, req.PublicKey.Hex())
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-
 	var participating bool
 	for _, index := range req.ParticipantIndices {
-		if index.Cmp(myIndex) == 0 {
+		if index.Cmp(eh.myIndex) == 0 {
 			participating = true
 			break
 		}
@@ -115,21 +124,8 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, re
 	return true, nil
 }
 
-func (eh *StakeRequestStartedEventHandler) getMyIndex(ctx context.Context, genPubKeyHashHex string) (*big.Int, error) {
-	genPubKeyInfo, err := eh.Storer.LoadGeneratedPubKeyInfo(ctx, genPubKeyHashHex)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	eh.genPubKeyInfo = genPubKeyInfo
-	partInfo, err := eh.Storer.LoadParticipantInfo(ctx, eh.MyPubKeyHashHex, genPubKeyInfo.GroupIdHex)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return big.NewInt(int64(partInfo.Index)), nil
-}
-
 func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
-	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.PubKeyHex)
+	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.GenPubKeyHex)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
