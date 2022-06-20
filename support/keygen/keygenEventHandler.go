@@ -2,18 +2,27 @@ package keygen
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	"math/big"
+	"time"
 )
 
 // Accept event: *events.GroupInfoStoredEvent
+// Accept event: *events.ParticipantInfoStoredEvent
 // Accept event: *contract.MpcManagerKeygenRequestAdded
 
 // Emit event: *events.GeneratedPubKeyInfoStoredEvent
@@ -21,12 +30,20 @@ import (
 type KeygenRequestAddedEventHandler struct {
 	Logger logger.Logger
 
+	MyPubKeyHashHex string
+
 	KeygenDoner core.KeygenDoner
 	Storer      storage.MarshalSetter
 
+	ContractAddr common.Address
+	Transactor   bind.ContractTransactor
+	Signer       *bind.TransactOpts
+	Receipter    chain.Receipter
+
 	Publisher dispatcher.Publisher
 
-	groupInfoMap map[string]events.GroupInfo
+	groupInfoMap       map[string]events.GroupInfo
+	participantInfoMap map[string]events.ParticipantInfo
 }
 
 // Pre-condition: *contract.MpcManagerKeygenRequestAdded must happen after *event.GroupInfoStoredEvent
@@ -38,6 +55,11 @@ func (eh *KeygenRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			eh.groupInfoMap = make(map[string]events.GroupInfo)
 		}
 		eh.groupInfoMap[evt.Key] = evt.Val
+	case *events.ParticipantInfoStoredEvent:
+		if len(eh.participantInfoMap) == 0 {
+			eh.participantInfoMap = make(map[string]events.ParticipantInfo)
+		}
+		eh.participantInfoMap[evt.Key] = evt.Val
 	case *contract.MpcManagerKeygenRequestAdded:
 		err := eh.do(evtObj.Context, evt, evtObj)
 		eh.Logger.ErrorOnError(err, "Failed to deal with MpcManagerKeygenRequestAdded event.", []logger.Field{{"error", err}}...)
@@ -61,10 +83,20 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 		return errors.WithStack(err)
 	}
 
-	genPubKeyHash := hash256.FromHex(genPubKeyHex)
+	dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	myIndex := eh.participantInfoMap[events.PrefixParticipantInfo+"-"+eh.MyPubKeyHashHex+"-"+groupIdHex].Index
+	txHash, err := eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
+	if err != nil || eh.checkReceipt(*txHash) != nil {
+		return errors.WithStack(err)
+	}
+
+	dnmGenPubKeyHash := hash256.FromHex(bytes.BytesToHex(dnmGenPubKeyBytes))
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
-		GenPubKeyHashHex: genPubKeyHash.Hex(),
+		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
 		GenPubKeyHex:     genPubKeyHex,
 		GroupIdHex:       groupIdHex,
 	}
@@ -105,4 +137,55 @@ func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context
 	}
 
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "GroupInfoStorer", &newEvt, parentEvtObj.Context))
+}
+
+func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte) (*common.Hash, error) {
+	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var tx *types.Transaction
+
+	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
+		var err error
+		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
+		if err != nil {
+			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, MyIndex: %v", genPubKey, myIndex)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	txHash := tx.Hash()
+	return &txHash, nil
+}
+
+func (eh *KeygenRequestAddedEventHandler) checkReceipt(txHash common.Hash) error {
+	rCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	err := backoff.RetryFnExponentialForever(eh.Logger, rCtx, func() error {
+
+		rcpt, err := eh.Receipter.TransactionReceipt(rCtx, txHash)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if rcpt.Status != 1 {
+			return errors.New("Transaction failed")
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "transaction %q failed", txHash)
+	}
+
+	return nil
 }

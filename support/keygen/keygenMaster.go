@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -16,10 +17,16 @@ type KeygenMaster struct {
 	Logger       logger.Logger
 	ContractAddr common.Address
 
+	MyPubKeyHashHex string
+
 	Dispatcher dispatcher.DispatcherClaasic
 
 	KeygenDoner core.KeygenDoner
 	Storer      storage.MarshalSetter
+
+	Transactor bind.ContractTransactor
+	Signer     *bind.TransactOpts
+	Receipter  chain.Receipter
 
 	PChainIssueClient chain.Issuer
 
@@ -41,10 +48,14 @@ func (s *KeygenMaster) subscribe() {
 	}
 
 	keygenDealer := KeygenRequestAddedEventHandler{
-		Logger:      s.Logger,
-		KeygenDoner: s.KeygenDoner,
-		Storer:      s.Storer,
-		Publisher:   s.Dispatcher,
+		Logger:          s.Logger,
+		KeygenDoner:     s.KeygenDoner,
+		Storer:          s.Storer,
+		Publisher:       s.Dispatcher,
+		MyPubKeyHashHex: s.MyPubKeyHashHex,
+		Transactor:      s.Transactor,
+		Signer:          s.Signer,
+		Receipter:       s.Receipter,
 	}
 
 	s.keygenWatcher = &keygenWatcher

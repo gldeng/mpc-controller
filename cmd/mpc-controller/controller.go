@@ -152,6 +152,10 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		KeygenDoner:       mpcClient,
 		Storer:            myDB,
 		PChainIssueClient: pChainIssueCli,
+		MyPubKeyHashHex:   myPubKeyHash.Hex(),
+		Transactor:        ethRpcClient,
+		Signer:            signer,
+		Receipter:         ethRpcClient,
 	}
 
 	joiningMaster := joining.JoiningMaster{
