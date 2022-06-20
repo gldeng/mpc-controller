@@ -50,8 +50,9 @@ type Dispatcher struct {
 	eventQueue  Queue
 	eventMap    map[string][]EventHandler
 
-	once *sync.Once
-	mu   *sync.Mutex
+	once        *sync.Once
+	queueMu     *sync.Mutex
+	subscribeMu *sync.Mutex
 }
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
@@ -64,8 +65,9 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen in
 		eventQueue:  q,
 		eventMap:    make(map[string][]EventHandler),
 
-		once: new(sync.Once),
-		mu:   new(sync.Mutex),
+		once:        new(sync.Once),
+		queueMu:     new(sync.Mutex),
+		subscribeMu: new(sync.Mutex),
 	}
 	go dispatcher.run(ctx)
 	return dispatcher
@@ -78,6 +80,9 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen in
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
 func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
+	d.subscribeMu.Lock()
+	defer d.subscribeMu.Unlock()
+
 	if eT != nil && eHs != nil {
 		et := reflect.TypeOf(eT).String()
 		for _, eH := range eHs {
@@ -130,8 +135,8 @@ func (d *Dispatcher) run(ctx context.Context) {
 // enqueue receives and serializes the given event object in queue,
 // which will later be published  in FIFO order.
 func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.queueMu.Lock()
+	defer d.queueMu.Unlock()
 
 	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
 		if !d.eventQueue.Full() {
