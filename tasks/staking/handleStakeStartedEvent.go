@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -17,6 +18,7 @@ import (
 type Cache interface {
 	cache.MyIndexGetter
 	cache.GeneratedPubKeyInfoGetter
+	cache.ParticipantKeysGetter
 }
 
 // Accept event: *contract.MpcManagerStakeRequestStarted
@@ -72,7 +74,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				Nonce:                         nonce,
 			}
 
-			partiKeys, err := eh.getNormalizedPartiKeys(evtObj.Context, evt.PublicKey.Hex(), evt.ParticipantIndices)
+			partiKeys, err := eh.getNormalizedPartiKeys(evtObj.Context, evt.PublicKey, evt.ParticipantIndices)
 			if err != nil {
 				eh.Logger.Error("Failed to get normalized participant keys", []logger.Field{{"error", err}}...)
 				return
@@ -138,10 +140,10 @@ func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64
 	return nonce, nil
 }
 
-func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(ctx context.Context, pubKeyHex string, partiIndices []*big.Int) ([]string, error) {
-	partiKeys, err := eh.getNormalizedPartiKeys(ctx, pubKeyHex, partiIndices)
-	if err != nil {
-		return nil, errors.WithStack(err)
+func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(ctx context.Context, genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
+	partiKeys := eh.Cache.GetParticipantKeys(genPubKeyHash, partiIndices)
+	if partiKeys == nil {
+		return nil, errors.New("Found no participant keys.")
 	}
 
 	normalized, err := crypto.NormalizePubKeys(partiKeys)
