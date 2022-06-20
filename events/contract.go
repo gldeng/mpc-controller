@@ -7,6 +7,12 @@ import "math/big"
 
 // MpcManager transactor
 
+type ReportedGenPubKeyEvent struct {
+	GroupIdHex   string
+	Index        *big.Int
+	GenPubKeyHex string
+}
+
 type JoinRequestEvent struct {
 	RequestId *big.Int
 	Index     *big.Int
