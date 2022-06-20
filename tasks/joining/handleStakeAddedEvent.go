@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"math/big"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -46,6 +47,8 @@ func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
 		if myIndex == nil {
 			break
 		}
+		dur := rand.Intn(5000)
+		time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent joinRequest can cause failure.
 		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
 		if err != nil {
 			eh.Logger.Error("Failed to join request", []logger.Field{
