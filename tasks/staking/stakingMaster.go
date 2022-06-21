@@ -8,7 +8,6 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,7 +24,6 @@ type StakingMaster struct {
 	Cache Cache
 
 	SignDoner core.SignDoner
-	Verifyier crypto.VerifyHasher
 
 	Noncer chain.Noncer
 
@@ -61,7 +59,6 @@ func (s *StakingMaster) subscribe() {
 		MyPubKeyHashHex: s.MyPubKeyHashHex,
 		Cache:           s.Cache,
 		SignDoner:       s.SignDoner,
-		Verifyier:       s.Verifyier,
 		Noncer:          s.Noncer,
 		Issuer:          &issuer,
 	}

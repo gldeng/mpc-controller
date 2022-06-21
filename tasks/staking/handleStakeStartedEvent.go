@@ -34,7 +34,6 @@ type StakeRequestStartedEventHandler struct {
 	Cache Cache
 
 	SignDoner core.SignDoner
-	Verifyier crypto.VerifyHasher
 
 	Noncer chain.Noncer
 	Issuer Issuerer
@@ -90,7 +89,6 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				StakeTaskCreatorer:   &taskCreator,
 				SignRequestCreatorer: &signReqCreator,
 				SignDoner:            eh.SignDoner,
-				VerifyHasher:         eh.Verifyier,
 			}
 
 			task, err := taskSignRequester.Sign(evtObj.Context)

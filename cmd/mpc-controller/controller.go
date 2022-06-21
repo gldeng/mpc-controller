@@ -184,7 +184,6 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		NetworkContext:    networkCtx(config),
 		Cache:             &cacheWrapper,
 		SignDoner:         mpcClient,
-		Verifyier:         nil,
 		Noncer:            ethRpcClient,
 		CChainIssueClient: cChainIssueCli,
 		PChainIssueClient: pChainIssueCli,
