@@ -8,9 +8,10 @@ import "math/big"
 // MpcManager transactor
 
 type ReportedGenPubKeyEvent struct {
-	GroupIdHex   string
-	Index        *big.Int
-	GenPubKeyHex string
+	GroupIdHex       string
+	Index            *big.Int
+	GenPubKeyHex     string
+	GenPubKeyHashHex string
 }
 
 type JoinRequestEvent struct {

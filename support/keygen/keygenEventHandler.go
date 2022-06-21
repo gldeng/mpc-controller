@@ -97,15 +97,16 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 		return errors.WithStack(err)
 	}
 
+	dnmGenPubKeyHash := hash256.FromHex(bytes.BytesToHex(dnmGenPubKeyBytes))
+
 	reportedEvt := events.ReportedGenPubKeyEvent{
-		GroupIdHex:   groupIdHex,
-		Index:        big.NewInt(int64(myIndex)),
-		GenPubKeyHex: bytes.BytesToHex(dnmGenPubKeyBytes),
+		GroupIdHex:       groupIdHex,
+		Index:            big.NewInt(int64(myIndex)),
+		GenPubKeyHex:     bytes.BytesToHex(dnmGenPubKeyBytes),
+		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
 	}
 
 	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
-
-	dnmGenPubKeyHash := hash256.FromHex(bytes.BytesToHex(dnmGenPubKeyBytes))
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
 		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
