@@ -70,7 +70,7 @@ func (c *Cache) GetGeneratedPubKeyInfo(genPubKeyHashHex string) *events.Generate
 
 func (c *Cache) GetParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) []string {
 	pubKeyInfo := c.GetGeneratedPubKeyInfo(genPubKeyHash.Hex())
-	if pubKeyInfo != nil {
+	if pubKeyInfo == nil {
 		return nil
 	}
 
