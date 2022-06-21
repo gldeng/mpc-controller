@@ -59,6 +59,7 @@ func (s *StakingMaster) subscribe() {
 		MyPubKeyHashHex: s.MyPubKeyHashHex,
 		Cache:           s.Cache,
 		SignDoner:       s.SignDoner,
+		Publisher:       s.Dispatcher,
 		Noncer:          s.Noncer,
 		Issuer:          &issuer,
 	}
@@ -69,5 +70,5 @@ func (s *StakingMaster) subscribe() {
 	s.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, s.stakingWatcher)
 	s.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, s.stakingWatcher) // Emit event: *contract.MpcManagerStakeRequestStarted
 
-	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, s.stakingDealer)
+	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, s.stakingDealer) // Emit event: *events.StakingTaskDoneEvent
 }

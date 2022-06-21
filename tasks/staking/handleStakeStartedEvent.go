@@ -23,7 +23,7 @@ type Cache interface {
 
 // Accept event: *contract.MpcManagerStakeRequestStarted
 
-// Emit event:
+// Emit event: *events.StakingTaskDoneEvent
 
 type StakeRequestStartedEventHandler struct {
 	Logger logger.Logger
@@ -34,6 +34,7 @@ type StakeRequestStartedEventHandler struct {
 	Cache Cache
 
 	SignDoner core.SignDoner
+	Publisher dispatcher.Publisher
 
 	Noncer chain.Noncer
 	Issuer Issuerer
@@ -101,7 +102,22 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			if err != nil {
 				eh.Logger.Error("Failed to issue stake task", []logger.Field{{"error", err}, {"reqID", evt.RequestId}}...)
 			}
-			eh.Logger.Info("Cool! Success to add delegator!", []logger.Field{{"stakeTask", task}}...)
+
+			newEvt := events.StakingTaskDoneEvent{
+				RequestID:   task.RequestID,
+				DelegateAmt: task.DelegateAmt,
+				StartTime:   task.StartTime,
+				EndTime:     task.EndTime,
+				NodeID:      task.NodeID,
+
+				PubKeyHex:     eh.genPubKeyInfo.GenPubKeyHex,
+				CChainAddress: task.CChainAddress,
+				PChainAddress: task.PChainAddress,
+				Nonce:         task.Nonce,
+
+				ParticipantPubKeys: partiKeys,
+			}
+			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 		}
 	}
 }
