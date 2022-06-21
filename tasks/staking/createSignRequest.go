@@ -26,6 +26,7 @@ type SignRequestCreator struct {
 // Todo: Consider applying State design pattern
 
 func (s *SignRequestCreator) CreateSignRequest(task StakeTasker) (*core.SignRequest, error) {
+	var currentReqNum int
 	switch s.reqNum {
 	case 0:
 		txHashBytes, err := task.ExportTxHash()
@@ -34,6 +35,7 @@ func (s *SignRequestCreator) CreateSignRequest(task StakeTasker) (*core.SignRequ
 		}
 		s.txHashHex = bytes.BytesToHex(txHashBytes)
 
+		currentReqNum = 0
 		s.reqNum++
 	case 1:
 		txHashBytes, err := task.ImportTxHash()
@@ -42,6 +44,7 @@ func (s *SignRequestCreator) CreateSignRequest(task StakeTasker) (*core.SignRequ
 		}
 		s.txHashHex = bytes.BytesToHex(txHashBytes)
 
+		currentReqNum = 1
 		s.reqNum++
 	case 2:
 		txHashBytes, err := task.AddDelegatorTxHash()
@@ -49,10 +52,12 @@ func (s *SignRequestCreator) CreateSignRequest(task StakeTasker) (*core.SignRequ
 			return nil, errors.Wrapf(err, "Failed to create AddDelegatorTxHash")
 		}
 		s.txHashHex = bytes.BytesToHex(txHashBytes)
+
+		currentReqNum = 2
 	}
 
 	request := core.SignRequest{
-		RequestId:       s.TaskID + "-" + strconv.Itoa(int(s.reqNum)),
+		RequestId:       s.TaskID + "-" + strconv.Itoa(currentReqNum),
 		PublicKey:       s.PubKeyHex,
 		ParticipantKeys: s.NormalizedParticipantKeys,
 		Hash:            s.txHashHex,
