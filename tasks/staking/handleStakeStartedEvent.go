@@ -98,9 +98,12 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				return
 			}
 
+			// todo: communicate stake task status between diff mpc-controller
+			// todo: check add delegator result
 			_, err = eh.Issuer.IssueTask(evtObj.Context, task)
 			if err != nil {
 				eh.Logger.Error("Failed to issue stake task", []logger.Field{{"error", err}, {"reqID", evt.RequestId}}...)
+				break
 			}
 
 			newEvt := events.StakingTaskDoneEvent{
