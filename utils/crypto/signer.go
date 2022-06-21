@@ -5,7 +5,7 @@ import (
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 )
 
-var _ Signer = (*SECP256K1RSigner)(nil)
+var _ Signer_ = (*SECP256K1RSigner)(nil)
 
 type Signer_ interface {
 	Sign(message []byte) ([]byte, error)
@@ -25,7 +25,7 @@ type SECP256K1RSigner struct {
 	addr    ids.ShortID
 }
 
-func NewSECP256K1RSigner() (Signer, error) {
+func NewSECP256K1RSigner() (Signer_, error) {
 	factory := &avaCrypto.FactorySECP256K1R{}
 	s := SECP256K1RSigner{}
 	privKey, err := factory.NewPrivateKey()
@@ -38,7 +38,7 @@ func NewSECP256K1RSigner() (Signer, error) {
 	return &s, nil
 }
 
-func ToSECP256K1RSigner(b []byte) (Signer, error) {
+func ToSECP256K1RSigner(b []byte) (Signer_, error) {
 	factory := &avaCrypto.FactorySECP256K1R{}
 	privKey, err := factory.ToPrivateKey(b)
 	if err != nil {
