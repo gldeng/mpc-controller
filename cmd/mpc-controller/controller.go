@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/config"
@@ -124,6 +125,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		panic(errors.Wrapf(err, "Failed to connect eth ws client, url: %q", config.EthWsUrl))
 	}
 
+	// Create C-Chain issue client
+	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
+
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
 
@@ -150,16 +154,15 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	keygenMaster := keygen.KeygenMaster{
-		Logger:            myLogger,
-		ContractAddr:      contractAddr,
-		Dispatcher:        myDispatcher,
-		KeygenDoner:       mpcClient,
-		Storer:            myDB,
-		PChainIssueClient: pChainIssueCli,
-		MyPubKeyHashHex:   myPubKeyHash.Hex(),
-		Transactor:        ethRpcClient,
-		Signer:            signer,
-		Receipter:         ethRpcClient,
+		Logger:          myLogger,
+		ContractAddr:    contractAddr,
+		Dispatcher:      myDispatcher,
+		KeygenDoner:     mpcClient,
+		Storer:          myDB,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		Transactor:      ethRpcClient,
+		Signer:          signer,
+		Receipter:       ethRpcClient,
 	}
 
 	joiningMaster := joining.JoiningMaster{
@@ -174,15 +177,17 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	stakingMaster := staking.StakingMaster{
-		Logger:          myLogger,
-		ContractAddr:    contractAddr,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Dispatcher:      myDispatcher,
-		NetworkContext:  networkCtx(config),
-		Cache:           &cacheWrapper,
-		SignDoner:       mpcClient,
-		Verifyier:       nil,
-		Noncer:          ethRpcClient,
+		Logger:            myLogger,
+		ContractAddr:      contractAddr,
+		MyPubKeyHashHex:   myPubKeyHash.Hex(),
+		Dispatcher:        myDispatcher,
+		NetworkContext:    networkCtx(config),
+		Cache:             &cacheWrapper,
+		SignDoner:         mpcClient,
+		Verifyier:         nil,
+		Noncer:            ethRpcClient,
+		CChainIssueClient: cChainIssueCli,
+		PChainIssueClient: pChainIssueCli,
 	}
 
 	controller := MpcController{

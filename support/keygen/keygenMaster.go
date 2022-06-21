@@ -28,8 +28,6 @@ type KeygenMaster struct {
 	Signer     *bind.TransactOpts
 	Receipter  chain.Receipter
 
-	PChainIssueClient chain.Issuer
-
 	keygenWatcher *KeygenRequestAddedEventWatcher
 	keygenDealer  *KeygenRequestAddedEventHandler
 }
