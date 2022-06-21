@@ -101,7 +101,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			if err != nil {
 				eh.Logger.Error("Failed to issue stake task", []logger.Field{{"error", err}, {"reqID", evt.RequestId}}...)
 			}
-			eh.Logger.Info("Cool! Success to add delegator!", []logger.Field{{"stakeTaske", task}}...)
+			eh.Logger.Info("Cool! Success to add delegator!", []logger.Field{{"stakeTask", task}}...)
 		}
 	}
 }

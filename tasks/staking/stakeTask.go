@@ -26,15 +26,15 @@ const (
 
 type StakeTask struct {
 	network            chain.NetworkContext
-	nonce              uint64
-	delegateAmt        uint64
-	startTime          uint64
-	endTime            uint64
+	Nonce              uint64
+	DelegateAmt        uint64
+	StartTime          uint64
+	EndTime            uint64
 	baseFeeGwei        uint64
-	cChainAddress      common.Address
-	pChainAddress      ids.ShortID
+	CChainAddress      common.Address
+	PChainAddress      ids.ShortID
 	RequestID          uint64
-	nodeID             ids.ShortID
+	NodeID             ids.ShortID
 	exportTx           *evm.UnsignedExportTx
 	importTx           *platformvm.UnsignedImportTx
 	addDelegatorTx     *platformvm.UnsignedAddDelegatorTx
@@ -44,7 +44,7 @@ type StakeTask struct {
 	factory            avaCrypto.FactorySECP256K1R
 }
 
-func NewStakeTask(networkContext chain.NetworkContext, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64,
+func NewStakeTask(networkContext chain.NetworkContext, reqId uint64, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64,
 	startTime uint64, endTime uint64,
 	baseFeeGwei uint64) (*StakeTask, error) {
 	addr, err := ids.ToShortID(hashing.PubkeyBytesToAddress(serializeCompresed(&pubkey)))
@@ -53,14 +53,15 @@ func NewStakeTask(networkContext chain.NetworkContext, pubkey ecdsa.PublicKey, n
 	}
 	return &StakeTask{
 		network:       networkContext,
-		nonce:         nonce,
-		delegateAmt:   delegateAmt,
+		Nonce:         nonce,
+		DelegateAmt:   delegateAmt,
 		baseFeeGwei:   baseFeeGwei,
-		startTime:     startTime,
-		endTime:       endTime,
-		cChainAddress: crypto.PubkeyToAddress(pubkey),
-		pChainAddress: addr,
-		nodeID:        nodeID,
+		StartTime:     startTime,
+		EndTime:       endTime,
+		CChainAddress: crypto.PubkeyToAddress(pubkey),
+		PChainAddress: addr,
+		RequestID:     reqId,
+		NodeID:        nodeID,
 		factory:       avaCrypto.FactorySECP256K1R{},
 	}, nil
 }
@@ -262,12 +263,12 @@ func (t *StakeTask) buildUnsignedExportTx() (*evm.UnsignedExportTx, error) {
 	if t.exportTx != nil {
 		return t.exportTx, nil
 	}
-	exportAmt := t.delegateAmt + t.network.ImportFee()
+	exportAmt := t.DelegateAmt + t.network.ImportFee()
 	input := evm.EVMInput{
-		Address: t.cChainAddress,
+		Address: t.CChainAddress,
 		Amount:  exportAmt,
 		AssetID: t.network.Asset().ID,
-		Nonce:   t.nonce,
+		Nonce:   t.Nonce,
 	}
 	var outs []*avax.TransferableOutput
 	outs = append(outs, &avax.TransferableOutput{
@@ -277,7 +278,7 @@ func (t *StakeTask) buildUnsignedExportTx() (*evm.UnsignedExportTx, error) {
 			OutputOwners: secp256k1fx.OutputOwners{
 				Threshold: 1,
 				Addrs: []ids.ShortID{
-					t.pChainAddress,
+					t.PChainAddress,
 				},
 			},
 		},
@@ -376,9 +377,9 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 			Ins:          ins,
 		}},
 		Validator: platformvm.Validator{
-			NodeID: t.nodeID,
-			Start:  t.startTime,
-			End:    t.endTime,
+			NodeID: t.NodeID,
+			Start:  t.StartTime,
+			End:    t.EndTime,
 			Wght:   utxo.Out.(*secp256k1fx.TransferOutput).Amt,
 		},
 		Stake:        stakedOuts,
@@ -396,7 +397,7 @@ func (t *StakeTask) paySelf(amt uint64) *avax.TransferableOutput {
 			OutputOwners: secp256k1fx.OutputOwners{
 				Threshold: 1,
 				Addrs: []ids.ShortID{
-					t.pChainAddress,
+					t.PChainAddress,
 				},
 			},
 		},
@@ -440,7 +441,7 @@ func (t *StakeTask) validateAndGetCred(hash []byte, sig [sigLength]byte) (*secp2
 	if err != nil {
 		return nil, invalidSigErr
 	}
-	if t.pChainAddress != pk.Address() {
+	if t.PChainAddress != pk.Address() {
 		return nil, invalidSigErr
 	}
 	return cred, nil
