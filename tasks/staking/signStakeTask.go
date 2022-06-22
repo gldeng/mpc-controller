@@ -7,14 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type StakeTaskCreatorer interface {
-	CreateStakeTask() (*StakeTask, error)
-}
-
-type SignRequestCreatorer interface {
-	CreateSignRequest(task StakeTasker) (*core.SignRequest, error)
-}
-
 type StakeTaskSignRequester struct {
 	StakeTaskCreatorer
 	SignRequestCreatorer

@@ -7,12 +7,6 @@ import (
 	"strconv"
 )
 
-type StakeTasker interface {
-	ExportTxHash() ([]byte, error)
-	ImportTxHash() ([]byte, error)
-	AddDelegatorTxHash() ([]byte, error)
-}
-
 type SignRequestCreator struct {
 	TaskID string
 
@@ -25,7 +19,7 @@ type SignRequestCreator struct {
 
 // Todo: Consider applying State design pattern
 
-func (s *SignRequestCreator) CreateSignRequest(task StakeTasker) (*core.SignRequest, error) {
+func (s *SignRequestCreator) CreateSignRequest(task TxHasher) (*core.SignRequest, error) {
 	var currentReqNum int
 	switch s.reqNum {
 	case 0:

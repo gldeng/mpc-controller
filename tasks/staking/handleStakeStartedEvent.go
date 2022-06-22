@@ -2,7 +2,6 @@ package staking
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
@@ -14,12 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 )
-
-type Cache interface {
-	cache.MyIndexGetter
-	cache.GeneratedPubKeyInfoGetter
-	cache.ParticipantKeysGetter
-}
 
 // Accept event: *contract.MpcManagerStakeRequestStarted
 
