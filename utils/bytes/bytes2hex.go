@@ -20,10 +20,22 @@ func Bytes32ToHexArr(bytesArr [][32]byte) []string {
 	return res
 }
 
+func Bytes65ToHexArr(bytesArr [][65]byte) []string {
+	var res []string
+	for _, bytes := range bytesArr {
+		res = append(res, Bytes65ToHex(bytes))
+	}
+	return res
+}
+
 func BytesToHex(bytes []byte) string {
 	return common.Bytes2Hex(bytes)
 }
 
 func Bytes32ToHex(bytes [32]byte) string {
+	return BytesToHex(bytes[:])
+}
+
+func Bytes65ToHex(bytes [65]byte) string {
 	return BytesToHex(bytes[:])
 }
