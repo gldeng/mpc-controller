@@ -30,6 +30,20 @@ func (l *zap) Warn(msg string, fields ...Field) {
 	l.l.Warn(msg, l.zapFields(fields...)...)
 }
 
+// WarnOnError implements Logger.Warn for go.uber.org/zap logger
+func (l *zap) WarnOnError(err error, msg string, fields ...Field) {
+	if err != nil {
+		l.l.Warn(msg, l.zapFields(fields...)...)
+	}
+}
+
+// WarnOnNotOk implements Logger.Warn for go.uber.org/zap logger
+func (l *zap) WarnOnNotOk(ok bool, msg string, fields ...Field) {
+	if !ok {
+		l.l.Warn(msg, l.zapFields(fields...)...)
+	}
+}
+
 // Error implements Logger.Error for go.uber.org/zap logger
 func (l *zap) Error(msg string, fields ...Field) {
 	l.l.Error(msg, l.zapFields(fields...)...)
@@ -42,6 +56,13 @@ func (l *zap) ErrorOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+// ErrorOnNotOk implements Logger.Error for go.uber.org/zap logger
+func (l *zap) ErrorOnNotOk(ok bool, msg string, fields ...Field) {
+	if !ok {
+		l.l.Error(msg, l.zapFields(fields...)...)
+	}
+}
+
 // Fatal implements Logger.Fatal for go.uber.org/zap logger
 func (l *zap) Fatal(msg string, fields ...Field) {
 	l.l.Fatal(msg, l.zapFields(fields...)...)
@@ -50,6 +71,13 @@ func (l *zap) Fatal(msg string, fields ...Field) {
 // FatalOnError implements Logger.Fatal for go.uber.org/zap logger
 func (l *zap) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
+		l.l.Fatal(msg, l.zapFields(fields...)...)
+	}
+}
+
+// FatalOnNotOk implements Logger.Fatal for go.uber.org/zap logger
+func (l *zap) FatalOnNotOk(ok bool, msg string, fields ...Field) {
+	if !ok {
 		l.l.Fatal(msg, l.zapFields(fields...)...)
 	}
 }

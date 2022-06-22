@@ -57,7 +57,7 @@ type KeygenRequestModel struct {
 	hits   int
 	status RequestStatus
 
-	signer crypto.Signer
+	signer crypto.Signer_
 
 	result string // public key hex string
 }

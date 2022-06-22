@@ -28,7 +28,7 @@ func (suite *SignerTestSuite) TestSECP256K1RSigner() {
 	signer2, err := ToSECP256K1RSigner(privKey.Bytes())
 	require.True(signer != nil && err == nil)
 
-	var signers = []Signer{signer, signer2}
+	var signers = []Signer_{signer, signer2}
 
 	for _, signer := range signers {
 		msg := []byte("hello, world")

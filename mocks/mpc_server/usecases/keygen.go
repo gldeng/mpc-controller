@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-var globalSiner crypto.Signer
+var globalSiner crypto.Signer_
 
 var lockKeygen = &sync.Mutex{}
 

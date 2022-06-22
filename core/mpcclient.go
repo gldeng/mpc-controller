@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type KeygenRequest struct {
@@ -49,6 +50,9 @@ type MpcClientImp struct {
 func NewMpcClient(log logger.Logger, url string) (*MpcClientImp, error) {
 	return &MpcClientImp{url, log}, nil
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Request
 
 func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error {
 	normalized, err := crypto.NormalizePubKeys(request.ParticipantKeys)
@@ -102,13 +106,13 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
 	return nil
 }
 
-func (c *MpcClientImp) Result(ctx context.Context, requestId string) (*Result, error) {
+func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error) {
 	payload := strings.NewReader("")
 
 	var res *http.Response
 
 	err := backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		res_, err := http.Post(c.url+"/result/"+requestId, "application/json", payload)
+		res_, err := http.Post(c.url+"/result/"+reqId, "application/json", payload)
 		if err != nil {
 			c.log.Error("Failed to post result request", logger.Field{"error", err})
 			return errors.WithStack(err)
@@ -131,4 +135,46 @@ func (c *MpcClientImp) Result(ctx context.Context, requestId string) (*Result, e
 
 	}
 	return &result, nil
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Request and wait until it's DONE
+
+func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (res *Result, err error) {
+	err = c.Keygen(ctx, request)
+	if err != nil {
+		return
+	}
+
+	time.Sleep(time.Second * 2)
+	res, err = c.ResultDone(ctx, request.RequestId)
+	return
+}
+
+func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
+	err = c.Sign(ctx, request)
+	if err != nil {
+		return
+	}
+
+	time.Sleep(time.Second * 2)
+	res, err = c.ResultDone(ctx, request.RequestId)
+	return
+}
+
+func (c *MpcClientImp) ResultDone(ctx context.Context, reqId string) (res *Result, err error) {
+	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
+		res, err = c.Result(ctx, reqId)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if res.RequestStatus != "DONE" {
+			c.log.Debug("Request not Done.", []logger.Field{{"reqId", reqId}}...)
+			return errors.Errorf("Request not DONE. ReqId: %q", reqId)
+		}
+		return nil
+	})
+
+	return
 }

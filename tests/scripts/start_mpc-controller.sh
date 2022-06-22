@@ -24,13 +24,13 @@ function create_config(){
 enableDevMode: true
 controllerId: "mpc-controller-0${id}"
 controllerKey: "${sk}"
-coordinatorAddress: "${MPC_MANAGER_ADDRESS}"
+mpcManagerAddress: "${MPC_MANAGER_ADDRESS}"
 mpcServerUrl: "${mpcServerUrl}"
 ethRpcUrl: "http://localhost:9650/ext/bc/C/rpc"
 ethWsUrl: "ws://127.0.0.1:9650/ext/bc/C/ws"
 cChainIssueUrl: "http://localhost:9650"
 pChainIssueUrl: "http://localhost:9650"
-confignetwork:
+networkConfig:
   networkId: 12345
   chainId: 43112
   cChainId: "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU"
@@ -39,7 +39,7 @@ confignetwork:
   gasPerByte: 1
   gasPerSig: 1000
   gasFixed: 10000
-configdbbadger:
+databaseConfig:
   badgerDbPath: "./dbs/mpc_controller_db${id}"
 EOM
 
@@ -50,7 +50,7 @@ create_config 1
 create_config 2
 create_config 3
 
-MPC_CONTROLLER_REPO=/tmp/mpctest/mpc-controller/
+MPC_CONTROLLER_REPO=/tmp/mpctest/mpc-controller
 
 $MPC_CONTROLLER_REPO/mpc-controller --configFile configs/config1.yaml > logs/mpc-controller1.log 2>&1 &
 $MPC_CONTROLLER_REPO/mpc-controller --configFile configs/config2.yaml > logs/mpc-controller2.log 2>&1 &
