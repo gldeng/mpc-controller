@@ -19,7 +19,7 @@ type SignRequestCreator struct {
 
 // Todo: Consider applying State design pattern
 
-func (s *SignRequestCreator) CreateSignRequest(task TxHasher) (*core.SignRequest, error) {
+func (s *SignRequestCreator) CreateSignRequest(task TxHashGenerator) (*core.SignRequest, error) {
 	var currentReqNum int
 	switch s.reqNum {
 	case 0:

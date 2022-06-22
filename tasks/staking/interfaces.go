@@ -7,10 +7,16 @@ import (
 	"github.com/avalido/mpc-controller/core"
 )
 
-type TxHasher interface {
+type TxHashGenerator interface {
 	ExportTxHash() ([]byte, error)
 	ImportTxHash() ([]byte, error)
 	AddDelegatorTxHash() ([]byte, error)
+}
+
+type SignatureSetter interface {
+	SetExportTxSig(sig [sigLength]byte) error
+	SetImportTxSig(sig [sigLength]byte) error
+	SetAddDelegatorTxSig(sig [sigLength]byte) error
 }
 
 type Cache interface {
@@ -28,5 +34,5 @@ type StakeTaskCreatorer interface {
 }
 
 type SignRequestCreatorer interface {
-	CreateSignRequest(task TxHasher) (*core.SignRequest, error)
+	CreateSignRequest(task TxHashGenerator) (*core.SignRequest, error)
 }
