@@ -4,9 +4,12 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"strconv"
 )
+
+// todo: consider refactoring with Template Method design pattern
 
 type SignRequester struct {
 	core.SignDoner
@@ -27,6 +30,8 @@ func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) (
 		Hash:            bytes.BytesToHex(exportTxHash),
 	}
 
+	spew.Dump(exportTxSignReq)
+
 	res, err := s.SignDone(ctx, &exportTxSignReq)
 	if err != nil {
 		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestID: %q", exportTxSignReq.RequestId)
@@ -42,6 +47,7 @@ func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) (
 		ParticipantKeys: s.NormalizedParticipantKeys,
 		Hash:            bytes.BytesToHex(importTxHash),
 	}
+	spew.Dump(importTxSignReq)
 
 	res, err := s.SignDone(ctx, &importTxSignReq)
 	if err != nil {
@@ -58,6 +64,7 @@ func (s *SignRequester) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHa
 		ParticipantKeys: s.NormalizedParticipantKeys,
 		Hash:            bytes.BytesToHex(addDelegatorTxHash),
 	}
+	spew.Dump(addDelegatorTxSignReq)
 
 	res, err := s.SignDone(ctx, &addDelegatorTxSignReq)
 	if err != nil {
