@@ -15,7 +15,7 @@ type Issuer struct {
 	PChainIssueClient chain.Issuer
 }
 
-func (i *Issuer) IssueTask(ctx context.Context, task *StakeTask) ([]ids.ID, error) {
+func (i *Issuer) IssueTask(ctx context.Context, task SignedTxGetter) ([]ids.ID, error) {
 	txBytesArr, err := i.getTxBytes(task)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -55,7 +55,7 @@ func (i *Issuer) doIssue(ctx context.Context, txBytesArr [][]byte) ([]ids.ID, er
 	return []ids.ID{exportId, importId, addDelegatorId}, nil
 }
 
-func (i *Issuer) getTxBytes(task *StakeTask) ([][]byte, error) {
+func (i *Issuer) getTxBytes(task SignedTxGetter) ([][]byte, error) {
 	exportTx, err := task.GetSignedExportTx()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get signed exportTx")

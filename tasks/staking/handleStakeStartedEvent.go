@@ -80,7 +80,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			}
 
 			taskSignRequester := StakeTaskSignRequester{
-				StakeTaskCreatorer:   &taskCreator,
+				StakeTaskerCreatorer: &taskCreator,
 				SignRequestCreatorer: &signReqCreator,
 				SignDoner:            eh.SignDoner,
 			}
@@ -99,17 +99,18 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				break
 			}
 
+			taskObj := task.(*StakeTask)
 			newEvt := events.StakingTaskDoneEvent{
-				RequestID:   task.RequestID,
-				DelegateAmt: task.DelegateAmt,
-				StartTime:   task.StartTime,
-				EndTime:     task.EndTime,
-				NodeID:      task.NodeID,
+				RequestID:   taskObj.RequestID,
+				DelegateAmt: taskObj.DelegateAmt,
+				StartTime:   taskObj.StartTime,
+				EndTime:     taskObj.EndTime,
+				NodeID:      taskObj.NodeID,
 
 				PubKeyHex:     eh.genPubKeyInfo.GenPubKeyHex,
-				CChainAddress: task.CChainAddress,
-				PChainAddress: task.PChainAddress,
-				Nonce:         task.Nonce,
+				CChainAddress: taskObj.CChainAddress,
+				PChainAddress: taskObj.PChainAddress,
+				Nonce:         taskObj.Nonce,
 
 				ParticipantPubKeys: partiKeys,
 			}

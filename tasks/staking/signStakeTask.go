@@ -8,14 +8,14 @@ import (
 )
 
 type StakeTaskSignRequester struct {
-	StakeTaskCreatorer
+	StakeTaskerCreatorer
 	SignRequestCreatorer
 	core.SignDoner
 
-	task *StakeTask
+	task StakeTasker
 }
 
-func (s *StakeTaskSignRequester) Sign(ctx context.Context) (*StakeTask, error) {
+func (s *StakeTaskSignRequester) Sign(ctx context.Context) (StakeTasker, error) {
 	task, err := s.CreateStakeTask()
 	if err != nil {
 		return nil, errors.WithStack(err)
