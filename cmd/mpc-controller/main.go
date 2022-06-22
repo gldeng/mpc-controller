@@ -12,6 +12,7 @@ package main
 
 // todo: add main_test.go
 // todo: apply confluentinc/bincover: https://github.com/confluentinc/bincover
+// todo: restore data on startup
 
 import (
 	"context"
