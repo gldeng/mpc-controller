@@ -47,21 +47,16 @@ func (s *StakingMaster) subscribe() {
 		Publisher:    s.Dispatcher,
 	}
 
-	issuer := Issuer{
+	taskStartedDealer := StakeRequestStartedEventHandler{
 		Logger:            s.Logger,
+		NetworkContext:    s.NetworkContext,
+		MyPubKeyHashHex:   s.MyPubKeyHashHex,
+		Cache:             s.Cache,
+		SignDoner:         s.SignDoner,
+		Publisher:         s.Dispatcher,
 		CChainIssueClient: s.CChainIssueClient,
 		PChainIssueClient: s.PChainIssueClient,
-	}
-
-	taskStartedDealer := StakeRequestStartedEventHandler{
-		Logger:          s.Logger,
-		NetworkContext:  s.NetworkContext,
-		MyPubKeyHashHex: s.MyPubKeyHashHex,
-		Cache:           s.Cache,
-		SignDoner:       s.SignDoner,
-		Publisher:       s.Dispatcher,
-		Noncer:          s.Noncer,
-		Issuer:          &issuer,
+		Noncer:            s.Noncer,
 	}
 
 	s.stakingWatcher = &taskStartedWatcher

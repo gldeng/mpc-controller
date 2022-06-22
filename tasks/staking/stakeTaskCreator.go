@@ -17,7 +17,7 @@ type StakeTaskCreator struct {
 	Nonce     uint64
 }
 
-func (s *StakeTaskCreator) CreateStakeTask() (StakeTasker, error) {
+func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
 	nodeID, err := ids.ShortFromPrefixedString(s.NodeID, constants.NodeIDPrefix)
 	if err != nil {
 		return nil, errors.WithStack(err)

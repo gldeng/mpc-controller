@@ -2,6 +2,7 @@ package staking
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
@@ -13,6 +14,12 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 )
+
+type Cache interface {
+	cache.MyIndexGetter
+	cache.GeneratedPubKeyInfoGetter
+	cache.ParticipantKeysGetter
+}
 
 // Accept event: *contract.MpcManagerStakeRequestStarted
 
@@ -29,8 +36,10 @@ type StakeRequestStartedEventHandler struct {
 	SignDoner core.SignDoner
 	Publisher dispatcher.Publisher
 
+	CChainIssueClient chain.Issuer
+	PChainIssueClient chain.Issuer
+
 	Noncer chain.Noncer
-	Issuer Issuerer
 
 	genPubKeyInfo *events.GeneratedPubKeyInfo
 	myIndex       *big.Int
@@ -42,22 +51,37 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 		pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
 		if pubKeyInfo == nil {
 			eh.Logger.Error("No GeneratedPubKeyInfo found")
-			break
+			return
 		}
 		eh.genPubKeyInfo = pubKeyInfo
 		index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
 		if pubKeyInfo == nil {
 			eh.Logger.Error("Not found my index.")
-			break
+			return
 		}
 		eh.myIndex = index
 
-		ok := eh.isParticipant(evtObj.Context, evt)
+		ok := eh.isParticipant(evt)
 		if ok {
 			nonce, err := eh.getNonce(evtObj.Context)
 			if err != err {
 				eh.Logger.Error("Failed to get nonce", []logger.Field{{"error", err}}...)
 				return
+			}
+
+			partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
+			if err != nil {
+				eh.Logger.Error("Failed to get normalized participant keys", []logger.Field{{"error", err}}...)
+				return
+			}
+
+			signRequester := &SignRequester{
+				SignDoner: eh.SignDoner,
+				SignRequestArgs: SignRequestArgs{
+					TaskID:                    evt.Raw.TxHash.Hex(),
+					NormalizedParticipantKeys: partiKeys,
+					PubKeyHex:                 eh.genPubKeyInfo.GenPubKeyHex,
+				},
 			}
 
 			taskCreator := StakeTaskCreator{
@@ -66,51 +90,46 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				PubKeyHex:                     eh.genPubKeyInfo.GenPubKeyHex,
 				Nonce:                         nonce,
 			}
-
-			partiKeys, err := eh.getNormalizedPartiKeys(evtObj.Context, evt.PublicKey, evt.ParticipantIndices)
+			stakeTask, err := taskCreator.CreateStakeTask()
 			if err != nil {
-				eh.Logger.Error("Failed to get normalized participant keys", []logger.Field{{"error", err}}...)
+				eh.Logger.Error("Failed to create stake task", []logger.Field{{"error", err}}...)
 				return
 			}
 
-			signReqCreator := SignRequestCreator{
-				TaskID:                    evt.Raw.TxHash.Hex(),
-				NormalizedParticipantKeys: partiKeys,
-				PubKeyHex:                 eh.genPubKeyInfo.GenPubKeyHex,
+			stakeTaskWrapper := &StakeTaskWrapper{
+				SignRequester:     signRequester,
+				StakeTask:         stakeTask,
+				CChainIssueClient: eh.CChainIssueClient,
+				PChainIssueClient: eh.PChainIssueClient,
 			}
 
-			taskSignRequester := StakeTaskSignRequester{
-				StakeTaskerCreatorer: &taskCreator,
-				SignRequestCreatorer: &signReqCreator,
-				SignDoner:            eh.SignDoner,
-			}
+			// todo: logically only one participant can issue export, export and addDelegator tx successfully,
+			// consider adding consensus mechanism or other improved measures to avoid unnecessary issuing error
+			// such as "insufficient funds"
 
-			task, err := taskSignRequester.Sign(evtObj.Context)
+			err = stakeTaskWrapper.SignTx(evtObj.Context)
 			if err != nil {
-				eh.Logger.Error("Failed to sign stake task", []logger.Field{{"error", err}, {"reqID", evt.RequestId}}...)
+				eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
 				return
 			}
 
-			// todo: communicate stake task status between diff mpc-controller
-			// todo: check add delegator result
-			_, err = eh.Issuer.IssueTask(evtObj.Context, task)
+			_, err = stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
-				eh.Logger.Error("Failed to issue stake task", []logger.Field{{"error", err}, {"reqID", evt.RequestId}}...)
-				break
+				eh.Logger.Error("Failed to process ExportTx", []logger.Field{{"error", err}}...)
+				return
 			}
 
-			taskObj := task.(*StakeTask)
 			newEvt := events.StakingTaskDoneEvent{
-				RequestID:   taskObj.RequestID,
-				DelegateAmt: taskObj.DelegateAmt,
-				StartTime:   taskObj.StartTime,
-				EndTime:     taskObj.EndTime,
-				NodeID:      taskObj.NodeID,
+				RequestID:   stakeTask.RequestID,
+				DelegateAmt: stakeTask.DelegateAmt,
+				StartTime:   stakeTask.StartTime,
+				EndTime:     stakeTask.EndTime,
+				NodeID:      stakeTask.NodeID,
 
 				PubKeyHex:     eh.genPubKeyInfo.GenPubKeyHex,
-				CChainAddress: taskObj.CChainAddress,
-				PChainAddress: taskObj.PChainAddress,
-				Nonce:         taskObj.Nonce,
+				CChainAddress: stakeTask.CChainAddress,
+				PChainAddress: stakeTask.PChainAddress,
+				Nonce:         stakeTask.Nonce,
 
 				ParticipantPubKeys: partiKeys,
 			}
@@ -119,7 +138,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) isParticipant(ctx context.Context, req *contract.MpcManagerStakeRequestStarted) bool {
+func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
 	var participating bool
 	for _, index := range req.ParticipantIndices {
 		if index.Cmp(eh.myIndex) == 0 {
@@ -151,7 +170,7 @@ func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64
 	return nonce, nil
 }
 
-func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(ctx context.Context, genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
+func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
 	partiKeys := eh.Cache.GetParticipantKeys(genPubKeyHash, partiIndices)
 	if partiKeys == nil {
 		return nil, errors.New("Found no participant keys.")
