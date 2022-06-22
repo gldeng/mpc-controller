@@ -1,6 +1,6 @@
 module github.com/avalido/mpc-controller
 
-go 1.17
+go 1.18
 
 require (
 	github.com/ava-labs/avalanchego v1.7.9
@@ -9,6 +9,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/ethereum/go-ethereum v1.10.16
 	github.com/goccy/go-yaml v1.9.5
+	github.com/google/uuid v1.3.0
 	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
@@ -49,7 +50,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
-	github.com/google/uuid v1.1.5 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/rpc v1.2.0 // indirect
