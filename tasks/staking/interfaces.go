@@ -40,7 +40,7 @@ type Cache interface {
 }
 
 type Issuerer interface {
-	IssueTask(ctx context.Context, task StakeTasker) ([]ids.ID, error)
+	IssueTask(ctx context.Context, task SignedTxGetter) ([]ids.ID, error)
 }
 
 type StakeTaskerCreatorer interface {
