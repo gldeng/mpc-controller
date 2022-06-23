@@ -25,6 +25,7 @@ func (suite *TokenPorterTestSuite) TestSignAndIssueTxs() {
 	txs := mocks.NewTxs(suite.T())
 	txSigner := mocks.NewTxSigner(suite.T())
 	txIssuer := mocks.NewTxIssuer(suite.T())
+	sigVerifier := mocks.NewSigVerifier(suite.T())
 
 	exportTxHash := bytes.HexToBytes("3273f531ba059c12f98b4cf7890608c66da392b8d5fc218d6d32041c76fdb674")
 	exportTxSig := bytes.HexTo65Bytes("5b12ef4bf066a0d341f1bc4c47f597829a22f7b78dabbe1445a84b13053a2f334d7409466b993916dc0e4285911f21111460ea58da98ebe8fbb752bda74d77f301")
@@ -44,10 +45,14 @@ func (suite *TokenPorterTestSuite) TestSignAndIssueTxs() {
 	txIssuer.EXPECT().IssueExportTx(ctx, exportTxHash).Return(ids.ID{}, nil)
 	txIssuer.EXPECT().IssueImportTx(ctx, importTxHash).Return(ids.ID{}, nil)
 
+	sigVerifier.EXPECT().VerifyExportTxSig(exportTxHash, exportTxSig).Return(true, nil)
+	sigVerifier.EXPECT().VerifyImportTxSig(importTxHash, importTxSig).Return(true, nil)
+
 	tokenPorter := &TokenPorter{
-		Txs:      txs,
-		TxSigner: txSigner,
-		TxIssuer: txIssuer,
+		Txs:         txs,
+		TxSigner:    txSigner,
+		TxIssuer:    txIssuer,
+		SigVerifier: sigVerifier,
 	}
 
 	_, err := tokenPorter.SignAndIssueTxs(ctx)

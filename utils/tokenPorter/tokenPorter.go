@@ -3,6 +3,7 @@ package tokenPorter
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 )
 
@@ -33,10 +34,16 @@ type TxIssuer interface {
 	IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, error)
 }
 
+type SigVerifier interface {
+	VerifyExportTxSig(hash []byte, signature [65]byte) (bool, error)
+	VerifyImportTxSig(hash []byte, signature [65]byte) (bool, error)
+}
+
 type TokenPorter struct {
 	Txs
 	TxSigner
 	TxIssuer
+	SigVerifier
 }
 
 func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
@@ -49,6 +56,16 @@ func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	exportTxSig, err := p.SignExportTx(ctx, exportTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
+	}
+
+	ok, err := p.VerifyExportTxSig(exportTxHash, exportTxSig)
+	if err != nil {
+		return [2]ids.ID{}, errors.WithStack(err)
+	}
+
+	if !ok {
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to verify ExportTx signature, hashHex:%q, sigHex:%q",
+			bytes.BytesToHex(exportTxHash), bytes.Bytes65ToHex(exportTxSig))
 	}
 
 	err = p.SetExportTxSig(exportTxSig)
@@ -65,6 +82,16 @@ func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	importTxSig, err := p.SignImportTx(ctx, importTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
+	}
+
+	ok, err = p.VerifyImportTxSig(importTxHash, importTxSig)
+	if err != nil {
+		return [2]ids.ID{}, errors.WithStack(err)
+	}
+
+	if !ok {
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to verify ImportTx signature, hashHex:%q, sigHex:%q",
+			bytes.BytesToHex(importTxHash), bytes.Bytes65ToHex(importTxSig))
 	}
 
 	err = p.SetImportTxSig(importTxSig)
