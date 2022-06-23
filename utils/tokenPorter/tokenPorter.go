@@ -39,7 +39,7 @@ type TokenPorter struct {
 	TxIssuer
 }
 
-func (p *TokenPorter) SignAndTransferTxs(ctx context.Context) ([2]ids.ID, error) {
+func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	// Sign ExportTx
 	exportTxHash, err := p.ExportTxHash()
 	if err != nil {
