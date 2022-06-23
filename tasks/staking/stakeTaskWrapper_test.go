@@ -98,7 +98,7 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 		ParticipantKeys: signRequestArgs.NormalizedParticipantKeys,
 		Hash:            exportTxHash,
 	}
-	mockExportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
+	mockExportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result { // todo: use NewSignDoner() and Expecter Interfaces.
 		output := &core.Result{
 			RequestId:     request.RequestId,
 			Result:        exportTxsignature,

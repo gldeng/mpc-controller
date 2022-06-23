@@ -13,6 +13,14 @@ type TxSigner struct {
 	mock.Mock
 }
 
+type TxSigner_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *TxSigner) EXPECT() *TxSigner_Expecter {
+	return &TxSigner_Expecter{mock: &_m.Mock}
+}
+
 // SignExportTx provides a mock function with given fields: ctx, exportTxHash
 func (_m *TxSigner) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error) {
 	ret := _m.Called(ctx, exportTxHash)
@@ -36,6 +44,30 @@ func (_m *TxSigner) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]
 	return r0, r1
 }
 
+// TxSigner_SignExportTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SignExportTx'
+type TxSigner_SignExportTx_Call struct {
+	*mock.Call
+}
+
+// SignExportTx is a helper method to define mock.On call
+//  - ctx context.Context
+//  - exportTxHash []byte
+func (_e *TxSigner_Expecter) SignExportTx(ctx interface{}, exportTxHash interface{}) *TxSigner_SignExportTx_Call {
+	return &TxSigner_SignExportTx_Call{Call: _e.mock.On("SignExportTx", ctx, exportTxHash)}
+}
+
+func (_c *TxSigner_SignExportTx_Call) Run(run func(ctx context.Context, exportTxHash []byte)) *TxSigner_SignExportTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]byte))
+	})
+	return _c
+}
+
+func (_c *TxSigner_SignExportTx_Call) Return(_a0 [65]byte, _a1 error) *TxSigner_SignExportTx_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
 // SignImportTx provides a mock function with given fields: ctx, importTxHash
 func (_m *TxSigner) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error) {
 	ret := _m.Called(ctx, importTxHash)
@@ -57,6 +89,30 @@ func (_m *TxSigner) SignImportTx(ctx context.Context, importTxHash []byte) ([65]
 	}
 
 	return r0, r1
+}
+
+// TxSigner_SignImportTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SignImportTx'
+type TxSigner_SignImportTx_Call struct {
+	*mock.Call
+}
+
+// SignImportTx is a helper method to define mock.On call
+//  - ctx context.Context
+//  - importTxHash []byte
+func (_e *TxSigner_Expecter) SignImportTx(ctx interface{}, importTxHash interface{}) *TxSigner_SignImportTx_Call {
+	return &TxSigner_SignImportTx_Call{Call: _e.mock.On("SignImportTx", ctx, importTxHash)}
+}
+
+func (_c *TxSigner_SignImportTx_Call) Run(run func(ctx context.Context, importTxHash []byte)) *TxSigner_SignImportTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]byte))
+	})
+	return _c
+}
+
+func (_c *TxSigner_SignImportTx_Call) Return(_a0 [65]byte, _a1 error) *TxSigner_SignImportTx_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
 }
 
 type mockConstructorTestingTNewTxSigner interface {

@@ -49,7 +49,7 @@ func (suite *SignRequesterTestSuite) TestSignExportTx() {
 		return output
 	}
 
-	signDoner := &mocks.SignDoner{}
+	signDoner := &mocks.SignDoner{} // todo: use NewSignDoner() and Expecter Interfaces.
 	signDoner.On("SignDone", ctx, &exportTxSignReq).Return(mockResultFn, nil)
 
 	signRequester := &SignRequester{

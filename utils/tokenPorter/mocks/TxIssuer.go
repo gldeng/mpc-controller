@@ -14,6 +14,14 @@ type TxIssuer struct {
 	mock.Mock
 }
 
+type TxIssuer_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *TxIssuer) EXPECT() *TxIssuer_Expecter {
+	return &TxIssuer_Expecter{mock: &_m.Mock}
+}
+
 // IssueExportTx provides a mock function with given fields: ctx, exportTxBytes
 func (_m *TxIssuer) IssueExportTx(ctx context.Context, exportTxBytes []byte) (ids.ID, error) {
 	ret := _m.Called(ctx, exportTxBytes)
@@ -37,6 +45,30 @@ func (_m *TxIssuer) IssueExportTx(ctx context.Context, exportTxBytes []byte) (id
 	return r0, r1
 }
 
+// TxIssuer_IssueExportTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IssueExportTx'
+type TxIssuer_IssueExportTx_Call struct {
+	*mock.Call
+}
+
+// IssueExportTx is a helper method to define mock.On call
+//  - ctx context.Context
+//  - exportTxBytes []byte
+func (_e *TxIssuer_Expecter) IssueExportTx(ctx interface{}, exportTxBytes interface{}) *TxIssuer_IssueExportTx_Call {
+	return &TxIssuer_IssueExportTx_Call{Call: _e.mock.On("IssueExportTx", ctx, exportTxBytes)}
+}
+
+func (_c *TxIssuer_IssueExportTx_Call) Run(run func(ctx context.Context, exportTxBytes []byte)) *TxIssuer_IssueExportTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]byte))
+	})
+	return _c
+}
+
+func (_c *TxIssuer_IssueExportTx_Call) Return(_a0 ids.ID, _a1 error) *TxIssuer_IssueExportTx_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
 // IssueImportTx provides a mock function with given fields: ctx, importTxBytes
 func (_m *TxIssuer) IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, error) {
 	ret := _m.Called(ctx, importTxBytes)
@@ -58,6 +90,30 @@ func (_m *TxIssuer) IssueImportTx(ctx context.Context, importTxBytes []byte) (id
 	}
 
 	return r0, r1
+}
+
+// TxIssuer_IssueImportTx_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IssueImportTx'
+type TxIssuer_IssueImportTx_Call struct {
+	*mock.Call
+}
+
+// IssueImportTx is a helper method to define mock.On call
+//  - ctx context.Context
+//  - importTxBytes []byte
+func (_e *TxIssuer_Expecter) IssueImportTx(ctx interface{}, importTxBytes interface{}) *TxIssuer_IssueImportTx_Call {
+	return &TxIssuer_IssueImportTx_Call{Call: _e.mock.On("IssueImportTx", ctx, importTxBytes)}
+}
+
+func (_c *TxIssuer_IssueImportTx_Call) Run(run func(ctx context.Context, importTxBytes []byte)) *TxIssuer_IssueImportTx_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]byte))
+	})
+	return _c
+}
+
+func (_c *TxIssuer_IssueImportTx_Call) Return(_a0 ids.ID, _a1 error) *TxIssuer_IssueImportTx_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
 }
 
 type mockConstructorTestingTNewTxIssuer interface {
