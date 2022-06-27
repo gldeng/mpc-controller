@@ -25,7 +25,8 @@ type ImportTx interface {
 }
 
 type TxSigner interface {
-	SignTx(ctx context.Context, txHash []byte) ([65]byte, error)
+	SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error)
+	SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error)
 }
 
 type SigVerifier interface {
@@ -51,7 +52,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	exportTxSig, err := p.SignTx(ctx, exportTxHash)
+	exportTxSig, err := p.SignExportTx(ctx, exportTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
@@ -77,7 +78,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	importTxSig, err := p.SignTx(ctx, importTxHash)
+	importTxSig, err := p.SignImportTx(ctx, importTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}

@@ -39,8 +39,8 @@ func (suite *TokenPorterTestSuite) TestSignAndIssueTxs() {
 	txs.EXPECT().SetImportTxSig(importTxSig).Return(nil)
 	txs.EXPECT().SignedImportTxBytes().Return(importTxHash, nil) // note: here is fake tx bytes, in production it should be generated from a true tx
 
-	txSigner.EXPECT().SignTx(ctx, exportTxHash).Return(exportTxSig, nil)
-	txSigner.EXPECT().SignTx(ctx, importTxHash).Return(importTxSig, nil)
+	txSigner.EXPECT().SignExportTx(ctx, exportTxHash).Return(exportTxSig, nil)
+	txSigner.EXPECT().SignImportTx(ctx, importTxHash).Return(importTxSig, nil)
 
 	txIssuer.EXPECT().IssueExportTx(ctx, exportTxHash).Return(ids.ID{}, nil)
 	txIssuer.EXPECT().IssueImportTx(ctx, importTxHash).Return(ids.ID{}, nil)
