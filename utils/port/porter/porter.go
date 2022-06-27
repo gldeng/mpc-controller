@@ -25,17 +25,16 @@ type ImportTx interface {
 }
 
 type TxSigner interface {
-	SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error)
-	SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error)
+	SignTx(ctx context.Context, txHash []byte) ([65]byte, error)
+}
+
+type SigVerifier interface {
+	VerifySig(hash []byte, signature [65]byte) (bool, error)
 }
 
 type TxIssuer interface {
 	IssueExportTx(ctx context.Context, exportTxBytes []byte) (ids.ID, error)
 	IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, error)
-}
-
-type SigVerifier interface {
-	VerifySig(hash []byte, signature [65]byte) (bool, error)
 }
 
 type Porter struct {
@@ -52,7 +51,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	exportTxSig, err := p.SignExportTx(ctx, exportTxHash)
+	exportTxSig, err := p.SignTx(ctx, exportTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
@@ -78,7 +77,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	importTxSig, err := p.SignImportTx(ctx, importTxHash)
+	importTxSig, err := p.SignTx(ctx, importTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
