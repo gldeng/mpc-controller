@@ -6,7 +6,7 @@ import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/bytes"
-	mocks2 "github.com/avalido/mpc-controller/utils/tx/porter/mocks"
+	mocks2 "github.com/avalido/mpc-controller/utils/port/porter/mocks"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
