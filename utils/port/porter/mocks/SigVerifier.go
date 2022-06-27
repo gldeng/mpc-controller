@@ -17,8 +17,8 @@ func (_m *SigVerifier) EXPECT() *SigVerifier_Expecter {
 	return &SigVerifier_Expecter{mock: &_m.Mock}
 }
 
-// VerifyExportTxSig provides a mock function with given fields: hash, signature
-func (_m *SigVerifier) VerifyExportTxSig(hash []byte, signature [65]byte) (bool, error) {
+// VerifySig provides a mock function with given fields: hash, signature
+func (_m *SigVerifier) VerifySig(hash []byte, signature [65]byte) (bool, error) {
 	ret := _m.Called(hash, signature)
 
 	var r0 bool
@@ -38,71 +38,26 @@ func (_m *SigVerifier) VerifyExportTxSig(hash []byte, signature [65]byte) (bool,
 	return r0, r1
 }
 
-// SigVerifier_VerifyExportTxSig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VerifyExportTxSig'
-type SigVerifier_VerifyExportTxSig_Call struct {
+// SigVerifier_VerifySig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VerifySig'
+type SigVerifier_VerifySig_Call struct {
 	*mock.Call
 }
 
-// VerifyExportTxSig is a helper method to define mock.On call
+// VerifySig is a helper method to define mock.On call
 //  - hash []byte
 //  - signature [65]byte
-func (_e *SigVerifier_Expecter) VerifyExportTxSig(hash interface{}, signature interface{}) *SigVerifier_VerifyExportTxSig_Call {
-	return &SigVerifier_VerifyExportTxSig_Call{Call: _e.mock.On("VerifyExportTxSig", hash, signature)}
+func (_e *SigVerifier_Expecter) VerifySig(hash interface{}, signature interface{}) *SigVerifier_VerifySig_Call {
+	return &SigVerifier_VerifySig_Call{Call: _e.mock.On("VerifySig", hash, signature)}
 }
 
-func (_c *SigVerifier_VerifyExportTxSig_Call) Run(run func(hash []byte, signature [65]byte)) *SigVerifier_VerifyExportTxSig_Call {
+func (_c *SigVerifier_VerifySig_Call) Run(run func(hash []byte, signature [65]byte)) *SigVerifier_VerifySig_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].([]byte), args[1].([65]byte))
 	})
 	return _c
 }
 
-func (_c *SigVerifier_VerifyExportTxSig_Call) Return(_a0 bool, _a1 error) *SigVerifier_VerifyExportTxSig_Call {
-	_c.Call.Return(_a0, _a1)
-	return _c
-}
-
-// VerifyImportTxSig provides a mock function with given fields: hash, signature
-func (_m *SigVerifier) VerifyImportTxSig(hash []byte, signature [65]byte) (bool, error) {
-	ret := _m.Called(hash, signature)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func([]byte, [65]byte) bool); ok {
-		r0 = rf(hash, signature)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]byte, [65]byte) error); ok {
-		r1 = rf(hash, signature)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// SigVerifier_VerifyImportTxSig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VerifyImportTxSig'
-type SigVerifier_VerifyImportTxSig_Call struct {
-	*mock.Call
-}
-
-// VerifyImportTxSig is a helper method to define mock.On call
-//  - hash []byte
-//  - signature [65]byte
-func (_e *SigVerifier_Expecter) VerifyImportTxSig(hash interface{}, signature interface{}) *SigVerifier_VerifyImportTxSig_Call {
-	return &SigVerifier_VerifyImportTxSig_Call{Call: _e.mock.On("VerifyImportTxSig", hash, signature)}
-}
-
-func (_c *SigVerifier_VerifyImportTxSig_Call) Run(run func(hash []byte, signature [65]byte)) *SigVerifier_VerifyImportTxSig_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]byte), args[1].([65]byte))
-	})
-	return _c
-}
-
-func (_c *SigVerifier_VerifyImportTxSig_Call) Return(_a0 bool, _a1 error) *SigVerifier_VerifyImportTxSig_Call {
+func (_c *SigVerifier_VerifySig_Call) Return(_a0 bool, _a1 error) *SigVerifier_VerifySig_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }

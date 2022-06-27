@@ -45,8 +45,8 @@ func (suite *TokenPorterTestSuite) TestSignAndIssueTxs() {
 	txIssuer.EXPECT().IssueExportTx(ctx, exportTxHash).Return(ids.ID{}, nil)
 	txIssuer.EXPECT().IssueImportTx(ctx, importTxHash).Return(ids.ID{}, nil)
 
-	sigVerifier.EXPECT().VerifyExportTxSig(exportTxHash, exportTxSig).Return(true, nil)
-	sigVerifier.EXPECT().VerifyImportTxSig(importTxHash, importTxSig).Return(true, nil)
+	sigVerifier.EXPECT().VerifySig(exportTxHash, exportTxSig).Return(true, nil)
+	sigVerifier.EXPECT().VerifySig(importTxHash, importTxSig).Return(true, nil)
 
 	tokenPorter := &Porter{
 		Txs:         txs,

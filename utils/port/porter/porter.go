@@ -35,8 +35,7 @@ type TxIssuer interface {
 }
 
 type SigVerifier interface {
-	VerifyExportTxSig(hash []byte, signature [65]byte) (bool, error)
-	VerifyImportTxSig(hash []byte, signature [65]byte) (bool, error)
+	VerifySig(hash []byte, signature [65]byte) (bool, error)
 }
 
 type Porter struct {
@@ -58,7 +57,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	ok, err := p.VerifyExportTxSig(exportTxHash, exportTxSig)
+	ok, err := p.VerifySig(exportTxHash, exportTxSig)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
@@ -84,7 +83,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	ok, err = p.VerifyImportTxSig(importTxHash, importTxSig)
+	ok, err = p.VerifySig(importTxHash, importTxSig)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
