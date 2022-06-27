@@ -1,4 +1,4 @@
-package tokenPorter
+package porter
 
 import (
 	"context"
@@ -39,14 +39,14 @@ type SigVerifier interface {
 	VerifyImportTxSig(hash []byte, signature [65]byte) (bool, error)
 }
 
-type TokenPorter struct {
+type Porter struct {
 	Txs
 	TxSigner
 	TxIssuer
 	SigVerifier
 }
 
-func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
+func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	// Sign ExportTx
 	exportTxHash, err := p.ExportTxHash()
 	if err != nil {

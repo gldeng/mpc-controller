@@ -1,12 +1,12 @@
 // todo: add more test cases
 
-package tokenPorter
+package porter
 
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/bytes"
-	"github.com/avalido/mpc-controller/utils/tokenPorter/mocks"
+	mocks2 "github.com/avalido/mpc-controller/utils/tx/porter/mocks"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
@@ -22,10 +22,10 @@ func (suite *TokenPorterTestSuite) TestSignAndIssueTxs() {
 
 	ctx := context.Background()
 
-	txs := mocks.NewTxs(suite.T())
-	txSigner := mocks.NewTxSigner(suite.T())
-	txIssuer := mocks.NewTxIssuer(suite.T())
-	sigVerifier := mocks.NewSigVerifier(suite.T())
+	txs := mocks2.NewTxs(suite.T())
+	txSigner := mocks2.NewTxSigner(suite.T())
+	txIssuer := mocks2.NewTxIssuer(suite.T())
+	sigVerifier := mocks2.NewSigVerifier(suite.T())
 
 	exportTxHash := bytes.HexToBytes("3273f531ba059c12f98b4cf7890608c66da392b8d5fc218d6d32041c76fdb674")
 	exportTxSig := bytes.HexTo65Bytes("5b12ef4bf066a0d341f1bc4c47f597829a22f7b78dabbe1445a84b13053a2f334d7409466b993916dc0e4285911f21111460ea58da98ebe8fbb752bda74d77f301")
@@ -48,7 +48,7 @@ func (suite *TokenPorterTestSuite) TestSignAndIssueTxs() {
 	sigVerifier.EXPECT().VerifyExportTxSig(exportTxHash, exportTxSig).Return(true, nil)
 	sigVerifier.EXPECT().VerifyImportTxSig(importTxHash, importTxSig).Return(true, nil)
 
-	tokenPorter := &TokenPorter{
+	tokenPorter := &Porter{
 		Txs:         txs,
 		TxSigner:    txSigner,
 		TxIssuer:    txIssuer,
