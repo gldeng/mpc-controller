@@ -20,8 +20,8 @@ var _ porter.TxIssuer = (*Issuer)(nil)
 // todo: consider back off retry strategy on network partition
 
 type Issuer struct {
-	CChainIssueClient chain.Issuer
-	PChainIssueClient chain.Issuer
+	CChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.CChainIssuer
 	IssueOrder        IssueOrder
 }
 

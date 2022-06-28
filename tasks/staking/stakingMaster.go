@@ -27,8 +27,8 @@ type StakingMaster struct {
 
 	Noncer chain.Noncer
 
-	CChainIssueClient chain.Issuer
-	PChainIssueClient chain.Issuer
+	CChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.PChainIssuer
 
 	stakingWatcher *StakeRequestStartedEventWatcher
 	stakingDealer  *StakeRequestStartedEventHandler

@@ -10,6 +10,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/components/verify"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/validator"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
@@ -34,7 +35,7 @@ type StakeTask struct {
 	CChainAddress      common.Address
 	PChainAddress      ids.ShortID
 	RequestID          uint64
-	NodeID             ids.ShortID
+	NodeID             ids.NodeID
 	exportTx           *evm.UnsignedExportTx
 	importTx           *platformvm.UnsignedImportTx
 	addDelegatorTx     *platformvm.UnsignedAddDelegatorTx
@@ -44,7 +45,7 @@ type StakeTask struct {
 	factory            avaCrypto.FactorySECP256K1R
 }
 
-func NewStakeTask(networkContext chain.NetworkContext, reqId uint64, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.ShortID, delegateAmt uint64,
+func NewStakeTask(networkContext chain.NetworkContext, reqId uint64, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.NodeID, delegateAmt uint64,
 	startTime uint64, endTime uint64,
 	baseFeeGwei uint64) (*StakeTask, error) {
 	addr, err := ids.ToShortID(hashing.PubkeyBytesToAddress(serializeCompresed(&pubkey)))
@@ -376,7 +377,7 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 			BlockchainID: ids.Empty,
 			Ins:          ins,
 		}},
-		Validator: platformvm.Validator{
+		Validator: validator.Validator{
 			NodeID: t.NodeID,
 			Start:  t.StartTime,
 			End:    t.EndTime,

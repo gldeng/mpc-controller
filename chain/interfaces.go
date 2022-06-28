@@ -3,6 +3,7 @@ package chain
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/utils/rpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -26,6 +27,10 @@ type Balancer interface {
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding issue Tx
 
-type Issuer interface {
+type CChainIssuer interface {
 	IssueTx(ctx context.Context, txBytes []byte) (ids.ID, error)
+}
+
+type PChainIssuer interface {
+	IssueTx(ctx context.Context, tx []byte, options ...rpc.Option) (ids.ID, error)
 }

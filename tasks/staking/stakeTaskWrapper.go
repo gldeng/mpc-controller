@@ -13,8 +13,8 @@ import (
 type StakeTaskWrapper struct {
 	*SignRequester
 	*StakeTask
-	CChainIssueClient chain.Issuer
-	PChainIssueClient chain.Issuer
+	CChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.PChainIssuer
 }
 
 func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {

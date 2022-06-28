@@ -17,7 +17,7 @@ type StakingTaskDoneEvent struct {
 	DelegateAmt uint64
 	StartTime   uint64
 	EndTime     uint64
-	NodeID      ids.ShortID
+	NodeID      ids.NodeID
 
 	PubKeyHex     string
 	CChainAddress common.Address

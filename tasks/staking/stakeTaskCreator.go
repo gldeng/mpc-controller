@@ -2,7 +2,6 @@ package staking
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/utils/constants"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/utils/crypto"
@@ -18,7 +17,7 @@ type StakeTaskCreator struct {
 }
 
 func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
-	nodeID, err := ids.ShortFromPrefixedString(s.NodeID, constants.NodeIDPrefix)
+	nodeID, err := ids.ShortFromPrefixedString(s.NodeID, ids.NodeIDPrefix)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -36,7 +35,7 @@ func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
 	if !nAVAXAmount.IsUint64() || !s.StartTime.IsUint64() || !s.EndTime.IsUint64() {
 		return nil, errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(s.NetworkContext, requestID, *pubKey, s.Nonce, nodeID, nAVAXAmount.Uint64(), s.StartTime.Uint64(), s.EndTime.Uint64(), baseFeeGwei)
+	task, err := NewStakeTask(s.NetworkContext, requestID, *pubKey, s.Nonce, ids.NodeID(nodeID), nAVAXAmount.Uint64(), s.StartTime.Uint64(), s.EndTime.Uint64(), baseFeeGwei)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

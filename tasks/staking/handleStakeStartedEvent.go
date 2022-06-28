@@ -36,8 +36,8 @@ type StakeRequestStartedEventHandler struct {
 	SignDoner core.SignDoner
 	Publisher dispatcher.Publisher
 
-	CChainIssueClient chain.Issuer
-	PChainIssueClient chain.Issuer
+	CChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.PChainIssuer
 
 	Noncer chain.Noncer
 
