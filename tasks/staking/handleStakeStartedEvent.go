@@ -113,13 +113,17 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				return
 			}
 
-			_, err = stakeTaskWrapper.IssueTx(evtObj.Context)
+			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
 				eh.Logger.Error("Failed to process ExportTx", []logger.Field{{"error", err}}...)
 				return
 			}
 
 			newEvt := events.StakingTaskDoneEvent{
+				ExportTxID:       ids[0],
+				ImportTxID:       ids[1],
+				AddDelegatorTxID: ids[2],
+
 				RequestID:   stakeTask.RequestID,
 				DelegateAmt: stakeTask.DelegateAmt,
 				StartTime:   stakeTask.StartTime,
