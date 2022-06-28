@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2022 Hyperelliptic Labs and RockX
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 interface IMpcCoordinator {
     function joinRequest(uint256 requestId, uint256 myIndex) external;
