@@ -34,6 +34,7 @@ type EventObject struct {
 
 	Event   Event
 	Context context.Context
+	// todo: consider including stretchr/objx from https://github.com/stretchr/objx
 }
 
 // EventHandler is handler for events and takes any arguments.
@@ -42,7 +43,7 @@ type EventObject struct {
 // Besides, event handler can return immediately and choose to execute task in separate gorutines.
 // In this way keep in mind do not let gorutine leak. It's handler's responsibility to ensure this security.
 type EventHandler interface {
-	Do(evtObj *EventObject)
+	Do(ctx context.Context, evtObj *EventObject)
 }
 
 // NewRootEventObject is convenience to create an root EventObject.
