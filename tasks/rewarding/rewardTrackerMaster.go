@@ -1,28 +1,30 @@
-package tracker
+package rewarding
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/tasks/rewarding/stakingRewardUTXOFetcher"
 )
 
-type RewardTrackerMaster struct {
+type RewardingMaster struct {
 	Logger           logger.Logger
-	RewardUTXOGetter RewardUTXOGetter
+	RewardUTXOGetter chain.RewardUTXOGetter
 	Dispatcher       dispatcher.DispatcherClaasic
 
-	rewardUTXOTracker *RewardUTXOTracker
+	rewardUTXOTracker *stakingRewardUTXOFetcher.StakingRewardUTXOFetcher
 }
 
-func (s *RewardTrackerMaster) Start(ctx context.Context) error {
+func (s *RewardingMaster) Start(ctx context.Context) error {
 	s.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (s *RewardTrackerMaster) subscribe() {
-	rewardUTXOTracker := RewardUTXOTracker{
+func (s *RewardingMaster) subscribe() {
+	rewardUTXOTracker := stakingRewardUTXOFetcher.StakingRewardUTXOFetcher{
 		Logger:           s.Logger,
 		RewardUTXOGetter: s.RewardUTXOGetter,
 	}

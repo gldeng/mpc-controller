@@ -15,7 +15,7 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/tasks/joining"
-	"github.com/avalido/mpc-controller/tasks/rewarding/stakingRewardUTXOFetcher"
+	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
@@ -190,7 +190,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		PChainIssueClient: pChainIssueCli,
 	}
 
-	rewardTrackerMaster := stakingRewardUTXOFetcher.RewardTrackerMaster{
+	rewardTrackerMaster := rewarding.RewardingMaster{
 		Logger:           myLogger,
 		Dispatcher:       myDispatcher,
 		RewardUTXOGetter: pChainIssueCli,
