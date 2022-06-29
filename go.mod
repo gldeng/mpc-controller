@@ -10,6 +10,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/goccy/go-yaml v1.9.5
 	github.com/google/uuid v1.3.0
+	github.com/jinzhu/copier v0.3.5
 	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1

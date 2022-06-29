@@ -9,16 +9,21 @@ import (
 // Events concerning rewarding
 
 type StakingPeriodEndedEvent struct {
+	AddDelegatorTxID ids.ID `copier:"must"`
+
+	RequestID   uint64     `copier:"must"`
+	DelegateAmt uint64     `copier:"must"`
+	StartTime   uint64     `copier:"must"`
+	EndTime     uint64     `copier:"must"`
+	NodeID      ids.NodeID `copier:"must"`
+
+	PubKeyHex     string      `copier:"must"`
+	PChainAddress ids.ShortID `copier:"must"`
+}
+
+type RewardUTXOsFetchedEvent struct {
 	AddDelegatorTxID ids.ID
-
-	RequestID   uint64
-	DelegateAmt uint64
-	StartTime   uint64
-	EndTime     uint64
-	NodeID      ids.NodeID
-
-	PubKeyHex     string
-	PChainAddress ids.ShortID
+	RewardUTXOs      []*avax.UTXO
 }
 
 type RewardingTaskStartedEvent struct {
