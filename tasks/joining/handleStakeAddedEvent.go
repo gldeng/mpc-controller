@@ -39,7 +39,7 @@ type StakeRequestAddedEventHandler struct {
 	Publisher dispatcher.Publisher
 }
 
-func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestAdded:
 		genPubKeyHashHex := evt.PublicKey.Hex()

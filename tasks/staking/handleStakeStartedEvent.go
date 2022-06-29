@@ -45,7 +45,7 @@ type StakeRequestStartedEventHandler struct {
 	myIndex       *big.Int
 }
 
-func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestStarted:
 		pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())

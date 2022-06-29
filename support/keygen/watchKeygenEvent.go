@@ -35,7 +35,7 @@ type KeygenRequestAddedEventWatcher struct {
 	done chan struct{}
 }
 
-func (eh *KeygenRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
+func (eh *KeygenRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer

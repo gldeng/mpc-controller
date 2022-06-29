@@ -26,7 +26,7 @@ type GroupInfoStorer struct {
 	Storer    storage.MarshalSetter
 }
 
-func (g *GroupInfoStorer) Do(evtObj *dispatcher.EventObject) {
+func (g *GroupInfoStorer) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerParticipantAdded:
 		pubKeys, t, err := g.getGroupData(evt.GroupId)

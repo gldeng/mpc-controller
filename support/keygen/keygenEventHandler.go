@@ -50,7 +50,7 @@ type KeygenRequestAddedEventHandler struct {
 
 // Pre-condition: *contract.MpcManagerKeygenRequestAdded must happen after *event.GroupInfoStoredEvent
 
-func (eh *KeygenRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
+func (eh *KeygenRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.GroupInfoStoredEvent:
 		if len(eh.groupInfoMap) == 0 {

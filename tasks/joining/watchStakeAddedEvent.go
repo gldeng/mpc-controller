@@ -34,7 +34,7 @@ type StakeRequestAddedEventWatcher struct {
 	done chan struct{}
 }
 
-func (eh *StakeRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
