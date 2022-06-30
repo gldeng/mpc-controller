@@ -3,6 +3,7 @@ package events
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -24,6 +25,12 @@ type StakingPeriodEndedEvent struct {
 type RewardUTXOsFetchedEvent struct {
 	AddDelegatorTxID ids.ID
 	RewardUTXOs      []*avax.UTXO
+}
+
+type RewardUTXOsReportedEvent struct {
+	AddDelegatorTxID ids.ID
+	RewardUTXOIDs    []string
+	TxHash           *common.Hash
 }
 
 type RewardingTaskStartedEvent struct {
