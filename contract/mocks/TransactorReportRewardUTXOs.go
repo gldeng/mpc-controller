@@ -23,13 +23,13 @@ func (_m *TransactorReportRewardUTXOs) EXPECT() *TransactorReportRewardUTXOs_Exp
 	return &TransactorReportRewardUTXOs_Expecter{mock: &_m.Mock}
 }
 
-// ReportRewardUTXOs provides a mock function with given fields: ctx, AddDelegatorTxID, RewardUTXOIDs
-func (_m *TransactorReportRewardUTXOs) ReportRewardUTXOs(ctx context.Context, AddDelegatorTxID [32]byte, RewardUTXOIDs [][32]byte) (*types.Transaction, error) {
-	ret := _m.Called(ctx, AddDelegatorTxID, RewardUTXOIDs)
+// ReportRewardUTXOs provides a mock function with given fields: ctx, addDelegatorTxID, rewardUTXOIDs
+func (_m *TransactorReportRewardUTXOs) ReportRewardUTXOs(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs []string) (*types.Transaction, error) {
+	ret := _m.Called(ctx, addDelegatorTxID, rewardUTXOIDs)
 
 	var r0 *types.Transaction
-	if rf, ok := ret.Get(0).(func(context.Context, [32]byte, [][32]byte) *types.Transaction); ok {
-		r0 = rf(ctx, AddDelegatorTxID, RewardUTXOIDs)
+	if rf, ok := ret.Get(0).(func(context.Context, [32]byte, []string) *types.Transaction); ok {
+		r0 = rf(ctx, addDelegatorTxID, rewardUTXOIDs)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.Transaction)
@@ -37,8 +37,8 @@ func (_m *TransactorReportRewardUTXOs) ReportRewardUTXOs(ctx context.Context, Ad
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, [32]byte, [][32]byte) error); ok {
-		r1 = rf(ctx, AddDelegatorTxID, RewardUTXOIDs)
+	if rf, ok := ret.Get(1).(func(context.Context, [32]byte, []string) error); ok {
+		r1 = rf(ctx, addDelegatorTxID, rewardUTXOIDs)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -53,15 +53,15 @@ type TransactorReportRewardUTXOs_ReportRewardUTXOs_Call struct {
 
 // ReportRewardUTXOs is a helper method to define mock.On call
 //  - ctx context.Context
-//  - AddDelegatorTxID [32]byte
-//  - RewardUTXOIDs [][32]byte
-func (_e *TransactorReportRewardUTXOs_Expecter) ReportRewardUTXOs(ctx interface{}, AddDelegatorTxID interface{}, RewardUTXOIDs interface{}) *TransactorReportRewardUTXOs_ReportRewardUTXOs_Call {
-	return &TransactorReportRewardUTXOs_ReportRewardUTXOs_Call{Call: _e.mock.On("ReportRewardUTXOs", ctx, AddDelegatorTxID, RewardUTXOIDs)}
+//  - addDelegatorTxID [32]byte
+//  - rewardUTXOIDs []string
+func (_e *TransactorReportRewardUTXOs_Expecter) ReportRewardUTXOs(ctx interface{}, addDelegatorTxID interface{}, rewardUTXOIDs interface{}) *TransactorReportRewardUTXOs_ReportRewardUTXOs_Call {
+	return &TransactorReportRewardUTXOs_ReportRewardUTXOs_Call{Call: _e.mock.On("ReportRewardUTXOs", ctx, addDelegatorTxID, rewardUTXOIDs)}
 }
 
-func (_c *TransactorReportRewardUTXOs_ReportRewardUTXOs_Call) Run(run func(ctx context.Context, AddDelegatorTxID [32]byte, RewardUTXOIDs [][32]byte)) *TransactorReportRewardUTXOs_ReportRewardUTXOs_Call {
+func (_c *TransactorReportRewardUTXOs_ReportRewardUTXOs_Call) Run(run func(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs []string)) *TransactorReportRewardUTXOs_ReportRewardUTXOs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].([32]byte), args[2].([][32]byte))
+		run(args[0].(context.Context), args[1].([32]byte), args[2].([]string))
 	})
 	return _c
 }
