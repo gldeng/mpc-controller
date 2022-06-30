@@ -26,7 +26,7 @@ type TransactorReportGeneratedKey interface {
 }
 
 type TransactorReportRewardUTXOs interface {
-	ReportRewardUTXOs(ctx context.Context, AddDelegatorTxID [32]byte, RewardUTXOIDs [][32]byte) (*types.Transaction, error)
+	ReportRewardUTXOs(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs [][32]byte) (*types.Transaction, error)
 }
 
 // Filters
