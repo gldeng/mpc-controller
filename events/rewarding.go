@@ -33,10 +33,14 @@ type RewardUTXOsReportedEvent struct {
 	TxHash           *common.Hash
 }
 
-type RewardingTaskStartedEvent struct {
-	PChainAddress ids.ShortID
-	UTXO          *avax.UTXO
+type RewardRequestAddedEvent struct {
+	RequestID        uint64
+	AddDelegatorTxID ids.ID
+	RewardUTXOIDs    []string
 }
 
-type RewardingTaskDoneEvent struct {
+type RewardRequestStartedEvent struct {
+	RequestID        uint64
+	AddDelegatorTxID ids.ID
+	RewardUTXOIDs    []string
 }
