@@ -50,3 +50,24 @@ type FilterStakeRequestAdded interface {
 type FilterStakeRequestStarted interface {
 	WatchStakeRequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerStakeRequestStarted, error)
 }
+
+type FilterRewardRequestAdded interface {
+	WatchRewardRequestAdded(ctx context.Context, addDelegatorTxID [][32]byte) (<-chan *MpcManagerRewardRequestAdded, error)
+}
+
+type FilterRewardRequestStarted interface {
+	WatchRewardRequestStarted(ctx context.Context, addDelegatorTxID [][32]byte) (<-chan *MpcManagerRewardRequestStarted, error)
+}
+
+type MpcManagerRewardRequestAdded struct {
+	RequestID        *big.Int
+	AddDelegatorTxID [32]byte
+	RewardUTXOIDs    []string
+}
+
+type MpcManagerRewardRequestStarted struct {
+	RequestID          *big.Int
+	AddDelegatorTxID   [32]byte
+	RewardUTXOIDs      []string
+	ParticipantIndices []*big.Int
+}
