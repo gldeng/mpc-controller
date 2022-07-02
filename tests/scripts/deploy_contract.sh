@@ -18,10 +18,10 @@ echo "Start deploying smart contracts"
 cd /tmp/mpctest/contracts/
 
 # Deploy MpcManager contract
-MPC_MANAGER=$(forge create --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK MpcManager | grep -i "deployed" | cut -d " " -f 3)
+MPC_MANAGER=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK MpcManager | grep -i "deployed" | cut -d " " -f 3)
 
 # Deploy AvaLido contract
-AVALIDO=$(forge create --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK AvaLido --constructor-args  $MPC_MANAGER | grep -i "deployed" | cut -d " " -f 3)
+AVALIDO=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK AvaLido --constructor-args  $MPC_MANAGER | grep -i "deployed" | cut -d " " -f 3)
 
 # set AvaLido address for MpcManager
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK $MPC_MANAGER "setAvaLidoAddress(address)" $AVALIDO > /dev/null
