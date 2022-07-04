@@ -5,6 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
+	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 )
 
 type Args struct {
@@ -14,7 +15,7 @@ type Args struct {
 	AssetID            ids.ID
 	Amount             uint64
 	To                 ids.ShortID
-	Ins                []*avax.TransferableInput
+	UTXOs              []*avax.UTXO
 }
 
 func UnsignedExportTx(args *Args) *platformvm.UnsignedExportTx {
@@ -22,7 +23,7 @@ func UnsignedExportTx(args *Args) *platformvm.UnsignedExportTx {
 		BaseTx: platformvm.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    args.NetworkID,
 			BlockchainID: args.BlockchainID,
-			Ins:          args.Ins,
+			Ins:          myAvax.TransferableInputsrFromUTXOs(args.UTXOs),
 		}},
 		DestinationChain: args.DestinationChainID,
 		ExportedOutputs: []*avax.TransferableOutput{{
