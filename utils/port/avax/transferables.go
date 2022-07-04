@@ -5,6 +5,16 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 )
 
+func TransferableInputsrFromUTXOs(utxos []*avax.UTXO) []*avax.TransferableInput {
+	inputs := []*avax.TransferableInput{}
+
+	for _, utxo := range utxos {
+		input := TransferableInputFromUTXO(utxo)
+		inputs = append(inputs, input)
+	}
+	return inputs
+}
+
 func TransferableInputFromUTXO(utxo *avax.UTXO) *avax.TransferableInput {
 	return &avax.TransferableInput{
 		UTXOID: utxo.UTXOID,
@@ -16,14 +26,4 @@ func TransferableInputFromUTXO(utxo *avax.UTXO) *avax.TransferableInput {
 			},
 		},
 	}
-}
-
-func TransferableInputsrFromUTXOs(utxos []*avax.UTXO) []*avax.TransferableInput {
-	inputs := []*avax.TransferableInput{}
-
-	for _, utxo := range utxos {
-		input := TransferableInputFromUTXO(utxo)
-		inputs = append(inputs, input)
-	}
-	return inputs
 }
