@@ -97,6 +97,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			}
 
 			stakeTaskWrapper := &StakeTaskWrapper{
+				Logger:            eh.Logger,
 				SignRequester:     signRequester,
 				StakeTask:         stakeTask,
 				CChainIssueClient: eh.CChainIssueClient,

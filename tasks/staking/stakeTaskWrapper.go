@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -13,6 +14,7 @@ import (
 type StakeTaskWrapper struct {
 	*SignRequester
 	*StakeTask
+	Logger            logger.Logger
 	CChainIssueClient chain.Issuer
 	PChainIssueClient chain.Issuer
 }
@@ -101,6 +103,10 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	s.Logger.Debug("issuing AddDelegatorTx", []logger.Field{
+		{"ID", addDelegatorTx.ID()},
+		{"Tx", addDelegatorTx}}...)
 
 	addDelegatorId, err := s.PChainIssueClient.IssueTx(ctx, addDelegatorTx.Bytes())
 	if err != nil {
