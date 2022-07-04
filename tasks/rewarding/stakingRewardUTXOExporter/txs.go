@@ -1,51 +1,30 @@
-package txs
+package stakingRewardUTXOExporter
 
 import (
-	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/hashing"
-	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 var _ porter.Txs = (*Txs)(nil)
 
-// todo: to improve
-
-type Args struct {
-	NetworkID uint32
-	AssetID   ids.ID
-
-	ChainID     ids.ID         // chain to import from
-	To          common.Address // Address of recipient
-	BaseFee     *big.Int       // fee to use post-AP3
-	AtomicUTXOs []*avax.UTXO   // UTXOs to spend
-
-	BlockchainID       ids.ID
-	DestinationChainID ids.ID
-	Amount             uint64
-	//To                 ids.ShortID
-	Ins []*avax.TransferableInput
-}
-
 type Txs struct {
-	Args *Args
+	UnsignedExportTxArgs *pchain.Args
+	UnsignedImportTx     *cchain.Args
 
 	unsignedExportTx *platformvm.UnsignedExportTx
 	unsignedImportTx *evm.UnsignedImportTx
 
-	exportTxSig [65]byte
-	importTxSig [65]byte
+	signedExportTx *platformvm.Tx
+	signedImportTx *evm.Tx
 }
 
 func (t *Txs) ExportTxHash() ([]byte, error) {
-	exportTx := pchain.UnsignedExportTx(nil) // todo: nil
+	exportTx := pchain.UnsignedExportTx(t.UnsignedExportTxArgs)
 	t.unsignedExportTx = exportTx
 
 	tx := platformvm.Tx{
@@ -65,7 +44,7 @@ func (t *Txs) ExportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) ImportTxHash() ([]byte, error) {
-	importTx := cchain.UnsignedImportTx(nil) // todo: nil
+	importTx := cchain.UnsignedImportTx(t.UnsignedImportTx)
 	t.unsignedImportTx = importTx
 
 	tx := evm.Tx{
@@ -85,29 +64,27 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) SetExportTxSig(exportTxSig [65]byte) error {
-	t.exportTxSig = exportTxSig
+	signedExportedTx, err := pchain.SignedTx(t.unsignedExportTx, exportTxSig)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	t.signedExportTx = signedExportedTx
 	return nil
 }
 
 func (t *Txs) SetImportTxSig(importTxSig [65]byte) error {
-	t.importTxSig = importTxSig
+	signedImportedTx, err := cchain.SignedTx(t.unsignedImportTx, importTxSig)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	t.signedImportTx = signedImportedTx
 	return nil
 }
 
 func (t *Txs) SignedExportTxBytes() ([]byte, error) {
-	signedExportTx, err := pchain.SignedTx(t.unsignedExportTx, t.exportTxSig)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return signedExportTx.Bytes(), nil
+	return t.signedExportTx.Bytes(), nil
 }
 
 func (t *Txs) SignedImportTxBytes() ([]byte, error) {
-	signedExportTx, err := cchain.SignedTx(t.unsignedImportTx, t.importTxSig)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return signedExportTx.Bytes(), nil
+	return t.signedImportTx.Bytes(), nil
 }
