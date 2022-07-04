@@ -5,6 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
+	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
@@ -13,8 +14,8 @@ type Args struct {
 	NetworkID   uint32
 	ChainID     ids.ID         // chain to import from
 	To          common.Address // Address of recipient
-	BaseFee     *big.Int       // fee to use post-AP3
-	AtomicUTXOs []*avax.UTXO   // UTXOs to spend
+	BaseFee     *big.Int       // fee to use post-AP3 // todo: consider this kind of fee
+	AtomicUTXOs []*myAvax.UTXO // UTXOs to spend
 }
 
 func UnsignedImportTx(args *Args) *evm.UnsignedImportTx {
@@ -25,7 +26,12 @@ func UnsignedImportTx(args *Args) *evm.UnsignedImportTx {
 		importedInputs = append(importedInputs, &avax.TransferableInput{
 			UTXOID: utxo.UTXOID,
 			Asset:  utxo.Asset,
-			In:     utxo.Out.(*secp256k1fx.TransferInput), // todo: fix it
+			In: &secp256k1fx.TransferInput{
+				Amt: utxo.Out.Amt, // todo: to adjust it to import fee
+				Input: secp256k1fx.Input{
+					SigIndices: []uint32{0}, // todo: to adjust?
+				},
+			},
 		})
 	}
 
