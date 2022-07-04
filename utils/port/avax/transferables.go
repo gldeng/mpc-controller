@@ -17,3 +17,13 @@ func TransferableInputFromUTXO(utxo *avax.UTXO) *avax.TransferableInput {
 		},
 	}
 }
+
+func TransferableInputsrFromUTXOs(utxos []*avax.UTXO) []*avax.TransferableInput {
+	inputs := []*avax.TransferableInput{}
+
+	for _, utxo := range utxos {
+		input := TransferableInputFromUTXO(utxo)
+		inputs = append(inputs, input)
+	}
+	return inputs
+}
