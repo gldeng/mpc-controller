@@ -1,6 +1,7 @@
 package stakingRewardUTXOExporter
 
 import (
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/hashing"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
@@ -18,6 +19,9 @@ type Txs struct {
 
 	unsignedExportTx *platformvm.UnsignedExportTx
 	unsignedImportTx *evm.UnsignedImportTx
+
+	exportTxSigBytes [65]byte
+	importTxSigBytes [65]byte
 
 	signedExportTx *platformvm.Tx
 	signedImportTx *evm.Tx
@@ -64,20 +68,22 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) SetExportTxSig(exportTxSig [65]byte) error {
-	signedExportedTx, err := pchain.SignedTx(t.unsignedExportTx, exportTxSig)
+	signedExportTx, err := pchain.SignedTx(t.unsignedExportTx, exportTxSig)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	t.signedExportTx = signedExportedTx
+	t.signedExportTx = signedExportTx
+	t.exportTxSigBytes = exportTxSig
 	return nil
 }
 
 func (t *Txs) SetImportTxSig(importTxSig [65]byte) error {
-	signedImportedTx, err := cchain.SignedTx(t.unsignedImportTx, importTxSig)
+	signedImportTx, err := cchain.SignedTx(t.unsignedImportTx, importTxSig)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	t.signedImportTx = signedImportedTx
+	t.signedImportTx = signedImportTx
+	t.importTxSigBytes = importTxSig
 	return nil
 }
 
@@ -87,4 +93,12 @@ func (t *Txs) SignedExportTxBytes() ([]byte, error) {
 
 func (t *Txs) SignedImportTxBytes() ([]byte, error) {
 	return t.signedImportTx.Bytes(), nil
+}
+
+func (t *Txs) SignedExportTxID() ids.ID {
+	return t.signedExportTx.ID()
+}
+
+func (t *Txs) SignedImportTxID() ids.ID {
+	return t.signedImportTx.ID()
 }
