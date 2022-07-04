@@ -12,10 +12,9 @@ type Args struct {
 	NetworkID          uint32
 	BlockchainID       ids.ID
 	DestinationChainID ids.ID
-	AssetID            ids.ID
 	Amount             uint64
 	To                 ids.ShortID
-	UTXOs              []*avax.UTXO
+	UTXOs              []*avax.UTXO // UTXOs to spend
 }
 
 func UnsignedExportTx(args *Args) *platformvm.UnsignedExportTx {
@@ -27,7 +26,7 @@ func UnsignedExportTx(args *Args) *platformvm.UnsignedExportTx {
 		}},
 		DestinationChain: args.DestinationChainID,
 		ExportedOutputs: []*avax.TransferableOutput{{
-			Asset: avax.Asset{ID: args.AssetID},
+			Asset: args.UTXOs[0].Asset,
 			Out: &secp256k1fx.TransferOutput{
 				Amt: args.Amount,
 				OutputOwners: secp256k1fx.OutputOwners{
