@@ -6,15 +6,15 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type Args struct {
-	NetworkID   uint32
-	ChainID     ids.ID         // chain to import from
-	To          common.Address // Address of recipient
-	BaseFee     *big.Int       // fee to use post-AP3 // todo: consider this kind of fee
-	AtomicUTXOs []*avax.UTXO   // UTXOs to spend
+	NetworkID     uint32         // ID of the network on which this tx was issued
+	BlockchainID  ids.ID         // ID of this blockchain.
+	SourceChainID ids.ID         // Which chain to consume the funds from
+	To            common.Address // Address of recipient
+	//BaseFee      *big.Int       // fee to use post-AP3 // todo: consider this kind of fee
+	AtomicUTXOs []*avax.UTXO // UTXOs to spend
 }
 
 func UnsignedImportTx(args *Args) *evm.UnsignedImportTx {
@@ -30,10 +30,10 @@ func UnsignedImportTx(args *Args) *evm.UnsignedImportTx {
 
 	utx := &evm.UnsignedImportTx{
 		NetworkID:      args.NetworkID,
-		BlockchainID:   args.ChainID,
-		Outs:           outs,
-		ImportedInputs: myAvax.TransferableInputsrFromUTXOs(args.AtomicUTXOs),
-		SourceChain:    args.ChainID,
+		BlockchainID:   args.BlockchainID,
+		SourceChain:    args.SourceChainID,
+		ImportedInputs: myAvax.TransferableInputsrFromUTXOs(args.AtomicUTXOs), // Inputs that consume UTXOs produced on the chain
+		Outs:           outs,                                                  // Outputs
 	}
 	return utx
 }
