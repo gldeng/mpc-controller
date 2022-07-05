@@ -48,6 +48,7 @@ func (t *Txs) ExportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) ImportTxHash() ([]byte, error) {
+	t.UnsignedImportTx.AtomicUTXOs = t.signedExportTx.UTXOs()
 	importTx := cchain.UnsignedImportTx(t.UnsignedImportTx)
 	t.unsignedImportTx = importTx
 
