@@ -79,8 +79,8 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     );
     event SignRequestAdded(uint256 requestId, bytes indexed publicKey, bytes message);
     event SignRequestStarted(uint256 requestId, bytes indexed publicKey, bytes message);
-    event ExportRewardRequestAdded(bytes32 indexed rewaredStakeTxId);
-    event ExportRewardRequestStarted(bytes32 indexed rewaredStakeTxId, uint256[] participantIndices);
+    event ExportRewardRequestAdded(bytes32 rewaredStakeTxId, bytes indexed publicKey);
+    event ExportRewardRequestStarted(bytes32 rewaredStakeTxId, bytes indexed publicKey, uint256[] participantIndices);
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -362,13 +362,14 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     function reportRewardedStake(
         bytes32 groupId,
         uint256 myIndex,
+        bytes publicKey,
         bytes32 txID
     ) external onlyGroupMember(groupId, myIndex) {
         uint256 groupMembers = 3; // todo: compare with number of group members.
         if (_reportRewardedStakeCounts[txID] < groupMembers) {
             _reportRewardedStakeCounts[txID] = _reportRewardedStakeCounts[txID]+1;
             if (_reportRewardedStakeCounts[txID] == groupMembers) {
-                emit ExportRewardRequestAdded(txID);
+                emit ExportRewardRequestAdded(txID, publicKey);
             }
         }
     }
@@ -376,13 +377,14 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     function joinExportReward(
         bytes32 groupId,
         uint256 myIndex,
+        bytes publicKey,
         bytes32 txID
     ) external onlyGroupMember(groupId, myIndex) {
         uint256 threshold = 1; // todo: compare with group threshold
         if (_joinExportRewardParticipantIndices[txID].length < threshold+1) {
             _joinExportRewardParticipantIndices[txID].push(myIndex);
             if (_joinExportRewardParticipantIndices[txID].length = threshold+1) {
-                emit ExportRewardRequestStarted(txID, _joinExportRewardParticipantIndices[txID]);
+                emit ExportRewardRequestStarted(txID, publicKey, _joinExportRewardParticipantIndices[txID]);
             }
         }
     }
