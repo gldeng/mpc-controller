@@ -30,7 +30,7 @@ type TransactorReportRewardedStake interface {
 }
 
 type TransactorJoinExportReward interface {
-	ReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (*types.Transaction, error)
+	JoinExportReward(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (*types.Transaction, error)
 }
 
 // Filters
