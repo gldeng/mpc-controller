@@ -33,14 +33,12 @@ type RewardUTXOsReportedEvent struct {
 	TxHash           *common.Hash
 }
 
-type RewardRequestAddedEvent struct {
-	RequestID        uint64
+type ExportRewardRequestAddedEvent struct {
 	AddDelegatorTxID ids.ID
 	RewardUTXOIDs    []string
 }
 
-type RewardRequestStartedEvent struct {
-	RequestID        uint64
+type ExportRewardRequestStartedEvent struct {
 	AddDelegatorTxID ids.ID
 	RewardUTXOIDs    []string
 }
