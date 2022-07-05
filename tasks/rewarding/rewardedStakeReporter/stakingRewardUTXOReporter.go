@@ -1,4 +1,4 @@
-package stakingRewardUTXOReporter
+package rewardedStakeReporter
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 
 // Emit event: *events.RewardUTXOsReportedEvent
 
-type StakingRewardUTXOReporter struct {
+type RewardedStakeReporter struct {
 	Logger logger.Logger
 
 	Publisher dispatcher.Publisher
@@ -31,7 +31,7 @@ type StakingRewardUTXOReporter struct {
 	utxoFetchedEvtObjMap map[string]*dispatcher.EventObject // todo: persistence and restore
 }
 
-func (eh *StakingRewardUTXOReporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *RewardedStakeReporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.RewardUTXOsFetchedEvent:
 		eh.once.Do(func() {
@@ -47,7 +47,7 @@ func (eh *StakingRewardUTXOReporter) Do(ctx context.Context, evtObj *dispatcher.
 	}
 }
 
-func (eh *StakingRewardUTXOReporter) reportRewardUTXOs(ctx context.Context) {
+func (eh *RewardedStakeReporter) reportRewardUTXOs(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 
@@ -68,7 +68,7 @@ func (eh *StakingRewardUTXOReporter) reportRewardUTXOs(ctx context.Context) {
 					RewardUTXOIDs:    utxoIDArr,
 					TxHash:           txHash,
 				}
-				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakingRewardUTXOReporter", newEvt, evtObj.Context))
+				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "RewardedStakeReporter", newEvt, evtObj.Context))
 				delete(eh.utxoFetchedEvtObjMap, txID)
 			}
 			eh.lock.Unlock()
@@ -78,7 +78,7 @@ func (eh *StakingRewardUTXOReporter) reportRewardUTXOs(ctx context.Context) {
 	}
 }
 
-func (eh *StakingRewardUTXOReporter) retryReportRewardUTXOs(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs []string) (txHash *common.Hash) {
+func (eh *RewardedStakeReporter) retryReportRewardUTXOs(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs []string) (txHash *common.Hash) {
 	backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
 		tx, err := eh.Transactor.ReportRewardUTXOs(ctx, addDelegatorTxID, rewardUTXOIDs)
 		if err != nil {

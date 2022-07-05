@@ -1,4 +1,4 @@
-package stakingRewardUTXOReporter
+package rewardedStakeReporter
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func (suite *StakingRewardUTXOReporterTestSuite) TestSignTx() {
 		rewardUTXOsReportedEvt = evtObj.Event.(*events.RewardUTXOsReportedEvent)
 	})
 
-	reporter := &StakingRewardUTXOReporter{
+	reporter := &RewardedStakeReporter{
 		Logger:     logger.Default(),
 		Publisher:  myDispatcher,
 		Transactor: myTransactor,
