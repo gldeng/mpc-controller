@@ -1,4 +1,4 @@
-package ExportRewardRequestAddedEventWatcher
+package exportRewardRequestAddedEventWatcher
 
 import (
 	"context"
