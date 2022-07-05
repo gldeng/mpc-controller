@@ -10,6 +10,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/components/verify"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/platformvm/validator"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
@@ -37,8 +38,8 @@ type StakeTask struct {
 	RequestID          uint64
 	NodeID             ids.NodeID
 	exportTx           *evm.UnsignedExportTx
-	importTx           *platformvm.UnsignedImportTx
-	addDelegatorTx     *platformvm.UnsignedAddDelegatorTx
+	importTx           *txs.ImportTx
+	addDelegatorTx     *txs.AddDelegatorTx
 	exportTxCred       *secp256k1fx.Credential
 	importTxCred       *secp256k1fx.Credential
 	addDelegatorTxCred *secp256k1fx.Credential
@@ -92,10 +93,10 @@ func (t *StakeTask) ImportTxHash() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	tx := platformvm.Tx{
-		UnsignedTx: importTx,
+	tx := txs.Tx{
+		Unsigned: importTx,
 	}
-	unsignedBytes, err := platformvm.Codec.Marshal(platformvmCodecVersion, &tx.UnsignedTx)
+	unsignedBytes, err := platformvm.Codec.Marshal(platformvmCodecVersion, &tx.Unsigned)
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +113,10 @@ func (t *StakeTask) AddDelegatorTxHash() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	tx := platformvm.Tx{
-		UnsignedTx: unsignedTx,
+	tx := txs.Tx{
+		Unsigned: unsignedTx,
 	}
-	unsignedBytes, err := platformvm.Codec.Marshal(platformvmCodecVersion, &tx.UnsignedTx)
+	unsignedBytes, err := platformvm.Codec.Marshal(platformvmCodecVersion, &tx.Unsigned)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +209,7 @@ func (t *StakeTask) GetSignedExportTx() (*evm.Tx, error) {
 	return &tx, nil
 }
 
-func (t *StakeTask) GetSignedImportTx() (*platformvm.Tx, error) {
+func (t *StakeTask) GetSignedImportTx() (*txs.Tx, error) {
 	var noTxCredErr = errors.New("missing ImportTx cred")
 	unsignedTx, err := t.buildUnsignedImportTx()
 
@@ -220,8 +221,8 @@ func (t *StakeTask) GetSignedImportTx() (*platformvm.Tx, error) {
 		return nil, noTxCredErr
 	}
 
-	tx := platformvm.Tx{
-		UnsignedTx: unsignedTx,
+	tx := txs.Tx{
+		Unsigned: unsignedTx,
 		Creds: []verify.Verifiable{
 			t.importTxCred,
 		},
@@ -234,7 +235,7 @@ func (t *StakeTask) GetSignedImportTx() (*platformvm.Tx, error) {
 
 }
 
-func (t *StakeTask) GetSignedAddDelegatorTx() (*platformvm.Tx, error) {
+func (t *StakeTask) GetSignedAddDelegatorTx() (*txs.Tx, error) {
 	var noTxCredErr = errors.New("no tx cred")
 	unsignedTx, err := t.buildUnsignedAddDelegatorTx()
 
@@ -246,8 +247,8 @@ func (t *StakeTask) GetSignedAddDelegatorTx() (*platformvm.Tx, error) {
 		return nil, noTxCredErr
 	}
 
-	tx := platformvm.Tx{
-		UnsignedTx: unsignedTx,
+	tx := txs.Tx{
+		Unsigned: unsignedTx,
 		Creds: []verify.Verifiable{
 			t.addDelegatorTxCred,
 		},
@@ -306,7 +307,7 @@ func (t *StakeTask) buildUnsignedExportTx() (*evm.UnsignedExportTx, error) {
 	return t.exportTx, nil
 }
 
-func (t *StakeTask) buildUnsignedImportTx() (*platformvm.UnsignedImportTx, error) {
+func (t *StakeTask) buildUnsignedImportTx() (*txs.ImportTx, error) {
 	if t.importTx != nil {
 		return t.importTx, nil
 	}
@@ -318,8 +319,8 @@ func (t *StakeTask) buildUnsignedImportTx() (*platformvm.UnsignedImportTx, error
 	index := uint32(0)
 	amt := exportTx.ExportedOutputs[index].Out.Amount()
 	utxo := t.paySelf(amt - t.network.ImportFee())
-	t.importTx = &platformvm.UnsignedImportTx{
-		BaseTx: platformvm.BaseTx{BaseTx: avax.BaseTx{
+	t.importTx = &txs.ImportTx{
+		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    t.network.NetworkID(),
 			BlockchainID: ids.Empty,
 			Outs: []*avax.TransferableOutput{
@@ -344,7 +345,7 @@ func (t *StakeTask) buildUnsignedImportTx() (*platformvm.UnsignedImportTx, error
 	return t.importTx, nil
 }
 
-func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelegatorTx, error) {
+func (t *StakeTask) buildUnsignedAddDelegatorTx() (*txs.AddDelegatorTx, error) {
 
 	if t.addDelegatorTx != nil {
 		return t.addDelegatorTx, nil
@@ -360,9 +361,7 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 		stakedOuts         []*avax.TransferableOutput
 	)
 
-	importTx := signedImportTx.UnsignedTx.(*platformvm.UnsignedImportTx)
-
-	utxos := importTx.UTXOs()
+	utxos := signedImportTx.UTXOs()
 	utxo := utxos[0]
 
 	stakedOuts = append(stakedOuts, t.paySelf(utxo.Out.(*secp256k1fx.TransferOutput).Amt))
@@ -371,8 +370,8 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*platformvm.UnsignedAddDelega
 		signersPlaceholder,
 	}
 	avax.SortTransferableInputsWithSigners(ins, signers)
-	t.addDelegatorTx = &platformvm.UnsignedAddDelegatorTx{
-		BaseTx: platformvm.BaseTx{BaseTx: avax.BaseTx{
+	t.addDelegatorTx = &txs.AddDelegatorTx{
+		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    t.network.NetworkID(),
 			BlockchainID: ids.Empty,
 			Ins:          ins,
