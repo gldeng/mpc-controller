@@ -2,6 +2,7 @@ package cache
 
 import "C"
 import (
+	"context"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,7 +21,7 @@ type Cache struct {
 	GeneratedPubKeyInfoMap map[string]events.GeneratedPubKeyInfo
 }
 
-func (c *Cache) Do(evtObj *dispatcher.EventObject) {
+func (c *Cache) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.GroupInfoStoredEvent:
 		c.Lock()
