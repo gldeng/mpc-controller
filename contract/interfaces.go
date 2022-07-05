@@ -52,22 +52,9 @@ type FilterStakeRequestStarted interface {
 }
 
 type FilterExportRewardRequestAdded interface {
-	WatchExportRewardRequestAdded(ctx context.Context, addDelegatorTxID [][32]byte) (<-chan *MpcManagerExportRewardRequestAdded, error)
+	WatchExportRewardRequestAdded(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerExportRewardRequestAdded, error)
 }
 
 type FilterExportRewardRequestStarted interface {
-	WatchExportRewardRequestStarted(ctx context.Context, addDelegatorTxID [][32]byte) (<-chan *MpcManagerExportRewardRequestStarted, error)
-}
-
-type MpcManagerExportRewardRequestAdded struct {
-	RequestID        *big.Int
-	AddDelegatorTxID [32]byte
-	RewardUTXOIDs    []string
-}
-
-type MpcManagerExportRewardRequestStarted struct {
-	RequestID          *big.Int
-	AddDelegatorTxID   [32]byte
-	RewardUTXOIDs      []string
-	ParticipantIndices []*big.Int
+	WatchExportRewardRequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerExportRewardRequestStarted, error)
 }
