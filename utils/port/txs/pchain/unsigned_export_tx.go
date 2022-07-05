@@ -3,7 +3,7 @@ package pchain
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 )
@@ -17,9 +17,9 @@ type Args struct {
 	UTXOs              []*avax.UTXO // UTXOs to spend
 }
 
-func UnsignedExportTx(args *Args) *platformvm.UnsignedExportTx {
-	utx := &platformvm.UnsignedExportTx{
-		BaseTx: platformvm.BaseTx{BaseTx: avax.BaseTx{
+func UnsignedExportTx(args *Args) *txs.ExportTx {
+	utx := &txs.ExportTx{
+		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    args.NetworkID,
 			BlockchainID: args.BlockchainID,
 			Ins:          myAvax.TransferableInputsrFromUTXOs(args.UTXOs), // The inputs to this transaction
