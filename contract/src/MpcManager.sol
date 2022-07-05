@@ -52,6 +52,11 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     mapping(uint256 => StakeRequestDetails) private _stakeRequestDetails;
     uint256 private _lastRequestId;
 
+    // rewardedStakeTxId -> reportRewardedStakeCount
+    mapping(bytes32 => uint256) private _reportRewardedStakeCounts;
+    // rewardedStakeTxId -> joinExportRewardParticipantIndices
+    mapping(bytes32 => uint256[]) private _joinExportRewardParticipantIndices;
+
     event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index);
     event KeyGenerated(bytes32 indexed groupId, bytes publicKey);
     event KeygenRequestAdded(bytes32 indexed groupId);
@@ -74,6 +79,8 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     );
     event SignRequestAdded(uint256 requestId, bytes indexed publicKey, bytes message);
     event SignRequestStarted(uint256 requestId, bytes indexed publicKey, bytes message);
+    event ExportRewardRequestAdded(bytes32 indexed rewaredStakeTxId);
+    event ExportRewardRequestStarted(bytes32 indexed rewaredStakeTxId, uint256[] participantIndices);
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -346,5 +353,37 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         address member = _calculateAddress(publicKey);
 
         require(msg.sender == member, "Caller is not a group member");
+    }
+
+    // -------------------------------------------------------------------------
+    //  Reward functions
+    // -------------------------------------------------------------------------
+
+    function reportRewardedStake(
+        bytes32 groupId,
+        uint256 myIndex,
+        bytes32 txID
+    ) external onlyGroupMember(groupId, myIndex) {
+        uint256 groupMembers = 3; // todo: compare with number of group members.
+        if (_reportRewardedStakeCounts[txID] < groupMembers) {
+            _reportRewardedStakeCounts[txID] = _reportRewardedStakeCounts[txID]+1;
+            if (_reportRewardedStakeCounts[txID] == groupMembers) {
+                emit ExportRewardRequestAdded(txID);
+            }
+        }
+    }
+
+    function joinExportReward(
+        bytes32 groupId,
+        uint256 myIndex,
+        bytes32 txID
+    ) external onlyGroupMember(groupId, myIndex) {
+        uint256 threshold = 1; // todo: compare with group threshold
+        if (_joinExportRewardParticipantIndices[txID].length < threshold+1) {
+            _joinExportRewardParticipantIndices[txID].push(myIndex);
+            if (_joinExportRewardParticipantIndices[txID].length = threshold+1) {
+                emit ExportRewardRequestStarted(txID, _joinExportRewardParticipantIndices[txID]);
+            }
+        }
     }
 }
