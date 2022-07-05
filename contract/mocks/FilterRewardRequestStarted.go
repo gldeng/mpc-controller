@@ -23,15 +23,15 @@ func (_m *FilterRewardRequestStarted) EXPECT() *FilterRewardRequestStarted_Expec
 }
 
 // WatchRewardRequestStarted provides a mock function with given fields: ctx, addDelegatorTxID
-func (_m *FilterRewardRequestStarted) WatchRewardRequestStarted(ctx context.Context, addDelegatorTxID [][32]byte) (<-chan *contract.MpcManagerRewardRequestStarted, error) {
+func (_m *FilterRewardRequestStarted) WatchRewardRequestStarted(ctx context.Context, addDelegatorTxID [][32]byte) (<-chan *contract.MpcManagerExportRewardRequestStarted, error) {
 	ret := _m.Called(ctx, addDelegatorTxID)
 
-	var r0 <-chan *contract.MpcManagerRewardRequestStarted
-	if rf, ok := ret.Get(0).(func(context.Context, [][32]byte) <-chan *contract.MpcManagerRewardRequestStarted); ok {
+	var r0 <-chan *contract.MpcManagerExportRewardRequestStarted
+	if rf, ok := ret.Get(0).(func(context.Context, [][32]byte) <-chan *contract.MpcManagerExportRewardRequestStarted); ok {
 		r0 = rf(ctx, addDelegatorTxID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(<-chan *contract.MpcManagerRewardRequestStarted)
+			r0 = ret.Get(0).(<-chan *contract.MpcManagerExportRewardRequestStarted)
 		}
 	}
 
@@ -64,7 +64,7 @@ func (_c *FilterRewardRequestStarted_WatchRewardRequestStarted_Call) Run(run fun
 	return _c
 }
 
-func (_c *FilterRewardRequestStarted_WatchRewardRequestStarted_Call) Return(_a0 <-chan *contract.MpcManagerRewardRequestStarted, _a1 error) *FilterRewardRequestStarted_WatchRewardRequestStarted_Call {
+func (_c *FilterRewardRequestStarted_WatchRewardRequestStarted_Call) Return(_a0 <-chan *contract.MpcManagerExportRewardRequestStarted, _a1 error) *FilterRewardRequestStarted_WatchRewardRequestStarted_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
