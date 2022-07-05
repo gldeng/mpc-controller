@@ -1,4 +1,4 @@
-pragma solidity 0.8.15;
+pragma solidity 0.8.10;
 
 uint256 constant amount = 25 ether;
 uint256 constant STAKE_PERIOD = 5 seconds;
