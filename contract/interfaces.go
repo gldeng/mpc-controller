@@ -25,8 +25,12 @@ type TransactorReportGeneratedKey interface {
 	ReportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
 }
 
-type TransactorReportRewardUTXOs interface {
-	ReportRewardUTXOs(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs []string) (*types.Transaction, error)
+type TransactorReportRewardedStake interface {
+	ReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (*types.Transaction, error)
+}
+
+type TransactorJoinExportReward interface {
+	ReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (*types.Transaction, error)
 }
 
 // Filters
