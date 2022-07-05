@@ -362,7 +362,7 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     function reportRewardedStake(
         bytes32 groupId,
         uint256 myIndex,
-        bytes publicKey,
+        bytes calldata publicKey,
         bytes32 txID
     ) external onlyGroupMember(groupId, myIndex) {
         uint256 groupMembers = 3; // todo: compare with number of group members.
@@ -377,13 +377,13 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     function joinExportReward(
         bytes32 groupId,
         uint256 myIndex,
-        bytes publicKey,
+        bytes calldata publicKey,
         bytes32 txID
     ) external onlyGroupMember(groupId, myIndex) {
         uint256 threshold = 1; // todo: compare with group threshold
         if (_joinExportRewardParticipantIndices[txID].length < threshold+1) {
             _joinExportRewardParticipantIndices[txID].push(myIndex);
-            if (_joinExportRewardParticipantIndices[txID].length = threshold+1) {
+            if (_joinExportRewardParticipantIndices[txID].length == threshold+1) {
                 emit ExportRewardRequestStarted(txID, publicKey, _joinExportRewardParticipantIndices[txID]);
             }
         }
