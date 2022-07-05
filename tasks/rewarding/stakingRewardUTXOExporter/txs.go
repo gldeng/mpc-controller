@@ -3,7 +3,7 @@ package stakingRewardUTXOExporter
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/hashing"
-	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
@@ -17,13 +17,13 @@ type Txs struct {
 	UnsignedExportTxArgs *pchain.Args
 	UnsignedImportTx     *cchain.Args
 
-	unsignedExportTx *platformvm.UnsignedExportTx
+	unsignedExportTx *txs.ExportTx
 	unsignedImportTx *evm.UnsignedImportTx
 
 	exportTxSigBytes [65]byte
 	importTxSigBytes [65]byte
 
-	signedExportTx *platformvm.Tx
+	signedExportTx *txs.Tx
 	signedImportTx *evm.Tx
 }
 
@@ -31,11 +31,11 @@ func (t *Txs) ExportTxHash() ([]byte, error) {
 	exportTx := pchain.UnsignedExportTx(t.UnsignedExportTxArgs)
 	t.unsignedExportTx = exportTx
 
-	tx := platformvm.Tx{
-		UnsignedTx: exportTx,
+	tx := txs.Tx{
+		Unsigned: exportTx,
 	}
 
-	unsignedBytes, err := platformvm.Codec.Marshal(platformvm.CodecVersion, &tx.UnsignedTx) // todo: consider config codec version
+	unsignedBytes, err := txs.Codec.Marshal(txs.Version, &tx.Unsigned)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
