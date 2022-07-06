@@ -16,7 +16,7 @@ import (
 
 // Accept event: *events.RewardUTXOsFetchedEvent
 
-// Emit event: *events.RewardUTXOsReportedEvent
+// Emit event: *events.RewardedStakeReportedEvent
 
 type RewardedStakeReporter struct {
 	Logger logger.Logger
@@ -63,7 +63,7 @@ func (eh *RewardedStakeReporter) reportRewardUTXOs(ctx context.Context) {
 				}
 
 				txHash := eh.retryReportRewardUTXOs(ctx, evt.AddDelegatorTxID, utxoIDArr)
-				newEvt := &events.RewardUTXOsReportedEvent{
+				newEvt := &events.RewardedStakeReportedEvent{
 					AddDelegatorTxID: evt.AddDelegatorTxID,
 					RewardUTXOIDs:    utxoIDArr,
 					TxHash:           txHash,

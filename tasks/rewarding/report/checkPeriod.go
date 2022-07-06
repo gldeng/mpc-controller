@@ -1,4 +1,4 @@
-package checkPeriod
+package report
 
 import (
 	"context"

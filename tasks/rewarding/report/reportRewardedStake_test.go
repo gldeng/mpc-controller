@@ -43,10 +43,10 @@ func (suite *StakingRewardUTXOReporterTestSuite) TestSignTx() {
 
 	utxoFetchEvtObj := dispatcher.NewRootEventObject("StakingRewardUTXOFetcher", utxoFetchedEvt, ctx)
 
-	rewardUTXOsReportedEvt := &events.RewardUTXOsReportedEvent{}
+	rewardUTXOsReportedEvt := &events.RewardedStakeReportedEvent{}
 
 	myDispatcher.EXPECT().Publish(ctx, mock.AnythingOfType("*dispatcher.EventObject")).Run(func(ctx context.Context, evtObj *dispatcher.EventObject) {
-		rewardUTXOsReportedEvt = evtObj.Event.(*events.RewardUTXOsReportedEvent)
+		rewardUTXOsReportedEvt = evtObj.Event.(*events.RewardedStakeReportedEvent)
 	})
 
 	reporter := &RewardedStakeReporter{

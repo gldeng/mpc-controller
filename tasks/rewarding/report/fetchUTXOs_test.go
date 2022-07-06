@@ -1,4 +1,4 @@
-package fetchUTXOs
+package report
 
 import (
 	"context"

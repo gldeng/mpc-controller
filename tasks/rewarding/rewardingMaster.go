@@ -6,8 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/tasks/rewarding/track/checkPeriod"
-	"github.com/avalido/mpc-controller/tasks/rewarding/track/fetchUTXOs"
+	"github.com/avalido/mpc-controller/tasks/rewarding/report"
 )
 
 type RewardingMaster struct {
@@ -15,8 +14,8 @@ type RewardingMaster struct {
 	RewardUTXOGetter chain.RewardUTXOGetter
 	Dispatcher       dispatcher.DispatcherClaasic
 
-	periodEndedChecker *checkPeriod.StakingPeriodEndedChecker
-	rewardUTXOFetcher  *fetchUTXOs.StakingRewardUTXOFetcher
+	periodEndedChecker *report.StakingPeriodEndedChecker
+	rewardUTXOFetcher  *report.StakingRewardUTXOFetcher
 }
 
 func (s *RewardingMaster) Start(ctx context.Context) error {
@@ -26,11 +25,11 @@ func (s *RewardingMaster) Start(ctx context.Context) error {
 }
 
 func (s *RewardingMaster) subscribe() {
-	periodEndedChecker := checkPeriod.StakingPeriodEndedChecker{
+	periodEndedChecker := report.StakingPeriodEndedChecker{
 		Publisher: s.Dispatcher,
 	}
 
-	rewardUTXOFetcher := fetchUTXOs.StakingRewardUTXOFetcher{
+	rewardUTXOFetcher := report.StakingRewardUTXOFetcher{
 		Logger:           s.Logger,
 		Publisher:        s.Dispatcher,
 		RewardUTXOGetter: s.RewardUTXOGetter,
