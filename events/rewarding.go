@@ -4,6 +4,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -39,6 +40,8 @@ type ExportRewardRequestAddedEvent struct {
 }
 
 type ExportRewardRequestStartedEvent struct {
-	AddDelegatorTxID ids.ID
-	RewardUTXOIDs    []string
+	AddDelegatorTxID   ids.ID
+	PublicKeyHash      common.Hash
+	ParticipantIndices []*big.Int
+	TxHash             common.Hash
 }
