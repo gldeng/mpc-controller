@@ -142,6 +142,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 	}
 }
 
+// todo: use cache.IsParticipantChecker
 func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
 	var participating bool
 	for _, index := range req.ParticipantIndices {
