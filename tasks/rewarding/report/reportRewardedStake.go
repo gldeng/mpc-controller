@@ -2,14 +2,20 @@ package report
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	"math/big"
 	"sync"
 	"time"
 )
@@ -19,12 +25,19 @@ import (
 // Emit event: *events.RewardedStakeReportedEvent
 
 type RewardedStakeReporter struct {
-	Logger logger.Logger
+	Logger          logger.Logger
+	MyPubKeyHashHex string
 
 	Publisher dispatcher.Publisher
 
-	Transactor contract.TransactorReportRewardUTXOs
-	Receipter  chain.Receipter
+	Cache cache.ICache
+
+	Signer *bind.TransactOpts
+
+	ContractAddr common.Address
+	Transactor   bind.ContractTransactor
+
+	Receipter chain.Receipter
 
 	once                 sync.Once
 	lock                 sync.Mutex
@@ -37,7 +50,7 @@ func (eh *RewardedStakeReporter) Do(ctx context.Context, evtObj *dispatcher.Even
 		eh.once.Do(func() {
 			eh.utxoFetchedEvtObjMap = make(map[string]*dispatcher.EventObject)
 			go func() {
-				eh.reportRewardUTXOs(ctx)
+				eh.reportRewardedStake(ctx)
 			}()
 		})
 
@@ -47,7 +60,7 @@ func (eh *RewardedStakeReporter) Do(ctx context.Context, evtObj *dispatcher.Even
 	}
 }
 
-func (eh *RewardedStakeReporter) reportRewardUTXOs(ctx context.Context) {
+func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 
@@ -57,15 +70,34 @@ func (eh *RewardedStakeReporter) reportRewardUTXOs(ctx context.Context) {
 			eh.lock.Lock()
 			for txID, evtObj := range eh.utxoFetchedEvtObjMap {
 				evt := evtObj.Event.(*events.RewardUTXOsFetchedEvent)
-				var utxoIDArr []string
-				for _, utxo := range evt.RewardUTXOs {
-					utxoIDArr = append(utxoIDArr, utxo.String())
+				genPubKeyHash := hash256.FromHex(evt.PubKeyHex)
+				genPubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(genPubKeyHash.Hex())
+				if genPubKeyInfo == nil {
+					break
 				}
 
-				txHash := eh.retryReportRewardUTXOs(ctx, evt.AddDelegatorTxID, utxoIDArr)
+				myIndex := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHash.Hex())
+				if myIndex == nil {
+					break
+				}
+
+				groupIDBytes := bytes.HexTo32Bytes(genPubKeyInfo.GroupIdHex)
+				pubKeyBytes := bytes.HexToBytes(genPubKeyInfo.GenPubKeyHex)
+
+				txHash, err := eh.retryReportRewardedStake(ctx, groupIDBytes, myIndex, pubKeyBytes, evt.AddDelegatorTxID)
+				if err != nil {
+					eh.Logger.Error("Failed to report rewarded stake request", []logger.Field{
+						{"error", err},
+						{"addDelegatorTxID", bytes.Bytes32ToHex(evt.AddDelegatorTxID)},
+						{"txHash", txHash}}...)
+					break
+				}
+
 				newEvt := &events.RewardedStakeReportedEvent{
 					AddDelegatorTxID: evt.AddDelegatorTxID,
-					RewardUTXOIDs:    utxoIDArr,
+					PubKeyHex:        genPubKeyInfo.GenPubKeyHex,
+					GroupIDHex:       genPubKeyInfo.GroupIdHex,
+					MyIndex:          myIndex,
 					TxHash:           txHash,
 				}
 				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "RewardedStakeReporter", newEvt, evtObj.Context))
@@ -78,22 +110,32 @@ func (eh *RewardedStakeReporter) reportRewardUTXOs(ctx context.Context) {
 	}
 }
 
-func (eh *RewardedStakeReporter) retryReportRewardUTXOs(ctx context.Context, addDelegatorTxID [32]byte, rewardUTXOIDs []string) (txHash *common.Hash) {
+func (eh *RewardedStakeReporter) retryReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (txHash *common.Hash, err error) {
+	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var tx *types.Transaction
+
 	backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
-		tx, err := eh.Transactor.ReportRewardUTXOs(ctx, addDelegatorTxID, rewardUTXOIDs)
+		tx, err = transactor.ReportRewardedStake(eh.Signer, groupId, myIndex, publicKey, txID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to report reward UTXOs for addDelegatorTxID:%v", addDelegatorTxID)
+			err = errors.Wrapf(err, "failed to report rewarded stake for addDelegatorTxID:%v", bytes.Bytes32ToHex(txID))
+			return err
 		}
 
 		time.Sleep(time.Second * 3)
 
-		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+		var rcpt *types.Receipt
+		rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		if rcpt.Status != 1 {
-			return errors.Errorf("reporting reward UTXOs' transaction for addDelegatorTxID %q failed", addDelegatorTxID)
+			err = errors.Errorf("reporting rewarded stake transaction for addDelegatorTxID %q failed", bytes.Bytes32ToHex(txID))
+			return err
 		}
 
 		newTxHash := tx.Hash()
