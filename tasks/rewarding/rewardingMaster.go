@@ -112,7 +112,16 @@ func (m *RewardingMaster) subscribe() {
 	m.exportRewarReqStartedEvtWatcher = &exportRewarReqStartedEvtWatcher
 	m.rewardExporter = &rewardExporter
 
-	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.periodEndedChecker) // Emit event: *events.StakingPeriodEndedEvent
+	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.periodEndedChecker)       // Emit event: *events.StakingPeriodEndedEvent
+	m.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, m.rewardUTXOFetcher)     // Emit event: *events.RewardUTXOsFetchedEvent
+	m.Dispatcher.Subscribe(&events.RewardUTXOsFetchedEvent{}, m.rewardedStakeReporter) // Emit event: *events.RewardedStakeReportedEvent
 
-	m.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, m.rewardUTXOFetcher) // Emit event: *events.RewardUTXOsFetchedEvent
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
+	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportRewardRequestAddedEvent
+	m.Dispatcher.Subscribe(&events.ExportRewardRequestAddedEvent{}, m.exportRewardJoiner)              // Emit event: *events.JoinedExportRewardRequestEvent
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewarReqStartedEvtWatcher)
+	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewarReqStartedEvtWatcher) // Emit event: *contract.ExportRewardRequestStartedEvent
+	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.rewardExporter)
+	m.Dispatcher.Subscribe(&events.RewardUTXOsFetchedEvent{}, m.rewardExporter)
+	m.Dispatcher.Subscribe(&events.ExportRewardRequestStartedEvent{}, m.rewardExporter) // Emit event: *events.RewardExportedEvent
 }
