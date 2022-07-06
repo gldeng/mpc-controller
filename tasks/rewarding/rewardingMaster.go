@@ -15,19 +15,19 @@ import (
 )
 
 type RewardingMaster struct {
-	Logger           logger.Logger
-	ContractAddr     common.Address
-	RewardUTXOGetter chain.RewardUTXOGetter
-	Dispatcher       dispatcher.DispatcherClaasic
-	MyPubKeyHashHex  string
-	Cache            cache.ICache
-	SignDoner        core.SignDoner
-	Signer           *bind.TransactOpts
-	Transactor       bind.ContractTransactor
-	Receipter        chain.Receipter
-	chain.NetworkContext
 	CChainIssueClient chain.CChainIssuer
+	Cache             cache.ICache
+	ContractAddr      common.Address
+	Dispatcher        dispatcher.DispatcherClaasic
+	Logger            logger.Logger
+	MyPubKeyHashHex   string
 	PChainIssueClient chain.PChainIssuer
+	Receipter         chain.Receipter
+	RewardUTXOGetter  chain.RewardUTXOGetter
+	SignDoner         core.SignDoner
+	Signer            *bind.TransactOpts
+	Transactor        bind.ContractTransactor
+	chain.NetworkContext
 
 	// report
 	periodEndedChecker    *report.StakingPeriodEndedChecker
@@ -59,48 +59,48 @@ func (m *RewardingMaster) subscribe() {
 	}
 
 	rewardedStakeReporter := report.RewardedStakeReporter{
+		Cache:           m.Cache,
+		ContractAddr:    m.ContractAddr,
 		Logger:          m.Logger,
 		MyPubKeyHashHex: m.MyPubKeyHashHex,
 		Publisher:       m.Dispatcher,
-		Cache:           m.Cache,
-		Signer:          m.Signer,
-		ContractAddr:    m.ContractAddr,
-		Transactor:      m.Transactor,
 		Receipter:       m.Receipter,
+		Signer:          m.Signer,
+		Transactor:      m.Transactor,
 	}
 
 	exportRewardReqAddedEvtWatcher := export.ExportRewardRequestAddedEventWatcher{
-		Logger:       m.Logger,
 		ContractAddr: m.ContractAddr,
+		Logger:       m.Logger,
 		Publisher:    m.Dispatcher,
 	}
 
 	exportRewardJoiner := export.ExportRewardRequestJoiner{
+		Cache:           m.Cache,
+		ContractAddr:    m.ContractAddr,
 		Logger:          m.Logger,
 		MyPubKeyHashHex: m.MyPubKeyHashHex,
-		Signer:          m.Signer,
-		Cache:           m.Cache,
-		Transactor:      m.Transactor,
-		ContractAddr:    m.ContractAddr,
 		Publisher:       m.Dispatcher,
 		Receipter:       m.Receipter,
+		Signer:          m.Signer,
+		Transactor:      m.Transactor,
 	}
 
 	exportRewarReqStartedEvtWatcher := export.ExportRewardRequestStartedEventWatcher{
-		Logger:       m.Logger,
 		ContractAddr: m.ContractAddr,
+		Logger:       m.Logger,
 		Publisher:    m.Dispatcher,
 	}
 
 	rewardExporter := export.StakingRewardExporter{
+		CChainIssueClient: m.CChainIssueClient,
+		Cache:             m.Cache,
 		Logger:            m.Logger,
-		NetworkContext:    m.NetworkContext,
 		MyPubKeyHashHex:   m.MyPubKeyHashHex,
+		NetworkContext:    m.NetworkContext,
+		PChainIssueClient: m.PChainIssueClient,
 		Publisher:         m.Dispatcher,
 		SignDoner:         m.SignDoner,
-		CChainIssueClient: m.CChainIssueClient,
-		PChainIssueClient: m.PChainIssueClient,
-		Cache:             m.Cache,
 	}
 
 	m.periodEndedChecker = &periodEndedChecker
