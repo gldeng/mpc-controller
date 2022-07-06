@@ -31,7 +31,7 @@ type StakeRequestStartedEventHandler struct {
 
 	MyPubKeyHashHex string
 
-	Cache Cache
+	Cache Cache // todo: to use cache.ICache instead
 
 	SignDoner core.SignDoner
 	Publisher dispatcher.Publisher
