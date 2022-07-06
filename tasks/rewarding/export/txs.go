@@ -1,4 +1,4 @@
-package stakingRewardUTXOExporter
+package export
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
