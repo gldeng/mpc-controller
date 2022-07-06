@@ -5,7 +5,9 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 	"math/big"
 	"sync"
 )
@@ -86,4 +88,18 @@ func (c *Cache) GetParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int
 		partPubKeyHexArr = append(partPubKeyHexArr, partPubKeyHex)
 	}
 	return partPubKeyHexArr
+}
+
+func (c *Cache) GetNormalizedParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) ([]string, error) {
+	partiKeys := c.GetParticipantKeys(genPubKeyHash, indices)
+	if partiKeys == nil {
+		return nil, nil
+	}
+
+	normalized, err := crypto.NormalizePubKeys(partiKeys)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return normalized, nil
 }

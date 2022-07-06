@@ -17,3 +17,7 @@ type GeneratedPubKeyInfoGetter interface {
 type ParticipantKeysGetter interface {
 	GetParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) []string
 }
+
+type NormalizedParticipantKeysGetter interface {
+	GetNormalizedParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) ([]string, error)
+}
