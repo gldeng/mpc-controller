@@ -36,7 +36,8 @@ type RewardUTXOsReportedEvent struct {
 
 type ExportRewardRequestAddedEvent struct {
 	AddDelegatorTxID ids.ID
-	RewardUTXOIDs    []string
+	PublicKeyHash    common.Hash
+	TxHash           common.Hash
 }
 
 type ExportRewardRequestStartedEvent struct {
