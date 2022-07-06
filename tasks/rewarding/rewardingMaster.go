@@ -6,8 +6,8 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	stakingPeriodEndedChecker "github.com/avalido/mpc-controller/tasks/rewarding/stakingPeriodEndedChecker"
-	"github.com/avalido/mpc-controller/tasks/rewarding/stakingRewardUTXOFetcher"
+	stakingPeriodEndedChecker "github.com/avalido/mpc-controller/tasks/rewarding/track/stakingPeriodEndedChecker"
+	"github.com/avalido/mpc-controller/tasks/rewarding/track/stakingRewardUTXOFetcher"
 )
 
 type RewardingMaster struct {
