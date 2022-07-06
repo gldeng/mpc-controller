@@ -59,6 +59,6 @@ func (suite *StakingRewardUTXOFetcherTestSuite) TestSignTx() {
 	myRewardUTXOGetter.AssertNumberOfCalls(suite.T(), "GetRewardUTXOs", 1)
 }
 
-func TestStakeTaskCreatorTestSuite(t *testing.T) {
+func TestStakingRewardUTXOFetcherTestSuite(t *testing.T) {
 	suite.Run(t, new(StakingRewardUTXOFetcherTestSuite))
 }

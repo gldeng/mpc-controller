@@ -51,6 +51,6 @@ func (suite *StakingPeriodEndedCheckerTestSuite) TestSignTx() {
 	myDispatcher.AssertNumberOfCalls(suite.T(), "Publish", 1)
 }
 
-func TestStakeTaskCreatorTestSuite(t *testing.T) {
+func TestStakingPeriodEndedCheckerTestSuite(t *testing.T) {
 	suite.Run(t, new(StakingPeriodEndedCheckerTestSuite))
 }
