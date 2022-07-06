@@ -90,7 +90,6 @@ func (eh *ExportRewardRequestJoiner) joinExportRewardRequest(ctx context.Context
 	var tx *types.Transaction
 
 	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
-		var err error
 		tx, err = transactor.JoinExportReward(eh.Signer, groupId, myIndex, publicKey, txID)
 		if err != nil {
 			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
@@ -98,32 +97,26 @@ func (eh *ExportRewardRequestJoiner) joinExportRewardRequest(ctx context.Context
 				eh.Logger.Info("Cannot join anymore", []logger.Field{{"addDelegatorTxID", bytes.Bytes32ToHex(txID)}, {"myIndex", myIndex}}...)
 				return nil
 			}
-			return errors.Wrapf(err, "failed to join request. addDelegatorTxID: %v, Index: %v", bytes.Bytes32ToHex(txID), myIndex)
+			err = errors.Wrapf(err, "failed to join request. addDelegatorTxID: %v, Index: %v", bytes.Bytes32ToHex(txID), myIndex)
+			return err
 		}
 
 		time.Sleep(time.Second * 3)
 
-		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+		var rcpt *types.Receipt
+		rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		if rcpt.Status != 1 {
-			return errors.New("Transaction failed")
+			err = errors.New("Transaction failed")
+			return err
 		}
 
+		newTxHash := tx.Hash()
+		txHash = &newTxHash
 		return nil
 	})
-
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	if tx != nil {
-		txHash_ := tx.Hash()
-		return &txHash_, nil
-
-	}
-
-	return nil, err
+	return
 }
