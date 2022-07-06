@@ -1,4 +1,4 @@
-package rewardedStakeReporter
+package report
 
 import (
 	"context"
