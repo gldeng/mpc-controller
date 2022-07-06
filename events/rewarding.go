@@ -28,9 +28,11 @@ type RewardUTXOsFetchedEvent struct {
 	RewardUTXOs      []*avax.UTXO
 }
 
-type RewardUTXOsReportedEvent struct {
+type RewardedStakeReportedEvent struct {
 	AddDelegatorTxID ids.ID
-	RewardUTXOIDs    []string
+	PubKeyHex        string
+	GroupIDHex       string
+	MyIndex          *big.Int
 	TxHash           *common.Hash
 }
 
