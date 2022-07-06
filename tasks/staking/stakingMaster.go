@@ -12,23 +12,16 @@ import (
 )
 
 type StakingMaster struct {
-	Logger       logger.Logger
-	ContractAddr common.Address
-
-	MyPubKeyHashHex string
-
-	Dispatcher dispatcher.DispatcherClaasic
-
-	chain.NetworkContext
-
-	Cache Cache
-
-	SignDoner core.SignDoner
-
-	Noncer chain.Noncer
-
 	CChainIssueClient chain.CChainIssuer
+	Cache             Cache
+	ContractAddr      common.Address
+	Dispatcher        dispatcher.DispatcherClaasic
+	Logger            logger.Logger
+	MyPubKeyHashHex   string
+	Noncer            chain.Noncer
 	PChainIssueClient chain.PChainIssuer
+	SignDoner         core.SignDoner
+	chain.NetworkContext
 
 	stakingWatcher *StakeRequestStartedEventWatcher
 	stakingDealer  *StakeRequestStartedEventHandler

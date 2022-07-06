@@ -14,19 +14,15 @@ import (
 )
 
 type KeygenMaster struct {
-	Logger       logger.Logger
-	ContractAddr common.Address
-
+	ContractAddr    common.Address
+	Dispatcher      dispatcher.DispatcherClaasic
+	KeygenDoner     core.KeygenDoner
+	Logger          logger.Logger
 	MyPubKeyHashHex string
-
-	Dispatcher dispatcher.DispatcherClaasic
-
-	KeygenDoner core.KeygenDoner
-	Storer      storage.MarshalSetter
-
-	Transactor bind.ContractTransactor
-	Signer     *bind.TransactOpts
-	Receipter  chain.Receipter
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Storer          storage.MarshalSetter
+	Transactor      bind.ContractTransactor
 
 	keygenWatcher *KeygenRequestAddedEventWatcher
 	keygenDealer  *KeygenRequestAddedEventHandler

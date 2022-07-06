@@ -13,19 +13,14 @@ import (
 )
 
 type JoiningMaster struct {
-	Logger       logger.Logger
-	ContractAddr common.Address
-
-	MyPubKeyHashHex string
+	ContractAddr    common.Address
+	Dispatcher      dispatcher.DispatcherClaasic
+	Logger          logger.Logger
 	MyIndexGetter   cache.MyIndexGetter
-
-	Dispatcher dispatcher.DispatcherClaasic
-
-	Signer *bind.TransactOpts
-
-	Receipter chain.Receipter
-
-	Transactor bind.ContractTransactor
+	MyPubKeyHashHex string
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Transactor      bind.ContractTransactor
 
 	joiningWatcher *StakeRequestAddedEventWatcher
 	joiningDealer  *StakeRequestAddedEventHandler

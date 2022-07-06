@@ -144,55 +144,55 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	participantMaster := participant.ParticipantMaster{
-		Logger:          myLogger,
-		MyPubKeyHex:     myPubKeyHex,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyPubKeyBytes:   myPubKeyBytes,
 		ContractAddr:    contractAddr,
 		ContractCaller:  ethRpcClient,
 		Dispatcher:      myDispatcher,
+		Logger:          myLogger,
+		MyPubKeyBytes:   myPubKeyBytes,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		MyPubKeyHex:     myPubKeyHex,
 		Storer:          myDB,
 	}
 
 	keygenMaster := keygen.KeygenMaster{
-		Logger:          myLogger,
 		ContractAddr:    contractAddr,
 		Dispatcher:      myDispatcher,
 		KeygenDoner:     mpcClient,
-		Storer:          myDB,
+		Logger:          myLogger,
 		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Transactor:      ethRpcClient,
-		Signer:          signer,
 		Receipter:       ethRpcClient,
+		Signer:          signer,
+		Storer:          myDB,
+		Transactor:      ethRpcClient,
 	}
 
 	joiningMaster := joining.JoiningMaster{
-		Logger:          myLogger,
 		ContractAddr:    contractAddr,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyIndexGetter:   &cacheWrapper,
 		Dispatcher:      myDispatcher,
-		Signer:          signer,
+		Logger:          myLogger,
+		MyIndexGetter:   &cacheWrapper,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
 		Receipter:       ethRpcClient,
+		Signer:          signer,
 		Transactor:      ethRpcClient,
 	}
 
 	stakingMaster := staking.StakingMaster{
-		Logger:            myLogger,
-		ContractAddr:      contractAddr,
-		MyPubKeyHashHex:   myPubKeyHash.Hex(),
-		Dispatcher:        myDispatcher,
-		NetworkContext:    networkCtx(config),
-		Cache:             &cacheWrapper,
-		SignDoner:         mpcClient,
-		Noncer:            ethRpcClient,
 		CChainIssueClient: cChainIssueCli,
+		Cache:             &cacheWrapper,
+		ContractAddr:      contractAddr,
+		Dispatcher:        myDispatcher,
+		Logger:            myLogger,
+		MyPubKeyHashHex:   myPubKeyHash.Hex(),
+		NetworkContext:    networkCtx(config),
+		Noncer:            ethRpcClient,
 		PChainIssueClient: pChainIssueCli,
+		SignDoner:         mpcClient,
 	}
 
 	rewardTrackerMaster := rewarding.RewardingMaster{
-		Logger:           myLogger,
 		Dispatcher:       myDispatcher,
+		Logger:           myLogger,
 		RewardUTXOGetter: pChainIssueCli,
 	}
 

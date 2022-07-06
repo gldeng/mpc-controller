@@ -12,17 +12,14 @@ import (
 )
 
 type ParticipantMaster struct {
-	Logger logger.Logger
-
-	MyPubKeyHex     string
-	MyPubKeyHashHex string
+	ContractAddr    common.Address
+	ContractCaller  bind.ContractCaller
+	Dispatcher      dispatcher.DispatcherClaasic
+	Logger          logger.Logger
 	MyPubKeyBytes   []byte
-
-	ContractAddr   common.Address
-	ContractCaller bind.ContractCaller
-
-	Dispatcher dispatcher.DispatcherClaasic
-	Storer     storage.MarshalSetter
+	MyPubKeyHashHex string
+	MyPubKeyHex     string
+	Storer          storage.MarshalSetter
 
 	partiEvtWatcher *ParticipantAddedEventWatcher
 	partiInfoStorer *ParticipantInfoStorer
