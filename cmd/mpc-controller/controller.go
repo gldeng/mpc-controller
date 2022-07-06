@@ -190,10 +190,20 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		SignDoner:         mpcClient,
 	}
 
-	rewardTrackerMaster := rewarding.RewardingMaster{
-		Dispatcher:       myDispatcher,
-		Logger:           myLogger,
-		RewardUTXOGetter: pChainIssueCli,
+	rewardMaster := rewarding.RewardingMaster{
+		CChainIssueClient: cChainIssueCli,
+		Cache:             &cacheWrapper,
+		ContractAddr:      contractAddr,
+		Dispatcher:        myDispatcher,
+		Logger:            myLogger,
+		MyPubKeyHashHex:   myPubKeyHash.Hex(),
+		NetworkContext:    networkCtx(config),
+		PChainIssueClient: pChainIssueCli,
+		Receipter:         ethRpcClient,
+		RewardUTXOGetter:  pChainIssueCli,
+		SignDoner:         mpcClient,
+		Signer:            signer,
+		Transactor:        ethRpcClient,
 	}
 
 	controller := MpcController{
@@ -205,7 +215,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 			&keygenMaster,
 			&joiningMaster,
 			&stakingMaster,
-			&rewardTrackerMaster,
+			&rewardMaster,
 		},
 	}
 
