@@ -1,4 +1,4 @@
-package stakingRewardUTXOFetcher
+package fetchUTXOs
 
 import (
 	"context"
