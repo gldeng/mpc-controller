@@ -174,6 +174,7 @@ func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64
 	return nonce, nil
 }
 
+// todo: use cache.NormalizedParticipantKeysGetter instead
 func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
 	partiKeys := eh.Cache.GetParticipantKeys(genPubKeyHash, partiIndices)
 	if partiKeys == nil {
