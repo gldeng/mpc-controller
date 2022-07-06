@@ -20,11 +20,6 @@ import (
 	"time"
 )
 
-type Cache interface {
-	cache.MyIndexGetter
-	cache.GeneratedPubKeyInfoGetter
-}
-
 // Accept event: *events.ExportRewardRequestAddedEvent
 
 // Emit event: *events.JoinedExportRewardRequestEvent
@@ -35,7 +30,7 @@ type ExportRewardRequestJoiner struct {
 	MyPubKeyHashHex string
 
 	Signer *bind.TransactOpts
-	Cache  Cache
+	Cache  cache.ICache
 
 	Receipter chain.Receipter
 

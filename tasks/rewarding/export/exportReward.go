@@ -23,12 +23,6 @@ import (
 	"time"
 )
 
-type Cache interface {
-	cache.NormalizedParticipantKeysGetter
-	cache.GeneratedPubKeyInfoGetter
-	cache.IsParticipantChecker
-}
-
 // Accept event: *events.StakingTaskDoneEvent
 // Accept event: *events.RewardUTXOsFetchedEvent
 // Accept event: *events.ExportRewardRequestStartedEvent
@@ -47,7 +41,7 @@ type StakingRewardUTXOExporter struct {
 	CChainIssueClient chain.CChainIssuer
 	PChainIssueClient chain.PChainIssuer
 
-	Cache Cache
+	Cache cache.ICache
 
 	once sync.Once
 	lock sync.Mutex
