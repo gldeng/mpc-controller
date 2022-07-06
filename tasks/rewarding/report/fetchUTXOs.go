@@ -62,6 +62,7 @@ func (eh *StakingRewardUTXOFetcher) fetchRewardUTXOs(ctx context.Context) {
 				newEvt := &events.RewardUTXOsFetchedEvent{
 					AddDelegatorTxID: evt.AddDelegatorTxID,
 					RewardUTXOs:      utxos,
+					PubKeyHex:        evt.PubKeyHex,
 				}
 				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakingRewardUTXOFetcher", newEvt, evtObj.Context))
 				delete(eh.endedEvtObjMap, txID)
