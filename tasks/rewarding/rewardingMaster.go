@@ -2,19 +2,32 @@ package rewarding
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/tasks/rewarding/export"
 	"github.com/avalido/mpc-controller/tasks/rewarding/report"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type RewardingMaster struct {
 	Logger           logger.Logger
+	ContractAddr     common.Address
 	RewardUTXOGetter chain.RewardUTXOGetter
 	Dispatcher       dispatcher.DispatcherClaasic
 	MyPubKeyHashHex  string
+	Cache            cache.ICache
+	SignDoner        core.SignDoner
+	Signer           *bind.TransactOpts
+	Transactor       bind.ContractTransactor
+	Receipter        chain.Receipter
+	chain.NetworkContext
+	CChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.PChainIssuer
 
 	// report
 	periodEndedChecker    *report.StakingPeriodEndedChecker
@@ -28,49 +41,78 @@ type RewardingMaster struct {
 	rewardExporter                  *export.StakingRewardExporter
 }
 
-func (s *RewardingMaster) Start(ctx context.Context) error {
-	s.subscribe()
+func (m *RewardingMaster) Start(ctx context.Context) error {
+	m.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (s *RewardingMaster) subscribe() {
+func (m *RewardingMaster) subscribe() {
 	periodEndedChecker := report.StakingPeriodEndedChecker{
-		Publisher: s.Dispatcher,
+		Publisher: m.Dispatcher,
 	}
 
 	rewardUTXOFetcher := report.StakingRewardUTXOFetcher{
-		Logger:           s.Logger,
-		Publisher:        s.Dispatcher,
-		RewardUTXOGetter: s.RewardUTXOGetter,
+		Logger:           m.Logger,
+		Publisher:        m.Dispatcher,
+		RewardUTXOGetter: m.RewardUTXOGetter,
 	}
-	//
-	//rewardedStakeReporter := report.RewardedStakeReporter{
-	//	Logger:           s.Logger,
-	//	MyPubKeyHashHex string
-	//
-	//	Publisher:        s.Dispatcher,
-	//
-	//	Cache cache.ICache
-	//
-	//	Signer *bind.TransactOpts
-	//
-	//	ContractAddr common.Address
-	//	Transactor   bind.ContractTransactor
-	//
-	//	Receipter chain.Receipter
-	//}
-	//
-	s.periodEndedChecker = &periodEndedChecker
-	s.rewardUTXOFetcher = &rewardUTXOFetcher
-	//s.rewardUTXOFetcher =
-	//
-	//	s.exportRewardReqAddedEvtWatcher =
-	//		s.exportRewardJoiner =
-	//			s.exportRewarReqStartedEvtWatcher =
-	//				s.rewardExporter
 
-	s.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, s.periodEndedChecker) // Emit event: *events.StakingPeriodEndedEvent
+	rewardedStakeReporter := report.RewardedStakeReporter{
+		Logger:          m.Logger,
+		MyPubKeyHashHex: m.MyPubKeyHashHex,
+		Publisher:       m.Dispatcher,
+		Cache:           m.Cache,
+		Signer:          m.Signer,
+		ContractAddr:    m.ContractAddr,
+		Transactor:      m.Transactor,
+		Receipter:       m.Receipter,
+	}
 
-	s.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, s.rewardUTXOFetcher) // Emit event: *events.RewardUTXOsFetchedEvent
+	exportRewardReqAddedEvtWatcher := export.ExportRewardRequestAddedEventWatcher{
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Publisher:    m.Dispatcher,
+	}
+
+	exportRewardJoiner := export.ExportRewardRequestJoiner{
+		Logger:          m.Logger,
+		MyPubKeyHashHex: m.MyPubKeyHashHex,
+		Signer:          m.Signer,
+		Cache:           m.Cache,
+		Transactor:      m.Transactor,
+		ContractAddr:    m.ContractAddr,
+		Publisher:       m.Dispatcher,
+		Receipter:       m.Receipter,
+	}
+
+	exportRewarReqStartedEvtWatcher := export.ExportRewardRequestStartedEventWatcher{
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Publisher:    m.Dispatcher,
+	}
+
+	rewardExporter := export.StakingRewardExporter{
+		Logger:            m.Logger,
+		NetworkContext:    m.NetworkContext,
+		MyPubKeyHashHex:   m.MyPubKeyHashHex,
+		Publisher:         m.Dispatcher,
+		SignDoner:         m.SignDoner,
+		CChainIssueClient: m.CChainIssueClient,
+		PChainIssueClient: m.PChainIssueClient,
+		Cache:             m.Cache,
+	}
+
+	m.periodEndedChecker = &periodEndedChecker
+	m.rewardUTXOFetcher = &rewardUTXOFetcher
+	m.rewardedStakeReporter = &rewardedStakeReporter
+
+	m.exportRewardReqAddedEvtWatcher = &exportRewardReqAddedEvtWatcher
+	m.exportRewardJoiner = &exportRewardJoiner
+	m.exportRewarReqStartedEvtWatcher = &exportRewarReqStartedEvtWatcher
+	m.rewardExporter = &rewardExporter
+
+	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.periodEndedChecker) // Emit event: *events.StakingPeriodEndedEvent
+
+	m.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, m.rewardUTXOFetcher) // Emit event: *events.RewardUTXOsFetchedEvent
 }
