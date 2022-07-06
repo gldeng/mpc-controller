@@ -1,4 +1,4 @@
-package watcher
+package watch
 
 import (
 	"context"
@@ -17,9 +17,9 @@ import (
 // Accept event: *events.ContractFiltererCreatedEvent
 // Accept event: *events.GeneratedPubKeyInfoStoredEvent
 
-// Emit event: *contract.ExportRewardRequestStartedEvent
+// Emit event: *contract.ExportRewardRequestAddedEvent
 
-type ExportRewardRequestStartedEventWatcher struct {
+type ExportRewardRequestAddedEventWatcher struct {
 	Logger logger.Logger
 
 	ContractAddr common.Address
@@ -30,11 +30,11 @@ type ExportRewardRequestStartedEventWatcher struct {
 	filterer    bind.ContractFilterer
 
 	sub  event.Subscription
-	sink chan *contract.MpcManagerExportRewardRequestStarted
+	sink chan *contract.MpcManagerExportRewardRequestAdded
 	done chan struct{}
 }
 
-func (eh *ExportRewardRequestStartedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *ExportRewardRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
@@ -48,24 +48,24 @@ func (eh *ExportRewardRequestStartedEventWatcher) Do(ctx context.Context, evtObj
 		eh.pubKeyBytes = append(eh.pubKeyBytes, dnmPubKeyBtes)
 	}
 	if len(eh.pubKeyBytes) > 0 {
-		eh.doWatchExportRewardRequestStarted(evtObj.Context)
+		eh.doWatchExportRewardRequestAdded(evtObj.Context)
 	}
 }
 
-func (eh *ExportRewardRequestStartedEventWatcher) doWatchExportRewardRequestStarted(ctx context.Context) {
-	newSink := make(chan *contract.MpcManagerExportRewardRequestStarted)
-	err := eh.subscribeExportRewardRequestStarted(ctx, newSink, eh.pubKeyBytes)
+func (eh *ExportRewardRequestAddedEventWatcher) doWatchExportRewardRequestAdded(ctx context.Context) {
+	newSink := make(chan *contract.MpcManagerExportRewardRequestAdded)
+	err := eh.subscribeExportRewardRequestAdded(ctx, newSink, eh.pubKeyBytes)
 	if err == nil {
 		eh.sink = newSink
 		if eh.done != nil {
 			close(eh.done)
 		}
 		eh.done = make(chan struct{})
-		eh.watchExportRewardRequestStarted(ctx)
+		eh.watchExportRewardRequestAdded(ctx)
 	}
 }
 
-func (eh *ExportRewardRequestStartedEventWatcher) subscribeExportRewardRequestStarted(ctx context.Context, sink chan<- *contract.MpcManagerExportRewardRequestStarted, pubKeys [][]byte) error {
+func (eh *ExportRewardRequestAddedEventWatcher) subscribeExportRewardRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerExportRewardRequestAdded, pubKeys [][]byte) error {
 	if eh.sub != nil {
 		eh.sub.Unsubscribe()
 	}
@@ -77,7 +77,7 @@ func (eh *ExportRewardRequestStartedEventWatcher) subscribeExportRewardRequestSt
 			return errors.WithStack(err)
 		}
 
-		newSub, err := filter.WatchExportRewardRequestStarted(nil, sink, pubKeys)
+		newSub, err := filter.WatchExportRewardRequestAdded(nil, sink, pubKeys)
 		if err != nil {
 			eh.Logger.Error("Failed to watch ExportRewardRequestStarted event", []logger.Field{{"error", err}}...)
 			return errors.WithStack(err)
@@ -90,7 +90,7 @@ func (eh *ExportRewardRequestStartedEventWatcher) subscribeExportRewardRequestSt
 	return err
 }
 
-func (eh *ExportRewardRequestStartedEventWatcher) watchExportRewardRequestStarted(ctx context.Context) {
+func (eh *ExportRewardRequestAddedEventWatcher) watchExportRewardRequestAdded(ctx context.Context) {
 	go func() {
 		for {
 			select {
@@ -99,16 +99,15 @@ func (eh *ExportRewardRequestStartedEventWatcher) watchExportRewardRequestStarte
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				transformedEvt := events.ExportRewardRequestStartedEvent{
-					AddDelegatorTxID:   evt.RewaredStakeTxId,
-					PublicKeyHash:      evt.PublicKey,
-					ParticipantIndices: evt.ParticipantIndices,
-					TxHash:             evt.Raw.TxHash,
+				transformedEvt := events.ExportRewardRequestAddedEvent{
+					AddDelegatorTxID: evt.RewaredStakeTxId,
+					PublicKeyHash:    evt.PublicKey,
+					TxHash:           evt.Raw.TxHash,
 				}
-				evtObj := dispatcher.NewRootEventObject("ExportRewardRequestStartedEventWatcher", transformedEvt, ctx)
+				evtObj := dispatcher.NewRootEventObject("ExportRewardRequestAddedEventWatcher", transformedEvt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
-				eh.Logger.ErrorOnError(err, "Got an error during watching ExportRewardRequestStarted event", []logger.Field{{"error", err}}...)
+				eh.Logger.ErrorOnError(err, "Got an error during watching ExportRewardRequestAdded event", []logger.Field{{"error", err}}...)
 			}
 		}
 	}()
