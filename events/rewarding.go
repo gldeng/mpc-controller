@@ -45,3 +45,10 @@ type ExportRewardRequestStartedEvent struct {
 	ParticipantIndices []*big.Int
 	TxHash             common.Hash
 }
+
+type RewardExportedEvent struct {
+	AddDelegatorTxID ids.ID
+	ExportedTxID     ids.ID
+	ImportedTxID     ids.ID
+	// todo: more fields
+}
