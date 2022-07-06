@@ -12,6 +12,8 @@ import (
 	"sync"
 )
 
+var _ ICache = (*Cache)(nil)
+
 // Accept event: *events.GroupInfoStoredEvent
 // Accept event: *events.ParticipantInfoStoredEvent
 // Accept event: *events.GeneratedPubKeyInfoStoredEvent

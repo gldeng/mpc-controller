@@ -6,6 +6,14 @@ import (
 	"math/big"
 )
 
+type ICache interface {
+	MyIndexGetter
+	GeneratedPubKeyInfoGetter
+	ParticipantKeysGetter
+	NormalizedParticipantKeysGetter
+	IsParticipantChecker
+}
+
 type MyIndexGetter interface {
 	GetMyIndex(myPubKeyHashHex, genPubKeyHashHex string) *big.Int
 }
