@@ -20,11 +20,9 @@ import (
 // Emit event: *contract.ExportRewardRequestStartedEvent
 
 type ExportRewardRequestStartedEventWatcher struct {
-	Logger logger.Logger
-
 	ContractAddr common.Address
-
-	Publisher dispatcher.Publisher
+	Logger       logger.Logger
+	Publisher    dispatcher.Publisher
 
 	pubKeyBytes [][]byte
 	filterer    bind.ContractFilterer

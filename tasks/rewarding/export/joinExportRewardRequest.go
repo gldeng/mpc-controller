@@ -25,19 +25,14 @@ import (
 // Emit event: *events.JoinedExportRewardRequestEvent
 
 type ExportRewardRequestJoiner struct {
-	Logger logger.Logger
-
+	Cache           cache.ICache
+	ContractAddr    common.Address
+	Logger          logger.Logger
 	MyPubKeyHashHex string
-
-	Signer *bind.TransactOpts
-	Cache  cache.ICache
-
-	Receipter chain.Receipter
-
-	ContractAddr common.Address
-	Transactor   bind.ContractTransactor
-
-	Publisher dispatcher.Publisher
+	Publisher       dispatcher.Publisher
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Transactor      bind.ContractTransactor
 }
 
 func (eh *ExportRewardRequestJoiner) Do(ctx context.Context, evtObj *dispatcher.EventObject) {

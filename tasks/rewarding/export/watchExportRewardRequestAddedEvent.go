@@ -20,14 +20,12 @@ import (
 // Emit event: *contract.ExportRewardRequestAddedEvent
 
 type ExportRewardRequestAddedEventWatcher struct {
-	Logger logger.Logger
-
 	ContractAddr common.Address
+	Logger       logger.Logger
+	Publisher    dispatcher.Publisher
+	pubKeyBytes  [][]byte
 
-	Publisher dispatcher.Publisher
-
-	pubKeyBytes [][]byte
-	filterer    bind.ContractFilterer
+	filterer bind.ContractFilterer
 
 	sub  event.Subscription
 	sink chan *contract.MpcManagerExportRewardRequestAdded

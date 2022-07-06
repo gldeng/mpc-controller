@@ -26,20 +26,15 @@ type Cache interface {
 // Emit event: *events.StakingTaskDoneEvent
 
 type StakeRequestStartedEventHandler struct {
-	Logger logger.Logger
-	chain.NetworkContext
-
-	MyPubKeyHashHex string
-
-	Cache Cache // todo: to use cache.ICache instead
-
-	SignDoner core.SignDoner
-	Publisher dispatcher.Publisher
-
 	CChainIssueClient chain.CChainIssuer
+	Cache             Cache // todo: to use cache.ICache instead
+	Logger            logger.Logger
+	MyPubKeyHashHex   string
+	Noncer            chain.Noncer
 	PChainIssueClient chain.PChainIssuer
-
-	Noncer chain.Noncer
+	Publisher         dispatcher.Publisher
+	SignDoner         core.SignDoner
+	chain.NetworkContext
 
 	genPubKeyInfo *events.GeneratedPubKeyInfo
 	myIndex       *big.Int

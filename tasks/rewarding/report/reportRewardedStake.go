@@ -25,19 +25,14 @@ import (
 // Emit event: *events.RewardedStakeReportedEvent
 
 type RewardedStakeReporter struct {
+	Cache           cache.ICache
+	ContractAddr    common.Address
 	Logger          logger.Logger
 	MyPubKeyHashHex string
-
-	Publisher dispatcher.Publisher
-
-	Cache cache.ICache
-
-	Signer *bind.TransactOpts
-
-	ContractAddr common.Address
-	Transactor   bind.ContractTransactor
-
-	Receipter chain.Receipter
+	Publisher       dispatcher.Publisher
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Transactor      bind.ContractTransactor
 
 	once                 sync.Once
 	lock                 sync.Mutex

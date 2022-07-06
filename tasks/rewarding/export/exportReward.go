@@ -30,18 +30,14 @@ import (
 // Emit event: *events.RewardExportedEvent
 
 type StakingRewardExporter struct {
-	Logger logger.Logger
-	chain.NetworkContext
-
-	MyPubKeyHashHex string
-
-	Publisher dispatcher.Publisher
-	SignDoner core.SignDoner
-
 	CChainIssueClient chain.CChainIssuer
+	Cache             cache.ICache
+	Logger            logger.Logger
+	MyPubKeyHashHex   string
 	PChainIssueClient chain.PChainIssuer
-
-	Cache cache.ICache
+	Publisher         dispatcher.Publisher
+	SignDoner         core.SignDoner
+	chain.NetworkContext
 
 	once sync.Once
 	lock sync.Mutex

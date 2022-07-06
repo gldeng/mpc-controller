@@ -20,14 +20,11 @@ import (
 // Emit event:  *contract.MpcManagerStakeRequestAdded
 
 type StakeRequestAddedEventWatcher struct {
-	Logger logger.Logger
-
+	Logger       logger.Logger
 	ContractAddr common.Address
-
-	Publisher dispatcher.Publisher
-
-	pubKeyBytes [][]byte
-	filterer    bind.ContractFilterer
+	Publisher    dispatcher.Publisher
+	pubKeyBytes  [][]byte
+	filterer     bind.ContractFilterer
 
 	sub  event.Subscription
 	sink chan *contract.MpcManagerStakeRequestAdded

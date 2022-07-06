@@ -30,19 +30,15 @@ import (
 // Emit event: *events.ReportedGenPubKeyEvent
 
 type KeygenRequestAddedEventHandler struct {
-	Logger logger.Logger
-
+	ContractAddr    common.Address
+	KeygenDoner     core.KeygenDoner
+	Logger          logger.Logger
 	MyPubKeyHashHex string
-
-	KeygenDoner core.KeygenDoner
-	Storer      storage.MarshalSetter
-
-	ContractAddr common.Address
-	Transactor   bind.ContractTransactor
-	Signer       *bind.TransactOpts
-	Receipter    chain.Receipter
-
-	Publisher dispatcher.Publisher
+	Publisher       dispatcher.Publisher
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Storer          storage.MarshalSetter
+	Transactor      bind.ContractTransactor
 
 	groupInfoMap       map[string]events.GroupInfo
 	participantInfoMap map[string]events.ParticipantInfo

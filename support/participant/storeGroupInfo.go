@@ -17,13 +17,11 @@ import (
 // Emit event: *events.GroupInfoStoredEvent
 
 type GroupInfoStorer struct {
-	Logger logger.Logger
-
-	ContractAddr common.Address
 	Caller       bind.ContractCaller
-
-	Publisher dispatcher.Publisher
-	Storer    storage.MarshalSetter
+	ContractAddr common.Address
+	Logger       logger.Logger
+	Publisher    dispatcher.Publisher
+	Storer       storage.MarshalSetter
 }
 
 func (g *GroupInfoStorer) Do(ctx context.Context, evtObj *dispatcher.EventObject) {

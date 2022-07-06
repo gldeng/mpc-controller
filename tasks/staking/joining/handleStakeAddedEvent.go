@@ -24,19 +24,14 @@ import (
 // Emit event: *events.JoinedRequestEvent
 
 type StakeRequestAddedEventHandler struct {
-	Logger logger.Logger
-
-	MyPubKeyHashHex string
+	ContractAddr    common.Address
+	Logger          logger.Logger
 	MyIndexGetter   cache.MyIndexGetter
-
-	Signer *bind.TransactOpts
-
-	Receipter chain.Receipter
-
-	ContractAddr common.Address
-	Transactor   bind.ContractTransactor
-
-	Publisher dispatcher.Publisher
+	MyPubKeyHashHex string
+	Publisher       dispatcher.Publisher
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Transactor      bind.ContractTransactor
 }
 
 func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {

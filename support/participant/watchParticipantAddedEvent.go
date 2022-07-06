@@ -18,12 +18,10 @@ import (
 // Emit event: *contract.MpcManagerParticipantAdded
 
 type ParticipantAddedEventWatcher struct {
-	Logger logger.Logger
-
-	MyPubKeyBytes []byte
 	ContractAddr  common.Address
-
-	Publisher dispatcher.Publisher
+	Logger        logger.Logger
+	MyPubKeyBytes []byte
+	Publisher     dispatcher.Publisher
 
 	filterer bind.ContractFilterer
 

@@ -21,10 +21,8 @@ import (
 // Emit event: *events.RewardUTXOsFetchedEvent
 
 type StakingRewardUTXOFetcher struct {
-	Logger logger.Logger
-
-	Publisher dispatcher.Publisher
-
+	Logger           logger.Logger
+	Publisher        dispatcher.Publisher
 	RewardUTXOGetter chain.RewardUTXOGetter
 
 	once           sync.Once
