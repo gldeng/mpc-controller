@@ -16,6 +16,7 @@ import (
 type Cache interface {
 	cache.NormalizedParticipantKeysGetter
 	cache.GeneratedPubKeyInfoGetter
+	cache.IsParticipantChecker
 }
 
 // Accept event: *events.StakingTaskDoneEvent
@@ -27,6 +28,8 @@ type Cache interface {
 type StakingRewardUTXOExporter struct {
 	Logger logger.Logger
 	chain.NetworkContext
+
+	MyPubKeyHashHex string
 
 	Publisher dispatcher.Publisher
 	SignDoner core.SignDoner
@@ -67,9 +70,11 @@ func (eh *StakingRewardUTXOExporter) Do(ctx context.Context, evtObj *dispatcher.
 		eh.utxoFetchedEvtObjMap[evt.AddDelegatorTxID.Hex()] = evtObj
 		eh.lock.Unlock()
 	case *events.ExportRewardRequestStartedEvent:
-		eh.lock.Lock()
-		eh.exportRewardRequestStartedEvtObj[evt.AddDelegatorTxID.Hex()] = evtObj
-		eh.lock.Unlock()
+		if eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.PublicKeyHash.Hex(), evt.ParticipantIndices) {
+			eh.lock.Lock()
+			eh.exportRewardRequestStartedEvtObj[evt.AddDelegatorTxID.Hex()] = evtObj
+			eh.lock.Unlock()
+		}
 	}
 }
 
