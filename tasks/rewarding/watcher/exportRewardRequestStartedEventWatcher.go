@@ -61,7 +61,7 @@ func (eh *ExportRewardRequestStartedEventWatcher) doWatchExportRewardRequestStar
 			close(eh.done)
 		}
 		eh.done = make(chan struct{})
-		eh.watchStakeRequestStarted(ctx)
+		eh.watchExportRewardRequestStarted(ctx)
 	}
 }
 
@@ -90,7 +90,7 @@ func (eh *ExportRewardRequestStartedEventWatcher) subscribeExportRewardRequestSt
 	return err
 }
 
-func (eh *ExportRewardRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.Context) {
+func (eh *ExportRewardRequestStartedEventWatcher) watchExportRewardRequestStarted(ctx context.Context) {
 	go func() {
 		for {
 			select {
