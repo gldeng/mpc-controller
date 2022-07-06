@@ -103,3 +103,20 @@ func (c *Cache) GetNormalizedParticipantKeys(genPubKeyHash common.Hash, indices 
 
 	return normalized, nil
 }
+
+func (c *Cache) IsParticipant(myPubKeyHash string, genPubKeyHash string, participantIndices []*big.Int) bool {
+	myIndex := c.GetMyIndex(myPubKeyHash, genPubKeyHash)
+	if myIndex == nil {
+		return false
+	}
+
+	var participating bool
+	for _, index := range participantIndices {
+		if index.Cmp(myIndex) == 0 {
+			participating = true
+			break
+		}
+	}
+
+	return participating
+}

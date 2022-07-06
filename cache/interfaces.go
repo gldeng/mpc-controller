@@ -21,3 +21,7 @@ type ParticipantKeysGetter interface {
 type NormalizedParticipantKeysGetter interface {
 	GetNormalizedParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) ([]string, error)
 }
+
+type IsParticipantChecker interface {
+	IsParticipant(myPubKeyHash string, genPubKeyHash string, participantIndices []*big.Int) bool
+}
