@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,17 +20,22 @@ import (
 	"time"
 )
 
-// Accept event: *contract.MpcManagerStakeRequestAdded
+type Cache interface {
+	cache.MyIndexGetter
+	cache.GeneratedPubKeyInfoGetter
+}
 
-// Emit event: *events.JoinedRequestEvent
+// Accept event: *events.ExportRewardRequestAddedEvent
 
-type StakeRequestAddedEventHandler struct {
+// Emit event: *events.JoinedExportRewardRequestEvent
+
+type ExportRewardRequestJoiner struct {
 	Logger logger.Logger
 
 	MyPubKeyHashHex string
-	MyIndexGetter   cache.MyIndexGetter
 
 	Signer *bind.TransactOpts
+	Cache  Cache
 
 	Receipter chain.Receipter
 
@@ -39,38 +45,47 @@ type StakeRequestAddedEventHandler struct {
 	Publisher dispatcher.Publisher
 }
 
-func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *ExportRewardRequestJoiner) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *contract.MpcManagerStakeRequestAdded:
-		genPubKeyHashHex := evt.PublicKey.Hex()
-		myIndex := eh.MyIndexGetter.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHashHex)
+	case *events.ExportRewardRequestAddedEvent:
+		genPubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKeyHash.Hex())
+		if genPubKeyInfo == nil {
+			break
+		}
+
+		myIndex := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKeyHash.Hex())
 		if myIndex == nil {
 			break
 		}
+
+		groupIDBytes := bytes.HexTo32Bytes(genPubKeyInfo.GroupIdHex)
+		pubKeyBytes := bytes.HexToBytes(genPubKeyInfo.GenPubKeyHex)
+
 		dur := rand.Intn(5000)
-		time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent joinRequest can cause failure.
-		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
+		time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent joinExportRewardRequest can cause failure.
+		txHash, err := eh.joinExportRewardRequest(ctx, groupIDBytes, myIndex, pubKeyBytes, evt.AddDelegatorTxID)
 		if err != nil {
-			eh.Logger.Error("Failed to join request", []logger.Field{
+			eh.Logger.Error("Failed to join export reward request", []logger.Field{
 				{"error", err},
-				{"reqId", evt.RequestId},
+				{"addDelegatorTxID", bytes.Bytes32ToHex(evt.AddDelegatorTxID)},
 				{"txHash", txHash}}...)
 			break
 		}
 
 		if txHash != nil {
-			newEvt := events.JoinedRequestEvent{
-				TxHashHex: txHash.Hex(),
-				RequestId: evt.RequestId,
-				Index:     myIndex,
+			newEvt := events.JoinedExportRewardRequestEvent{
+				GroupIDHex:       genPubKeyInfo.GroupIdHex,
+				MyIndex:          myIndex,
+				PubKeyHex:        genPubKeyInfo.GenPubKeyHex,
+				AddDelegatorTxID: evt.AddDelegatorTxID,
 			}
 
-			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", &newEvt, evtObj.Context))
+			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "ExportRewardRequestJoiner", &newEvt, evtObj.Context))
 		}
 	}
 }
 
-func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (txHash *common.Hash, err error) {
+func (eh *ExportRewardRequestJoiner) joinExportRewardRequest(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (txHash *common.Hash, err error) {
 	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -80,14 +95,14 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 
 	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
 		var err error
-		tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
+		tx, err = transactor.JoinExportReward(eh.Signer, groupId, myIndex, publicKey, txID)
 		if err != nil {
 			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
 				tx = nil
-				eh.Logger.Info("Cannot join anymore", []logger.Field{{"reqId", req.RequestId}, {"myIndex", myIndex}}...)
+				eh.Logger.Info("Cannot join anymore", []logger.Field{{"addDelegatorTxID", bytes.Bytes32ToHex(txID)}, {"myIndex", myIndex}}...)
 				return nil
 			}
-			return errors.Wrapf(err, "failed to join request. ReqId: %v, Index: %v", req.RequestId, myIndex)
+			return errors.Wrapf(err, "failed to join request. addDelegatorTxID: %v, Index: %v", bytes.Bytes32ToHex(txID), myIndex)
 		}
 
 		time.Sleep(time.Second * 3)
