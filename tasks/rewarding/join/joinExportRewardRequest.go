@@ -78,6 +78,7 @@ func (eh *ExportRewardRequestJoiner) Do(ctx context.Context, evtObj *dispatcher.
 				MyIndex:          myIndex,
 				PubKeyHex:        genPubKeyInfo.GenPubKeyHex,
 				AddDelegatorTxID: evt.AddDelegatorTxID,
+				TxHash:           *txHash,
 			}
 
 			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "ExportRewardRequestJoiner", &newEvt, evtObj.Context))
