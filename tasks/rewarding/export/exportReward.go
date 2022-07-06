@@ -29,7 +29,7 @@ import (
 
 // Emit event: *events.RewardExportedEvent
 
-type StakingRewardUTXOExporter struct {
+type StakingRewardExporter struct {
 	Logger logger.Logger
 	chain.NetworkContext
 
@@ -52,7 +52,7 @@ type StakingRewardUTXOExporter struct {
 	exportRewardRequestStartedEvtObj map[string]*dispatcher.EventObject // todo: persistence and restore
 }
 
-func (eh *StakingRewardUTXOExporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *StakingRewardExporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.stakingTaskDoneEvtObj = make(map[string]*dispatcher.EventObject)
 		eh.utxoFetchedEvtObjMap = make(map[string]*dispatcher.EventObject)
@@ -82,7 +82,7 @@ func (eh *StakingRewardUTXOExporter) Do(ctx context.Context, evtObj *dispatcher.
 	}
 }
 
-func (eh *StakingRewardUTXOExporter) exportRewardUTXOs(ctx context.Context) {
+func (eh *StakingRewardExporter) exportRewardUTXOs(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 
@@ -94,7 +94,7 @@ func (eh *StakingRewardUTXOExporter) exportRewardUTXOs(ctx context.Context) {
 				rewardEvt := evtObj.Event.(*events.ExportRewardRequestStartedEvent)
 				partiKeys, err := eh.Cache.GetNormalizedParticipantKeys(rewardEvt.PublicKeyHash, rewardEvt.ParticipantIndices)
 				if err != nil {
-					eh.Logger.Error("StakingRewardUTXOExporter failed to export reward", []logger.Field{
+					eh.Logger.Error("StakingRewardExporter failed to export reward", []logger.Field{
 						{"error", err},
 						{"exportRewardRequestStartedEvent", rewardEvt},
 						{}}...)
@@ -128,7 +128,7 @@ func (eh *StakingRewardUTXOExporter) exportRewardUTXOs(ctx context.Context) {
 				ids, err := exportReward(ctx, &args)
 				if err != nil {
 					if err != nil {
-						eh.Logger.Error("StakingRewardUTXOExporter failed to export reward", []logger.Field{
+						eh.Logger.Error("StakingRewardExporter failed to export reward", []logger.Field{
 							{"error", err},
 							{"exportRewardRequestStartedEvent", rewardEvt},
 							{}}...)
@@ -141,7 +141,7 @@ func (eh *StakingRewardUTXOExporter) exportRewardUTXOs(ctx context.Context) {
 					ExportedTxID:     ids[0],
 					ImportedTxID:     ids[1],
 				}
-				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakingRewardUTXOExporter", newEvt, evtObj.Context))
+				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakingRewardExporter", newEvt, evtObj.Context))
 				delete(eh.exportRewardRequestStartedEvtObj, txID)
 			}
 			eh.lock.Unlock()
