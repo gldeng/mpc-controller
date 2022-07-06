@@ -40,6 +40,13 @@ type ExportRewardRequestAddedEvent struct {
 	TxHash           common.Hash
 }
 
+type JoinedExportRewardRequestEvent struct {
+	GroupIDHex       string
+	MyIndex          *big.Int
+	PubKeyHex        string
+	AddDelegatorTxID ids.ID
+}
+
 type ExportRewardRequestStartedEvent struct {
 	AddDelegatorTxID   ids.ID
 	PublicKeyHash      common.Hash
