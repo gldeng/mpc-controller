@@ -1,4 +1,4 @@
-package joining
+package join
 
 import (
 	"context"
