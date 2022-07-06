@@ -21,7 +21,7 @@ var _ porter.TxIssuer = (*Issuer)(nil)
 
 type Issuer struct {
 	CChainIssueClient chain.CChainIssuer
-	PChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.PChainIssuer
 	IssueOrder        IssueOrder
 }
 

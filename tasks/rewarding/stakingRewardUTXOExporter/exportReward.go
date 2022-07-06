@@ -29,7 +29,7 @@ type Args struct {
 	SignReqArgs *signer.SignRequestArgs
 
 	CChainIssueClient chain.CChainIssuer
-	PChainIssueClient chain.CChainIssuer
+	PChainIssueClient chain.PChainIssuer
 }
 
 func exportReward(ctx context.Context, args *Args) ([2]ids.ID, error) {
