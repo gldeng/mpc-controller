@@ -32,38 +32,38 @@ type KeygenMaster struct {
 	keygenDealer  *KeygenRequestAddedEventHandler
 }
 
-func (s *KeygenMaster) Start(ctx context.Context) error {
-	s.subscribe()
+func (m *KeygenMaster) Start(ctx context.Context) error {
+	m.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (s *KeygenMaster) subscribe() {
+func (m *KeygenMaster) subscribe() {
 	keygenWatcher := KeygenRequestAddedEventWatcher{
-		Logger:       s.Logger,
-		ContractAddr: s.ContractAddr,
-		Publisher:    s.Dispatcher,
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Publisher:    m.Dispatcher,
 	}
 
 	keygenDealer := KeygenRequestAddedEventHandler{
-		Logger:          s.Logger,
-		KeygenDoner:     s.KeygenDoner,
-		Storer:          s.Storer,
-		Publisher:       s.Dispatcher,
-		MyPubKeyHashHex: s.MyPubKeyHashHex,
-		ContractAddr:    s.ContractAddr,
-		Transactor:      s.Transactor,
-		Signer:          s.Signer,
-		Receipter:       s.Receipter,
+		Logger:          m.Logger,
+		KeygenDoner:     m.KeygenDoner,
+		Storer:          m.Storer,
+		Publisher:       m.Dispatcher,
+		MyPubKeyHashHex: m.MyPubKeyHashHex,
+		ContractAddr:    m.ContractAddr,
+		Transactor:      m.Transactor,
+		Signer:          m.Signer,
+		Receipter:       m.Receipter,
 	}
 
-	s.keygenWatcher = &keygenWatcher
-	s.keygenDealer = &keygenDealer
+	m.keygenWatcher = &keygenWatcher
+	m.keygenDealer = &keygenDealer
 
-	s.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, s.keygenWatcher)
-	s.Dispatcher.Subscribe(&events.GroupInfoStoredEvent{}, s.keygenWatcher) // Emit event: *contract.MpcManagerKeygenRequestAdded
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.keygenWatcher)
+	m.Dispatcher.Subscribe(&events.GroupInfoStoredEvent{}, m.keygenWatcher) // Emit event: *contract.MpcManagerKeygenRequestAdded
 
-	s.Dispatcher.Subscribe(&events.GroupInfoStoredEvent{}, s.keygenDealer)
-	s.Dispatcher.Subscribe(&events.ParticipantInfoStoredEvent{}, s.keygenDealer)
-	s.Dispatcher.Subscribe(&contract.MpcManagerKeygenRequestAdded{}, s.keygenDealer) // Emit event: *events.GeneratedPubKeyInfoStoredEvent, *events.ReportedGenPubKeyEvent
+	m.Dispatcher.Subscribe(&events.GroupInfoStoredEvent{}, m.keygenDealer)
+	m.Dispatcher.Subscribe(&events.ParticipantInfoStoredEvent{}, m.keygenDealer)
+	m.Dispatcher.Subscribe(&contract.MpcManagerKeygenRequestAdded{}, m.keygenDealer) // Emit event: *events.GeneratedPubKeyInfoStoredEvent, *events.ReportedGenPubKeyEvent
 }

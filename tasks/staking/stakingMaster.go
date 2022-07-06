@@ -34,36 +34,36 @@ type StakingMaster struct {
 	stakingDealer  *StakeRequestStartedEventHandler
 }
 
-func (s *StakingMaster) Start(ctx context.Context) error {
-	s.subscribe()
+func (m *StakingMaster) Start(ctx context.Context) error {
+	m.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (s *StakingMaster) subscribe() {
+func (m *StakingMaster) subscribe() {
 	taskStartedWatcher := StakeRequestStartedEventWatcher{
-		Logger:       s.Logger,
-		ContractAddr: s.ContractAddr,
-		Publisher:    s.Dispatcher,
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Publisher:    m.Dispatcher,
 	}
 
 	taskStartedDealer := StakeRequestStartedEventHandler{
-		Logger:            s.Logger,
-		NetworkContext:    s.NetworkContext,
-		MyPubKeyHashHex:   s.MyPubKeyHashHex,
-		Cache:             s.Cache,
-		SignDoner:         s.SignDoner,
-		Publisher:         s.Dispatcher,
-		CChainIssueClient: s.CChainIssueClient,
-		PChainIssueClient: s.PChainIssueClient,
-		Noncer:            s.Noncer,
+		Logger:            m.Logger,
+		NetworkContext:    m.NetworkContext,
+		MyPubKeyHashHex:   m.MyPubKeyHashHex,
+		Cache:             m.Cache,
+		SignDoner:         m.SignDoner,
+		Publisher:         m.Dispatcher,
+		CChainIssueClient: m.CChainIssueClient,
+		PChainIssueClient: m.PChainIssueClient,
+		Noncer:            m.Noncer,
 	}
 
-	s.stakingWatcher = &taskStartedWatcher
-	s.stakingDealer = &taskStartedDealer
+	m.stakingWatcher = &taskStartedWatcher
+	m.stakingDealer = &taskStartedDealer
 
-	s.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, s.stakingWatcher)
-	s.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, s.stakingWatcher) // Emit event: *contract.MpcManagerStakeRequestStarted
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.stakingWatcher)
+	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.stakingWatcher) // Emit event: *contract.MpcManagerStakeRequestStarted
 
-	s.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, s.stakingDealer) // Emit event: *events.StakingTaskDoneEvent
+	m.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, m.stakingDealer) // Emit event: *events.StakingTaskDoneEvent
 }

@@ -31,34 +31,34 @@ type JoiningMaster struct {
 	joiningDealer  *StakeRequestAddedEventHandler
 }
 
-func (j *JoiningMaster) Start(ctx context.Context) error {
-	j.subscribe()
+func (m *JoiningMaster) Start(ctx context.Context) error {
+	m.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (j *JoiningMaster) subscribe() {
+func (m *JoiningMaster) subscribe() {
 	stakeAddedWatcher := StakeRequestAddedEventWatcher{
-		Logger:       j.Logger,
-		ContractAddr: j.ContractAddr,
-		Publisher:    j.Dispatcher,
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Publisher:    m.Dispatcher,
 	}
 
 	stakeAddedHandler := StakeRequestAddedEventHandler{
-		Logger:          j.Logger,
-		MyPubKeyHashHex: j.MyPubKeyHashHex,
-		Signer:          j.Signer,
-		MyIndexGetter:   j.MyIndexGetter,
-		Receipter:       j.Receipter,
-		ContractAddr:    j.ContractAddr,
-		Transactor:      j.Transactor,
-		Publisher:       j.Dispatcher,
+		Logger:          m.Logger,
+		MyPubKeyHashHex: m.MyPubKeyHashHex,
+		Signer:          m.Signer,
+		MyIndexGetter:   m.MyIndexGetter,
+		Receipter:       m.Receipter,
+		ContractAddr:    m.ContractAddr,
+		Transactor:      m.Transactor,
+		Publisher:       m.Dispatcher,
 	}
 
-	j.joiningWatcher = &stakeAddedWatcher
-	j.joiningDealer = &stakeAddedHandler
+	m.joiningWatcher = &stakeAddedWatcher
+	m.joiningDealer = &stakeAddedHandler
 
-	j.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, j.joiningWatcher)
-	j.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, j.joiningWatcher) // Emit event:  *contract.MpcManagerStakeRequestAdded
-	j.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, j.joiningDealer)   // Emit event: *events.JoinedRequestEvent
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.joiningWatcher)
+	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.joiningWatcher) // Emit event:  *contract.MpcManagerStakeRequestAdded
+	m.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, m.joiningDealer)   // Emit event: *events.JoinedRequestEvent
 }
