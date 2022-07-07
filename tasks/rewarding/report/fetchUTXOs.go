@@ -84,10 +84,17 @@ func (eh *StakingRewardUTXOFetcher) retryRequestRewardUTXOs(ctx context.Context,
 			return errors.Errorf("no reward UTXO found for txID:%v", txID)
 		}
 		results = utxos
+		// todo: further looking into nil UTXO
+		for _, utxo := range utxos {
+			if utxo != nil {
+				results = append(results, utxo)
+			}
+		}
+
 		return nil
 	})
 
-	return results[:len(results)]
+	return results
 }
 
 func (eh *StakingRewardUTXOFetcher) requestRewardUTXOs(ctx context.Context, txID ids.ID) ([]*avax.UTXO, error) {
