@@ -87,7 +87,7 @@ func (eh *StakingRewardUTXOFetcher) retryRequestRewardUTXOs(ctx context.Context,
 		return nil
 	})
 
-	return results
+	return results[:len(results)]
 }
 
 func (eh *StakingRewardUTXOFetcher) requestRewardUTXOs(ctx context.Context, txID ids.ID) ([]*avax.UTXO, error) {
