@@ -131,7 +131,7 @@ func (s *StakeTaskWrapper) awaitAddDelegatorTxDecided(ctx context.Context, txID 
 		return nil
 	})
 
-	if string(txStatusRes.Status) != `"Committed"` {
+	if txStatusRes.Status.String() != "Committed" {
 		return errors.Errorf("addDelegatorTx failed. txID:%q, status:%q, reason:%q",
 			bytes.Bytes32ToHex(txID), txStatusRes.Status.String(), txStatusRes.Reason)
 	}
