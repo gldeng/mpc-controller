@@ -81,7 +81,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	exportId, err := s.CChainIssueClient.IssueTx(ctx, exportTx.Bytes())
+	exportId, err := s.CChainIssueClient.IssueTx(ctx, exportTx.SignedBytes())
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
