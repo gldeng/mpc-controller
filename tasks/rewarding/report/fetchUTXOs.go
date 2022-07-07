@@ -80,16 +80,15 @@ func (eh *StakingRewardUTXOFetcher) retryRequestRewardUTXOs(ctx context.Context,
 		if err != nil {
 			return errors.Wrapf(err, "failed to request reward UTXOs for txID:%v", txID)
 		}
-		if len(utxos) == 0 {
-			return errors.Errorf("no reward UTXO found for txID:%v", txID)
-		}
 		// todo: further looking into nil UTXO
 		for _, utxo := range utxos {
 			if utxo != nil {
 				results = append(results, utxo)
 			}
 		}
-
+		if len(results) == 0 {
+			return errors.Errorf("no reward UTXO found for txID:%v", txID)
+		}
 		return nil
 	})
 
