@@ -83,7 +83,6 @@ func (eh *StakingRewardUTXOFetcher) retryRequestRewardUTXOs(ctx context.Context,
 		if len(utxos) == 0 {
 			return errors.Errorf("no reward UTXO found for txID:%v", txID)
 		}
-		results = utxos
 		// todo: further looking into nil UTXO
 		for _, utxo := range utxos {
 			if utxo != nil {
