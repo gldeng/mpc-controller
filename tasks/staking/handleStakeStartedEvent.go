@@ -92,10 +92,11 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			}
 
 			stakeTaskWrapper := &StakeTaskWrapper{
+				CChainIssueClient: eh.CChainIssueClient,
+				Logger:            eh.Logger,
+				PChainIssueClient: eh.PChainIssueClient,
 				SignRequester:     signRequester,
 				StakeTask:         stakeTask,
-				CChainIssueClient: eh.CChainIssueClient,
-				PChainIssueClient: eh.PChainIssueClient,
 			}
 
 			// todo: logically only one participant can issue export, export and addDelegator tx successfully,
