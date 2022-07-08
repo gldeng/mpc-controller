@@ -25,7 +25,7 @@ type StakingPeriodEndedEvent struct {
 
 type RewardUTXOsFetchedEvent struct {
 	AddDelegatorTxID ids.ID
-	RewardUTXOs      []*avax.UTXO
+	RewardUTXOs      []*avax.UTXO `json:"-"`
 	PubKeyHex        string
 }
 
