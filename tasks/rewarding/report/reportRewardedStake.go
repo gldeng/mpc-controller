@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -65,14 +66,20 @@ func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 			eh.lock.Lock()
 			for txID, evtObj := range eh.utxoFetchedEvtObjMap {
 				evt := evtObj.Event.(*events.RewardUTXOsFetchedEvent)
-				genPubKeyHash := hash256.FromHex(evt.PubKeyHex)
-				genPubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(genPubKeyHash.Hex())
+				dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(evt.PubKeyHex) // for Ethereum compatibility
+				if err != nil {
+					eh.Logger.Error("Failed to DenormalizePubKeyFromHex", []logger.Field{{"err", err}}...)
+					break
+				}
+
+				dnmGenPubKeyHash := hash256.FromHex(bytes.BytesToHex(dnmGenPubKeyBytes))
+				genPubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(dnmGenPubKeyHash.Hex())
 				if genPubKeyInfo == nil {
 					eh.Logger.Error("No GeneratedPubKeyInfo found")
 					break
 				}
 
-				myIndex := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHash.Hex())
+				myIndex := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, dnmGenPubKeyHash.Hex())
 				if myIndex == nil {
 					eh.Logger.Error("Not found my index.")
 					break
