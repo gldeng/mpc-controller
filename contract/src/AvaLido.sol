@@ -1,7 +1,7 @@
 pragma solidity 0.8.10;
 
 uint256 constant amount = 25 ether;
-uint256 constant STAKE_PERIOD = 5 minutes;
+uint256 constant STAKE_PERIOD = 1 minutes;
 string constant NODE_ID = "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5";
 
 interface IMpcManagerSimple {
