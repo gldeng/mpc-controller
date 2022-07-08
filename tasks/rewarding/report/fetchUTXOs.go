@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
@@ -57,9 +58,10 @@ func (eh *StakingRewardUTXOFetcher) fetchRewardUTXOs(ctx context.Context) {
 			for txID, evtObj := range eh.endedEvtObjMap {
 				evt := evtObj.Event.(*events.StakingPeriodEndedEvent)
 				utxos := eh.retryRequestRewardUTXOs(ctx, evt.AddDelegatorTxID)
+				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(utxos)
 				newEvt := &events.RewardUTXOsFetchedEvent{
 					AddDelegatorTxID: evt.AddDelegatorTxID,
-					RewardUTXOs:      utxos,
+					RewardUTXOs:      mpcUTXOs,
 					PubKeyHex:        evt.PubKeyHex,
 				}
 				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakingRewardUTXOFetcher", newEvt, evtObj.Context))
