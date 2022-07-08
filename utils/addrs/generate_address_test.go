@@ -9,8 +9,14 @@ import (
 	"testing"
 )
 
+var Keys = []string{
+	"59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21",
+	"6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33",
+	"5431ed99fbcc291f2ed8906d7d46fdf45afbb1b95da65fecd4707d16a6b3301b",
+}
+
 func TestPrivateKeyToAddress(t *testing.T) {
-	for _, k := range crypto2.keys {
+	for _, k := range Keys {
 		privKey, err := crypto.HexToECDSA(k)
 		require.Nil(t, err)
 
@@ -87,7 +93,7 @@ func TestDenormizedPubKeyHexToAccount(t *testing.T) {
 }
 
 func TestBytesToAddress(t *testing.T) {
-	for _, k := range crypto2.keys {
+	for _, k := range Keys {
 		privKey, err := crypto.HexToECDSA(k)
 		require.Nil(t, err)
 
