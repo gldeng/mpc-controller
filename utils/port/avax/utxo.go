@@ -8,17 +8,22 @@ import (
 )
 
 type MpcUTXO struct {
-	UTXOID avax.UTXOID
-	Asset  avax.Asset
-	Out    *TransferOutput
+	UTXOID MpcUTXOID
+	Asset  ids.ID
+	Out    *MpcTransferOutput
 }
 
-type TransferOutput struct {
+type MpcUTXOID struct {
+	TxID        ids.ID
+	OutputIndex uint32
+}
+
+type MpcTransferOutput struct {
 	Amt          uint64
-	OutputOwners OutputOwners
+	OutputOwners MpcOutputOwners
 }
 
-type OutputOwners struct {
+type MpcOutputOwners struct {
 	Locktime  uint64
 	Threshold uint32
 	Addrs     []ids.ShortID
@@ -36,17 +41,17 @@ func MpcUTXOsFromUTXOs(utxos []*avax.UTXO) []*MpcUTXO {
 func MpcUTXOFromUTXO(utxo *avax.UTXO) *MpcUTXO {
 	out := utxo.Out.(*secp256k1fx.TransferOutput)
 
-	outputOwners := OutputOwners{}
+	outputOwners := MpcOutputOwners{}
 	copier.Copy(&outputOwners, out.OutputOwners)
 
-	transferOutput := &TransferOutput{
+	transferOutput := &MpcTransferOutput{
 		Amt:          out.Amt,
 		OutputOwners: outputOwners,
 	}
 
 	mpcUTXO := &MpcUTXO{
-		UTXOID: utxo.UTXOID,
-		Asset:  utxo.Asset,
+		UTXOID: MpcUTXOID{utxo.TxID, utxo.OutputIndex},
+		Asset:  utxo.Asset.ID,
 		Out:    transferOutput,
 	}
 
