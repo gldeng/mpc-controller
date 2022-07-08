@@ -9,10 +9,12 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/avalido/mpc-controller/utils/ids"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -81,6 +83,16 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 		return errors.WithStack(err)
 	}
 
+	cchainAddr, err := addrs.PubKeyHexToAddress(genPubKeyHex)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	pchainAddr, err := ids.ShortIDFromPubKeyHex(genPubKeyHex)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
 	if err != nil {
 		return errors.WithStack(err)
@@ -100,6 +112,8 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 		Index:            big.NewInt(int64(myIndex)),
 		GenPubKeyHex:     bytes.BytesToHex(dnmGenPubKeyBytes),
 		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
+		CChainAddress:    *cchainAddr,
+		PChainAddress:    *pchainAddr,
 	}
 
 	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
