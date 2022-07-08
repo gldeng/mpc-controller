@@ -86,9 +86,13 @@ func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 				}
 
 				groupIDBytes := bytes.HexTo32Bytes(genPubKeyInfo.GroupIdHex)
-				pubKeyBytes := bytes.HexToBytes(genPubKeyInfo.GenPubKeyHex)
+				dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(genPubKeyInfo.GenPubKeyHex)
+				if err != nil {
+					eh.Logger.Error("Failed to denormalized generated public key", []logger.Field{{"error", err}}...)
+					break
+				}
 
-				txHash, err := eh.retryReportRewardedStake(ctx, groupIDBytes, myIndex, pubKeyBytes, evt.AddDelegatorTxID)
+				txHash, err := eh.retryReportRewardedStake(ctx, groupIDBytes, myIndex, dnmPubKeyBtes, evt.AddDelegatorTxID)
 				if err != nil {
 					eh.Logger.Error("Failed to report rewarded stake request", []logger.Field{
 						{"error", err},
