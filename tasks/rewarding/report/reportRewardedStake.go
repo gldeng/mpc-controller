@@ -68,11 +68,13 @@ func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 				genPubKeyHash := hash256.FromHex(evt.PubKeyHex)
 				genPubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(genPubKeyHash.Hex())
 				if genPubKeyInfo == nil {
+					eh.Logger.Error("No GeneratedPubKeyInfo found")
 					break
 				}
 
 				myIndex := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHash.Hex())
 				if myIndex == nil {
+					eh.Logger.Error("Not found my index.")
 					break
 				}
 
