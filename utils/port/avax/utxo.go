@@ -24,6 +24,15 @@ type OutputOwners struct {
 	Addrs     []ids.ShortID
 }
 
+func MpcUTXOsFromUTXOs(utxos []*avax.UTXO) []*MpcUTXO {
+	var mpcUTXOs []*MpcUTXO
+	for _, utxo := range utxos {
+		mpcUTXO := MpcUTXOFromUTXO(utxo)
+		mpcUTXOs = append(mpcUTXOs, mpcUTXO)
+	}
+	return mpcUTXOs
+}
+
 func MpcUTXOFromUTXO(utxo *avax.UTXO) *MpcUTXO {
 	out := utxo.Out.(*secp256k1fx.TransferOutput)
 
