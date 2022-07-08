@@ -61,7 +61,8 @@ func (eh *StakingRewardUTXOFetcher) fetchRewardUTXOs(ctx context.Context) {
 				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(utxos)
 				newEvt := &events.RewardUTXOsFetchedEvent{
 					AddDelegatorTxID: evt.AddDelegatorTxID,
-					RewardUTXOs:      mpcUTXOs,
+					RewardUTXOs:      utxos,
+					MpcRewardUTXOs:   mpcUTXOs,
 					PubKeyHex:        evt.PubKeyHex,
 				}
 				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakingRewardUTXOFetcher", newEvt, evtObj.Context))
