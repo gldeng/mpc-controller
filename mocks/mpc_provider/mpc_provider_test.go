@@ -3,6 +3,7 @@ package mpc_provider
 import (
 	"crypto/ecdsa"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/common"
@@ -165,7 +166,7 @@ func (suite *mpcProviderTestSuite) TestRequestKeygen() {
 		suite.log.Debug("%%%%%%%% emitted public key", logger.Field{"publicKey", ethPubKeyHex})
 
 		// todo: this function does not work right all the time
-		stakeAddr, err := crypto.EthPubkeyHexToAddress(ethPubKeyHex)
+		stakeAddr, err := addrs.EthPubkeyHexToAddress(ethPubKeyHex)
 		if err != nil {
 			logger.Error("Got an error when parse address from Ethereum public key")
 			os.Exit(1)

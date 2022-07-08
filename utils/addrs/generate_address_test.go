@@ -1,7 +1,8 @@
-package crypto
+package addrs
 
 import (
 	"fmt"
+	crypto2 "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestPrivateKeyToAddress(t *testing.T) {
-	for _, k := range keys {
+	for _, k := range crypto2.keys {
 		privKey, err := crypto.HexToECDSA(k)
 		require.Nil(t, err)
 
@@ -86,7 +87,7 @@ func TestDenormizedPubKeyHexToAccount(t *testing.T) {
 }
 
 func TestBytesToAddress(t *testing.T) {
-	for _, k := range keys {
+	for _, k := range crypto2.keys {
 		privKey, err := crypto.HexToECDSA(k)
 		require.Nil(t, err)
 
@@ -110,7 +111,7 @@ func TestBytesToAddress(t *testing.T) {
 	b := common.Hex2Bytes(genPubKeyHex)
 	fmt.Println(b)
 
-	genPubKey, err := UnmarshalPubKeyHex(genPubKeyHex)
+	genPubKey, err := crypto2.UnmarshalPubKeyHex(genPubKeyHex)
 	require.Nil(t, err)
 
 	genPubBytes := crypto.FromECDSAPub(genPubKey)

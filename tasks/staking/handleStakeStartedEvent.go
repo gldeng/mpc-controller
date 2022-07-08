@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -162,7 +163,7 @@ func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64
 		return 0, errors.WithStack(err)
 	}
 
-	address := crypto.PubkeyToAddresse(pubkey)
+	address := addrs.PubkeyToAddresse(pubkey)
 
 	nonce, err := eh.Noncer.NonceAt(ctx, *address, nil)
 	if err != nil {

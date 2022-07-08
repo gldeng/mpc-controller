@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/token"
 	"github.com/davecgh/go-spew/spew"
@@ -85,7 +86,7 @@ func (m *MpcProvider) CreateGroup(participantPubKeys []*ecdsa.PublicKey, thresho
 		return "", errors.WithStack(err)
 	}
 
-	err = m.ensureBalance(crypto.PubkeysToAddresses(participantPubKeys))
+	err = m.ensureBalance(addrs.PubkeysToAddresses(participantPubKeys))
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

@@ -1,7 +1,8 @@
-package crypto
+package addrs
 
 import (
 	"crypto/ecdsa"
+	crypto2 "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -41,7 +42,7 @@ func PubKeyBytesToAddress(b []byte) (*common.Address, error) {
 }
 
 func PubKeyHexToAddress(pubKeyHex string) (*common.Address, error) {
-	pubKey, err := UnmarshalPubKeyHex(pubKeyHex)
+	pubKey, err := crypto2.UnmarshalPubKeyHex(pubKeyHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
