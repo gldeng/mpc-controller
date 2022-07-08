@@ -50,7 +50,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 		eh.genPubKeyInfo = pubKeyInfo
 		index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
-		if pubKeyInfo == nil {
+		if index == nil {
 			eh.Logger.Error("Not found my index.")
 			return
 		}
