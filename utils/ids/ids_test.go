@@ -20,3 +20,9 @@ func TestShortIDFromPrivKeyHex(t *testing.T) {
 		fmt.Println(privKeyHex, ": ", shortID.String())
 	}
 }
+
+func TestShortIDFromPubKeyHex(t *testing.T) {
+	id, err := ShortIDFromPubKeyHex("03384ebafc6f500033058392a5a85438e011b9556486a6687e167a93b307ac1116")
+	require.Nil(t, err)
+	require.Equal(t, "KyWAshdXvuTDZMsbJntCTS5UYcbJRcGW7", id.String())
+}
