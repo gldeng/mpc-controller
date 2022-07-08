@@ -2,7 +2,7 @@ package events
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
@@ -25,7 +25,7 @@ type StakingPeriodEndedEvent struct {
 
 type RewardUTXOsFetchedEvent struct {
 	AddDelegatorTxID ids.ID
-	RewardUTXOs      []*avax.UTXO `json:"-"`
+	RewardUTXOs      []*avax.MpcUTXO
 	PubKeyHex        string
 }
 
