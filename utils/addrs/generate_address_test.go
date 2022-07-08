@@ -30,20 +30,12 @@ func TestPrivateKeyToAddress(t *testing.T) {
 	}
 }
 
-func TestPubKeyHexToAccount(t *testing.T) {
-	pubkeyHex := "02378e06ecb5c799909cb7048c091720b6b780773a46504315b183eee53d57f8f0"
+func TestPubKeyHexToAddress(t *testing.T) {
+	pubkeyHex := "03384ebafc6f500033058392a5a85438e011b9556486a6687e167a93b307ac1116"
 	addr, err := PubKeyHexToAddress(pubkeyHex)
 
-	pubKeyBytes := common.Hex2Bytes(pubkeyHex)   // todo: delete
-	fmt.Println("len bytes: ", len(pubKeyBytes)) // todo: delete
-	fmt.Println("bytes: ", pubKeyBytes)          // todo: delete
-	//  [2 170 100 112 3 192 170 215 231 84 24 15 154 154 111 119 207 169 30 254 60 10 148 36 254 101 232 77 10 223 148 82 243]
-
 	require.Nil(t, err)
-	fmt.Println(addr)
-	// 0xD35Ba5D5d264defc89A90327B90A43212a3D37bd
-
-	fmt.Println("hex leng", len("aa647003c0aad7e754180f9a9a6f77cfa91efe3c0a9424fe65e84d0adf9452f3"))
+	require.Equal(t, "0x00F4CA03D670b47e47CCA5087dF363f4d5C2A955", addr.String())
 }
 
 func TestEthPubkeyHexToAddress(t *testing.T) {
