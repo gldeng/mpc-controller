@@ -90,9 +90,7 @@ func ParseUTXOs(utxoBytesArr [][]byte) ([]*avax.UTXO, error) {
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		if utxo != nil {
-			utxos = append(utxos, utxo)
-		}
+		utxos = append(utxos, utxo)
 	}
 	return utxos, nil
 }
