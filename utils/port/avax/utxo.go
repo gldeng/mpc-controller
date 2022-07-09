@@ -3,8 +3,10 @@ package avax
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/jinzhu/copier"
+	"github.com/pkg/errors"
 )
 
 type MpcUTXO struct {
@@ -79,4 +81,27 @@ func UTXOFromTransferableOutput(txID ids.ID, output *avax.TransferableOutput, ou
 	}
 
 	return &utxo
+}
+
+func ParseUTXOs(utxoBytesArr [][]byte) ([]*avax.UTXO, error) {
+	var utxos = make([]*avax.UTXO, len(utxoBytesArr))
+	for _, utxoBytes := range utxoBytesArr {
+		utxo, err := ParseUTXO(utxoBytes)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if utxo != nil {
+			utxos = append(utxos, utxo)
+		}
+	}
+	return utxos, nil
+}
+
+func ParseUTXO(utxoBytes []byte) (*avax.UTXO, error) {
+	var utxo avax.UTXO
+	_, err := platformvm.Codec.Unmarshal(utxoBytes, &utxo)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &utxo, nil
 }
