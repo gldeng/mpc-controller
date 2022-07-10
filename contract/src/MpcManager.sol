@@ -386,10 +386,10 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
 ) external onlyGroupMember(groupId, myIndex) {
         uint256 threshold = 1; // todo: compare with group threshold
         uint256 joinedCount = _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex].length;
-        if (_joinedCount < threshold+1) {
+        if (joinedCount < threshold+1) {
              _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex].push(myIndex);
             if (joinedCount+1 == threshold+1) {
-                uint256[] joinedIndices = _joinExportRewardParticipantIndices[utxoTxID][utxoOutputIndex];
+                uint256[] memory joinedIndices = _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex];
                 if (utxoOutputIndex == 0) {
                     address ArrToAcceptPrincipal = lastGenAddress; // todo: make it configurable
                     emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptPrincipal, genPubKey, joinedIndices);
