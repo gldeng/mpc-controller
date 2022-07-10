@@ -82,11 +82,6 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
 
     event ExportUTXORequestAdded(bytes32 utxoTxId, uint32 utxoOutputIndex, bytes indexed genPubKey);
     event ExportUTXORequestStarted(bytes32 utxoTxId, uint32 utxoOutputIndex, address to, bytes indexed genPubKey, uint256[] participantIndices);
-//
-//    event ExportRewardRequestAdded(bytes32 rewaredStakeTxId, bytes indexed publicKey);
-//    event ExportRewardRequestStarted(bytes32 rewaredStakeTxId, bytes indexed publicKey, uint256[] participantIndices);
-//    event ExportRewardRequestAdded(bytes32 rewaredStakeTxId, bytes indexed publicKey);
-//    event ExportRewardRequestStarted(bytes32 rewaredStakeTxId, bytes indexed publicKey, uint256[] participantIndices);
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -373,9 +368,10 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         uint32 utxoOutputIndex
     ) external onlyGroupMember(groupId, myIndex) {
         uint256 groupMembers = 3; // todo: compare with number of group members.
-        if (_reportRewardedStakeCounts[utxoTxID] < groupMembers) {
-            _reportRewardedStakeCounts[utxoTxID] = _reportRewardedStakeCounts[txID]+1;
-            if (_reportRewardedStakeCounts[utxoTxID] == groupMembers) { // todo
+        uint256 reportedCount = _reportUTXOCounts[utxoTxID][utxoOutputIndex];
+        if (reportedCount < groupMembers) {
+            _reportUTXOCounts[utxoTxID][utxoOutputIndex] = reportedCount+1;
+            if (reportedCount+1 == groupMembers) {
                 emit ExportUTXORequestAdded(utxoTxID, utxoOutputIndex, genPubKey);
             }
         }
@@ -389,64 +385,19 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         uint32 utxoOutputIndex
 ) external onlyGroupMember(groupId, myIndex) {
         uint256 threshold = 1; // todo: compare with group threshold
-        if (_joinExportRewardParticipantIndices[utxoTxID].length < threshold+1) {
-            _joinExportRewardParticipantIndices[utxoTxID].push(myIndex);
-            if (_joinExportRewardParticipantIndices[utxoTxID].length == threshold+1) {
-                if (_reportRewardedStakeCounts[utxoTxID] == groupMembers) { // todo
-                    if (utxoOutputIndex == 0) {
-                        address ArrToAcceptPrincipal = lastGenAddress; // todo: make it configurable
-                        emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptPrincipal, genPubKey, _joinExportRewardParticipantIndices[txID]);
-                    } else if (utxoOutputIndex == 1) {
-                        address ArrToAcceptReward = lastGenAddress; // todo: make it configurable
-                    emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptReward, genPubKey, _joinExportRewardParticipantIndices[txID]);
-                    }
+        uint256 joinedCount = _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex].length;
+        if (_joinedCount < threshold+1) {
+             _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex].push(myIndex);
+            if (joinedCount+1 == threshold+1) {
+                uint256[] joinedIndices = _joinExportRewardParticipantIndices[utxoTxID][utxoOutputIndex];
+                if (utxoOutputIndex == 0) {
+                    address ArrToAcceptPrincipal = lastGenAddress; // todo: make it configurable
+                    emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptPrincipal, genPubKey, joinedIndices);
+                } else if (utxoOutputIndex == 1) {
+                    address ArrToAcceptReward = lastGenAddress; // todo: make it configurable
+                    emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptReward, genPubKey, joinedIndices);
                 }
             }
         }
     }
-
-//    function reportPrincipal(
-//        bytes32 groupId,
-//        uint256 myIndex,
-//        bytes calldata publicKey,
-//        bytes32 txID
-//    ) external onlyGroupMember(groupId, myIndex) {
-//        uint256 groupMembers = 3; // todo: compare with number of group members.
-//        if (_reportRewardedStakeCounts[txID] < groupMembers) {
-//            _reportRewardedStakeCounts[txID] = _reportRewardedStakeCounts[txID]+1;
-//            if (_reportRewardedStakeCounts[txID] == groupMembers) {
-//                emit ExportRewardRequestAdded(txID, publicKey);
-//            }
-//        }
-//    }
-//
-//    function reportRewardedStake(
-//        bytes32 groupId,
-//        uint256 myIndex,
-//        bytes calldata publicKey,
-//        bytes32 txID
-//    ) external onlyGroupMember(groupId, myIndex) {
-//        uint256 groupMembers = 3; // todo: compare with number of group members.
-//        if (_reportRewardedStakeCounts[txID] < groupMembers) {
-//            _reportRewardedStakeCounts[txID] = _reportRewardedStakeCounts[txID]+1;
-//            if (_reportRewardedStakeCounts[txID] == groupMembers) {
-//                emit ExportRewardRequestAdded(txID, publicKey);
-//            }
-//        }
-//    }
-//
-//    function joinExportReward(
-//        bytes32 groupId,
-//        uint256 myIndex,
-//        bytes calldata publicKey,
-//        bytes32 txID
-//    ) external onlyGroupMember(groupId, myIndex) {
-//        uint256 threshold = 1; // todo: compare with group threshold
-//        if (_joinExportRewardParticipantIndices[txID].length < threshold+1) {
-//            _joinExportRewardParticipantIndices[txID].push(myIndex);
-//            if (_joinExportRewardParticipantIndices[txID].length == threshold+1) {
-//                emit ExportRewardRequestStarted(txID, publicKey, _joinExportRewardParticipantIndices[txID]);
-//            }
-//        }
-//    }
 }
