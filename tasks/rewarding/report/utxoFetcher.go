@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
+	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
@@ -59,7 +60,7 @@ func (eh *UTXOFetcher) checkUTXOs(ctx context.Context) {
 		select {
 		case <-t.C:
 			eh.lock.Lock()
-			for addr, _ := range eh.genPubKeyEvtObjMap {
+			for addr, evt := range eh.genPubKeyEvtObjMap {
 				utxos, err := eh.getNativeUTXOs(ctx, addr)
 				if err != nil {
 					eh.Logger.Error("Failed to get native UTXOss", []logger.Field{{"error", err}}...)
@@ -110,10 +111,11 @@ func (eh *UTXOFetcher) checkUTXOs(ctx context.Context) {
 				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(utxos)
 
 				newEvt := &events.UTXOsFetchedEvent{
-					PChainAddress: addr,
-					NativeUTXOs:   utxos,
-					MpcUTXOs:      mpcUTXOs,
+					NativeUTXOs: utxos,
+					MpcUTXOs:    mpcUTXOs,
 				}
+
+				copier.Copy(&newEvt, evt.Event.(*events.ReportedGenPubKeyEvent))
 
 				eh.Publisher.Publish(ctx, dispatcher.NewRootEventObject("UTXOFetcher", newEvt, ctx))
 			}
