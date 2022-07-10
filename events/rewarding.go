@@ -25,10 +25,15 @@ type StakingPeriodEndedEvent struct {
 }
 
 type UTXOsFetchedEvent struct {
-	PChainAddress ids.ShortID
-	NativeUTXOs   []*avax.UTXO `json:"-"`
-	MpcUTXOs      []*myAvax.MpcUTXO
-	PubKeyHex     string
+	NativeUTXOs []*avax.UTXO `json:"-"`
+	MpcUTXOs    []*myAvax.MpcUTXO
+
+	GroupIdHex       string         `copier:"must"`
+	Index            *big.Int       `copier:"must"`
+	GenPubKeyHex     string         `copier:"must"`
+	GenPubKeyHashHex string         `copier:"must"`
+	CChainAddress    common.Address `copier:"must"`
+	PChainAddress    ids.ShortID    `copier:"must"`
 }
 
 type RewardedStakeReportedEvent struct {
