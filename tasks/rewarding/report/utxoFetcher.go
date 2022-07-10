@@ -27,8 +27,8 @@ const (
 
 type UTXOFetcher struct {
 	Logger       logger.Logger
-	Publisher    dispatcher.Publisher
 	PChainClient platformvm.Client
+	Publisher    dispatcher.Publisher
 
 	once               sync.Once
 	lock               sync.Mutex

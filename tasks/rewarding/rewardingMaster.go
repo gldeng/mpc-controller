@@ -2,6 +2,7 @@ package rewarding
 
 import (
 	"context"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
@@ -21,7 +22,7 @@ type RewardingMaster struct {
 	Dispatcher        dispatcher.DispatcherClaasic
 	Logger            logger.Logger
 	MyPubKeyHashHex   string
-	PChainIssueClient chain.PChainIssuer
+	PChainClient      platformvm.Client
 	Receipter         chain.Receipter
 	RewardUTXOGetter  chain.RewardUTXOGetter
 	SignDoner         core.SignDoner
@@ -30,8 +31,7 @@ type RewardingMaster struct {
 	chain.NetworkContext
 
 	// report
-	periodEndedChecker    *report.UTXOFetcher
-	rewardUTXOFetcher     *report.StakingRewardUTXOFetcher
+	utxoFetcher           *report.UTXOFetcher
 	rewardedStakeReporter *report.RewardedStakeReporter
 
 	// export
@@ -48,14 +48,10 @@ func (m *RewardingMaster) Start(ctx context.Context) error {
 }
 
 func (m *RewardingMaster) subscribe() {
-	periodEndedChecker := report.UTXOFetcher{
-		Publisher: m.Dispatcher,
-	}
-
-	rewardUTXOFetcher := report.StakingRewardUTXOFetcher{
-		Logger:           m.Logger,
-		Publisher:        m.Dispatcher,
-		RewardUTXOGetter: m.RewardUTXOGetter,
+	utxoFetcher := report.UTXOFetcher{
+		Logger:       m.Logger,
+		PChainClient: m.PChainClient,
+		Publisher:    m.Dispatcher,
 	}
 
 	rewardedStakeReporter := report.RewardedStakeReporter{
@@ -98,13 +94,12 @@ func (m *RewardingMaster) subscribe() {
 		Logger:            m.Logger,
 		MyPubKeyHashHex:   m.MyPubKeyHashHex,
 		NetworkContext:    m.NetworkContext,
-		PChainIssueClient: m.PChainIssueClient,
+		PChainIssueClient: m.PChainClient,
 		Publisher:         m.Dispatcher,
 		SignDoner:         m.SignDoner,
 	}
 
-	m.periodEndedChecker = &periodEndedChecker
-	m.rewardUTXOFetcher = &rewardUTXOFetcher
+	m.utxoFetcher = &utxoFetcher
 	m.rewardedStakeReporter = &rewardedStakeReporter
 
 	m.exportRewardReqAddedEvtWatcher = &exportRewardReqAddedEvtWatcher
@@ -112,9 +107,8 @@ func (m *RewardingMaster) subscribe() {
 	m.exportRewarReqStartedEvtWatcher = &exportRewarReqStartedEvtWatcher
 	m.rewardExporter = &rewardExporter
 
-	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.periodEndedChecker)   // Emit event: *events.StakingPeriodEndedEvent
-	m.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, m.rewardUTXOFetcher) // Emit event: *events.UTXOsFetchedEvent
-	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardedStakeReporter)   // Emit event: *events.RewardedStakeReportedEvent
+	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.utxoFetcher)        // Emit event: *events.StakingPeriodEndedEvent
+	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardedStakeReporter) // Emit event: *events.RewardedStakeReportedEvent
 
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
 	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportRewardRequestAddedEvent
