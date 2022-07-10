@@ -52,10 +52,10 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     mapping(uint256 => StakeRequestDetails) private _stakeRequestDetails;
     uint256 private _lastRequestId;
 
-    // rewardedStakeTxId -> reportRewardedStakeCount
-    mapping(bytes32 => uint256) private _reportRewardedStakeCounts;
-    // rewardedStakeTxId -> joinExportRewardParticipantIndices
-    mapping(bytes32 => uint256[]) private _joinExportRewardParticipantIndices;
+    // utxoTxId -> utxoOutputIndex -> reportUTXOCount
+    mapping(bytes32 => mapping(uint32 => uint256)) private _reportUTXOCounts;
+    // utxoTxId -> utxoOutputIndex -> joinExportUTXOParticipantIndices
+    mapping(bytes32 => mapping(uint32 => uint256[])) private _joinExportUTXOParticipantIndices;
 
     event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index);
     event KeyGenerated(bytes32 indexed groupId, bytes publicKey);
@@ -373,9 +373,9 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         uint32 utxoOutputIndex
     ) external onlyGroupMember(groupId, myIndex) {
         uint256 groupMembers = 3; // todo: compare with number of group members.
-        if (_reportRewardedStakeCounts[txID] < groupMembers) {
-            _reportRewardedStakeCounts[txID] = _reportRewardedStakeCounts[txID]+1;
-            if (_reportRewardedStakeCounts[txID] == groupMembers) { // todo
+        if (_reportRewardedStakeCounts[utxoTxID] < groupMembers) {
+            _reportRewardedStakeCounts[utxoTxID] = _reportRewardedStakeCounts[txID]+1;
+            if (_reportRewardedStakeCounts[utxoTxID] == groupMembers) { // todo
                 emit ExportUTXORequestAdded(utxoTxID, utxoOutputIndex, genPubKey);
             }
         }
@@ -389,10 +389,10 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         uint32 utxoOutputIndex
 ) external onlyGroupMember(groupId, myIndex) {
         uint256 threshold = 1; // todo: compare with group threshold
-        if (_joinExportRewardParticipantIndices[txID].length < threshold+1) {
-            _joinExportRewardParticipantIndices[txID].push(myIndex);
-            if (_joinExportRewardParticipantIndices[txID].length == threshold+1) {
-                if (_reportRewardedStakeCounts[txID] == groupMembers) { // todo
+        if (_joinExportRewardParticipantIndices[utxoTxID].length < threshold+1) {
+            _joinExportRewardParticipantIndices[utxoTxID].push(myIndex);
+            if (_joinExportRewardParticipantIndices[utxoTxID].length == threshold+1) {
+                if (_reportRewardedStakeCounts[utxoTxID] == groupMembers) { // todo
                     if (utxoOutputIndex == 0) {
                         address ArrToAcceptPrincipal = lastGenAddress; // todo: make it configurable
                         emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptPrincipal, genPubKey, _joinExportRewardParticipantIndices[txID]);
