@@ -24,7 +24,7 @@ import (
 )
 
 // Accept event: *events.StakingTaskDoneEvent
-// Accept event: *events.RewardUTXOsFetchedEvent
+// Accept event: *events.UTXOsFetchedEvent
 // Accept event: *events.ExportRewardRequestStartedEvent
 
 // Emit event: *events.RewardExportedEvent
@@ -58,14 +58,12 @@ func (eh *StakingRewardExporter) Do(ctx context.Context, evtObj *dispatcher.Even
 		}()
 	})
 
-	<-time.After(time.Millisecond * 200) // wait for internal data structures get initialized todo: remove it and use improved strategy.
-
 	switch evt := evtObj.Event.(type) {
 	case *events.StakingTaskDoneEvent:
 		eh.lock.Lock()
 		eh.stakingTaskDoneEvtObj[evt.AddDelegatorTxID.Hex()] = evtObj
 		eh.lock.Unlock()
-	case *events.RewardUTXOsFetchedEvent:
+	case *events.UTXOsFetchedEvent:
 		eh.lock.Lock()
 		eh.utxoFetchedEvtObjMap[evt.AddDelegatorTxID.Hex()] = evtObj
 		eh.lock.Unlock()
@@ -100,7 +98,7 @@ func (eh *StakingRewardExporter) exportRewardUTXOs(ctx context.Context) {
 				pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(rewardEvt.PublicKeyHash.Hex())
 
 				stakingTaskDoneEvt := eh.stakingTaskDoneEvtObj[txID].Event.(*events.StakingTaskDoneEvent)
-				utxoFetchedEvt := eh.utxoFetchedEvtObjMap[txID].Event.(*events.RewardUTXOsFetchedEvent)
+				utxoFetchedEvt := eh.utxoFetchedEvtObjMap[txID].Event.(*events.UTXOsFetchedEvent)
 
 				args := Args{
 					NetworkID: eh.NetworkID(),
@@ -108,7 +106,7 @@ func (eh *StakingRewardExporter) exportRewardUTXOs(ctx context.Context) {
 					CChainID:    eh.CChainID(),
 					PChainAddr:  stakingTaskDoneEvt.PChainAddress,
 					CChainArr:   stakingTaskDoneEvt.CChainAddress,
-					RewardUTXOs: utxoFetchedEvt.RewardUTXOs,
+					RewardUTXOs: utxoFetchedEvt.NativeUTXOs,
 
 					SignDoner: eh.SignDoner,
 					SignReqArgs: &signer.SignRequestArgs{
