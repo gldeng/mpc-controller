@@ -25,12 +25,12 @@ type TransactorReportGeneratedKey interface {
 	ReportGeneratedKey(ctx context.Context, groupId [32]byte, myIndex *big.Int, generatedPublicKey []byte) (*types.Transaction, error)
 }
 
-type TransactorReportRewardedStake interface {
-	ReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (*types.Transaction, error)
+type TransactorReportUTXO interface {
+	ReportUTXO(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte, utxoTxID [32]byte, utxoOutputIndex uint32) (*types.Transaction, error)
 }
 
-type TransactorJoinExportReward interface {
-	JoinExportReward(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (*types.Transaction, error)
+type TransactorJoinExportUTXO interface {
+	JoinExportUTXO(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte, utxoTxID [32]byte, utxoOutputIndex uint32) (*types.Transaction, error)
 }
 
 // Filters
@@ -55,10 +55,10 @@ type FilterStakeRequestStarted interface {
 	WatchStakeRequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerStakeRequestStarted, error)
 }
 
-type FilterExportRewardRequestAdded interface {
-	WatchExportRewardRequestAdded(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerExportRewardRequestAdded, error)
+type FilterExportUTXORequestAdded interface {
+	WatchExportUTXORequestAdded(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerExportUTXORequestAdded, error)
 }
 
-type FilterExportRewardRequestStarted interface {
-	WatchExportRewardRequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerExportRewardRequestStarted, error)
+type FilterExportUTXORequestStarted interface {
+	WatchExportUTXORequestStarted(ctx context.Context, publicKey [][]byte) (<-chan *MpcManagerExportUTXORequestStarted, error)
 }
