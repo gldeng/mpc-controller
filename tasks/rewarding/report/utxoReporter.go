@@ -21,11 +21,11 @@ import (
 	"time"
 )
 
-// Accept event: *events.RewardUTXOsFetchedEvent
+// Accept event: *events.UTXOsFetchedEvent
 
 // Emit event: *events.RewardedStakeReportedEvent
 
-type RewardedStakeReporter struct {
+type UTXOReporter struct {
 	Cache           cache.ICache
 	ContractAddr    common.Address
 	Logger          logger.Logger
@@ -40,9 +40,9 @@ type RewardedStakeReporter struct {
 	utxoFetchedEvtObjMap map[string]*dispatcher.EventObject // todo: persistence and restore
 }
 
-func (eh *RewardedStakeReporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *UTXOReporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.RewardUTXOsFetchedEvent:
+	case *events.UTXOsFetchedEvent:
 		eh.once.Do(func() {
 			eh.utxoFetchedEvtObjMap = make(map[string]*dispatcher.EventObject)
 			go func() {
@@ -56,7 +56,7 @@ func (eh *RewardedStakeReporter) Do(ctx context.Context, evtObj *dispatcher.Even
 	}
 }
 
-func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
+func (eh *UTXOReporter) reportRewardedStake(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 
@@ -65,7 +65,7 @@ func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for txID, evtObj := range eh.utxoFetchedEvtObjMap {
-				evt := evtObj.Event.(*events.RewardUTXOsFetchedEvent)
+				evt := evtObj.Event.(*events.UTXOsFetchedEvent)
 				dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(evt.PubKeyHex) // for Ethereum compatibility
 				if err != nil {
 					eh.Logger.Error("Failed to DenormalizePubKeyFromHex", []logger.Field{{"err", err}}...)
@@ -108,7 +108,7 @@ func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 					MyIndex:          myIndex,
 					TxHash:           txHash,
 				}
-				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "RewardedStakeReporter", newEvt, evtObj.Context))
+				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "UTXOReporter", newEvt, evtObj.Context))
 				delete(eh.utxoFetchedEvtObjMap, txID)
 			}
 			eh.lock.Unlock()
@@ -118,7 +118,7 @@ func (eh *RewardedStakeReporter) reportRewardedStake(ctx context.Context) {
 	}
 }
 
-func (eh *RewardedStakeReporter) retryReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (txHash *common.Hash, err error) {
+func (eh *UTXOReporter) retryReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (txHash *common.Hash, err error) {
 	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
 	if err != nil {
 		return nil, errors.WithStack(err)

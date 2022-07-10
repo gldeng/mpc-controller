@@ -32,7 +32,7 @@ package report
 //
 //	utxoFetchedEvt := &events.RewardUTXOsFetchedEvent{ // todo: mock data
 //		AddDelegatorTxID: ids.ID{},
-//		RewardUTXOs:      nil,
+//		NativeUTXOs:      nil,
 //	}
 //
 //	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -50,7 +50,7 @@ package report
 //		rewardUTXOsReportedEvt = evtObj.Event.(*events.RewardedStakeReportedEvent)
 //	})
 //
-//	reporter := &RewardedStakeReporter{
+//	reporter := &UTXOReporter{
 //		Logger:     logger.Default(),
 //		Publisher:  myDispatcher,
 //		Transactor: myTransactor,

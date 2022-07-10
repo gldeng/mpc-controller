@@ -32,7 +32,7 @@ type RewardingMaster struct {
 
 	// report
 	utxoFetcher           *report.UTXOFetcher
-	rewardedStakeReporter *report.RewardedStakeReporter
+	rewardedStakeReporter *report.UTXOReporter
 
 	// export
 	exportRewardReqAddedEvtWatcher  *export.ExportRewardRequestAddedEventWatcher
@@ -54,7 +54,7 @@ func (m *RewardingMaster) subscribe() {
 		Publisher:    m.Dispatcher,
 	}
 
-	rewardedStakeReporter := report.RewardedStakeReporter{
+	rewardedStakeReporter := report.UTXOReporter{
 		Cache:           m.Cache,
 		ContractAddr:    m.ContractAddr,
 		Logger:          m.Logger,
