@@ -24,11 +24,11 @@ type StakingPeriodEndedEvent struct {
 	PChainAddress ids.ShortID `copier:"must"`
 }
 
-type RewardUTXOsFetchedEvent struct {
-	AddDelegatorTxID ids.ID
-	RewardUTXOs      []*avax.UTXO `json:"-"`
-	MpcRewardUTXOs   []*myAvax.MpcUTXO
-	PubKeyHex        string
+type UTXOsFetchedEvent struct {
+	PChainAddress ids.ShortID
+	NativeUTXOs   []*avax.UTXO `json:"-"`
+	MpcUTXOs      []*myAvax.MpcUTXO
+	PubKeyHex     string
 }
 
 type RewardedStakeReportedEvent struct {

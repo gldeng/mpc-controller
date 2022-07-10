@@ -30,7 +30,7 @@ type RewardingMaster struct {
 	chain.NetworkContext
 
 	// report
-	periodEndedChecker    *report.StakingPeriodEndedChecker
+	periodEndedChecker    *report.UTXOFetcher
 	rewardUTXOFetcher     *report.StakingRewardUTXOFetcher
 	rewardedStakeReporter *report.RewardedStakeReporter
 
@@ -48,7 +48,7 @@ func (m *RewardingMaster) Start(ctx context.Context) error {
 }
 
 func (m *RewardingMaster) subscribe() {
-	periodEndedChecker := report.StakingPeriodEndedChecker{
+	periodEndedChecker := report.UTXOFetcher{
 		Publisher: m.Dispatcher,
 	}
 
@@ -112,9 +112,9 @@ func (m *RewardingMaster) subscribe() {
 	m.exportRewarReqStartedEvtWatcher = &exportRewarReqStartedEvtWatcher
 	m.rewardExporter = &rewardExporter
 
-	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.periodEndedChecker)       // Emit event: *events.StakingPeriodEndedEvent
-	m.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, m.rewardUTXOFetcher)     // Emit event: *events.RewardUTXOsFetchedEvent
-	m.Dispatcher.Subscribe(&events.RewardUTXOsFetchedEvent{}, m.rewardedStakeReporter) // Emit event: *events.RewardedStakeReportedEvent
+	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.periodEndedChecker)   // Emit event: *events.StakingPeriodEndedEvent
+	m.Dispatcher.Subscribe(&events.StakingPeriodEndedEvent{}, m.rewardUTXOFetcher) // Emit event: *events.UTXOsFetchedEvent
+	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardedStakeReporter)   // Emit event: *events.RewardedStakeReportedEvent
 
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
 	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportRewardRequestAddedEvent
@@ -122,6 +122,6 @@ func (m *RewardingMaster) subscribe() {
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewarReqStartedEvtWatcher)
 	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewarReqStartedEvtWatcher) // Emit event: *contract.ExportRewardRequestStartedEvent
 	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.rewardExporter)
-	m.Dispatcher.Subscribe(&events.RewardUTXOsFetchedEvent{}, m.rewardExporter)
+	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardExporter)
 	m.Dispatcher.Subscribe(&events.ExportRewardRequestStartedEvent{}, m.rewardExporter) // Emit event: *events.RewardExportedEvent
 }
