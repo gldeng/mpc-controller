@@ -47,7 +47,7 @@ type UTXOReportedEvent struct {
 //}
 
 type ExportUTXORequestEvent struct {
-	TxID               ids.ID         `copier:"must"`
+	TxID               ids.ID
 	OutputIndex        uint32         `copier:"must"`
 	To                 common.Address `copier:"must"`
 	GenPubKeyHash      common.Hash    `copier:"must"`

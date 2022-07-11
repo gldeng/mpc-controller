@@ -91,6 +91,7 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 				return
 			case evt := <-eh.sink:
 				transformedEvt := events.ExportUTXORequestEvent{
+					TxID:   evt.TxId,
 					TxHash: evt.Raw.TxHash,
 				}
 				copier.Copy(&transformedEvt, evt)
