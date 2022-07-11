@@ -56,7 +56,7 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	case *events.ExportUTXORequestEvent:
 		ok := eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.Hex(), evt.ParticipantIndices)
 		if !ok {
-			eh.Logger.Debug("Not participant with ExportUTXORequest", []logger.Field{{"exportUTXORequest", evt}}...)
+			eh.Logger.Debug("Not participated ExportUTXORequest", []logger.Field{{"exportUTXORequest", evt}}...)
 			break
 		}
 		eh.exportUTXO(ctx, evtObj)
