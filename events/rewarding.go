@@ -50,8 +50,8 @@ type ExportUTXORequestEvent struct {
 	TxID               ids.ID
 	OutputIndex        uint32         `copier:"must"`
 	To                 common.Address `copier:"must"`
-	GenPubKeyHash      common.Hash    `copier:"must"`
-	ParticipantIndices []*big.Int     `copier:"must"`
+	GenPubKeyHash      common.Hash
+	ParticipantIndices []*big.Int `copier:"must"`
 	TxHash             common.Hash
 }
 
