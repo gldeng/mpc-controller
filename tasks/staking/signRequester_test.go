@@ -34,7 +34,7 @@ func (suite *SignRequesterTestSuite) TestSignExportTx() {
 
 	exportTxSignReq := core.SignRequest{
 		RequestId:              suite.TaskID + "-" + strconv.Itoa(0),
-		CompressedGenPubKey:    suite.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: suite.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: suite.CompressedPartiPubKeys,
 		Hash:                   hash,
 	}
@@ -71,7 +71,7 @@ func (suite *SignRequesterTestSuite) TestSignImportTx() {
 
 	exportTxSignReq := core.SignRequest{
 		RequestId:              suite.TaskID + "-" + strconv.Itoa(1),
-		CompressedGenPubKey:    suite.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: suite.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: suite.CompressedPartiPubKeys,
 		Hash:                   hash,
 	}
@@ -108,7 +108,7 @@ func (suite *SignRequesterTestSuite) TestSignAddDelegatorTx() {
 
 	exportTxSignReq := core.SignRequest{
 		RequestId:              suite.TaskID + "-" + strconv.Itoa(2),
-		CompressedGenPubKey:    suite.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: suite.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: suite.CompressedPartiPubKeys,
 		Hash:                   hash,
 	}

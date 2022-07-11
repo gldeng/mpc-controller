@@ -24,7 +24,7 @@ type SignRequestArgs struct {
 func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error) {
 	exportTxSignReq := core.SignRequest{
 		RequestId:              s.TaskID + "-" + strconv.Itoa(0),
-		CompressedGenPubKey:    s.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(exportTxHash),
 	}
@@ -40,7 +40,7 @@ func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) (
 func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error) {
 	importTxSignReq := core.SignRequest{
 		RequestId:              s.TaskID + "-" + strconv.Itoa(1),
-		CompressedGenPubKey:    s.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(importTxHash),
 	}
@@ -56,7 +56,7 @@ func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) (
 func (s *SignRequester) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHash []byte) ([65]byte, error) {
 	addDelegatorTxSignReq := core.SignRequest{
 		RequestId:              s.TaskID + "-" + strconv.Itoa(2),
-		CompressedGenPubKey:    s.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(addDelegatorTxHash),
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/secp256k1r"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
@@ -107,9 +106,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 		SignDoner: eh.SignDoner,
 		SignReqArgs: &signer.SignRequestArgs{
-			TaskID:                 bytes.Bytes32ToHex(exportUTXOReqEvt.TxID),
+			TaskID:                 exportUTXOReqEvt.TxHash.Hex(),
 			CompressedPartiPubKeys: partiKeys,
-			CompressedGenPubKey:    *compressedGenPubKey,
+			CompressedGenPubKeyHex: *compressedGenPubKey,
 		},
 
 		CChainIssueClient: eh.CChainIssueClient,

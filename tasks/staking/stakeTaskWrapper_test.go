@@ -94,7 +94,7 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	exportTxsignature := "5b12ef4bf066a0d341f1bc4c47f597829a22f7b78dabbe1445a84b13053a2f334d7409466b993916dc0e4285911f21111460ea58da98ebe8fbb752bda74d77f301"
 	exportTxSignReq := core.SignRequest{
 		RequestId:              signRequestArgs.TaskID + "-" + strconv.Itoa(0),
-		CompressedGenPubKey:    signRequestArgs.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 		Hash:                   exportTxHash,
 	}
@@ -113,7 +113,7 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	importTxsignature := "db5abfea3856cdb6013adae8b8ecd006146158b9d90a31f8aa9ea21b9a08274c71a8f52078236b35a76bc5b62686ae01bfdf585e1785d7be891d6e00d70fc58000"
 	importTxSignReq := core.SignRequest{
 		RequestId:              signRequestArgs.TaskID + "-" + strconv.Itoa(1),
-		CompressedGenPubKey:    signRequestArgs.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 		Hash:                   importTxHash,
 	}
@@ -132,7 +132,7 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	addDelegatorTxsignature := "144b6137be716be2e8b22177fc3be4de99c18fc8b9e29fb3eecaa673961fc36e0cbc0449aeca034a10a2f52a31b245b0dcb032d06a317c63fd0adcc3862cb4fe01"
 	addDelegatorTxSignReq := core.SignRequest{
 		RequestId:              signRequestArgs.TaskID + "-" + strconv.Itoa(2),
-		CompressedGenPubKey:    signRequestArgs.CompressedGenPubKeyHex,
+		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 		Hash:                   addDelegatorTxHash,
 	}
