@@ -54,9 +54,12 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 		})
 		eh.utxoFetchedEvtObjMap[hash256.FromHex(evt.GenPubKeyHashHex)] = evtObj
 	case *events.ExportUTXORequestEvent:
-		if eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.Hex(), evt.ParticipantIndices) {
-			eh.exportUTXO(ctx, evtObj)
+		ok := eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.Hex(), evt.ParticipantIndices)
+		if !ok {
+			eh.Logger.Debug("Not participant with ExportUTXORequest", []logger.Field{{"exportUTXORequest", evt}}...)
+			break
 		}
+		eh.exportUTXO(ctx, evtObj)
 	}
 }
 
