@@ -190,7 +190,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		SignDoner:         mpcClient,
 	}
 
-	rewardMaster := rewarding.RewardingMaster{
+	rewardMaster := rewarding.Master{
 		CChainIssueClient: cChainIssueCli,
 		Cache:             &cacheWrapper,
 		ContractAddr:      contractAddr,
@@ -198,7 +198,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Logger:            myLogger,
 		MyPubKeyHashHex:   myPubKeyHash.Hex(),
 		NetworkContext:    networkCtx(config),
-		PChainIssueClient: pChainIssueCli,
+		PChainClient:      pChainIssueCli,
 		Receipter:         ethRpcClient,
 		RewardUTXOGetter:  pChainIssueCli,
 		SignDoner:         mpcClient,
