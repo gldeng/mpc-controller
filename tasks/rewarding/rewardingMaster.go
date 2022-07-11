@@ -10,7 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/tasks/rewarding/export"
-	"github.com/avalido/mpc-controller/tasks/rewarding/report"
+	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -31,8 +31,8 @@ type RewardingMaster struct {
 	chain.NetworkContext
 
 	// report
-	utxoFetcher           *report.UTXOTracker
-	rewardedStakeReporter *report.UTXOReporter
+	utxoFetcher           *tracker.UTXOTracker
+	rewardedStakeReporter *tracker.UTXOReporter
 
 	// export
 	exportRewardReqAddedEvtWatcher  *export.ExportRewardRequestAddedEventWatcher
@@ -48,13 +48,13 @@ func (m *RewardingMaster) Start(ctx context.Context) error {
 }
 
 func (m *RewardingMaster) subscribe() {
-	utxoFetcher := report.UTXOTracker{
+	utxoFetcher := tracker.UTXOTracker{
 		Logger:       m.Logger,
 		PChainClient: m.PChainClient,
 		Publisher:    m.Dispatcher,
 	}
 
-	rewardedStakeReporter := report.UTXOReporter{
+	rewardedStakeReporter := tracker.UTXOReporter{
 		Cache:           m.Cache,
 		ContractAddr:    m.ContractAddr,
 		Logger:          m.Logger,
