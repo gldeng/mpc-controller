@@ -11,19 +11,6 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning rewarding
 
-type StakingPeriodEndedEvent struct {
-	AddDelegatorTxID ids.ID `copier:"must"`
-
-	RequestID   uint64     `copier:"must"`
-	DelegateAmt uint64     `copier:"must"`
-	StartTime   uint64     `copier:"must"`
-	EndTime     uint64     `copier:"must"`
-	NodeID      ids.NodeID `copier:"must"`
-
-	PubKeyHex     string      `copier:"must"`
-	PChainAddress ids.ShortID `copier:"must"`
-}
-
 type UTXOsFetchedEvent struct {
 	NativeUTXOs []*avax.UTXO `json:"-"`
 	MpcUTXOs    []*myAvax.MpcUTXO
@@ -45,13 +32,13 @@ type UTXOReportedEvent struct {
 	PartiIndex     *big.Int
 }
 
-type ExportRewardRequestAddedEvent struct {
+type ExportUTXORequestAddedEvent struct {
 	AddDelegatorTxID ids.ID
 	PublicKeyHash    common.Hash
 	TxHash           common.Hash
 }
 
-type JoinedExportRewardRequestEvent struct {
+type JoinedExportUTXORequestEvent struct {
 	GroupIDHex       string
 	MyIndex          *big.Int
 	PubKeyHex        string
@@ -59,14 +46,14 @@ type JoinedExportRewardRequestEvent struct {
 	TxHash           common.Hash
 }
 
-type ExportRewardRequestStartedEvent struct {
+type ExportUTXORequestStartedEvent struct {
 	AddDelegatorTxID   ids.ID
 	PublicKeyHash      common.Hash
 	ParticipantIndices []*big.Int
 	TxHash             common.Hash
 }
 
-type RewardExportedEvent struct {
+type UTXOExportedEvent struct {
 	AddDelegatorTxID ids.ID
 	ExportedTxID     ids.ID
 	ImportedTxID     ids.ID

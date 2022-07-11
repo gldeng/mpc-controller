@@ -17,7 +17,7 @@ import (
 // Accept event: *events.ContractFiltererCreatedEvent
 // Accept event: *events.GeneratedPubKeyInfoStoredEvent
 
-// Emit event: *contract.ExportRewardRequestAddedEvent
+// Emit event: *contract.ExportUTXORequestAddedEvent
 
 type ExportRewardRequestAddedEventWatcher struct {
 	ContractAddr common.Address
@@ -97,7 +97,7 @@ func (eh *ExportRewardRequestAddedEventWatcher) watchExportRewardRequestAdded(ct
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				transformedEvt := events.ExportRewardRequestAddedEvent{
+				transformedEvt := events.ExportUTXORequestAddedEvent{
 					AddDelegatorTxID: evt.RewaredStakeTxId,
 					PublicKeyHash:    evt.PublicKey,
 					TxHash:           evt.Raw.TxHash,

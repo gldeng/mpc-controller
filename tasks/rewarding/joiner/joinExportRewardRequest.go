@@ -20,11 +20,11 @@ import (
 	"time"
 )
 
-// Accept event: *events.ExportRewardRequestAddedEvent
+// Accept event: *events.ExportUTXORequestAddedEvent
 
-// Emit event: *events.JoinedExportRewardRequestEvent
+// Emit event: *events.JoinedExportUTXORequestEvent
 
-type ExportRewardRequestJoiner struct {
+type ExportUTXORequestJoiner struct {
 	Cache           cache.ICache
 	ContractAddr    common.Address
 	Logger          logger.Logger
@@ -35,9 +35,9 @@ type ExportRewardRequestJoiner struct {
 	Transactor      bind.ContractTransactor
 }
 
-func (eh *ExportRewardRequestJoiner) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *ExportUTXORequestJoiner) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.ExportRewardRequestAddedEvent:
+	case *events.ExportUTXORequestAddedEvent:
 		genPubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKeyHash.Hex())
 		if genPubKeyInfo == nil {
 			break
@@ -63,7 +63,7 @@ func (eh *ExportRewardRequestJoiner) Do(ctx context.Context, evtObj *dispatcher.
 		}
 
 		if txHash != nil {
-			newEvt := events.JoinedExportRewardRequestEvent{
+			newEvt := events.JoinedExportUTXORequestEvent{
 				GroupIDHex:       genPubKeyInfo.GroupIdHex,
 				MyIndex:          myIndex,
 				PubKeyHex:        genPubKeyInfo.GenPubKeyHex,
@@ -71,12 +71,12 @@ func (eh *ExportRewardRequestJoiner) Do(ctx context.Context, evtObj *dispatcher.
 				TxHash:           *txHash,
 			}
 
-			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "ExportRewardRequestJoiner", &newEvt, evtObj.Context))
+			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "ExportUTXORequestJoiner", &newEvt, evtObj.Context))
 		}
 	}
 }
 
-func (eh *ExportRewardRequestJoiner) joinExportRewardRequest(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (txHash *common.Hash, err error) {
+func (eh *ExportUTXORequestJoiner) joinExportRewardRequest(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte, utxoTxID [32]byte, utxoOutputIndex uint32) (txHash *common.Hash, err error) {
 	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -85,7 +85,7 @@ func (eh *ExportRewardRequestJoiner) joinExportRewardRequest(ctx context.Context
 	var tx *types.Transaction
 
 	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
-		tx, err = transactor.JoinExportReward(eh.Signer, groupId, myIndex, publicKey, txID)
+		tx, err = transactor.JoinExportUTXO(eh.Signer, groupId, myIndex, publicKey, txID)
 		if err != nil {
 			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
 				tx = nil

@@ -25,9 +25,9 @@ import (
 
 // Accept event: *events.StakingTaskDoneEvent
 // Accept event: *events.UTXOsFetchedEvent
-// Accept event: *events.ExportRewardRequestStartedEvent
+// Accept event: *events.ExportUTXORequestStartedEvent
 
-// Emit event: *events.RewardExportedEvent
+// Emit event: *events.UTXOExportedEvent
 
 type StakingRewardExporter struct {
 	CChainIssueClient chain.CChainIssuer
@@ -67,7 +67,7 @@ func (eh *StakingRewardExporter) Do(ctx context.Context, evtObj *dispatcher.Even
 		eh.lock.Lock()
 		eh.utxoFetchedEvtObjMap[evt.AddDelegatorTxID.Hex()] = evtObj
 		eh.lock.Unlock()
-	case *events.ExportRewardRequestStartedEvent:
+	case *events.ExportUTXORequestStartedEvent:
 		if eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.PublicKeyHash.Hex(), evt.ParticipantIndices) {
 			eh.lock.Lock()
 			eh.exportRewardRequestStartedEvtObj[evt.AddDelegatorTxID.Hex()] = evtObj
@@ -85,7 +85,7 @@ func (eh *StakingRewardExporter) exportRewardUTXOs(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for txID, evtObj := range eh.exportRewardRequestStartedEvtObj {
-				rewardEvt := evtObj.Event.(*events.ExportRewardRequestStartedEvent)
+				rewardEvt := evtObj.Event.(*events.ExportUTXORequestStartedEvent)
 				partiKeys, err := eh.Cache.GetNormalizedParticipantKeys(rewardEvt.PublicKeyHash, rewardEvt.ParticipantIndices)
 				if err != nil {
 					eh.Logger.Error("StakingRewardExporter failed to export reward", []logger.Field{
@@ -130,7 +130,7 @@ func (eh *StakingRewardExporter) exportRewardUTXOs(ctx context.Context) {
 					}
 				}
 
-				newEvt := &events.RewardExportedEvent{
+				newEvt := &events.UTXOExportedEvent{
 					AddDelegatorTxID: rewardEvt.AddDelegatorTxID,
 					ExportedTxID:     ids[0],
 					ImportedTxID:     ids[1],
