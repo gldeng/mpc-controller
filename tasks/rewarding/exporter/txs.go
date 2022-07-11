@@ -1,4 +1,4 @@
-package export
+package exporter
 
 import (
 	"github.com/ava-labs/avalanchego/ids"

@@ -9,7 +9,8 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/tasks/rewarding/export"
+	"github.com/avalido/mpc-controller/tasks/rewarding/exporter"
+	"github.com/avalido/mpc-controller/tasks/rewarding/joiner"
 	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -34,10 +35,10 @@ type RewardingMaster struct {
 	utxoTracker *tracker.UTXOTracker
 
 	// export
-	exportRewardReqAddedEvtWatcher  *export.ExportRewardRequestAddedEventWatcher
-	exportRewardJoiner              *export.ExportRewardRequestJoiner
-	exportRewarReqStartedEvtWatcher *export.ExportRewardRequestStartedEventWatcher
-	rewardExporter                  *export.StakingRewardExporter
+	exportRewardReqAddedEvtWatcher  *joiner.ExportRewardRequestAddedEventWatcher
+	exportRewardJoiner              *joiner.ExportRewardRequestJoiner
+	exportRewarReqStartedEvtWatcher *exporter.ExportRewardRequestStartedEventWatcher
+	rewardExporter                  *exporter.StakingRewardExporter
 }
 
 func (m *RewardingMaster) Start(ctx context.Context) error {
@@ -53,13 +54,13 @@ func (m *RewardingMaster) subscribe() {
 		Publisher:    m.Dispatcher,
 	}
 
-	exportRewardReqAddedEvtWatcher := export.ExportRewardRequestAddedEventWatcher{
+	exportRewardReqAddedEvtWatcher := joiner.ExportRewardRequestAddedEventWatcher{
 		ContractAddr: m.ContractAddr,
 		Logger:       m.Logger,
 		Publisher:    m.Dispatcher,
 	}
 
-	exportRewardJoiner := export.ExportRewardRequestJoiner{
+	exportRewardJoiner := joiner.ExportRewardRequestJoiner{
 		Cache:           m.Cache,
 		ContractAddr:    m.ContractAddr,
 		Logger:          m.Logger,
@@ -70,13 +71,13 @@ func (m *RewardingMaster) subscribe() {
 		Transactor:      m.Transactor,
 	}
 
-	exportRewarReqStartedEvtWatcher := export.ExportRewardRequestStartedEventWatcher{
+	exportRewarReqStartedEvtWatcher := exporter.ExportRewardRequestStartedEventWatcher{
 		ContractAddr: m.ContractAddr,
 		Logger:       m.Logger,
 		Publisher:    m.Dispatcher,
 	}
 
-	rewardExporter := export.StakingRewardExporter{
+	rewardExporter := exporter.StakingRewardExporter{
 		CChainIssueClient: m.CChainIssueClient,
 		Cache:             m.Cache,
 		Logger:            m.Logger,
