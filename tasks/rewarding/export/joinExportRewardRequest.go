@@ -92,7 +92,7 @@ func (eh *ExportRewardRequestJoiner) joinExportRewardRequest(ctx context.Context
 				eh.Logger.Info("Cannot join anymore", []logger.Field{{"addDelegatorTxID", bytes.Bytes32ToHex(txID)}, {"myIndex", myIndex}}...)
 				return nil
 			}
-			err = errors.Wrapf(err, "failed to join request. addDelegatorTxID: %v, Index: %v", bytes.Bytes32ToHex(txID), myIndex)
+			err = errors.Wrapf(err, "failed to join request. addDelegatorTxID: %v, PartiIndex: %v", bytes.Bytes32ToHex(txID), myIndex)
 			return err
 		}
 

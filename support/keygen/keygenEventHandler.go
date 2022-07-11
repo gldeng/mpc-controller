@@ -164,7 +164,7 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 		var err error
 		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
 		if err != nil {
-			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, MyIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
+			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, PartiIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
 		}
 
 		time.Sleep(time.Second * 3)

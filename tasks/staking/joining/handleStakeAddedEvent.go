@@ -82,7 +82,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 				eh.Logger.Info("Cannot join anymore", []logger.Field{{"reqId", req.RequestId}, {"myIndex", myIndex}}...)
 				return nil
 			}
-			return errors.Wrapf(err, "failed to join request. ReqId: %v, Index: %v", req.RequestId, myIndex)
+			return errors.Wrapf(err, "failed to join request. ReqId: %v, PartiIndex: %v", req.RequestId, myIndex)
 		}
 
 		time.Sleep(time.Second * 3)

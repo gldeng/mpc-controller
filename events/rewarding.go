@@ -29,19 +29,20 @@ type UTXOsFetchedEvent struct {
 	MpcUTXOs    []*myAvax.MpcUTXO
 
 	GroupIdHex       string         `copier:"must"`
-	Index            *big.Int       `copier:"must"`
+	PartiIndex       *big.Int       `copier:"must"`
 	GenPubKeyHex     string         `copier:"must"`
 	GenPubKeyHashHex string         `copier:"must"`
 	CChainAddress    common.Address `copier:"must"`
 	PChainAddress    ids.ShortID    `copier:"must"`
 }
 
-type RewardedStakeReportedEvent struct {
-	AddDelegatorTxID ids.ID
-	PubKeyHex        string
-	GroupIDHex       string
-	MyIndex          *big.Int
-	TxHash           *common.Hash
+type UTXOReportedEvent struct {
+	TxID           ids.ID
+	OutputIndex    uint32
+	TxHash         *common.Hash
+	GenPubKeyBytes []byte
+	GroupIDBytes   [32]byte
+	PartiIndex     *big.Int
 }
 
 type ExportRewardRequestAddedEvent struct {

@@ -5,13 +5,20 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
+	"math/big"
 	"sync"
 	"time"
 )
@@ -25,24 +32,29 @@ const (
 // Accept event: *events.ReportedGenPubKeyEvent
 
 // Emit event: *events.UTXOsFetchedEvent
+// Emit event: *events.UTXOReportedEvent
 
-type UTXOFetcher struct {
+type UTXOTracker struct {
+	ContractAddr common.Address
 	Logger       logger.Logger
 	PChainClient platformvm.Client
 	Publisher    dispatcher.Publisher
+	Receipter    chain.Receipter
+	Signer       *bind.TransactOpts
+	Transactor   bind.ContractTransactor
 
 	once               sync.Once
 	lock               sync.Mutex
 	genPubKeyEvtObjMap map[ids.ShortID]*dispatcher.EventObject // todo: persistence and restore
 }
 
-func (eh *UTXOFetcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ReportedGenPubKeyEvent:
 		eh.once.Do(func() {
 			eh.genPubKeyEvtObjMap = make(map[ids.ShortID]*dispatcher.EventObject)
 			go func() {
-				eh.checkUTXOs(ctx)
+				eh.getAndReportUTXOs(ctx)
 			}()
 		})
 
@@ -52,7 +64,7 @@ func (eh *UTXOFetcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	}
 }
 
-func (eh *UTXOFetcher) checkUTXOs(ctx context.Context) {
+func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 	t := time.NewTicker(checkUTXOInterval)
 	defer t.Stop()
 
@@ -61,47 +73,11 @@ func (eh *UTXOFetcher) checkUTXOs(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for addr, evt := range eh.genPubKeyEvtObjMap {
-				utxos, err := eh.getNativeUTXOs(ctx, addr)
+				utxos, err := eh.getUTXOs(ctx, addr)
 				if err != nil {
-					eh.Logger.Error("Failed to get native UTXOss", []logger.Field{{"error", err}}...)
+					eh.Logger.Error("Failed to get native UTXOs", []logger.Field{{"error", err}}...)
 					continue
 				}
-
-				//var rewardedTxIDs = make(map[ids.ID]struct{})
-				//for _, utxo := range utxos {
-				//	rewardedTxIDs[utxo.TxID] = struct{}{}
-				//}
-				//for txID, _ := range rewardedTxIDs {
-				//	rewardUTXO, err := eh.getRewardUTXOs(ctx, txID)
-				//	if err != nil {
-				//		eh.Logger.Error("Failed to get reward UTXOs", []logger.Field{{"error", err}}...)
-				//		delete(rewardedTxIDs, txID)
-				//		continue
-				//	}
-				//	if rewardUTXO == nil {
-				//		delete(rewardedTxIDs, txID)
-				//		continue
-				//	}
-				//}
-				//
-				//if len(rewardedTxIDs) == 0 {
-				//	eh.Logger.Debug("Found no reward UTXOs", []logger.Field{{"pChainAddress", addr}}...)
-				//	continue
-				//}
-				//
-				//var principalUTXOs []*avax.UTXO
-				//var rewardUTXOs []*avax.UTXO
-				//for _, utxo := range utxos {
-				//	_, ok := rewardedTxIDs[utxo.TxID]
-				//	if ok {
-				//		switch utxo.OutputIndex {
-				//		case 0:
-				//			principalUTXOs = append(principalUTXOs, utxo)
-				//		case 1:
-				//			rewardUTXOs = append(rewardUTXOs, utxo)
-				//		}
-				//	}
-				//}
 
 				if len(utxos) == 0 {
 					eh.Logger.Debug("Found no native UTXOs", []logger.Field{{"pChainAddress", addr}}...)
@@ -110,14 +86,36 @@ func (eh *UTXOFetcher) checkUTXOs(ctx context.Context) {
 
 				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(utxos)
 
-				newEvt := &events.UTXOsFetchedEvent{
+				utxoFetchedEvt := &events.UTXOsFetchedEvent{
 					NativeUTXOs: utxos,
 					MpcUTXOs:    mpcUTXOs,
 				}
 
-				copier.Copy(&newEvt, evt.Event.(*events.ReportedGenPubKeyEvent))
+				copier.Copy(&utxoFetchedEvt, evt.Event.(*events.ReportedGenPubKeyEvent))
 
-				eh.Publisher.Publish(ctx, dispatcher.NewRootEventObject("UTXOFetcher", newEvt, ctx))
+				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
+				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
+
+				groupIdBytes := bytes.HexTo32Bytes(utxoFetchedEvt.GroupIdHex)
+				partiIndex := utxoFetchedEvt.PartiIndex
+				genPubKeyBytes := bytes.HexToBytes(utxoFetchedEvt.GenPubKeyHex)
+				for _, utxo := range utxos {
+					txHash, err := eh.reportUTXO(ctx, groupIdBytes, partiIndex, genPubKeyBytes, utxo.TxID, utxo.OutputIndex)
+					if err != nil {
+						eh.Logger.Error("Failed to report UTXO", []logger.Field{{"error", err}}...)
+						continue
+					}
+
+					utxoReportedEvt := &events.UTXOReportedEvent{
+						TxID:           utxo.TxID,
+						OutputIndex:    utxo.OutputIndex,
+						TxHash:         txHash,
+						GenPubKeyBytes: genPubKeyBytes,
+						GroupIDBytes:   groupIdBytes,
+						PartiIndex:     partiIndex,
+					}
+					eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(utxoFetchedEvtObj, "UTXOTracker", utxoReportedEvt, ctx))
+				}
 			}
 			eh.lock.Unlock()
 		case <-ctx.Done():
@@ -126,7 +124,7 @@ func (eh *UTXOFetcher) checkUTXOs(ctx context.Context) {
 	}
 }
 
-func (eh *UTXOFetcher) getNativeUTXOs(ctx context.Context, addr ids.ShortID) ([]*avax.UTXO, error) {
+func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) ([]*avax.UTXO, error) {
 	var utxoBytesArr [][]byte
 	backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
 		var err error
@@ -151,27 +149,37 @@ func (eh *UTXOFetcher) getNativeUTXOs(ctx context.Context, addr ids.ShortID) ([]
 	return utxosFiltered, nil
 }
 
-//func (eh *UTXOFetcher) getRewardUTXOs(ctx context.Context, txID ids.ID) ([]*avax.UTXO, error) {
-//	var utxoBytesArr [][]byte
-//	backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
-//		var err error
-//		utxoBytesArr, err = eh.PChainClient.GetRewardUTXOs(ctx, &api.GetTxArgs{TxID: txID})
-//		if err != nil {
-//			return errors.Wrap(err, "failed to request reward UTXOs")
-//		}
-//		return nil
-//	})
-//
-//	utxos, err := myAvax.ParseUTXOs(utxoBytesArr)
-//	if err != nil {
-//		return nil, errors.Wrap(err, "failed to parse UTXO bytes")
-//	}
-//
-//	var utxosFiltered []*avax.UTXO
-//	for _, utxo := range utxos {
-//		if utxo != nil && utxo.OutputIndex == 1 { // output index: 0-for principal, 1-for delegator, 2-for-validator
-//			utxosFiltered = append(utxosFiltered, utxo)
-//		}
-//	}
-//	return utxosFiltered, nil
-//}
+func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIndex *big.Int, genPubKey []byte, txID [32]byte, outputIndex uint32) (txHash *common.Hash, err error) {
+	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor) // todo: extract to reuse in multi flows.
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var tx *types.Transaction
+
+	backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
+		tx, err = transactor.ReportUTXO(eh.Signer, groupId, partiIndex, genPubKey, txID, outputIndex)
+		if err != nil {
+			err = errors.Wrap(err, "failed to ReportUTXO")
+			return err
+		}
+
+		time.Sleep(time.Second * 3)
+
+		var rcpt *types.Receipt
+		rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if rcpt.Status != 1 {
+			err = errors.Errorf("failed to report UTXO")
+			return err
+		}
+
+		newTxHash := tx.Hash()
+		txHash = &newTxHash
+		return nil
+	})
+	return
+}

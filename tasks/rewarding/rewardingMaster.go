@@ -31,7 +31,7 @@ type RewardingMaster struct {
 	chain.NetworkContext
 
 	// report
-	utxoFetcher           *report.UTXOFetcher
+	utxoFetcher           *report.UTXOTracker
 	rewardedStakeReporter *report.UTXOReporter
 
 	// export
@@ -48,7 +48,7 @@ func (m *RewardingMaster) Start(ctx context.Context) error {
 }
 
 func (m *RewardingMaster) subscribe() {
-	utxoFetcher := report.UTXOFetcher{
+	utxoFetcher := report.UTXOTracker{
 		Logger:       m.Logger,
 		PChainClient: m.PChainClient,
 		Publisher:    m.Dispatcher,
@@ -108,7 +108,7 @@ func (m *RewardingMaster) subscribe() {
 	m.rewardExporter = &rewardExporter
 
 	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.utxoFetcher)        // Emit event: *events.StakingPeriodEndedEvent
-	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardedStakeReporter) // Emit event: *events.RewardedStakeReportedEvent
+	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardedStakeReporter) // Emit event: *events.UTXOReportedEvent
 
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
 	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportRewardRequestAddedEvent

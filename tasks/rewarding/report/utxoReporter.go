@@ -23,7 +23,7 @@ import (
 
 // Accept event: *events.UTXOsFetchedEvent
 
-// Emit event: *events.RewardedStakeReportedEvent
+// Emit event: *events.UTXOReportedEvent
 
 type UTXOReporter struct {
 	Cache           cache.ICache
@@ -46,7 +46,7 @@ func (eh *UTXOReporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) 
 		eh.once.Do(func() {
 			eh.utxoFetchedEvtObjMap = make(map[string]*dispatcher.EventObject)
 			go func() {
-				eh.reportRewardedStake(ctx)
+				eh.reportUTXO(ctx)
 			}()
 		})
 
@@ -56,7 +56,7 @@ func (eh *UTXOReporter) Do(ctx context.Context, evtObj *dispatcher.EventObject) 
 	}
 }
 
-func (eh *UTXOReporter) reportRewardedStake(ctx context.Context) {
+func (eh *UTXOReporter) reportUTXO(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 
@@ -92,7 +92,7 @@ func (eh *UTXOReporter) reportRewardedStake(ctx context.Context) {
 					break
 				}
 
-				txHash, err := eh.retryReportRewardedStake(ctx, groupIDBytes, myIndex, dnmPubKeyBtes, evt.AddDelegatorTxID)
+				txHash, err := eh.reportUTXO(ctx, groupIDBytes, myIndex, dnmPubKeyBtes, evt.AddDelegatorTxID)
 				if err != nil {
 					eh.Logger.Error("Failed to report rewarded stake request", []logger.Field{
 						{"error", err},
@@ -101,12 +101,12 @@ func (eh *UTXOReporter) reportRewardedStake(ctx context.Context) {
 					break
 				}
 
-				newEvt := &events.RewardedStakeReportedEvent{
-					AddDelegatorTxID: evt.AddDelegatorTxID,
-					PubKeyHex:        genPubKeyInfo.GenPubKeyHex,
-					GroupIDHex:       genPubKeyInfo.GroupIdHex,
-					MyIndex:          myIndex,
-					TxHash:           txHash,
+				newEvt := &events.UTXOReportedEvent{
+					TxID:           evt.AddDelegatorTxID,
+					genPubKeyBytes: genPubKeyInfo.GenPubKeyHex,
+					GroupIDBytes:   genPubKeyInfo.GroupIdHex,
+					PartiIndex:     myIndex,
+					TxHash:         txHash,
 				}
 				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "UTXOReporter", newEvt, evtObj.Context))
 				delete(eh.utxoFetchedEvtObjMap, txID)
@@ -118,8 +118,8 @@ func (eh *UTXOReporter) reportRewardedStake(ctx context.Context) {
 	}
 }
 
-func (eh *UTXOReporter) retryReportRewardedStake(ctx context.Context, groupId [32]byte, myIndex *big.Int, publicKey []byte, txID [32]byte) (txHash *common.Hash, err error) {
-	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
+func (eh *UTXOReporter) reportUTXO(ctx context.Context, groupId [32]byte, myIndex *big.Int, genPubKey []byte, txID [32]byte, outputIndex uint32) (txHash *common.Hash, err error) {
+	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor) // todo: extract to reuse in multi flows.
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -127,9 +127,9 @@ func (eh *UTXOReporter) retryReportRewardedStake(ctx context.Context, groupId [3
 	var tx *types.Transaction
 
 	backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
-		tx, err = transactor.ReportRewardedStake(eh.Signer, groupId, myIndex, publicKey, txID)
+		tx, err = transactor.ReportUTXO(eh.Signer, groupId, myIndex, genPubKey, txID, outputIndex)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to report rewarded stake for addDelegatorTxID:%v", bytes.Bytes32ToHex(txID))
+			err = errors.Wrap(err, "failed to ReportUTXO")
 			return err
 		}
 
@@ -142,7 +142,7 @@ func (eh *UTXOReporter) retryReportRewardedStake(ctx context.Context, groupId [3
 		}
 
 		if rcpt.Status != 1 {
-			err = errors.Errorf("reporting rewarded stake transaction for addDelegatorTxID %q failed", bytes.Bytes32ToHex(txID))
+			err = errors.Errorf("failed to report UTXO")
 			return err
 		}
 

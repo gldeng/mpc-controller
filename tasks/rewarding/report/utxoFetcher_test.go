@@ -31,7 +31,7 @@ package report
 //	ctx, cancel := context.WithTimeout(context.Background(), endTime.Add(time.Second*emitAfterSeconds).Sub(time.Now()))
 //	defer cancel()
 //
-//	stakingDoneEvtObj := dispatcher.NewRootEventObject("UTXOFetcher", stakingDoneEvt, ctx)
+//	stakingDoneEvtObj := dispatcher.NewRootEventObject("UTXOTracker", stakingDoneEvt, ctx)
 //
 //	StakingEndedEvt := &events.StakingPeriodEndedEvent{}
 //
@@ -39,7 +39,7 @@ package report
 //		StakingEndedEvt = evtObj.Event.(*events.StakingPeriodEndedEvent)
 //	})
 //
-//	checker := &UTXOFetcher{
+//	checker := &UTXOTracker{
 //		Publisher: myDispatcher,
 //	}
 //

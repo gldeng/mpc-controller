@@ -31,14 +31,14 @@ package report
 //	myDispatcher := dispatcherMocks.NewDispatcherrer(suite.T())
 //
 //	utxoFetchedEvt := &events.RewardUTXOsFetchedEvent{ // todo: mock data
-//		AddDelegatorTxID: ids.ID{},
+//		TxID: ids.ID{},
 //		NativeUTXOs:      nil,
 //	}
 //
 //	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 //	defer cancel()
 //
-//	myTransactor.EXPECT().ReportRewardUTXOs(ctx, [32]byte(utxoFetchedEvt.AddDelegatorTxID), mock.AnythingOfType("[]string")).Return(&types.Transaction{}, nil) // todo: mock data
+//	myTransactor.EXPECT().ReportRewardUTXOs(ctx, [32]byte(utxoFetchedEvt.TxID), mock.AnythingOfType("[]string")).Return(&types.Transaction{}, nil) // todo: mock data
 //
 //	myReceipter.EXPECT().TransactionReceipt(ctx, mock.AnythingOfType("common.Hash")).Return(&types.Receipt{Status: 1}, nil)
 //
@@ -61,7 +61,7 @@ package report
 //
 //	<-ctx.Done()
 //
-//	require.Equal(utxoFetchedEvt.AddDelegatorTxID, rewardUTXOsReportedEvt.AddDelegatorTxID)
+//	require.Equal(utxoFetchedEvt.TxID, rewardUTXOsReportedEvt.TxID)
 //
 //	myTransactor.AssertNumberOfCalls(suite.T(), " ReportRewardUTXOs", 1)
 //	myReceipter.AssertNumberOfCalls(suite.T(), " TransactionReceipt", 1)
