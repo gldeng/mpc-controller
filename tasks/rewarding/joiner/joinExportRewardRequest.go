@@ -49,7 +49,7 @@ package joiner
 //		}
 //
 //		groupIDBytes := bytes.HexTo32Bytes(genPubKeyInfo.GroupIdHex)
-//		pubKeyBytes := bytes.HexToBytes(genPubKeyInfo.GenPubKeyHex)
+//		pubKeyBytes := bytes.HexToBytes(genPubKeyInfo.CompressedGenPubKeyHex)
 //
 //		dur := rand.Intn(5000)
 //		time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent joinExportUTXORequest can cause failure.
@@ -66,7 +66,7 @@ package joiner
 //			newEvt := events.JoinedExportUTXORequestEvent{
 //				GroupIDHex:       genPubKeyInfo.GroupIdHex,
 //				MyIndex:          myIndex,
-//				PubKeyHex:        genPubKeyInfo.GenPubKeyHex,
+//				PubKeyHex:        genPubKeyInfo.CompressedGenPubKeyHex,
 //				TxID: evt.TxID,
 //				TxHash:           *txHash,
 //			}

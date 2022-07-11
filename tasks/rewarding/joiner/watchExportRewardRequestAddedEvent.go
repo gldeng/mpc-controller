@@ -64,7 +64,7 @@ package joiner
 //		eh.genPubKeyEvtObjMap[evt.PChainAddress] = evtObj
 //		eh.lock.Unlock()
 //
-//		//dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.GenPubKeyHex)
+//		//dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.CompressedGenPubKeyHex)
 //		//if err != nil {
 //		//	eh.Logger.Error("Failed to denormalized generated public key", []logger.Field{{"error", err}}...)
 //		//	break

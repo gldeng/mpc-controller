@@ -119,9 +119,9 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
-		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
-		GenPubKeyHex:     genPubKeyHex,
-		GroupIdHex:       groupIdHex,
+		GenPubKeyHashHex:       dnmGenPubKeyHash.Hex(),
+		CompressedGenPubKeyHex: genPubKeyHex,
+		GroupIdHex:             groupIdHex,
 	}
 
 	key, err := eh.storeGenKenInfo(ctx, &genPubKeyInfo)
