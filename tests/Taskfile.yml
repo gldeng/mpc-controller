@@ -35,10 +35,6 @@ tasks:
       - sleep 10
       - venom run tests/testsuites/initiateStake.yml
       - sleep 30
-      - bash ./tests/scripts/fund_initiateStake.sh
-      - sleep 10
-      - venom run tests/testsuites/initiateStake.yml
-      - sleep 30
 
   cleanup: # todo: add more cleanup operation, such as rm -rf /tmp/mpctest if needed
     cmds:
