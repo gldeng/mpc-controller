@@ -32,30 +32,32 @@ type UTXOReportedEvent struct {
 	PartiIndex     *big.Int
 }
 
-type ExportUTXORequestAddedEvent struct {
-	AddDelegatorTxID ids.ID
-	PublicKeyHash    common.Hash
-	TxHash           common.Hash
-}
+//type ExportUTXORequestAddedEvent struct {
+//	TxID ids.ID
+//	PublicKeyHash    common.Hash
+//	TxHash           common.Hash
+//}
 
-type JoinedExportUTXORequestEvent struct {
-	GroupIDHex       string
-	MyIndex          *big.Int
-	PubKeyHex        string
-	AddDelegatorTxID ids.ID
-	TxHash           common.Hash
-}
+//type JoinedExportUTXORequestEvent struct {
+//	GroupIDHex       string
+//	MyIndex          *big.Int
+//	PubKeyHex        string
+//	TxID ids.ID
+//	TxHash           common.Hash
+//}
 
-type ExportUTXORequestStartedEvent struct {
-	AddDelegatorTxID   ids.ID
-	PublicKeyHash      common.Hash
+type ExportUTXORequestEvent struct {
+	TxID               ids.ID
+	OutputIndex        uint32
+	To                 common.Address
+	GenPubKeyHash      common.Hash
 	ParticipantIndices []*big.Int
 	TxHash             common.Hash
 }
 
 type UTXOExportedEvent struct {
-	AddDelegatorTxID ids.ID
-	ExportedTxID     ids.ID
-	ImportedTxID     ids.ID
-	// todo: more fields
+	NativeUTXO   *avax.UTXO `json:"-"`
+	MpcUTXO      *myAvax.MpcUTXO
+	ExportedTxID ids.ID
+	ImportedTxID ids.ID
 }

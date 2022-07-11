@@ -9,7 +9,6 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/tasks/rewarding/joiner"
 	"github.com/avalido/mpc-controller/tasks/rewarding/porter"
 	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -35,9 +34,9 @@ type RewardingMaster struct {
 	utxoTracker *tracker.UTXOTracker
 
 	// export
-	exportRewardReqAddedEvtWatcher  *joiner.ExportRewardRequestAddedEventWatcher
-	exportRewardJoiner              *joiner.ExportUTXORequestJoiner
-	exportRewarReqStartedEvtWatcher *porter.ExportRewardRequestStartedEventWatcher
+	//exportRewardReqAddedEvtWatcher  *joiner.ExportUTXORequestJoiner
+	//exportRewardJoiner              *joiner.ExportUTXORequestJoiner
+	exportRewarReqStartedEvtWatcher *porter.UTXOPorter
 	rewardExporter                  *porter.StakingRewardExporter
 }
 
@@ -54,24 +53,24 @@ func (m *RewardingMaster) subscribe() {
 		Publisher:    m.Dispatcher,
 	}
 
-	exportRewardReqAddedEvtWatcher := joiner.ExportRewardRequestAddedEventWatcher{
-		ContractAddr: m.ContractAddr,
-		Logger:       m.Logger,
-		Publisher:    m.Dispatcher,
-	}
+	//exportRewardReqAddedEvtWatcher := joiner.ExportUTXORequestJoiner{
+	//	ContractAddr: m.ContractAddr,
+	//	Logger:       m.Logger,
+	//	Publisher:    m.Dispatcher,
+	//}
+	//
+	//exportRewardJoiner := joiner.ExportUTXORequestJoiner{
+	//	Cache:           m.Cache,
+	//	ContractAddr:    m.ContractAddr,
+	//	Logger:          m.Logger,
+	//	MyPubKeyHashHex: m.MyPubKeyHashHex,
+	//	Publisher:       m.Dispatcher,
+	//	Receipter:       m.Receipter,
+	//	Signer:          m.Signer,
+	//	Transactor:      m.Transactor,
+	//}
 
-	exportRewardJoiner := joiner.ExportUTXORequestJoiner{
-		Cache:           m.Cache,
-		ContractAddr:    m.ContractAddr,
-		Logger:          m.Logger,
-		MyPubKeyHashHex: m.MyPubKeyHashHex,
-		Publisher:       m.Dispatcher,
-		Receipter:       m.Receipter,
-		Signer:          m.Signer,
-		Transactor:      m.Transactor,
-	}
-
-	exportRewarReqStartedEvtWatcher := porter.ExportRewardRequestStartedEventWatcher{
+	exportRewarReqStartedEvtWatcher := porter.UTXOPorter{
 		ContractAddr: m.ContractAddr,
 		Logger:       m.Logger,
 		Publisher:    m.Dispatcher,
@@ -90,19 +89,19 @@ func (m *RewardingMaster) subscribe() {
 
 	m.utxoTracker = &utxoFetcher
 
-	m.exportRewardReqAddedEvtWatcher = &exportRewardReqAddedEvtWatcher
-	m.exportRewardJoiner = &exportRewardJoiner
+	//m.exportRewardReqAddedEvtWatcher = &exportRewardReqAddedEvtWatcher
+	//m.exportRewardJoiner = &exportRewardJoiner
 	m.exportRewarReqStartedEvtWatcher = &exportRewarReqStartedEvtWatcher
 	m.rewardExporter = &rewardExporter
 
 	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.utxoTracker) // Emit event: *events.StakingPeriodEndedEvent
 
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
-	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportUTXORequestAddedEvent
-	m.Dispatcher.Subscribe(&events.ExportUTXORequestAddedEvent{}, m.exportRewardJoiner)                // Emit event: *events.JoinedExportUTXORequestEvent
+	//m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
+	//m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportUTXORequestAddedEvent
+	//m.Dispatcher.Subscribe(&events.ExportUTXORequestAddedEvent{}, m.exportRewardJoiner)                // Emit event: *events.JoinedExportUTXORequestEvent
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewarReqStartedEvtWatcher)
-	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewarReqStartedEvtWatcher) // Emit event: *contract.ExportUTXORequestStartedEvent
+	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewarReqStartedEvtWatcher) // Emit event: *contract.ExportUTXORequestEvent
 	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.rewardExporter)
 	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardExporter)
-	m.Dispatcher.Subscribe(&events.ExportUTXORequestStartedEvent{}, m.rewardExporter) // Emit event: *events.UTXOExportedEvent
+	m.Dispatcher.Subscribe(&events.ExportUTXORequestEvent{}, m.rewardExporter) // Emit event: *events.UTXOExportedEvent
 }
