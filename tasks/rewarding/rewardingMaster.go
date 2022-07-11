@@ -31,8 +31,7 @@ type RewardingMaster struct {
 	chain.NetworkContext
 
 	// report
-	utxoFetcher           *tracker.UTXOTracker
-	rewardedStakeReporter *tracker.UTXOReporter
+	utxoTracker *tracker.UTXOTracker
 
 	// export
 	exportRewardReqAddedEvtWatcher  *export.ExportRewardRequestAddedEventWatcher
@@ -52,17 +51,6 @@ func (m *RewardingMaster) subscribe() {
 		Logger:       m.Logger,
 		PChainClient: m.PChainClient,
 		Publisher:    m.Dispatcher,
-	}
-
-	rewardedStakeReporter := tracker.UTXOReporter{
-		Cache:           m.Cache,
-		ContractAddr:    m.ContractAddr,
-		Logger:          m.Logger,
-		MyPubKeyHashHex: m.MyPubKeyHashHex,
-		Publisher:       m.Dispatcher,
-		Receipter:       m.Receipter,
-		Signer:          m.Signer,
-		Transactor:      m.Transactor,
 	}
 
 	exportRewardReqAddedEvtWatcher := export.ExportRewardRequestAddedEventWatcher{
@@ -99,16 +87,14 @@ func (m *RewardingMaster) subscribe() {
 		SignDoner:         m.SignDoner,
 	}
 
-	m.utxoFetcher = &utxoFetcher
-	m.rewardedStakeReporter = &rewardedStakeReporter
+	m.utxoTracker = &utxoFetcher
 
 	m.exportRewardReqAddedEvtWatcher = &exportRewardReqAddedEvtWatcher
 	m.exportRewardJoiner = &exportRewardJoiner
 	m.exportRewarReqStartedEvtWatcher = &exportRewarReqStartedEvtWatcher
 	m.rewardExporter = &rewardExporter
 
-	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.utxoFetcher)        // Emit event: *events.StakingPeriodEndedEvent
-	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.rewardedStakeReporter) // Emit event: *events.UTXOReportedEvent
+	m.Dispatcher.Subscribe(&events.StakingTaskDoneEvent{}, m.utxoTracker) // Emit event: *events.StakingPeriodEndedEvent
 
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportRewardReqAddedEvtWatcher)
 	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.exportRewardReqAddedEvtWatcher) // Emit event: *contract.ExportRewardRequestAddedEvent
