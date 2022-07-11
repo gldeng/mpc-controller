@@ -9,8 +9,8 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/tasks/rewarding/exporter"
 	"github.com/avalido/mpc-controller/tasks/rewarding/joiner"
+	"github.com/avalido/mpc-controller/tasks/rewarding/porter"
 	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,8 +37,8 @@ type RewardingMaster struct {
 	// export
 	exportRewardReqAddedEvtWatcher  *joiner.ExportRewardRequestAddedEventWatcher
 	exportRewardJoiner              *joiner.ExportRewardRequestJoiner
-	exportRewarReqStartedEvtWatcher *exporter.ExportRewardRequestStartedEventWatcher
-	rewardExporter                  *exporter.StakingRewardExporter
+	exportRewarReqStartedEvtWatcher *porter.ExportRewardRequestStartedEventWatcher
+	rewardExporter                  *porter.StakingRewardExporter
 }
 
 func (m *RewardingMaster) Start(ctx context.Context) error {
@@ -71,13 +71,13 @@ func (m *RewardingMaster) subscribe() {
 		Transactor:      m.Transactor,
 	}
 
-	exportRewarReqStartedEvtWatcher := exporter.ExportRewardRequestStartedEventWatcher{
+	exportRewarReqStartedEvtWatcher := porter.ExportRewardRequestStartedEventWatcher{
 		ContractAddr: m.ContractAddr,
 		Logger:       m.Logger,
 		Publisher:    m.Dispatcher,
 	}
 
-	rewardExporter := exporter.StakingRewardExporter{
+	rewardExporter := porter.StakingRewardExporter{
 		CChainIssueClient: m.CChainIssueClient,
 		Cache:             m.Cache,
 		Logger:            m.Logger,
