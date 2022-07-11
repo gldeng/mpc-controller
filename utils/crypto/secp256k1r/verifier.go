@@ -18,7 +18,7 @@ func (v *Verifier) VerifySig(hash []byte, sig [65]byte) (bool, error) {
 	}
 
 	if v.PChainAddress != pk.Address() {
-		return false, errors.New("invalid signature")
+		return false, errors.New("VerifySig:invalid signature")
 	}
 
 	return true, nil
