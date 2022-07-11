@@ -41,7 +41,7 @@ type UTXOReportedEvent struct {
 //type JoinedExportUTXORequestEvent struct {
 //	GroupIDHex       string
 //	MyIndex          *big.Int
-//	PubKeyHex        string
+//	CompressedGenPubKey        string
 //	TxID ids.ID
 //	TxHash           common.Hash
 //}

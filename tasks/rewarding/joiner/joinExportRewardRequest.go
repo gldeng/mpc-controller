@@ -66,7 +66,7 @@ package joiner
 //			newEvt := events.JoinedExportUTXORequestEvent{
 //				GroupIDHex:       genPubKeyInfo.GroupIdHex,
 //				MyIndex:          myIndex,
-//				PubKeyHex:        genPubKeyInfo.CompressedGenPubKeyHex,
+//				CompressedGenPubKey:        genPubKeyInfo.CompressedGenPubKeyHex,
 //				TxID: evt.TxID,
 //				TxHash:           *txHash,
 //			}

@@ -13,6 +13,7 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/secp256k1r"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	portIssuer "github.com/avalido/mpc-controller/utils/port/issuer"
@@ -88,6 +89,14 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		return
 	}
 
+	compressedGenPubKey, err := crypto.NormalizePubKey(utxoFetchedEvt.GenPubKeyHex)
+	if err != nil {
+		eh.Logger.Error("Failed to normalize generated public key", []logger.Field{
+			{"error", err},
+			{"genPubKey", utxoFetchedEvt.GenPubKeyHex}}...)
+		return
+	}
+
 	args := Args{
 		NetworkID: eh.NetworkID(),
 		//PChainID // todo:
@@ -98,9 +107,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 		SignDoner: eh.SignDoner,
 		SignReqArgs: &signer.SignRequestArgs{
-			TaskID:                    bytes.Bytes32ToHex(exportUTXOReqEvt.TxID),
-			NormalizedParticipantKeys: partiKeys,
-			PubKeyHex:                 utxoFetchedEvt.GenPubKeyHex,
+			TaskID:                 bytes.Bytes32ToHex(exportUTXOReqEvt.TxID),
+			CompressedPartiPubKeys: partiKeys,
+			CompressedGenPubKey:    *compressedGenPubKey,
 		},
 
 		CChainIssueClient: eh.CChainIssueClient,

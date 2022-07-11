@@ -44,7 +44,7 @@ type ParticipantInfo struct {
 
 // GeneratedPubKeyInfo stored key format: PrefixGeneratedPubKeyInfo-GenPubKeyHashHex
 type GeneratedPubKeyInfo struct {
-	GenPubKeyHashHex string
-	GenPubKeyHex     string
-	GroupIdHex       string
+	GenPubKeyHashHex       string
+	CompressedGenPubKeyHex string
+	GroupIdHex             string
 }

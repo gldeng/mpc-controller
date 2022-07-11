@@ -16,17 +16,17 @@ type SignRequester struct {
 }
 
 type SignRequestArgs struct {
-	TaskID                    string
-	NormalizedParticipantKeys []string
-	PubKeyHex                 string
+	TaskID                 string
+	CompressedPartiPubKeys []string
+	CompressedGenPubKeyHex string
 }
 
 func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error) {
 	exportTxSignReq := core.SignRequest{
-		RequestId:       s.TaskID + "-" + strconv.Itoa(0),
-		PublicKey:       s.PubKeyHex,
-		ParticipantKeys: s.NormalizedParticipantKeys,
-		Hash:            bytes.BytesToHex(exportTxHash),
+		RequestId:              s.TaskID + "-" + strconv.Itoa(0),
+		CompressedGenPubKey:    s.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
+		Hash:                   bytes.BytesToHex(exportTxHash),
 	}
 
 	res, err := s.SignDone(ctx, &exportTxSignReq)
@@ -39,10 +39,10 @@ func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) (
 
 func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error) {
 	importTxSignReq := core.SignRequest{
-		RequestId:       s.TaskID + "-" + strconv.Itoa(1),
-		PublicKey:       s.PubKeyHex,
-		ParticipantKeys: s.NormalizedParticipantKeys,
-		Hash:            bytes.BytesToHex(importTxHash),
+		RequestId:              s.TaskID + "-" + strconv.Itoa(1),
+		CompressedGenPubKey:    s.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
+		Hash:                   bytes.BytesToHex(importTxHash),
 	}
 
 	res, err := s.SignDone(ctx, &importTxSignReq)
@@ -55,10 +55,10 @@ func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) (
 
 func (s *SignRequester) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHash []byte) ([65]byte, error) {
 	addDelegatorTxSignReq := core.SignRequest{
-		RequestId:       s.TaskID + "-" + strconv.Itoa(2),
-		PublicKey:       s.PubKeyHex,
-		ParticipantKeys: s.NormalizedParticipantKeys,
-		Hash:            bytes.BytesToHex(addDelegatorTxHash),
+		RequestId:              s.TaskID + "-" + strconv.Itoa(2),
+		CompressedGenPubKey:    s.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
+		Hash:                   bytes.BytesToHex(addDelegatorTxHash),
 	}
 
 	res, err := s.SignDone(ctx, &addDelegatorTxSignReq)

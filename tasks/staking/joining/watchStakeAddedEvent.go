@@ -36,7 +36,7 @@ func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatc
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
 	case *events.GeneratedPubKeyInfoStoredEvent:
-		dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.GenPubKeyHex)
+		dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.CompressedGenPubKeyHex)
 		if err != nil {
 			eh.Logger.Error("Failed to denormalized generated public key", []logger.Field{{"error", err}}...)
 			break

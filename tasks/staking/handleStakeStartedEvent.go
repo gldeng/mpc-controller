@@ -74,16 +74,16 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			signRequester := &SignRequester{
 				SignDoner: eh.SignDoner,
 				SignRequestArgs: SignRequestArgs{
-					TaskID:                    evt.Raw.TxHash.Hex(),
-					NormalizedParticipantKeys: partiKeys,
-					PubKeyHex:                 eh.genPubKeyInfo.GenPubKeyHex,
+					TaskID:                 evt.Raw.TxHash.Hex(),
+					CompressedPartiPubKeys: partiKeys,
+					CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
 				},
 			}
 
 			taskCreator := StakeTaskCreator{
 				MpcManagerStakeRequestStarted: evt,
 				NetworkContext:                eh.NetworkContext,
-				PubKeyHex:                     eh.genPubKeyInfo.GenPubKeyHex,
+				PubKeyHex:                     eh.genPubKeyInfo.CompressedGenPubKeyHex,
 				Nonce:                         nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()
@@ -127,7 +127,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 				EndTime:     stakeTask.EndTime,
 				NodeID:      stakeTask.NodeID,
 
-				PubKeyHex:     eh.genPubKeyInfo.GenPubKeyHex,
+				PubKeyHex:     eh.genPubKeyInfo.CompressedGenPubKeyHex,
 				CChainAddress: stakeTask.CChainAddress,
 				PChainAddress: stakeTask.PChainAddress,
 				Nonce:         stakeTask.Nonce,
@@ -158,7 +158,7 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManage
 }
 
 func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
-	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.GenPubKeyHex)
+	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.CompressedGenPubKeyHex)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
