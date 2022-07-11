@@ -13,7 +13,6 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/bytes"
-	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/crypto/secp256k1r"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	portIssuer "github.com/avalido/mpc-controller/utils/port/issuer"
@@ -43,16 +42,16 @@ type UTXOPorter struct {
 	once sync.Once
 
 	// todo: consider include this field in Cache or dispatcher
-	utxoFetchedEvtObjMap map[common.Hash]*dispatcher.EventObject // todo: persistence and restore
+	utxoFetchedEvtObjMap map[string]*dispatcher.EventObject // todo: persistence and restore
 }
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.UTXOsFetchedEvent:
 		eh.once.Do(func() {
-			eh.utxoFetchedEvtObjMap = make(map[common.Hash]*dispatcher.EventObject)
+			eh.utxoFetchedEvtObjMap = make(map[string]*dispatcher.EventObject)
 		})
-		eh.utxoFetchedEvtObjMap[hash256.FromHex(evt.GenPubKeyHashHex)] = evtObj
+		eh.utxoFetchedEvtObjMap[evt.GenPubKeyHashHex] = evtObj
 	case *events.ExportUTXORequestEvent:
 		ok := eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.Hex(), evt.ParticipantIndices)
 		if !ok {
@@ -74,8 +73,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		return
 	}
 
-	pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(exportUTXOReqEvt.GenPubKeyHash.Hex())
-	utxoFetchedEvt := eh.utxoFetchedEvtObjMap[exportUTXOReqEvt.GenPubKeyHash].Event.(*events.UTXOsFetchedEvent)
+	utxoFectchedEvtObj := eh.utxoFetchedEvtObjMap[exportUTXOReqEvt.GenPubKeyHash.Hex()]
+	utxoFetchedEvt := utxoFectchedEvtObj.Event.(*events.UTXOsFetchedEvent)
 
 	var utxo *avax.UTXO
 	for _, utxo = range utxoFetchedEvt.NativeUTXOs {
@@ -101,7 +100,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		SignReqArgs: &signer.SignRequestArgs{
 			TaskID:                    bytes.Bytes32ToHex(exportUTXOReqEvt.TxID),
 			NormalizedParticipantKeys: partiKeys,
-			PubKeyHex:                 pubKeyInfo.GenPubKeyHex,
+			PubKeyHex:                 utxoFetchedEvt.GenPubKeyHex,
 		},
 
 		CChainIssueClient: eh.CChainIssueClient,
