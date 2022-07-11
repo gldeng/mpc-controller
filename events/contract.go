@@ -13,7 +13,7 @@ import (
 
 type ReportedGenPubKeyEvent struct {
 	GroupIdHex       string
-	Index            *big.Int
+	PartiIndex       *big.Int
 	GenPubKeyHex     string
 	GenPubKeyHashHex string
 	CChainAddress    common.Address
@@ -21,12 +21,12 @@ type ReportedGenPubKeyEvent struct {
 }
 
 type JoinRequestEvent struct {
-	RequestId *big.Int
-	Index     *big.Int
+	RequestId  *big.Int
+	PartiIndex *big.Int
 }
 
 type JoinedRequestEvent struct {
-	TxHashHex string
-	RequestId *big.Int
-	Index     *big.Int
+	TxHashHex  string
+	RequestId  *big.Int
+	PartiIndex *big.Int
 }

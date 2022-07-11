@@ -55,9 +55,9 @@ func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatc
 
 		if txHash != nil {
 			newEvt := events.JoinedRequestEvent{
-				TxHashHex: txHash.Hex(),
-				RequestId: evt.RequestId,
-				Index:     myIndex,
+				TxHashHex:  txHash.Hex(),
+				RequestId:  evt.RequestId,
+				PartiIndex: myIndex,
 			}
 
 			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", &newEvt, evtObj.Context))
