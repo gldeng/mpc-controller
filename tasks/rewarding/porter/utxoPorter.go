@@ -156,7 +156,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 		NetworkID:          args.NetworkID,
 		BlockchainID:       args.PChainID,
 		DestinationChainID: args.CChainID,
-		Amount:             amountToExport - args.ExportFee,
+		Amount:             amountToExport - args.ExportFee, // todo: consider batch export to reduce fee
 		To:                 args.PChainAddr,
 		UTXOs:              []*avax.UTXO{args.UTXO},
 	}
