@@ -389,6 +389,7 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
                     address ArrToAcceptReward = lastGenAddress; // todo: make it configurable
                     emit ExportUTXORequest(utxoTxID, utxoOutputIndex, ArrToAcceptReward, genPubKey, joinedIndices);
                 }
+                delete  _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex];
             }
         }
     }
