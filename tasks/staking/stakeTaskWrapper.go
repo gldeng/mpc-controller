@@ -107,7 +107,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	addDelegatorId, err := s.PChainIssueClient.IssueTx(ctx, addDelegatorTx.Bytes())
+	addDelegatorId, err := s.PChainIssueClient.IssueTx(ctx, addDelegatorTx.Bytes()) // todo: reuse chain.PlatformvmClientWrapper
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -120,7 +120,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	return []ids.ID{exportId, importId, addDelegatorId}, nil
 }
 
-func (s *StakeTaskWrapper) awaitAddDelegatorTxDecided(ctx context.Context, txID ids.ID) (err error) {
+func (s *StakeTaskWrapper) awaitAddDelegatorTxDecided(ctx context.Context, txID ids.ID) (err error) { // todo: reuse chain.PlatformvmClientWrapper
 	var txStatusRes *platformvm.GetTxStatusResponse
 	backoff.RetryFnExponentialForever(s.Logger, ctx, func() error {
 		txStatusRes, err = s.PChainIssueClient.(platformvm.Client).AwaitTxDecided(ctx, txID, time.Second)
