@@ -97,9 +97,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 	}
 
 	args := Args{
-		NetworkID: eh.NetworkID(),
-		ExportFee: eh.ExportFee(),
-		//PChainID // todo:
+		NetworkID:  eh.NetworkID(),
+		ExportFee:  eh.ExportFee(),
+		PChainID:   ids.Empty, // todo: config it
 		CChainID:   eh.CChainID(),
 		PChainAddr: utxoFetchedEvt.PChainAddress,
 		CChainArr:  exportUTXOReqEvt.To,
