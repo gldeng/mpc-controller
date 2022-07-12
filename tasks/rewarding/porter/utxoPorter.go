@@ -118,7 +118,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 	ids, err := doExportUTXO(ctx, &args)
 	if err != nil {
-		eh.Logger.Error("UTXOPorter failed to export UTXO", []logger.Field{
+		eh.Logger.Error("Failed to export UTXO", []logger.Field{
 			{"error", err},
 			{"exportUTXORequestEvent", exportUTXOReqEvt}}...)
 		return
@@ -152,6 +152,9 @@ type Args struct {
 
 func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 	amountToExport := args.UTXO.Out.(*secp256k1fx.TransferOutput).Amount()
+	if amountToExport < args.ExportFee {
+		return [2]ids.ID{}, errors.Errorf("amoutToExport(%v) is less than exportFee(%v)", amountToExport, args.ExportFee)
+	}
 	myExportTxArgs := &pchain.Args{
 		NetworkID:          args.NetworkID,
 		BlockchainID:       args.PChainID,
@@ -160,7 +163,6 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 		To:                 args.PChainAddr,
 		UTXOs:              []*avax.UTXO{args.UTXO},
 	}
-
 	myImportTxArgs := &cchain.Args{
 		NetworkID:     args.NetworkID,
 		BlockchainID:  args.CChainID,
