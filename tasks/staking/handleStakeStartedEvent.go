@@ -113,7 +113,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
-				eh.Logger.Error("Failed to process ExportTx", []logger.Field{{"error", err}}...)
+				eh.Logger.Error("Failed to process ExportTx", []logger.Field{{"error", err}}...) // todo: check nonce to see whether it is used
 				spew.Dump(stakeTask)
 				return
 			}
