@@ -98,6 +98,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 	args := Args{
 		NetworkID: eh.NetworkID(),
+		ExportFee: eh.ExportFee(),
 		//PChainID // todo:
 		CChainID:    eh.CChainID(),
 		PChainAddr:  utxoFetchedEvt.PChainAddress,
@@ -134,6 +135,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 type Args struct {
 	NetworkID   uint32
+	ExportFee   uint64
 	PChainID    ids.ID
 	CChainID    ids.ID
 	PChainAddr  ids.ShortID
@@ -153,7 +155,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 		NetworkID:          args.NetworkID,
 		BlockchainID:       args.PChainID,
 		DestinationChainID: args.CChainID,
-		Amount:             amountToExport, // todo: to be tuned
+		Amount:             amountToExport - args.ExportFee,
 		To:                 args.PChainAddr,
 		UTXOs:              args.RewardUTXOs,
 	}
