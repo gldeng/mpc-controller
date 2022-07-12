@@ -115,13 +115,13 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create eth rpc client
-	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl)
+	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl) // todo: use chain.RpcEthClientWrapper
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth rpc client, url: %q", config.EthRpcUrl))
 	}
 
 	// Create eth ws client
-	ethWsClient, err := ethclient.Dial(config.EthWsUrl)
+	ethWsClient, err := ethclient.Dial(config.EthWsUrl) // todo: use chain.WsEthClientWrapper
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth ws client, url: %q", config.EthWsUrl))
 	}
