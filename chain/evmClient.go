@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/pkg/errors"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,9 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 		txID, err = c.Client.IssueTx(ctx, txBytes)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to IssueTx with evm.Client")
+			if strings.Contains(err.Error(), "insufficient funds") {
+				return nil
+			}
 			return err
 		}
 
