@@ -5,6 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/utils/hashing"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/coreth/plugin/evm"
+	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
@@ -48,7 +49,7 @@ func (t *Txs) ExportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) ImportTxHash() ([]byte, error) {
-	exportTxUTXOs := t.signedExportTx.UTXOs()
+	exportTxUTXOs := myAvax.UTXOsFromTransferableOutputs(t.signedExportTx.ID(), t.unsignedExportTx.ExportedOutputs)
 	if len(exportTxUTXOs) == 0 {
 		return nil, errors.Errorf("no exportTx UTXOs provided.")
 	}

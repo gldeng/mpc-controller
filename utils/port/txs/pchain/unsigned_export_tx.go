@@ -34,11 +34,11 @@ func UnsignedExportTx(args *Args) *txs.ExportTx {
 		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    args.NetworkID,
 			BlockchainID: args.BlockchainID,
-			Outs:         outputs,
-			Ins:          inputs,
+			//Outs:         outputs, // todo: unecessary?
+			Ins: inputs,
 		}},
 		DestinationChain: args.DestinationChainID,
-		ExportedOutputs:  outputs, // todo: unecessary?
+		ExportedOutputs:  outputs,
 	}
 	return utx
 }
