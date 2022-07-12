@@ -247,6 +247,7 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 			ID: assetId,
 		},
 		config.ImportFee,
+		config.ExportFee,
 		config.GasPerByte,
 		config.GasPerSig,
 		config.GasFixed,

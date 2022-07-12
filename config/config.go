@@ -28,6 +28,7 @@ type NetworkConfig struct {
 	AvaxId    string `yaml:"avaxId"`
 
 	ImportFee  uint64 `yaml:"importFee"`
+	ExportFee  uint64 `yaml:"exportFee"`
 	GasPerByte uint64 `yaml:"gasPerByte"`
 	GasPerSig  uint64 `yaml:"gasPerSig"`
 	GasFixed   uint64 `yaml:"gasFixed"`
