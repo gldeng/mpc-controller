@@ -11,7 +11,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
@@ -113,8 +112,9 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
-				eh.Logger.Error("Failed to process ExportTx", []logger.Field{{"error", err}}...) // todo: check nonce to see whether it is used
-				spew.Dump(stakeTask)
+				eh.Logger.Error("Failed to process ExportTx", []logger.Field{
+					{"error", err},
+					{"stakeTask", stakeTask}}...) // todo: check nonce to see whether it is used
 				return
 			}
 
