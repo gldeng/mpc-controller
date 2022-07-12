@@ -5,6 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type Txs interface {
@@ -69,7 +70,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	err = p.SetExportTxSig(exportTxSig)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to set exportTx signature")
 	}
 
 	// Sign ImportTx
@@ -95,7 +96,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	err = p.SetImportTxSig(importTxSig)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to set importTx signature")
 	}
 
 	// Issue ExportTx
@@ -108,6 +109,8 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	if err != nil {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
+
+	time.Sleep(time.Second * 5)
 
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()
