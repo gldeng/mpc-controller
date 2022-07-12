@@ -34,6 +34,10 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     }
 
     address private _avaLidoAddress;
+
+    address private _receivePrincipalAddr;
+    address private _receiveRewardAddr;
+
     // groupId -> number of participants in the group
     mapping(bytes32 => uint256) private _groupParticipantCount;
     // groupId -> threshold
@@ -52,8 +56,6 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     mapping(uint256 => StakeRequestDetails) private _stakeRequestDetails;
     uint256 private _lastRequestId;
 
-//    // utxoTxId -> utxoOutputIndex -> reportUTXOCount
-//    mapping(bytes32 => mapping(uint32 => uint256)) private _reportUTXOCounts;
     // utxoTxId -> utxoOutputIndex -> joinExportUTXOParticipantIndices
     mapping(bytes32 => mapping(uint32 => uint256[])) private _joinExportUTXOParticipantIndices;
 
@@ -81,9 +83,6 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     event SignRequestStarted(uint256 requestId, bytes indexed publicKey, bytes message);
 
     event ExportUTXORequest(bytes32 txId, uint32 outputIndex, address to, bytes indexed genPubKey, uint256[] participantIndices);
-
-//    event ExportUTXORequestAdded(bytes32 utxoTxId, uint32 utxoOutputIndex, bytes indexed genPubKey);
-//    event ExportUTXORequestStarted(bytes32 utxoTxId, uint32 utxoOutputIndex, address to, bytes indexed genPubKey, uint256[] participantIndices);
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -248,6 +247,14 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         _avaLidoAddress = avaLidoAddress;
     }
 
+    function setReceivePrincipalAddr(address receivePrincipalAddr) external onlyAdmin {
+        _receivePrincipalAddr = receivePrincipalAddr;
+    }
+
+    function setReceiveRewardAddr(address receiveRewardAddr) external onlyAdmin {
+        _receiveRewardAddr = receiveRewardAddr;
+    }
+
     // -------------------------------------------------------------------------
     //  External view functions
     // -------------------------------------------------------------------------
@@ -361,47 +368,6 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     // -------------------------------------------------------------------------
     //  Reward functions
     // -------------------------------------------------------------------------
-
-//    function reportUTXO(
-//        bytes32 groupId,
-//        uint256 myIndex,
-//        bytes calldata genPubKey,
-//        bytes32 utxoTxID,
-//        uint32 utxoOutputIndex
-//    ) external onlyGroupMember(groupId, myIndex) {
-//        uint256 groupMembers = 3; // todo: compare with number of group members.
-//        uint256 reportedCount = _reportUTXOCounts[utxoTxID][utxoOutputIndex];
-//        if (reportedCount < groupMembers) {
-//            _reportUTXOCounts[utxoTxID][utxoOutputIndex] = reportedCount+1;
-//            if (reportedCount+1 == groupMembers) {
-//                emit ExportUTXORequestAdded(utxoTxID, utxoOutputIndex, genPubKey);
-//            }
-//        }
-//    }
-//
-//    function joinExportUTXO(
-//        bytes32 groupId,
-//        uint256 myIndex,
-//        bytes calldata genPubKey,
-//        bytes32 utxoTxID,
-//        uint32 utxoOutputIndex
-//) external onlyGroupMember(groupId, myIndex) {
-//        uint256 threshold = 1; // todo: compare with group threshold
-//        uint256 joinedCount = _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex].length;
-//        if (joinedCount < threshold+1) {
-//             _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex].push(myIndex);
-//            if (joinedCount+1 == threshold+1) {
-//                uint256[] memory joinedIndices = _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex];
-//                if (utxoOutputIndex == 0) {
-//                    address ArrToAcceptPrincipal = lastGenAddress; // todo: make it configurable
-//                    emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptPrincipal, genPubKey, joinedIndices);
-//                } else if (utxoOutputIndex == 1) {
-//                    address ArrToAcceptReward = lastGenAddress; // todo: make it configurable
-//                    emit ExportUTXORequestStarted(utxoTxID, utxoOutputIndex, ArrToAcceptReward, genPubKey, joinedIndices);
-//                }
-//            }
-//        }
-//    }
 
     function reportUTXO(
         bytes32 groupId,
