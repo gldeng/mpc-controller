@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/pkg/errors"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,9 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 		txID, err = c.Client.IssueTx(ctx, tx, options...)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to IssueTx with platformvm.Client")
+			if strings.Contains(err.Error(), "failed to read consumed UTXO") && strings.Contains(err.Error(), "due to: not found") {
+				return nil
+			}
 			return err
 		}
 
