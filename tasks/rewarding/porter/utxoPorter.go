@@ -124,9 +124,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		return
 	}
 
+	mpcUTXO := myAvax.MpcUTXOFromUTXO(utxo)
 	newEvt := &events.UTXOExportedEvent{
 		NativeUTXO:   utxo,
-		MpcUTXO:      myAvax.MpcUTXOFromUTXO(utxo),
+		MpcUTXO:      mpcUTXO,
 		ExportedTxID: ids[0],
 		ImportedTxID: ids[1],
 	}
