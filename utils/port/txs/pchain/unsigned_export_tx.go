@@ -18,24 +18,27 @@ type Args struct {
 }
 
 func UnsignedExportTx(args *Args) *txs.ExportTx {
+	inputs := myAvax.TransferableInputsrFromUTXOs(args.UTXOs) // The inputs to this transaction
+	outputs := []*avax.TransferableOutput{{                   // Outputs that are exported to the destination chain
+		Asset: args.UTXOs[0].Asset,
+		Out: &secp256k1fx.TransferOutput{
+			Amt: args.Amount,
+			OutputOwners: secp256k1fx.OutputOwners{
+				Locktime:  0,
+				Threshold: 1,
+				Addrs:     []ids.ShortID{args.To},
+			},
+		},
+	}}
 	utx := &txs.ExportTx{
 		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    args.NetworkID,
 			BlockchainID: args.BlockchainID,
-			Ins:          myAvax.TransferableInputsrFromUTXOs(args.UTXOs), // The inputs to this transaction
+			Outs:         outputs,
+			Ins:          inputs,
 		}},
 		DestinationChain: args.DestinationChainID,
-		ExportedOutputs: []*avax.TransferableOutput{{ // Outputs that are exported to the destination chain
-			Asset: args.UTXOs[0].Asset,
-			Out: &secp256k1fx.TransferOutput{
-				Amt: args.Amount,
-				OutputOwners: secp256k1fx.OutputOwners{
-					Locktime:  0,
-					Threshold: 1,
-					Addrs:     []ids.ShortID{args.To},
-				},
-			},
-		}},
+		ExportedOutputs:  outputs,
 	}
 	return utx
 }
