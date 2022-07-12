@@ -127,7 +127,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create C-Chain issue client
-	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C") // todo: use its wrapper
+	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
+	evmClientWrapper := &chain.EvmClientWrapper{myLogger, cChainIssueCli}
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
@@ -179,7 +180,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	stakingMaster := staking.StakingMaster{
-		CChainIssueClient: cChainIssueCli,
+		CChainIssueClient: evmClientWrapper,
 		Cache:             &cacheWrapper,
 		ContractAddr:      contractAddr,
 		Dispatcher:        myDispatcher,
@@ -192,7 +193,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	rewardMaster := rewarding.Master{
-		CChainIssueClient: cChainIssueCli,
+		CChainIssueClient: evmClientWrapper,
 		Cache:             &cacheWrapper,
 		ContractAddr:      contractAddr,
 		Dispatcher:        myDispatcher,
