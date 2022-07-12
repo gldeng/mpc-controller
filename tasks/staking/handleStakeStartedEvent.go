@@ -100,10 +100,6 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 				StakeTask:         stakeTask,
 			}
 
-			// todo: logically only one participant can issue export, export and addDelegator tx successfully,
-			// consider adding consensus mechanism or other improved measures to avoid unnecessary issuing error
-			// such as "insufficient funds"
-
 			err = stakeTaskWrapper.SignTx(evtObj.Context)
 			if err != nil {
 				eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
@@ -112,9 +108,14 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
+				newNonce, _ := eh.getNonce(evtObj.Context)
+				if newNonce == nonce+1 {
+					eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{{"stakeTask", stakeTask}}...)
+					return
+				}
 				eh.Logger.Error("Failed to process ExportTx", []logger.Field{
 					{"error", err},
-					{"stakeTask", stakeTask}}...) // todo: check nonce to see whether it is used
+					{"stakeTask", stakeTask}}...)
 				return
 			}
 
