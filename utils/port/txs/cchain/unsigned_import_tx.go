@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type Args struct {
+type ImportTxArgs struct {
 	NetworkID     uint32         // ID of the network on which this tx was issued
 	BlockchainID  ids.ID         // ID of this blockchain.
 	SourceChainID ids.ID         // Which chain to consume the funds from
@@ -17,7 +17,7 @@ type Args struct {
 	AtomicUTXOs []*avax.UTXO // UTXOs to spend
 }
 
-func UnsignedImportTx(args *Args) *evm.UnsignedImportTx {
+func UnsignedImportTx(args *ImportTxArgs) *evm.UnsignedImportTx {
 	mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(args.AtomicUTXOs)
 	importedAmounts := make(map[ids.ID]uint64)
 	for _, mpcUTXO := range mpcUTXOs {

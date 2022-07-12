@@ -8,21 +8,21 @@ import (
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 )
 
-type Args struct {
+type ExportTxArgs struct {
 	NetworkID          uint32 // ID of the network this chain lives on
 	BlockchainID       ids.ID // ID of the chain on which this transaction exists (prevents replay attacks)
 	DestinationChainID ids.ID // Which chain to send the funds to
-	Amount             uint64
+	OutAmount          uint64
 	To                 ids.ShortID
 	UTXOs              []*avax.UTXO // UTXOs to spend
 }
 
-func UnsignedExportTx(args *Args) *txs.ExportTx {
+func UnsignedExportTx(args *ExportTxArgs) *txs.ExportTx {
 	inputs := myAvax.TransferableInputsrFromUTXOs(args.UTXOs) // The inputs to this transaction
 	outputs := []*avax.TransferableOutput{{                   // Outputs that are exported to the destination chain
 		Asset: args.UTXOs[0].Asset,
 		Out: &secp256k1fx.TransferOutput{
-			Amt: args.Amount,
+			Amt: args.OutAmount,
 			OutputOwners: secp256k1fx.OutputOwners{
 				Locktime:  0,
 				Threshold: 1,

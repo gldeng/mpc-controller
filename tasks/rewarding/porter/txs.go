@@ -15,22 +15,22 @@ import (
 var _ porter.Txs = (*Txs)(nil)
 
 type Txs struct {
-	UnsignedExportTxArgs *pchain.Args
-	UnsignedImportTx     *cchain.Args
+	ExportTxArgs *pchain.ExportTxArgs
+	ImportTxArgs *cchain.ImportTxArgs
 
-	unsignedExportTx *txs.ExportTx
-	unsignedImportTx *evm.UnsignedImportTx
+	exportTx *txs.ExportTx
+	importTx *evm.UnsignedImportTx
 
 	exportTxSigBytes [65]byte
 	importTxSigBytes [65]byte
 
-	signedExportTx *txs.Tx
-	signedImportTx *evm.Tx
+	PChainTx *txs.Tx
+	CChainTx *evm.Tx
 }
 
 func (t *Txs) ExportTxHash() ([]byte, error) {
-	exportTx := pchain.UnsignedExportTx(t.UnsignedExportTxArgs)
-	t.unsignedExportTx = exportTx
+	exportTx := pchain.UnsignedExportTx(t.ExportTxArgs)
+	t.exportTx = exportTx
 
 	tx := txs.Tx{
 		Unsigned: exportTx,
@@ -49,13 +49,13 @@ func (t *Txs) ExportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) ImportTxHash() ([]byte, error) {
-	exportTxUTXOs := myAvax.UTXOsFromTransferableOutputs(t.signedExportTx.ID(), t.unsignedExportTx.ExportedOutputs)
+	exportTxUTXOs := myAvax.UTXOsFromTransferableOutputs(t.PChainTx.ID(), t.exportTx.ExportedOutputs)
 	if len(exportTxUTXOs) == 0 {
 		return nil, errors.Errorf("no exportTx UTXOs provided.")
 	}
-	t.UnsignedImportTx.AtomicUTXOs = exportTxUTXOs
-	importTx := cchain.UnsignedImportTx(t.UnsignedImportTx)
-	t.unsignedImportTx = importTx
+	t.ImportTxArgs.AtomicUTXOs = exportTxUTXOs
+	importTx := cchain.UnsignedImportTx(t.ImportTxArgs)
+	t.importTx = importTx
 
 	tx := evm.Tx{
 		UnsignedAtomicTx: importTx,
@@ -74,37 +74,37 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) SetExportTxSig(exportTxSig [65]byte) error {
-	signedExportTx, err := pchain.SignedTx(t.unsignedExportTx, exportTxSig)
+	signedExportTx, err := pchain.SignedTx(t.exportTx, exportTxSig)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	t.signedExportTx = signedExportTx
+	t.PChainTx = signedExportTx
 	t.exportTxSigBytes = exportTxSig
 	return nil
 }
 
 func (t *Txs) SetImportTxSig(importTxSig [65]byte) error {
-	signedImportTx, err := cchain.SignedTx(t.unsignedImportTx, importTxSig)
+	signedImportTx, err := cchain.SignedTx(t.importTx, importTxSig)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	t.signedImportTx = signedImportTx
+	t.CChainTx = signedImportTx
 	t.importTxSigBytes = importTxSig
 	return nil
 }
 
 func (t *Txs) SignedExportTxBytes() ([]byte, error) {
-	return t.signedExportTx.Bytes(), nil
+	return t.PChainTx.Bytes(), nil
 }
 
 func (t *Txs) SignedImportTxBytes() ([]byte, error) {
-	return t.signedImportTx.SignedBytes(), nil
+	return t.CChainTx.SignedBytes(), nil
 }
 
 func (t *Txs) SignedExportTxID() ids.ID {
-	return t.signedExportTx.ID()
+	return t.PChainTx.ID()
 }
 
 func (t *Txs) SignedImportTxID() ids.ID {
-	return t.signedImportTx.ID()
+	return t.CChainTx.ID()
 }
