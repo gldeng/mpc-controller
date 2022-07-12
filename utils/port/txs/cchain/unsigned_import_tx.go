@@ -18,9 +18,14 @@ type Args struct {
 }
 
 func UnsignedImportTx(args *Args) *evm.UnsignedImportTx {
-	importedAmount := make(map[ids.ID]uint64)
-	outs := make([]evm.EVMOutput, 0, len(importedAmount))
-	for assetID, amount := range importedAmount {
+	mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(args.AtomicUTXOs)
+	importedAmounts := make(map[ids.ID]uint64)
+	for _, mpcUTXO := range mpcUTXOs {
+		importedAmounts[mpcUTXO.Asset] = mpcUTXO.Out.Amt
+	}
+
+	outs := make([]evm.EVMOutput, 0, len(importedAmounts))
+	for assetID, amount := range importedAmounts {
 		outs = append(outs, evm.EVMOutput{
 			Address: args.To,
 			Amount:  amount,
