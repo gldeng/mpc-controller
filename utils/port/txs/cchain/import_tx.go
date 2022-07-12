@@ -17,7 +17,7 @@ type ImportTxArgs struct {
 	AtomicUTXOs []*avax.UTXO // UTXOs to spend
 }
 
-func UnsignedImportTx(args *ImportTxArgs) *evm.UnsignedImportTx {
+func ImportTx(args *ImportTxArgs) *evm.UnsignedImportTx {
 	mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(args.AtomicUTXOs)
 	importedAmounts := make(map[ids.ID]uint64)
 	for _, mpcUTXO := range mpcUTXOs {

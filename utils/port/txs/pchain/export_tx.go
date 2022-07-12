@@ -17,7 +17,7 @@ type ExportTxArgs struct {
 	UTXOs              []*avax.UTXO // UTXOs to spend
 }
 
-func UnsignedExportTx(args *ExportTxArgs) *txs.ExportTx {
+func ExportTx(args *ExportTxArgs) *txs.ExportTx {
 	inputs := myAvax.TransferableInputsrFromUTXOs(args.UTXOs) // The inputs to this transaction
 	outputs := []*avax.TransferableOutput{{                   // Outputs that are exported to the destination chain
 		Asset: args.UTXOs[0].Asset,

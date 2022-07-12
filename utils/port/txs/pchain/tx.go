@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func SignedTx(unsignedTx txs.UnsignedTx, sig [65]byte) (*txs.Tx, error) {
+func Tx(unsignedTx txs.UnsignedTx, sig [65]byte) (*txs.Tx, error) {
 	tx := &txs.Tx{
 		Unsigned: unsignedTx,
 		Creds: []verify.Verifiable{

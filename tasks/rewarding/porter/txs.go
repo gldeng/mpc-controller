@@ -29,7 +29,7 @@ type Txs struct {
 }
 
 func (t *Txs) ExportTxHash() ([]byte, error) {
-	exportTx := pchain.UnsignedExportTx(t.ExportTxArgs)
+	exportTx := pchain.ExportTx(t.ExportTxArgs)
 	t.exportTx = exportTx
 
 	tx := txs.Tx{
@@ -54,7 +54,7 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 		return nil, errors.Errorf("no exportTx UTXOs provided.")
 	}
 	t.ImportTxArgs.AtomicUTXOs = exportTxUTXOs
-	importTx := cchain.UnsignedImportTx(t.ImportTxArgs)
+	importTx := cchain.ImportTx(t.ImportTxArgs)
 	t.importTx = importTx
 
 	tx := evm.Tx{
@@ -74,7 +74,7 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) SetExportTxSig(exportTxSig [65]byte) error {
-	signedExportTx, err := pchain.SignedTx(t.exportTx, exportTxSig)
+	signedExportTx, err := pchain.Tx(t.exportTx, exportTxSig)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -84,7 +84,7 @@ func (t *Txs) SetExportTxSig(exportTxSig [65]byte) error {
 }
 
 func (t *Txs) SetImportTxSig(importTxSig [65]byte) error {
-	signedImportTx, err := cchain.SignedTx(t.importTx, importTxSig)
+	signedImportTx, err := cchain.Tx(t.importTx, importTxSig)
 	if err != nil {
 		return errors.WithStack(err)
 	}
