@@ -93,7 +93,7 @@ func (t *Txs) SignedExportTxBytes() ([]byte, error) {
 }
 
 func (t *Txs) SignedImportTxBytes() ([]byte, error) {
-	return t.signedImportTx.Bytes(), nil
+	return t.signedImportTx.SignedBytes(), nil
 }
 
 func (t *Txs) SignedExportTxID() ids.ID {
