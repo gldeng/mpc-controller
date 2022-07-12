@@ -127,10 +127,11 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create C-Chain issue client
-	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
+	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C") // todo: use its wrapper
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
+	platformvmClientWrapper := &chain.PlatformvmClientWrapper{myLogger, pChainIssueCli}
 
 	// Create contract filterer reconnector
 	filterReconnector := reconnector.ContractFilterReconnector{
@@ -186,7 +187,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		MyPubKeyHashHex:   myPubKeyHash.Hex(),
 		NetworkContext:    networkCtx(config),
 		Noncer:            ethRpcClient,
-		PChainIssueClient: pChainIssueCli,
+		PChainIssueClient: platformvmClientWrapper,
 		SignDoner:         mpcClient,
 	}
 
@@ -198,9 +199,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Logger:            myLogger,
 		MyPubKeyHashHex:   myPubKeyHash.Hex(),
 		NetworkContext:    networkCtx(config),
-		PChainClient:      pChainIssueCli,
+		PChainClient:      platformvmClientWrapper,
 		Receipter:         ethRpcClient,
-		RewardUTXOGetter:  pChainIssueCli,
+		RewardUTXOGetter:  platformvmClientWrapper,
 		SignDoner:         mpcClient,
 		Signer:            signer,
 		Transactor:        ethRpcClient,
