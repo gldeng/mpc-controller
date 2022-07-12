@@ -106,7 +106,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	exportTxId, err := p.IssueExportTx(ctx, exportTxBytes)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
 
 	// Issue ImportTx
@@ -117,7 +117,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	importTxId, err := p.IssueImportTx(ctx, importTxBytes)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueImportTx")
 	}
 
 	return [2]ids.ID{exportTxId, importTxId}, nil
