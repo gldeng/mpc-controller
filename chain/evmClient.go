@@ -21,7 +21,7 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 		txID, err = c.Client.IssueTx(ctx, txBytes)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to IssueTx with evm.Client")
-			if strings.Contains(err.Error(), "insufficient funds") {
+			if strings.Contains(err.Error(), "insufficient funds") || strings.Contains(err.Error(), "tx has no imported inputs") {
 				return nil
 			}
 			return err
