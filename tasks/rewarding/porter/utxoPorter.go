@@ -100,10 +100,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		NetworkID: eh.NetworkID(),
 		ExportFee: eh.ExportFee(),
 		//PChainID // todo:
-		CChainID:    eh.CChainID(),
-		PChainAddr:  utxoFetchedEvt.PChainAddress,
-		CChainArr:   exportUTXOReqEvt.To,
-		RewardUTXOs: []*avax.UTXO{utxo},
+		CChainID:   eh.CChainID(),
+		PChainAddr: utxoFetchedEvt.PChainAddress,
+		CChainArr:  exportUTXOReqEvt.To,
+		UTXO:       utxo,
 
 		SignDoner: eh.SignDoner,
 		SignReqArgs: &signer.SignRequestArgs{
@@ -134,13 +134,13 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 }
 
 type Args struct {
-	NetworkID   uint32
-	ExportFee   uint64
-	PChainID    ids.ID
-	CChainID    ids.ID
-	PChainAddr  ids.ShortID
-	CChainArr   common.Address
-	RewardUTXOs []*avax.UTXO
+	NetworkID  uint32
+	ExportFee  uint64
+	PChainID   ids.ID
+	CChainID   ids.ID
+	PChainAddr ids.ShortID
+	CChainArr  common.Address
+	UTXO       *avax.UTXO
 
 	SignDoner   core.SignDoner
 	SignReqArgs *signer.SignRequestArgs
@@ -150,14 +150,14 @@ type Args struct {
 }
 
 func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
-	amountToExport := args.RewardUTXOs[0].Out.(*secp256k1fx.TransferOutput).Amount()
+	amountToExport := args.UTXO.Out.(*secp256k1fx.TransferOutput).Amount()
 	myExportTxArgs := &pchain.Args{
 		NetworkID:          args.NetworkID,
 		BlockchainID:       args.PChainID,
 		DestinationChainID: args.CChainID,
 		Amount:             amountToExport - args.ExportFee,
 		To:                 args.PChainAddr,
-		UTXOs:              args.RewardUTXOs,
+		UTXOs:              []*avax.UTXO{args.UTXO},
 	}
 
 	myImportTxArgs := &cchain.Args{
