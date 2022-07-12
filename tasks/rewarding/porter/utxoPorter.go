@@ -155,11 +155,12 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 	if amountToExport < args.ExportFee {
 		return [2]ids.ID{}, errors.Errorf("amoutToExport(%v) is less than exportFee(%v)", amountToExport, args.ExportFee)
 	}
+	outAmount := amountToExport - args.ExportFee // todo: consider batch export to reduce fee
 	myExportTxArgs := &pchain.ExportTxArgs{
 		NetworkID:          args.NetworkID,
 		BlockchainID:       args.PChainID,
 		DestinationChainID: args.CChainID,
-		OutAmount:          amountToExport - args.ExportFee, // todo: consider batch export to reduce fee
+		OutAmount:          outAmount,
 		To:                 args.PChainAddr,
 		UTXOs:              []*avax.UTXO{args.UTXO},
 	}
@@ -167,6 +168,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 		NetworkID:     args.NetworkID,
 		BlockchainID:  args.CChainID,
 		SourceChainID: args.PChainID,
+		OutAmount:     outAmount,
 		To:            args.CChainArr,
 		//BaseFee:      *big.Int todo: tobe consider
 	}
