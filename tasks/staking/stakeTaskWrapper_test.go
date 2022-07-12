@@ -60,6 +60,7 @@ func (suite *StakeTaskWrapperTestSuite) SetupTest() {
 			ID: assetId,
 		},
 		1000000,
+		1000000,
 		1,
 		1000,
 		10000,
