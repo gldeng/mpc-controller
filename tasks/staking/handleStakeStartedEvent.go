@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
+	"time"
 )
 
 type Cache interface {
@@ -108,6 +109,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
+				time.Sleep(time.Second * 5)
 				newNonce, _ := eh.getNonce(evtObj.Context)
 				if newNonce == nonce+1 {
 					eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{{"stakeTask", stakeTask}}...)

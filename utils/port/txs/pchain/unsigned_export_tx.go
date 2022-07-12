@@ -38,7 +38,7 @@ func UnsignedExportTx(args *Args) *txs.ExportTx {
 			Ins:          inputs,
 		}},
 		DestinationChain: args.DestinationChainID,
-		ExportedOutputs:  outputs,
+		ExportedOutputs:  outputs, // todo: unecessary?
 	}
 	return utx
 }
