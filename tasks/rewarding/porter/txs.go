@@ -54,6 +54,11 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 		return nil, errors.Errorf("no exportTx UTXOs provided.")
 	}
 	t.ImportTxArgs.AtomicUTXOs = exportTxUTXOs
+	fee, err := t.importTx.GasUsed(true)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to calculate atomicTx fee")
+	}
+	t.ImportTxArgs.OutAmount = fee
 	importTx := cchain.ImportTx(t.ImportTxArgs)
 	t.importTx = importTx
 

@@ -34,8 +34,7 @@ func ExportTx(args *ExportTxArgs) *txs.ExportTx {
 		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
 			NetworkID:    args.NetworkID,
 			BlockchainID: args.BlockchainID,
-			//Outs:         outputs, // todo: unecessary?
-			Ins: inputs,
+			Ins:          inputs,
 		}},
 		DestinationChain: args.DestinationChainID,
 		ExportedOutputs:  outputs,

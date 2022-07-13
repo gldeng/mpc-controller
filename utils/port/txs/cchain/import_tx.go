@@ -14,26 +14,10 @@ type ImportTxArgs struct {
 	SourceChainID ids.ID // Which chain to consume the funds from
 	OutAmount     uint64
 	To            common.Address // Address of recipient
-	//BaseFee      *big.Int       // fee to use post-AP3 // todo: consider this kind of fee
-	AtomicUTXOs []*avax.UTXO // UTXOs to spend
+	AtomicUTXOs   []*avax.UTXO   // UTXOs to spend
 }
 
 func ImportTx(args *ImportTxArgs) *evm.UnsignedImportTx {
-	//mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(args.AtomicUTXOs)
-	//importedAmounts := make(map[ids.ID]uint64)
-	//for _, mpcUTXO := range mpcUTXOs {
-	//	importedAmounts[mpcUTXO.Asset] = mpcUTXO.Out.Amt
-	//}
-	//
-	//outs := make([]evm.EVMOutput, 0, len(importedAmounts))
-	//for assetID, amount := range importedAmounts {
-	//	outs = append(outs, evm.EVMOutput{
-	//		Address: args.To,
-	//		Amount:  amount,
-	//		AssetID: assetID,
-	//	})
-	//}
-
 	utx := &evm.UnsignedImportTx{
 		NetworkID:      args.NetworkID,
 		BlockchainID:   args.BlockchainID,
@@ -46,7 +30,6 @@ func ImportTx(args *ImportTxArgs) *evm.UnsignedImportTx {
 				AssetID: args.AtomicUTXOs[0].AssetID(),
 			},
 		},
-		//Outs:           outs,                                                  // Outputs
 	}
 	return utx
 }

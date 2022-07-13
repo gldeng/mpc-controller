@@ -168,9 +168,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 		NetworkID:     args.NetworkID,
 		BlockchainID:  args.CChainID,
 		SourceChainID: args.PChainID,
-		OutAmount:     outAmount,
 		To:            args.CChainArr,
-		//BaseFee:      *big.Int todo: tobe consider
 	}
 
 	myTxs := &Txs{
