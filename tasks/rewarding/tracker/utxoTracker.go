@@ -2,7 +2,6 @@ package tracker
 
 import (
 	"context"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
@@ -14,7 +13,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -175,9 +173,7 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 		}
 
 		if rcpt.Status != 1 {
-			fmt.Println("failed reportUTXO tx receipt: ")
-			spew.Dump(rcpt)
-			err = errors.Errorf("failed to report UTXO")
+			err = errors.Errorf("failed to report UTXO, tx receipt:%v", rcpt)
 			return err
 		}
 
