@@ -15,16 +15,16 @@ import (
 )
 
 type KeygenRequest struct {
-	RequestId       string   `json:"request_id"`
-	ParticipantKeys []string `json:"public_keys"`
-	Threshold       uint64   `json:"t"`
+	RequestId              string   `json:"request_id"`
+	CompressedPartiPubKeys []string `json:"public_keys"`
+	Threshold              uint64   `json:"t"`
 }
 
 type SignRequest struct {
-	RequestId       string   `json:"request_id"`
-	PublicKey       string   `json:"public_key"`
-	ParticipantKeys []string `json:"participant_public_keys"`
-	Hash            string   `json:"message"`
+	RequestId              string   `json:"request_id"`
+	CompressedGenPubKeyHex string   `json:"public_key"`
+	CompressedPartiPubKeys []string `json:"participant_public_keys"`
+	Hash                   string   `json:"message"`
 }
 
 type Result struct {
@@ -55,12 +55,12 @@ func NewMpcClient(log logger.Logger, url string) (*MpcClientImp, error) {
 // Request
 
 func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error {
-	normalized, err := crypto.NormalizePubKeys(request.ParticipantKeys)
+	normalized, err := crypto.NormalizePubKeys(request.CompressedPartiPubKeys)
 	if err != nil {
 		c.log.Error("Failed to normalize public keys", logger.Field{"error", err})
 		return errors.WithStack(err)
 	}
-	request.ParticipantKeys = normalized
+	request.CompressedPartiPubKeys = normalized
 	payloadBytes, err := json.Marshal(request)
 	if err != nil {
 		c.log.Error("Failed to marshal KeygenRequest", logger.Field{"error", err})

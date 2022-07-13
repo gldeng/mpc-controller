@@ -13,8 +13,8 @@ mkdir -p configs
 mkdir -p logs
 
 sks=("59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21" "6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33" "5431ed99fbcc291f2ed8906d7d46fdf45afbb1b95da65fecd4707d16a6b3301b")
-#MPC_SERVER_URLS=("http://localhost:8001" "http://localhost:8002" "http://localhost:8003")
-MPC_SERVER_URLS=("http://localhost:9000" "http://localhost:9000" "http://localhost:9000")
+MPC_SERVER_URLS=("http://localhost:8001" "http://localhost:8002" "http://localhost:8003")
+#MPC_SERVER_URLS=("http://localhost:9000" "http://localhost:9000" "http://localhost:9000")
 
 
 MPC_MANAGER_ADDRESS=$(cat /tmp/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS)
@@ -38,6 +38,7 @@ networkConfig:
   cChainId: "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU"
   avaxId: "2fombhL7aGPwj3KH4bfrmJwW6PVnMobf9Y2fn9GwxiAAJyFDbe"
   importFee: 1000000
+  exportFee: 1000000
   gasPerByte: 1
   gasPerSig: 1000
   gasFixed: 10000

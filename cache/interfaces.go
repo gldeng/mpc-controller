@@ -6,6 +6,14 @@ import (
 	"math/big"
 )
 
+type ICache interface {
+	MyIndexGetter
+	GeneratedPubKeyInfoGetter
+	ParticipantKeysGetter
+	NormalizedParticipantKeysGetter
+	IsParticipantChecker
+}
+
 type MyIndexGetter interface {
 	GetMyIndex(myPubKeyHashHex, genPubKeyHashHex string) *big.Int
 }
@@ -16,4 +24,12 @@ type GeneratedPubKeyInfoGetter interface {
 
 type ParticipantKeysGetter interface {
 	GetParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) []string
+}
+
+type NormalizedParticipantKeysGetter interface {
+	GetNormalizedParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) ([]string, error)
+}
+
+type IsParticipantChecker interface {
+	IsParticipant(myPubKeyHash string, genPubKeyHash string, participantIndices []*big.Int) bool
 }

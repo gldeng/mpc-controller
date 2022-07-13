@@ -9,10 +9,12 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
+	"time"
 )
 
 type Cache interface {
@@ -26,26 +28,21 @@ type Cache interface {
 // Emit event: *events.StakingTaskDoneEvent
 
 type StakeRequestStartedEventHandler struct {
-	Logger logger.Logger
+	CChainIssueClient chain.CChainIssuer
+	Cache             Cache // todo: to use cache.ICache instead
+	Logger            logger.Logger
+	MyPubKeyHashHex   string
+	Noncer            chain.Noncer
+	PChainIssueClient chain.PChainIssuer
+	Publisher         dispatcher.Publisher
+	SignDoner         core.SignDoner
 	chain.NetworkContext
-
-	MyPubKeyHashHex string
-
-	Cache Cache
-
-	SignDoner core.SignDoner
-	Publisher dispatcher.Publisher
-
-	CChainIssueClient chain.Issuer
-	PChainIssueClient chain.Issuer
-
-	Noncer chain.Noncer
 
 	genPubKeyInfo *events.GeneratedPubKeyInfo
 	myIndex       *big.Int
 }
 
-func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestStarted:
 		pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
@@ -55,7 +52,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 		}
 		eh.genPubKeyInfo = pubKeyInfo
 		index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
-		if pubKeyInfo == nil {
+		if index == nil {
 			eh.Logger.Error("Not found my index.")
 			return
 		}
@@ -78,16 +75,16 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			signRequester := &SignRequester{
 				SignDoner: eh.SignDoner,
 				SignRequestArgs: SignRequestArgs{
-					TaskID:                    evt.Raw.TxHash.Hex(),
-					NormalizedParticipantKeys: partiKeys,
-					PubKeyHex:                 eh.genPubKeyInfo.GenPubKeyHex,
+					TaskID:                 evt.Raw.TxHash.Hex(),
+					CompressedPartiPubKeys: partiKeys,
+					CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
 				},
 			}
 
 			taskCreator := StakeTaskCreator{
 				MpcManagerStakeRequestStarted: evt,
 				NetworkContext:                eh.NetworkContext,
-				PubKeyHex:                     eh.genPubKeyInfo.GenPubKeyHex,
+				PubKeyHex:                     eh.genPubKeyInfo.CompressedGenPubKeyHex,
 				Nonce:                         nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()
@@ -97,15 +94,12 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 			}
 
 			stakeTaskWrapper := &StakeTaskWrapper{
+				CChainIssueClient: eh.CChainIssueClient,
+				Logger:            eh.Logger,
+				PChainIssueClient: eh.PChainIssueClient,
 				SignRequester:     signRequester,
 				StakeTask:         stakeTask,
-				CChainIssueClient: eh.CChainIssueClient,
-				PChainIssueClient: eh.PChainIssueClient,
 			}
-
-			// todo: logically only one participant can issue export, export and addDelegator tx successfully,
-			// consider adding consensus mechanism or other improved measures to avoid unnecessary issuing error
-			// such as "insufficient funds"
 
 			err = stakeTaskWrapper.SignTx(evtObj.Context)
 			if err != nil {
@@ -113,20 +107,32 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 				return
 			}
 
-			_, err = stakeTaskWrapper.IssueTx(evtObj.Context)
+			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {
-				eh.Logger.Error("Failed to process ExportTx", []logger.Field{{"error", err}}...)
+				time.Sleep(time.Second * 5)
+				newNonce, _ := eh.getNonce(evtObj.Context)
+				if newNonce == nonce+1 {
+					eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{{"stakeTask", stakeTask}}...)
+					return
+				}
+				eh.Logger.Error("Failed to process ExportTx", []logger.Field{
+					{"error", err},
+					{"stakeTask", stakeTask}}...)
 				return
 			}
 
 			newEvt := events.StakingTaskDoneEvent{
+				ExportTxID:       ids[0],
+				ImportTxID:       ids[1],
+				AddDelegatorTxID: ids[2],
+
 				RequestID:   stakeTask.RequestID,
 				DelegateAmt: stakeTask.DelegateAmt,
 				StartTime:   stakeTask.StartTime,
 				EndTime:     stakeTask.EndTime,
 				NodeID:      stakeTask.NodeID,
 
-				PubKeyHex:     eh.genPubKeyInfo.GenPubKeyHex,
+				PubKeyHex:     eh.genPubKeyInfo.CompressedGenPubKeyHex,
 				CChainAddress: stakeTask.CChainAddress,
 				PChainAddress: stakeTask.PChainAddress,
 				Nonce:         stakeTask.Nonce,
@@ -138,6 +144,7 @@ func (eh *StakeRequestStartedEventHandler) Do(evtObj *dispatcher.EventObject) {
 	}
 }
 
+// todo: use cache.IsParticipantChecker
 func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
 	var participating bool
 	for _, index := range req.ParticipantIndices {
@@ -156,12 +163,12 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManage
 }
 
 func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
-	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.GenPubKeyHex)
+	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.CompressedGenPubKeyHex)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
 
-	address := crypto.PubkeyToAddresse(pubkey)
+	address := addrs.PubkeyToAddresse(pubkey)
 
 	nonce, err := eh.Noncer.NonceAt(ctx, *address, nil)
 	if err != nil {
@@ -170,6 +177,7 @@ func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64
 	return nonce, nil
 }
 
+// todo: use cache.NormalizedParticipantKeysGetter instead
 func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
 	partiKeys := eh.Cache.GetParticipantKeys(genPubKeyHash, partiIndices)
 	if partiKeys == nil {

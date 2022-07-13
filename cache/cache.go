@@ -2,12 +2,17 @@ package cache
 
 import "C"
 import (
+	"context"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 	"math/big"
 	"sync"
 )
+
+var _ ICache = (*Cache)(nil)
 
 // Accept event: *events.GroupInfoStoredEvent
 // Accept event: *events.ParticipantInfoStoredEvent
@@ -20,7 +25,7 @@ type Cache struct {
 	GeneratedPubKeyInfoMap map[string]events.GeneratedPubKeyInfo
 }
 
-func (c *Cache) Do(evtObj *dispatcher.EventObject) {
+func (c *Cache) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.GroupInfoStoredEvent:
 		c.Lock()
@@ -85,4 +90,35 @@ func (c *Cache) GetParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int
 		partPubKeyHexArr = append(partPubKeyHexArr, partPubKeyHex)
 	}
 	return partPubKeyHexArr
+}
+
+func (c *Cache) GetNormalizedParticipantKeys(genPubKeyHash common.Hash, indices []*big.Int) ([]string, error) {
+	partiKeys := c.GetParticipantKeys(genPubKeyHash, indices)
+	if partiKeys == nil {
+		return nil, nil
+	}
+
+	normalized, err := crypto.NormalizePubKeys(partiKeys)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return normalized, nil
+}
+
+func (c *Cache) IsParticipant(myPubKeyHash string, genPubKeyHash string, participantIndices []*big.Int) bool {
+	myIndex := c.GetMyIndex(myPubKeyHash, genPubKeyHash)
+	if myIndex == nil {
+		return false
+	}
+
+	var participating bool
+	for _, index := range participantIndices {
+		if index.Cmp(myIndex) == 0 {
+			participating = true
+			break
+		}
+	}
+
+	return participating
 }

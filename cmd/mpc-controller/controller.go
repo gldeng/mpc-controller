@@ -14,8 +14,9 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/support/keygen"
-	"github.com/avalido/mpc-controller/tasks/joining"
+	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
+	"github.com/avalido/mpc-controller/tasks/staking/joining"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -114,22 +115,24 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create eth rpc client
-	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl)
+	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl) // todo: use chain.RpcEthClientWrapper
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth rpc client, url: %q", config.EthRpcUrl))
 	}
 
 	// Create eth ws client
-	ethWsClient, err := ethclient.Dial(config.EthWsUrl)
+	ethWsClient, err := ethclient.Dial(config.EthWsUrl) // todo: use chain.WsEthClientWrapper
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth ws client, url: %q", config.EthWsUrl))
 	}
 
 	// Create C-Chain issue client
 	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
+	evmClientWrapper := &chain.EvmClientWrapper{myLogger, cChainIssueCli}
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
+	platformvmClientWrapper := &chain.PlatformvmClientWrapper{myLogger, pChainIssueCli}
 
 	// Create contract filterer reconnector
 	filterReconnector := reconnector.ContractFilterReconnector{
@@ -143,50 +146,66 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	participantMaster := participant.ParticipantMaster{
-		Logger:          myLogger,
-		MyPubKeyHex:     myPubKeyHex,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyPubKeyBytes:   myPubKeyBytes,
 		ContractAddr:    contractAddr,
 		ContractCaller:  ethRpcClient,
 		Dispatcher:      myDispatcher,
+		Logger:          myLogger,
+		MyPubKeyBytes:   myPubKeyBytes,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		MyPubKeyHex:     myPubKeyHex,
 		Storer:          myDB,
 	}
 
 	keygenMaster := keygen.KeygenMaster{
-		Logger:          myLogger,
 		ContractAddr:    contractAddr,
 		Dispatcher:      myDispatcher,
 		KeygenDoner:     mpcClient,
-		Storer:          myDB,
+		Logger:          myLogger,
 		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Transactor:      ethRpcClient,
-		Signer:          signer,
 		Receipter:       ethRpcClient,
+		Signer:          signer,
+		Storer:          myDB,
+		Transactor:      ethRpcClient,
 	}
 
 	joiningMaster := joining.JoiningMaster{
-		Logger:          myLogger,
 		ContractAddr:    contractAddr,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyIndexGetter:   &cacheWrapper,
 		Dispatcher:      myDispatcher,
-		Signer:          signer,
+		Logger:          myLogger,
+		MyIndexGetter:   &cacheWrapper,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
 		Receipter:       ethRpcClient,
+		Signer:          signer,
 		Transactor:      ethRpcClient,
 	}
 
 	stakingMaster := staking.StakingMaster{
-		Logger:            myLogger,
-		ContractAddr:      contractAddr,
-		MyPubKeyHashHex:   myPubKeyHash.Hex(),
-		Dispatcher:        myDispatcher,
-		NetworkContext:    networkCtx(config),
+		CChainIssueClient: evmClientWrapper,
 		Cache:             &cacheWrapper,
-		SignDoner:         mpcClient,
+		ContractAddr:      contractAddr,
+		Dispatcher:        myDispatcher,
+		Logger:            myLogger,
+		MyPubKeyHashHex:   myPubKeyHash.Hex(),
+		NetworkContext:    networkCtx(config),
 		Noncer:            ethRpcClient,
-		CChainIssueClient: cChainIssueCli,
-		PChainIssueClient: pChainIssueCli,
+		PChainIssueClient: platformvmClientWrapper,
+		SignDoner:         mpcClient,
+	}
+
+	rewardMaster := rewarding.Master{
+		CChainIssueClient: evmClientWrapper,
+		Cache:             &cacheWrapper,
+		ContractAddr:      contractAddr,
+		Dispatcher:        myDispatcher,
+		Logger:            myLogger,
+		MyPubKeyHashHex:   myPubKeyHash.Hex(),
+		NetworkContext:    networkCtx(config),
+		PChainClient:      platformvmClientWrapper,
+		Receipter:         ethRpcClient,
+		RewardUTXOGetter:  platformvmClientWrapper,
+		SignDoner:         mpcClient,
+		Signer:            signer,
+		Transactor:        ethRpcClient,
 	}
 
 	controller := MpcController{
@@ -198,6 +217,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 			&keygenMaster,
 			&joiningMaster,
 			&stakingMaster,
+			&rewardMaster,
 		},
 	}
 
@@ -229,6 +249,7 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 			ID: assetId,
 		},
 		config.ImportFee,
+		config.ExportFee,
 		config.GasPerByte,
 		config.GasPerSig,
 		config.GasFixed,

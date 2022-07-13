@@ -20,26 +20,23 @@ import (
 // Emit event:  *contract.MpcManagerStakeRequestAdded
 
 type StakeRequestAddedEventWatcher struct {
-	Logger logger.Logger
-
+	Logger       logger.Logger
 	ContractAddr common.Address
-
-	Publisher dispatcher.Publisher
-
-	pubKeyBytes [][]byte
-	filterer    bind.ContractFilterer
+	Publisher    dispatcher.Publisher
+	pubKeyBytes  [][]byte
+	filterer     bind.ContractFilterer
 
 	sub  event.Subscription
 	sink chan *contract.MpcManagerStakeRequestAdded
 	done chan struct{}
 }
 
-func (eh *StakeRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
 	case *events.GeneratedPubKeyInfoStoredEvent:
-		dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.GenPubKeyHex)
+		dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.CompressedGenPubKeyHex)
 		if err != nil {
 			eh.Logger.Error("Failed to denormalized generated public key", []logger.Field{{"error", err}}...)
 			break

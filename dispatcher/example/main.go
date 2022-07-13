@@ -53,7 +53,7 @@ type MessageShower struct {
 	Publisher
 }
 
-func (m *MessageShower) Do(evtObj *dispatcher.EventObject) {
+func (m *MessageShower) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
 		m.showMessage(evt)
 
@@ -91,7 +91,7 @@ func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID stri
 type WeatherShower struct {
 }
 
-func (m *WeatherShower) Do(evtObj *dispatcher.EventObject) {
+func (m *WeatherShower) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	if evt, ok := evtObj.Event.(*WeatherEvent); ok {
 		m.showWeather(evt)
 	}

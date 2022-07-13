@@ -25,6 +25,7 @@ func TestParseFile(t *testing.T) {
 	require.Equal(t, "2CA6j5zYzasynPsFeNoqWkmTCt3VScMvXUZHbfDJ8k3oGzAPtU", config.NetworkConfig.CChainId)
 	require.Equal(t, "2fombhL7aGPwj3KH4bfrmJwW6PVnMobf9Y2fn9GwxiAAJyFDbe", config.NetworkConfig.AvaxId)
 	require.Equal(t, uint64(1000000), config.NetworkConfig.ImportFee)
+	require.Equal(t, uint64(1000000), config.NetworkConfig.ExportFee)
 	require.Equal(t, uint64(1), config.NetworkConfig.GasPerByte)
 	require.Equal(t, uint64(1000), config.NetworkConfig.GasPerSig)
 	require.Equal(t, uint64(10000), config.NetworkConfig.GasFixed)

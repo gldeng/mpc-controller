@@ -1,15 +1,22 @@
-package crypto
+package addrs
 
 import (
 	"fmt"
+	crypto2 "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
+var Keys = []string{
+	"59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21",
+	"6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33",
+	"5431ed99fbcc291f2ed8906d7d46fdf45afbb1b95da65fecd4707d16a6b3301b",
+}
+
 func TestPrivateKeyToAddress(t *testing.T) {
-	for _, k := range keys {
+	for _, k := range Keys {
 		privKey, err := crypto.HexToECDSA(k)
 		require.Nil(t, err)
 
@@ -23,20 +30,12 @@ func TestPrivateKeyToAddress(t *testing.T) {
 	}
 }
 
-func TestPubKeyHexToAccount(t *testing.T) {
-	pubkeyHex := "02378e06ecb5c799909cb7048c091720b6b780773a46504315b183eee53d57f8f0"
+func TestPubKeyHexToAddress(t *testing.T) {
+	pubkeyHex := "03384ebafc6f500033058392a5a85438e011b9556486a6687e167a93b307ac1116"
 	addr, err := PubKeyHexToAddress(pubkeyHex)
 
-	pubKeyBytes := common.Hex2Bytes(pubkeyHex)   // todo: delete
-	fmt.Println("len bytes: ", len(pubKeyBytes)) // todo: delete
-	fmt.Println("bytes: ", pubKeyBytes)          // todo: delete
-	//  [2 170 100 112 3 192 170 215 231 84 24 15 154 154 111 119 207 169 30 254 60 10 148 36 254 101 232 77 10 223 148 82 243]
-
 	require.Nil(t, err)
-	fmt.Println(addr)
-	// 0xD35Ba5D5d264defc89A90327B90A43212a3D37bd
-
-	fmt.Println("hex leng", len("aa647003c0aad7e754180f9a9a6f77cfa91efe3c0a9424fe65e84d0adf9452f3"))
+	require.Equal(t, "0x00F4CA03D670b47e47CCA5087dF363f4d5C2A955", addr.String())
 }
 
 func TestEthPubkeyHexToAddress(t *testing.T) {
@@ -86,7 +85,7 @@ func TestDenormizedPubKeyHexToAccount(t *testing.T) {
 }
 
 func TestBytesToAddress(t *testing.T) {
-	for _, k := range keys {
+	for _, k := range Keys {
 		privKey, err := crypto.HexToECDSA(k)
 		require.Nil(t, err)
 
@@ -110,7 +109,7 @@ func TestBytesToAddress(t *testing.T) {
 	b := common.Hex2Bytes(genPubKeyHex)
 	fmt.Println(b)
 
-	genPubKey, err := UnmarshalPubKeyHex(genPubKeyHex)
+	genPubKey, err := crypto2.UnmarshalPubKeyHex(genPubKeyHex)
 	require.Nil(t, err)
 
 	genPubBytes := crypto.FromECDSAPub(genPubKey)

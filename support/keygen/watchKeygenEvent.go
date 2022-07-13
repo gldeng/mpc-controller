@@ -20,22 +20,19 @@ import (
 // Emit event: *contract.MpcManagerKeygenRequestAdded
 
 type KeygenRequestAddedEventWatcher struct {
-	Logger logger.Logger
-
 	ContractAddr common.Address
-
-	Publisher dispatcher.Publisher
+	Logger       logger.Logger
+	Publisher    dispatcher.Publisher
 
 	groupIdBytes [][32]byte
-
-	filterer bind.ContractFilterer
+	filterer     bind.ContractFilterer
 
 	sub  event.Subscription
 	sink chan *contract.MpcManagerKeygenRequestAdded
 	done chan struct{}
 }
 
-func (eh *KeygenRequestAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
+func (eh *KeygenRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer

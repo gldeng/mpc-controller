@@ -15,16 +15,14 @@ import (
 // Emit event: *events.ParticipantInfoStoredEvent
 
 type ParticipantInfoStorer struct {
-	Logger logger.Logger
-
-	Publisher dispatcher.Publisher
-	Storer    storage.MarshalSetter
-
-	MyPubKeyHex     string
+	Logger          logger.Logger
 	MyPubKeyHashHex string
+	MyPubKeyHex     string
+	Publisher       dispatcher.Publisher
+	Storer          storage.MarshalSetter
 }
 
-func (p *ParticipantInfoStorer) Do(evtObj *dispatcher.EventObject) {
+func (p *ParticipantInfoStorer) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerParticipantAdded:
 		key, pt, err := p.storeParticipantInfo(evtObj.Context, evt)

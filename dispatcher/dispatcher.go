@@ -125,7 +125,7 @@ func (d *Dispatcher) run(ctx context.Context) {
 		case <-time.Tick(time.Millisecond * 500):
 			if !d.eventQueue.Empty() {
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
-					d.publish(evtObj)
+					d.publish(ctx, evtObj)
 				}
 			}
 		}
@@ -177,7 +177,7 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 // Note: event handlers may haven't finished their jobs yet,
 // because they may run concurrently within their own gorutines.
 // But this part is out of the dispatcher's control.
-func (d *Dispatcher) publish(evtObj *EventObject) {
+func (d *Dispatcher) publish(ctx context.Context, evtObj *EventObject) {
 	et := reflect.TypeOf(evtObj.Event).String()
 
 	wg := &sync.WaitGroup{}
@@ -186,7 +186,7 @@ func (d *Dispatcher) publish(evtObj *EventObject) {
 		eH := eH
 		go func() {
 			defer wg.Done()
-			eH.Do(evtObj)
+			eH.Do(ctx, evtObj)
 		}()
 	}
 	wg.Wait()

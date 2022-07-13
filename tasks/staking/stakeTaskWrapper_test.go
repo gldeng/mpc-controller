@@ -60,6 +60,7 @@ func (suite *StakeTaskWrapperTestSuite) SetupTest() {
 			ID: assetId,
 		},
 		1000000,
+		1000000,
 		1,
 		1000,
 		10000,
@@ -83,9 +84,9 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	require := suite.Require()
 
 	signRequestArgs := SignRequestArgs{
-		TaskID:                    "0x74045c1e4c9c538ddfede3971ba8df6fb9a0de096459ab7f5152334c354ba060",
-		NormalizedParticipantKeys: []string{"0373ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6", "03c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66d"},
-		PubKeyHex:                 "03c237810788fbdce68a497236b5ded1ee817ac7465ccc133a8cfe7b75b35ed1e3",
+		TaskID:                 "0x74045c1e4c9c538ddfede3971ba8df6fb9a0de096459ab7f5152334c354ba060",
+		CompressedPartiPubKeys: []string{"0373ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6", "03c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66d"},
+		CompressedGenPubKeyHex: "03c237810788fbdce68a497236b5ded1ee817ac7465ccc133a8cfe7b75b35ed1e3",
 	}
 
 	ctx := context.Background()
@@ -93,12 +94,12 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	exportTxHash := "3273f531ba059c12f98b4cf7890608c66da392b8d5fc218d6d32041c76fdb674"
 	exportTxsignature := "5b12ef4bf066a0d341f1bc4c47f597829a22f7b78dabbe1445a84b13053a2f334d7409466b993916dc0e4285911f21111460ea58da98ebe8fbb752bda74d77f301"
 	exportTxSignReq := core.SignRequest{
-		RequestId:       signRequestArgs.TaskID + "-" + strconv.Itoa(0),
-		PublicKey:       signRequestArgs.PubKeyHex,
-		ParticipantKeys: signRequestArgs.NormalizedParticipantKeys,
-		Hash:            exportTxHash,
+		RequestId:              signRequestArgs.TaskID + "-" + strconv.Itoa(0),
+		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
+		Hash:                   exportTxHash,
 	}
-	mockExportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
+	mockExportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result { // todo: use NewSignDoner() and Expecter Interfaces.
 		output := &core.Result{
 			RequestId:     request.RequestId,
 			Result:        exportTxsignature,
@@ -112,10 +113,10 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	importTxHash := "6c99c91ed157e0c2d7cbd790ed89561b7e4bd71f550d4f176a85122afa90c135"
 	importTxsignature := "db5abfea3856cdb6013adae8b8ecd006146158b9d90a31f8aa9ea21b9a08274c71a8f52078236b35a76bc5b62686ae01bfdf585e1785d7be891d6e00d70fc58000"
 	importTxSignReq := core.SignRequest{
-		RequestId:       signRequestArgs.TaskID + "-" + strconv.Itoa(1),
-		PublicKey:       signRequestArgs.PubKeyHex,
-		ParticipantKeys: signRequestArgs.NormalizedParticipantKeys,
-		Hash:            importTxHash,
+		RequestId:              signRequestArgs.TaskID + "-" + strconv.Itoa(1),
+		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
+		Hash:                   importTxHash,
 	}
 	mockImportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{
@@ -131,10 +132,10 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	addDelegatorTxHash := "5884ba92bb58372023c5fa3fe699e152188302f5b1e22ea4b8c9dd623e3b283c"
 	addDelegatorTxsignature := "144b6137be716be2e8b22177fc3be4de99c18fc8b9e29fb3eecaa673961fc36e0cbc0449aeca034a10a2f52a31b245b0dcb032d06a317c63fd0adcc3862cb4fe01"
 	addDelegatorTxSignReq := core.SignRequest{
-		RequestId:       signRequestArgs.TaskID + "-" + strconv.Itoa(2),
-		PublicKey:       signRequestArgs.PubKeyHex,
-		ParticipantKeys: signRequestArgs.NormalizedParticipantKeys,
-		Hash:            addDelegatorTxHash,
+		RequestId:              signRequestArgs.TaskID + "-" + strconv.Itoa(2),
+		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
+		Hash:                   addDelegatorTxHash,
 	}
 	mockaddDelegatorTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{

@@ -9,10 +9,12 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/avalido/mpc-controller/utils/ids"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -30,19 +32,15 @@ import (
 // Emit event: *events.ReportedGenPubKeyEvent
 
 type KeygenRequestAddedEventHandler struct {
-	Logger logger.Logger
-
+	ContractAddr    common.Address
+	KeygenDoner     core.KeygenDoner
+	Logger          logger.Logger
 	MyPubKeyHashHex string
-
-	KeygenDoner core.KeygenDoner
-	Storer      storage.MarshalSetter
-
-	ContractAddr common.Address
-	Transactor   bind.ContractTransactor
-	Signer       *bind.TransactOpts
-	Receipter    chain.Receipter
-
-	Publisher dispatcher.Publisher
+	Publisher       dispatcher.Publisher
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Storer          storage.MarshalSetter
+	Transactor      bind.ContractTransactor
 
 	groupInfoMap       map[string]events.GroupInfo
 	participantInfoMap map[string]events.ParticipantInfo
@@ -50,7 +48,7 @@ type KeygenRequestAddedEventHandler struct {
 
 // Pre-condition: *contract.MpcManagerKeygenRequestAdded must happen after *event.GroupInfoStoredEvent
 
-func (eh *KeygenRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
+func (eh *KeygenRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.GroupInfoStoredEvent:
 		if len(eh.groupInfoMap) == 0 {
@@ -75,12 +73,22 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	group := eh.groupInfoMap[events.PrefixGroupInfo+"-"+groupIdHex]
 
 	keyGenReq := &core.KeygenRequest{
-		RequestId:       reqId,
-		ParticipantKeys: group.PartPubKeyHexs,
-		Threshold:       group.Threshold,
+		RequestId:              reqId,
+		CompressedPartiPubKeys: group.PartPubKeyHexs,
+		Threshold:              group.Threshold,
 	}
 
 	genPubKeyHex, err := eh.keygen(ctx, keyGenReq)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	cchainAddr, err := addrs.PubKeyHexToAddress(genPubKeyHex)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	pchainAddr, err := ids.ShortIDFromPubKeyHex(genPubKeyHex)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -101,17 +109,19 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 
 	reportedEvt := events.ReportedGenPubKeyEvent{
 		GroupIdHex:       groupIdHex,
-		Index:            big.NewInt(int64(myIndex)),
+		PartiIndex:       big.NewInt(int64(myIndex)),
 		GenPubKeyHex:     bytes.BytesToHex(dnmGenPubKeyBytes),
 		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
+		CChainAddress:    *cchainAddr,
+		PChainAddress:    *pchainAddr,
 	}
 
 	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
-		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
-		GenPubKeyHex:     genPubKeyHex,
-		GroupIdHex:       groupIdHex,
+		GenPubKeyHashHex:       dnmGenPubKeyHash.Hex(),
+		CompressedGenPubKeyHex: genPubKeyHex,
+		GroupIdHex:             groupIdHex,
 	}
 
 	key, err := eh.storeGenKenInfo(ctx, &genPubKeyInfo)
@@ -154,7 +164,7 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 		var err error
 		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
 		if err != nil {
-			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, MyIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
+			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, PartiIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
 		}
 
 		time.Sleep(time.Second * 3)

@@ -18,12 +18,10 @@ import (
 // Emit event: *contract.MpcManagerParticipantAdded
 
 type ParticipantAddedEventWatcher struct {
-	Logger logger.Logger
-
-	MyPubKeyBytes []byte
 	ContractAddr  common.Address
-
-	Publisher dispatcher.Publisher
+	Logger        logger.Logger
+	MyPubKeyBytes []byte
+	Publisher     dispatcher.Publisher
 
 	filterer bind.ContractFilterer
 
@@ -32,7 +30,7 @@ type ParticipantAddedEventWatcher struct {
 	done chan struct{}
 }
 
-func (eh *ParticipantAddedEventWatcher) Do(evtObj *dispatcher.EventObject) {
+func (eh *ParticipantAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer

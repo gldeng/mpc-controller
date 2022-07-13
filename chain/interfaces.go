@@ -2,14 +2,16 @@ package chain
 
 import (
 	"context"
+	"github.com/ava-labs/avalanchego/api"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/utils/rpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Interfaces regarding chain status
+// Interfaces regarding C-Chain status
 
 type Receipter interface {
 	TransactionReceipt(ctx context.Context, txHash common.Hash) (r *types.Receipt, err error)
@@ -26,6 +28,17 @@ type Balancer interface {
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding issue Tx
 
-type Issuer interface {
+type CChainIssuer interface {
 	IssueTx(ctx context.Context, txBytes []byte) (ids.ID, error)
+}
+
+type PChainIssuer interface {
+	IssueTx(ctx context.Context, tx []byte, options ...rpc.Option) (ids.ID, error)
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Interfaces regarding P-Chain status
+
+type RewardUTXOGetter interface {
+	GetRewardUTXOs(context.Context, *api.GetTxArgs, ...rpc.Option) ([][]byte, error)
 }

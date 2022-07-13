@@ -12,59 +12,56 @@ import (
 )
 
 type ParticipantMaster struct {
-	Logger logger.Logger
-
-	MyPubKeyHex     string
-	MyPubKeyHashHex string
+	ContractAddr    common.Address
+	ContractCaller  bind.ContractCaller
+	Dispatcher      dispatcher.DispatcherClaasic
+	Logger          logger.Logger
 	MyPubKeyBytes   []byte
-
-	ContractAddr   common.Address
-	ContractCaller bind.ContractCaller
-
-	Dispatcher dispatcher.DispatcherClaasic
-	Storer     storage.MarshalSetter
+	MyPubKeyHashHex string
+	MyPubKeyHex     string
+	Storer          storage.MarshalSetter
 
 	partiEvtWatcher *ParticipantAddedEventWatcher
 	partiInfoStorer *ParticipantInfoStorer
 	groupInfoStorer *GroupInfoStorer
 }
 
-func (p *ParticipantMaster) Start(ctx context.Context) error {
-	p.subscribe()
+func (m *ParticipantMaster) Start(ctx context.Context) error {
+	m.subscribe()
 	<-ctx.Done()
 	return nil
 }
 
-func (p *ParticipantMaster) subscribe() {
+func (m *ParticipantMaster) subscribe() {
 	partiWatcher := ParticipantAddedEventWatcher{
-		Logger:        p.Logger,
-		MyPubKeyBytes: p.MyPubKeyBytes,
-		ContractAddr:  p.ContractAddr,
-		Publisher:     p.Dispatcher,
+		Logger:        m.Logger,
+		MyPubKeyBytes: m.MyPubKeyBytes,
+		ContractAddr:  m.ContractAddr,
+		Publisher:     m.Dispatcher,
 	}
 
 	partiInfoStorer := ParticipantInfoStorer{
-		Logger:          p.Logger,
-		Publisher:       p.Dispatcher,
-		Storer:          p.Storer,
-		MyPubKeyHex:     p.MyPubKeyHex,
-		MyPubKeyHashHex: p.MyPubKeyHashHex,
+		Logger:          m.Logger,
+		Publisher:       m.Dispatcher,
+		Storer:          m.Storer,
+		MyPubKeyHex:     m.MyPubKeyHex,
+		MyPubKeyHashHex: m.MyPubKeyHashHex,
 	}
 
 	groupInfoStorer := GroupInfoStorer{
-		Logger:       p.Logger,
-		ContractAddr: p.ContractAddr,
-		Caller:       p.ContractCaller,
-		Publisher:    p.Dispatcher,
-		Storer:       p.Storer,
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Caller:       m.ContractCaller,
+		Publisher:    m.Dispatcher,
+		Storer:       m.Storer,
 	}
 
-	p.partiEvtWatcher = &partiWatcher
-	p.partiInfoStorer = &partiInfoStorer
-	p.groupInfoStorer = &groupInfoStorer
+	m.partiEvtWatcher = &partiWatcher
+	m.partiInfoStorer = &partiInfoStorer
+	m.groupInfoStorer = &groupInfoStorer
 
-	p.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, p.partiEvtWatcher) // Emit event: *contract.MpcManagerParticipantAdded
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.partiEvtWatcher) // Emit event: *contract.MpcManagerParticipantAdded
 
-	p.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, p.partiInfoStorer) // Emit event: *events.ParticipantInfoStoredEvent
-	p.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, p.groupInfoStorer) // Emit event: *events.GroupInfoStoredEvent
+	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.partiInfoStorer) // Emit event: *events.ParticipantInfoStoredEvent
+	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.groupInfoStorer) // Emit event: *events.GroupInfoStoredEvent
 }

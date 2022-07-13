@@ -24,22 +24,17 @@ import (
 // Emit event: *events.JoinedRequestEvent
 
 type StakeRequestAddedEventHandler struct {
-	Logger logger.Logger
-
-	MyPubKeyHashHex string
+	ContractAddr    common.Address
+	Logger          logger.Logger
 	MyIndexGetter   cache.MyIndexGetter
-
-	Signer *bind.TransactOpts
-
-	Receipter chain.Receipter
-
-	ContractAddr common.Address
-	Transactor   bind.ContractTransactor
-
-	Publisher dispatcher.Publisher
+	MyPubKeyHashHex string
+	Publisher       dispatcher.Publisher
+	Receipter       chain.Receipter
+	Signer          *bind.TransactOpts
+	Transactor      bind.ContractTransactor
 }
 
-func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestAdded:
 		genPubKeyHashHex := evt.PublicKey.Hex()
@@ -60,9 +55,9 @@ func (eh *StakeRequestAddedEventHandler) Do(evtObj *dispatcher.EventObject) {
 
 		if txHash != nil {
 			newEvt := events.JoinedRequestEvent{
-				TxHashHex: txHash.Hex(),
-				RequestId: evt.RequestId,
-				Index:     myIndex,
+				TxHashHex:  txHash.Hex(),
+				RequestId:  evt.RequestId,
+				PartiIndex: myIndex,
 			}
 
 			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", &newEvt, evtObj.Context))
@@ -87,7 +82,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 				eh.Logger.Info("Cannot join anymore", []logger.Field{{"reqId", req.RequestId}, {"myIndex", myIndex}}...)
 				return nil
 			}
-			return errors.Wrapf(err, "failed to join request. ReqId: %v, Index: %v", req.RequestId, myIndex)
+			return errors.Wrapf(err, "failed to join request. ReqId: %v, PartiIndex: %v", req.RequestId, myIndex)
 		}
 
 		time.Sleep(time.Second * 3)

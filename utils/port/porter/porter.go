@@ -1,9 +1,11 @@
-package tokenPorter
+package porter
 
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type Txs interface {
@@ -28,18 +30,23 @@ type TxSigner interface {
 	SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error)
 }
 
+type SigVerifier interface {
+	VerifySig(hash []byte, signature [65]byte) (bool, error)
+}
+
 type TxIssuer interface {
 	IssueExportTx(ctx context.Context, exportTxBytes []byte) (ids.ID, error)
 	IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, error)
 }
 
-type TokenPorter struct {
+type Porter struct {
 	Txs
 	TxSigner
 	TxIssuer
+	SigVerifier
 }
 
-func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
+func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	// Sign ExportTx
 	exportTxHash, err := p.ExportTxHash()
 	if err != nil {
@@ -51,9 +58,19 @@ func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	err = p.SetExportTxSig(exportTxSig)
+	ok, err := p.VerifySig(exportTxHash, exportTxSig)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
+	}
+
+	if !ok {
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to verify ExportTx signature, hashHex:%q, sigHex:%q",
+			bytes.BytesToHex(exportTxHash), bytes.Bytes65ToHex(exportTxSig))
+	}
+
+	err = p.SetExportTxSig(exportTxSig)
+	if err != nil {
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to set exportTx signature")
 	}
 
 	// Sign ImportTx
@@ -67,9 +84,19 @@ func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	err = p.SetImportTxSig(importTxSig)
+	ok, err = p.VerifySig(importTxHash, importTxSig)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
+	}
+
+	if !ok {
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to verify ImportTx signature, hashHex:%q, sigHex:%q",
+			bytes.BytesToHex(importTxHash), bytes.Bytes65ToHex(importTxSig))
+	}
+
+	err = p.SetImportTxSig(importTxSig)
+	if err != nil {
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to set importTx signature")
 	}
 
 	// Issue ExportTx
@@ -80,8 +107,10 @@ func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	exportTxId, err := p.IssueExportTx(ctx, exportTxBytes)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
+
+	time.Sleep(time.Second * 5)
 
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()
@@ -91,7 +120,7 @@ func (p *TokenPorter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	importTxId, err := p.IssueImportTx(ctx, importTxBytes)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueImportTx")
 	}
 
 	return [2]ids.ID{exportTxId, importTxId}, nil

@@ -9,11 +9,15 @@ import (
 // Events concerning staking
 
 type StakingTaskDoneEvent struct {
+	ExportTxID       ids.ID
+	ImportTxID       ids.ID
+	AddDelegatorTxID ids.ID
+
 	RequestID   uint64
 	DelegateAmt uint64
 	StartTime   uint64
 	EndTime     uint64
-	NodeID      ids.ShortID
+	NodeID      ids.NodeID
 
 	PubKeyHex     string
 	CChainAddress common.Address

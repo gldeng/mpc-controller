@@ -1,6 +1,10 @@
 package events
 
-import "math/big"
+import (
+	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ethereum/go-ethereum/common"
+	"math/big"
+)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning interact with contract
@@ -9,18 +13,20 @@ import "math/big"
 
 type ReportedGenPubKeyEvent struct {
 	GroupIdHex       string
-	Index            *big.Int
+	PartiIndex       *big.Int
 	GenPubKeyHex     string
 	GenPubKeyHashHex string
+	CChainAddress    common.Address
+	PChainAddress    ids.ShortID
 }
 
 type JoinRequestEvent struct {
-	RequestId *big.Int
-	Index     *big.Int
+	RequestId  *big.Int
+	PartiIndex *big.Int
 }
 
 type JoinedRequestEvent struct {
-	TxHashHex string
-	RequestId *big.Int
-	Index     *big.Int
+	TxHashHex  string
+	RequestId  *big.Int
+	PartiIndex *big.Int
 }
