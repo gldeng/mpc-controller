@@ -25,6 +25,8 @@ type AtomicTxFeeArgs struct {
 	PerAtomicTxFee       uint64
 }
 
+// todo: consider using  params.AtomicTxBaseCost
+
 func EstimateAtomicTxFee(ctx context.Context, args *EstimateAtomicTxFeeArgs) (uint64, error) {
 	baseFeeBig, err := args.Client.EstimateBaseFee(ctx)
 	if err != nil {
