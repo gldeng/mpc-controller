@@ -167,6 +167,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 	myImportTxArgs := &cchain.ImportTxArgs{
 		NetworkID:     args.NetworkID,
 		BlockchainID:  args.CChainID,
+		OutAmount:     outAmount,
 		SourceChainID: args.PChainID,
 		To:            args.CChainArr,
 	}
