@@ -383,10 +383,16 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
             if (joinedCount+1 == threshold+1) {
                 uint256[] memory joinedIndices = _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex];
                 if (utxoOutputIndex == 0) {
-                    address ArrToAcceptPrincipal = lastGenAddress; // todo: make it configurable
+                    address ArrToAcceptPrincipal = _receivePrincipalAddr;
+                    if (ArrToAcceptPrincipal == address(0)) {
+                        ArrToAcceptPrincipal = lastGenAddress;
+                    }
                     emit ExportUTXORequest(utxoTxID, utxoOutputIndex, ArrToAcceptPrincipal, genPubKey, joinedIndices);
                 } else if (utxoOutputIndex == 1) {
-                    address ArrToAcceptReward = lastGenAddress; // todo: make it configurable
+                    address ArrToAcceptReward = _receiveRewardAddr;
+                    if (ArrToAcceptReward == address(0)) {
+                         ArrToAcceptReward = lastGenAddress;
+                    }
                     emit ExportUTXORequest(utxoTxID, utxoOutputIndex, ArrToAcceptReward, genPubKey, joinedIndices);
                 }
                 delete  _joinExportUTXOParticipantIndices[utxoTxID][utxoOutputIndex];
