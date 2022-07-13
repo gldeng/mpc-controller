@@ -26,6 +26,7 @@ type AtomicTxFeeArgs struct {
 }
 
 // todo: consider using  params.AtomicTxBaseCost
+// todo: consider using "github.com/ava-labs/avalanchego/utils/math" for secure math.
 
 func EstimateAtomicTxFee(ctx context.Context, args *EstimateAtomicTxFeeArgs) (uint64, error) {
 	baseFeeBig, err := args.Client.EstimateBaseFee(ctx)
