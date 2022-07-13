@@ -21,6 +21,8 @@ type Config struct {
 	DatabaseConfig `yaml:"databaseConfig"`
 }
 
+// todo: check fee digital places and simplify fee config
+
 type NetworkConfig struct {
 	NetworkId uint32 `yaml:"networkId"`
 	ChainId   int64  `yaml:"chainId"`
