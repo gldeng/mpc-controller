@@ -61,7 +61,7 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to calculate atomicTx fee")
 	}
 	initialOutAmount := importTx.Outs[0].Amount
-	adjustOutAmount := initialOutAmount - fee
+	adjustOutAmount := initialOutAmount - fee*cchain.BaseFeeGwei
 	importTx.Outs[0].Amount = adjustOutAmount
 	t.ImportTxArgs.OutAmount = adjustOutAmount
 

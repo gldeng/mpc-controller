@@ -10,6 +10,10 @@ import (
 	"math/big"
 )
 
+const (
+	BaseFeeGwei = uint64(300) // TODO: It should be given by the contract
+)
+
 type EstimateAtomicTxFeeArgs struct {
 	Logger logger.Logger
 	Client ethclient.Client
