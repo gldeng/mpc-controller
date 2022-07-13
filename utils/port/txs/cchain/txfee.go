@@ -1,3 +1,5 @@
+// use UnsignedImportTx.GasUsed instead
+
 package cchain
 
 import (
