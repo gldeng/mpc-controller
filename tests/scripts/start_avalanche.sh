@@ -11,7 +11,7 @@ cd $LAST_TEST_WD/avalanchego
 mkdir log
 mkdir db
 
-AVALANCHEGO_REPO=/tmp/mpctest/avalanchego/
+AVALANCHEGO_REPO=/tmp/mpctest/avalanchego
 
 $AVALANCHEGO_REPO/build/avalanchego --log-level=debug --public-ip=127.0.0.1 --http-port=9650 --staking-port=9651 --db-dir=db/node1 --network-id=local --staking-tls-cert-file=$AVALANCHEGO_REPO/staking/local/staker1.crt --staking-tls-key-file=$AVALANCHEGO_REPO/staking/local/staker1.key > log/node1.log 2>&1 &
 
