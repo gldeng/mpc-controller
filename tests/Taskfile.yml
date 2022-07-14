@@ -36,18 +36,18 @@ tasks:
       - venom run tests/testsuites/initiateStake.yml
       - sleep 30
 
-  initiateStakeRepeat:
+  initiateStakeSelfLoop:
     cmds:
       - bash ./tests/scripts/fund_initiateStake.sh
       - sleep 1
       - venom run tests/testsuites/initiateStake.yml
       - sleep 1
-      - task: initiateStakeLoop
+      - task: initiateStakeSelfLoop
 
   initiateStakeLoop:
     cmds:
       - task: initiateStake
-      - task: initiateStakeRepeat
+      - task: initiateStakeSelfLoop
 
   cleanup: # todo: add more cleanup operation, such as rm -rf /tmp/mpctest if needed
     cmds:
