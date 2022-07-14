@@ -6,6 +6,7 @@ mkdir -p /tmp/mpctest/mpc-controller
 
 if [ ! -d "/tmp/mpctest/avalanchego" ]; then
   git clone git@github.com:ava-labs/avalanchego.git /tmp/mpctest/avalanchego
+  cp ./tests/configs/genesis/genesis_local.go /tmp/mpctest/avalanchego/genesis/genesis_local.go
 fi
 
 if [ ! -d "/tmp/mpctest/mpc-server" ]; then
