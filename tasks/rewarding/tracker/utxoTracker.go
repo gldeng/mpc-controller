@@ -73,6 +73,8 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for addr, evt := range eh.genPubKeyEvtObjMap {
+				// todo: check this UTXO is not the result of addDelegatorTx to avoid the following error:
+				// Failed to export UTXO	{"error": "failed to IssueExportTx: failed to IssueTx with platformvm.Client: failed to decode client response: couldn't issue tx: failed semanticVerifySpend: failed to read consumed UTXO 2RtaexrJxvYD85BvrPhCR31Dkf6bZsuvtHWVYPX7upNXWuErmB:0 due to: not found"
 				utxos, err := eh.getUTXOs(ctx, addr)
 				if err != nil {
 					eh.Logger.Error("Failed to get native UTXOs", []logger.Field{{"error", err}}...)
