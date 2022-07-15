@@ -9,7 +9,7 @@ testcases:
   - name: readAvaLidoAddress
     steps:
       - type: readfile
-        path: /home/zealy/mpctest/contracts/addresses/AVALIDO_ADDRESS
+        path: $HOME/mpctest/contracts/addresses/AVALIDO_ADDRESS
         vars:
           content:
             from: result.content
