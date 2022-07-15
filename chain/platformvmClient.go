@@ -2,6 +2,7 @@ package chain
 
 import (
 	"context"
+	"github.com/ava-labs/avalanchego/api"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/rpc"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
@@ -56,5 +57,19 @@ func (c *PlatformvmClientWrapper) AwaitTxDecided(ctx context.Context, txID ids.I
 		}
 		return nil
 	})
+	return
+}
+
+func (c *PlatformvmClientWrapper) GetRewardUTXOs(ctx context.Context, args *api.GetTxArgs, opts ...rpc.Option) (utxoBytes [][]byte, err error) {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+		utxoBytes, err = c.Client.GetRewardUTXOs(ctx, args, opts...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to get reward UTXOs for txID %q", args.TxID)
+			return err
+		}
+
+		return nil
+	})
+
 	return
 }
