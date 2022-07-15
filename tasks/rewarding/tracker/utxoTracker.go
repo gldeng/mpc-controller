@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"context"
+	"github.com/ava-labs/avalanchego/api"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
@@ -73,8 +74,6 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for addr, evt := range eh.genPubKeyEvtObjMap {
-				// todo: check this UTXO is not the result of addDelegatorTx to avoid the following error:
-				// Failed to export UTXO	{"error": "failed to IssueExportTx: failed to IssueTx with platformvm.Client: failed to decode client response: couldn't issue tx: failed semanticVerifySpend: failed to read consumed UTXO 2RtaexrJxvYD85BvrPhCR31Dkf6bZsuvtHWVYPX7upNXWuErmB:0 due to: not found"
 				utxos, err := eh.getUTXOs(ctx, addr)
 				if err != nil {
 					eh.Logger.Error("Failed to get native UTXOs", []logger.Field{{"error", err}}...)
@@ -102,6 +101,19 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				partiIndex := utxoFetchedEvt.PartiIndex
 				genPubKeyBytes := bytes.HexToBytes(utxoFetchedEvt.GenPubKeyHex)
 				for _, utxo := range utxos {
+					ok, err := eh.checkRewardUTXO(ctx, utxo.TxID)
+					if err != nil {
+						eh.Logger.Error("Failed to check reward UTXO for txID", []logger.Field{
+							{"error", err},
+							{"txID", utxo.TxID}}...)
+						continue
+					}
+
+					if !ok {
+						eh.Logger.Debug("No reward UTXO found for txID", []logger.Field{{"txID", utxo.TxID}}...)
+						continue
+					}
+
 					txHash, err := eh.reportUTXO(ctx, groupIdBytes, partiIndex, genPubKeyBytes, utxo.TxID, utxo.OutputIndex)
 					if err != nil {
 						eh.Logger.Error("Failed to report UTXO", []logger.Field{{"error", err}}...)
@@ -184,4 +196,31 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 		return nil
 	})
 	return
+}
+
+func (eh *UTXOTracker) checkRewardUTXO(ctx context.Context, txID ids.ID) (bool, error) {
+	utxoBytesArr, err := eh.PChainClient.GetRewardUTXOs(ctx, &api.GetTxArgs{TxID: txID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get reward UTXO for txID %q", txID)
+	}
+
+	if len(utxoBytesArr) == 0 {
+		return false, nil
+	}
+
+	var utxos []*avax.UTXO
+	for _, utxoBytes := range utxoBytesArr {
+		if utxoBytes == nil {
+			continue
+		}
+		utxo := &avax.UTXO{}
+		if version, err := platformvm.Codec.Unmarshal(utxoBytes, utxo); err != nil {
+			return false, errors.Wrapf(err, "error parsing UTXO, codec version:%v", version)
+		}
+	}
+
+	if len(utxos) == 0 {
+		return false, nil
+	}
+	return true, nil
 }
