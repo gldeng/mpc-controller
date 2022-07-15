@@ -6,18 +6,10 @@ vars:
   C_CHAIN_RPC_URL: http://127.0.0.1:9650/ext/bc/C/rpc
 
 testcases:
-  - name: getAvaLidoAddrPath
-    steps:
-      - type: exec
-        script: echo $HOME/mpctest/contracts/addresses/AVALIDO_ADDRESS
-        vars:
-          avaLidoAddrPath:
-            from: result.systemout
-
   - name: readAvaLidoAddress
     steps:
       - type: readfile
-        path: {{.getAvaLidoAddrPath.avaLidoAddrPath}}
+        path: /home/zealy/mpctest/contracts/addresses/AVALIDO_ADDRESS
         vars:
           content:
             from: result.content
