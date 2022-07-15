@@ -4,7 +4,7 @@ LAST_WD=$(pwd)
 
 echo "Start mpc-controller"
 
-read LAST_TEST_WD < /tmp/mpctest/testwd_last
+read LAST_TEST_WD < $HOME/mpctest/testwd_last
 
 cd $LAST_TEST_WD/mpc-controller
 
@@ -17,7 +17,7 @@ MPC_SERVER_URLS=("http://localhost:8001" "http://localhost:8002" "http://localho
 #MPC_SERVER_URLS=("http://localhost:9000" "http://localhost:9000" "http://localhost:9000")
 
 
-MPC_MANAGER_ADDRESS=$(cat /tmp/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS)
+MPC_MANAGER_ADDRESS=$(cat $HOME/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS)
 function create_config(){
     id=$1
     sk=${sks[$(expr ${id} - 1)]}
@@ -53,7 +53,7 @@ create_config 1
 create_config 2
 create_config 3
 
-MPC_CONTROLLER_REPO=/tmp/mpctest/mpc-controller
+MPC_CONTROLLER_REPO=$HOME/mpctest/mpc-controller
 
 $MPC_CONTROLLER_REPO/mpc-controller --configFile configs/config1.yaml > logs/mpc-controller1.log 2>&1 &
 $MPC_CONTROLLER_REPO/mpc-controller --configFile configs/config2.yaml > logs/mpc-controller2.log 2>&1 &

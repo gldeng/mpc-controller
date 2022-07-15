@@ -15,11 +15,11 @@ LAST_WD=$(pwd)
 
 echo "Start deploying smart contracts"
 
-#read LAST_TEST_WD < /tmp/mpctest/testwd_last
+#read LAST_TEST_WD < $HOME/mpctest/testwd_last
 #
 #cd $LAST_TEST_WD/contracts
 
-cd /tmp/mpctest/contracts/
+cd $HOME/mpctest/contracts/
 
 # Deploy MpcManager contract
 MPC_MANAGER=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK MpcManager | grep -i "deployed" | cut -d " " -f 3)

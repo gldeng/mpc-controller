@@ -4,7 +4,7 @@ LAST_WD=$(pwd)
 
 echo "Start mpc-server"
 
-read LAST_TEST_WD < /tmp/mpctest/testwd_last
+read LAST_TEST_WD < $HOME/mpctest/testwd_last
 
 cd $LAST_TEST_WD/mpc-server
 
@@ -12,7 +12,7 @@ mkdir secret
 mkdir log
 mkdir db
 
-MPC_SERVER_REPO=/tmp/mpctest/mpc-server
+MPC_SERVER_REPO=$HOME/mpctest/mpc-server
 
 echo -n "59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21" > secret/p1.s
 echo -n "6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33" > secret/p2.s
