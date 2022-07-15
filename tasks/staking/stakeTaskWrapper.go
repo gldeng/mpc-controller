@@ -87,7 +87,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	}
 
 	// ImportTx
-	time.Sleep(time.Second * 5) // sleep to avoid error: "failed to get shared memory"
+	time.Sleep(time.Second * 10) // sleep to avoid error: "failed to get shared memory"
 
 	importTx, err := s.GetSignedImportTx()
 	if err != nil {
@@ -100,7 +100,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	}
 
 	// AddDelegatorTx
-	time.Sleep(time.Second * 5) // sleep to avoid error: "failed to get shared memory"
+	time.Sleep(time.Second * 10) // sleep to avoid error: "failed to get shared memory"
 
 	addDelegatorTx, err := s.GetSignedAddDelegatorTx()
 	if err != nil {
