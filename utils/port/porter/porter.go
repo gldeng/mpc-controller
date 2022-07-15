@@ -110,7 +110,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 10)
 
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()

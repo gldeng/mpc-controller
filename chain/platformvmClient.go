@@ -37,7 +37,7 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 	}
 
 	var resp *platformvm.GetTxStatusResponse
-	resp, err = c.AwaitTxDecided(ctx, txID, time.Second)
+	resp, err = c.AwaitTxDecided(ctx, txID, 10*time.Second)
 	if err != nil {
 		return
 	}
