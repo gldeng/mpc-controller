@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+task tests:initiateStake
+
 while true
 do
 	  bash ./tests/scripts/fund_initiateStake.sh
