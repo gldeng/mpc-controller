@@ -139,38 +139,45 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 	d.queueMu.Lock()
 	defer d.queueMu.Unlock()
 
-	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
-		if !d.eventQueue.Full() {
-			d.eventQueue.Enqueue(evtObj)
-			return nil
+	et := reflect.TypeOf(evtObj.Event).String()
+
+	d.eventLogger.Info("Received an event", []logger.Field{
+		{"eventType", et},
+		//{"eventStep", evtObj.EventStep},
+		{"eventValue", evtObj.Event}}...,
+
+	//{"parentEvtNo", evtObj.ParentEvtNo},
+	//{"parentEvtID", evtObj.ParentEvtID},
+
+	//{"rootEvtType", evtObj.RootEvtType},
+	//{"rootEvtID", evtObj.RootEvtID},
+	//{"rootEvtNo", evtObj.RootEvtNo},
+	//
+	//{"evtStreamNo", evtObj.EvtStreamNo},
+	//{"evtStreamID", evtObj.EvtStreamID},
+	//
+	//{"eventNo", evtObj.EventNo},
+	//{"eventID", evtObj.EventID},
+	//{"createdBy", evtObj.CreatedBy},
+	//{"createdAt", evtObj.CreatedAt}}...
+	)
+
+	if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
+		err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
+			if !d.eventQueue.Full() {
+				d.eventQueue.Enqueue(evtObj)
+				return nil
+			}
+			d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
+			return errors.New("The event queue is full!")
+		})
+
+		if err != nil {
+			d.eventLogger.Error("Failed to enqueue an event", []logger.Field{
+				{"error", err},
+				{"eventType", et},
+				{"eventValue", evtObj.Event}}...)
 		}
-		d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
-		return errors.New("The event queue is full!")
-	})
-
-	if err == nil {
-		et := reflect.TypeOf(evtObj.Event).String()
-
-		d.eventLogger.Info("Received an event", []logger.Field{
-			{"eventType", et},
-			//{"eventStep", evtObj.EventStep},
-			{"eventValue", evtObj.Event}}...,
-
-		//{"parentEvtNo", evtObj.ParentEvtNo},
-		//{"parentEvtID", evtObj.ParentEvtID},
-
-		//{"rootEvtType", evtObj.RootEvtType},
-		//{"rootEvtID", evtObj.RootEvtID},
-		//{"rootEvtNo", evtObj.RootEvtNo},
-		//
-		//{"evtStreamNo", evtObj.EvtStreamNo},
-		//{"evtStreamID", evtObj.EvtStreamID},
-		//
-		//{"eventNo", evtObj.EventNo},
-		//{"eventID", evtObj.EventID},
-		//{"createdBy", evtObj.CreatedBy},
-		//{"createdAt", evtObj.CreatedAt}}...
-		)
 
 		var evtStatMap = map[string]int{}
 		var ets []string
