@@ -2,7 +2,7 @@ package usecases
 
 import "sync"
 
-var storer = NewStorer()
+var storer *Storer
 
 type Storer struct {
 	keygenMap    map[string]*KeygenRequestModel
@@ -52,4 +52,10 @@ func (s *Storer) StoreSignRequestModel(m *SignRequestModel) {
 	defer s.signLocker.Unlock()
 
 	s.signMap[m.input.RequestId] = m
+}
+
+func init() {
+	if storer == nil {
+		storer = NewStorer()
+	}
 }
