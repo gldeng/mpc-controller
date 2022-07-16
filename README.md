@@ -6,11 +6,10 @@ We need to following components:
 - A manager to maintain the pending workflow tasks
 - A poller to connect to MPC service
 ## Integration Tests
-You can find test suites from `tests/testsuites` directory.
+You can find test suites from `tests/Taskfile.yml`.
 - Install library dependencies: `sudo apt install gcc-multilib libgmp-dev libssl-dev`
   (required on some Ubuntu OS).
 - Install toolchain dependencies:  [Task](https://github.com/go-task/task), [Venom](https://github.com/ovh/venom),  [Foundry](https://github.com/foundry-rs/foundry), [Golang](https://go.dev/), [Rust](https://www.rust-lang.org/)
 - Run tests: `task tests:testSuiteName`, e.g., `task tests:initiateStake`, `task tests:initiateStakeLoop`
-  For maximum task call is 100 for a task, you can run `./tests/scripts/loop_initiate_stake.sh` to keep infinite loop of testings. 
 - Check working directory: `cd $HOME/mpctest`
 - Tear down: `task tests:cleanup`
