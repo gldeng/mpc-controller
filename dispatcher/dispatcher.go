@@ -122,7 +122,30 @@ func (d *Dispatcher) run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evtObj := <-d.publishChan:
-			d.enqueue(ctx, evtObj)
+			et := reflect.TypeOf(evtObj.Event).String()
+			d.eventLogger.Info("Received an event", []logger.Field{
+				{"eventType", et},
+				//{"eventStep", evtObj.EventStep},
+				{"eventValue", evtObj.Event}}...,
+
+			//{"parentEvtNo", evtObj.ParentEvtNo},
+			//{"parentEvtID", evtObj.ParentEvtID},
+
+			//{"rootEvtType", evtObj.RootEvtType},
+			//{"rootEvtID", evtObj.RootEvtID},
+			//{"rootEvtNo", evtObj.RootEvtNo},
+			//
+			//{"evtStreamNo", evtObj.EvtStreamNo},
+			//{"evtStreamID", evtObj.EvtStreamID},
+			//
+			//{"eventNo", evtObj.EventNo},
+			//{"eventID", evtObj.EventID},
+			//{"createdBy", evtObj.CreatedBy},
+			//{"createdAt", evtObj.CreatedAt}}...
+			)
+			if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
+				d.enqueue(ctx, evtObj)
+			}
 		case <-time.Tick(time.Millisecond * 500):
 			if !d.eventQueue.Empty() {
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
@@ -141,57 +164,34 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 
 	et := reflect.TypeOf(evtObj.Event).String()
 
-	d.eventLogger.Info("Received an event", []logger.Field{
-		{"eventType", et},
-		//{"eventStep", evtObj.EventStep},
-		{"eventValue", evtObj.Event}}...,
-
-	//{"parentEvtNo", evtObj.ParentEvtNo},
-	//{"parentEvtID", evtObj.ParentEvtID},
-
-	//{"rootEvtType", evtObj.RootEvtType},
-	//{"rootEvtID", evtObj.RootEvtID},
-	//{"rootEvtNo", evtObj.RootEvtNo},
-	//
-	//{"evtStreamNo", evtObj.EvtStreamNo},
-	//{"evtStreamID", evtObj.EvtStreamID},
-	//
-	//{"eventNo", evtObj.EventNo},
-	//{"eventID", evtObj.EventID},
-	//{"createdBy", evtObj.CreatedBy},
-	//{"createdAt", evtObj.CreatedAt}}...
-	)
-
-	if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
-		err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
-			if !d.eventQueue.Full() {
-				d.eventQueue.Enqueue(evtObj)
-				return nil
-			}
-			d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
-			return errors.New("The event queue is full!")
-		})
-
-		if err != nil {
-			d.eventLogger.Error("Failed to enqueue an event", []logger.Field{
-				{"error", err},
-				{"eventType", et},
-				{"eventValue", evtObj.Event}}...)
+	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
+		if !d.eventQueue.Full() {
+			d.eventQueue.Enqueue(evtObj)
+			return nil
 		}
+		d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
+		return errors.New("The event queue is full!")
+	})
 
-		var evtStatMap = map[string]int{}
-		var ets []string
-		evtObjs := d.eventQueue.List()
-		for _, evtObj := range evtObjs {
-			et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
-			ets = append(ets, et)
-			evtStatMap[et]++
-		}
-		d.eventLogger.Debug("Current events in queue", []logger.Field{
-			{"totalCount", d.eventQueue.Count()},
-			{"EventStats", evtStatMap},
-			{"EventQueue", ets}}...)
+	if err != nil {
+		d.eventLogger.Error("Failed to enqueue an event", []logger.Field{
+			{"error", err},
+			{"eventType", et},
+			{"eventValue", evtObj.Event}}...)
 	}
+
+	var evtStatMap = map[string]int{}
+	var ets []string
+	evtObjs := d.eventQueue.List()
+	for _, evtObj := range evtObjs {
+		et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
+		ets = append(ets, et)
+		evtStatMap[et]++
+	}
+	d.eventLogger.Debug("Current events in queue", []logger.Field{
+		{"totalCount", d.eventQueue.Count()},
+		{"EventStats", evtStatMap},
+		{"EventQueue", ets}}...)
 }
 
 // publish concurrently run event handlers to the same event type.
