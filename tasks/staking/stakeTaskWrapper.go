@@ -3,11 +3,8 @@ package staking
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -123,12 +120,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	addDelegatorId, err := s.PChainIssueClient.IssueTx(ctx, addDelegatorTx.Bytes()) // todo: reuse chain.PlatformvmClientWrapper
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	err = s.awaitAddDelegatorTxDecided(ctx, addDelegatorId)
+	addDelegatorId, err := s.PChainIssueClient.IssueTx(ctx, addDelegatorTx.Bytes())
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -136,23 +128,4 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	s.Logger.Debug("Issued addDelegatorTx to P-Chain", []logger.Field{{"addDelegatorTxPChain", addDelegatorId}}...)
 
 	return []ids.ID{exportId, importId, addDelegatorId}, nil
-}
-
-func (s *StakeTaskWrapper) awaitAddDelegatorTxDecided(ctx context.Context, txID ids.ID) (err error) { // todo: reuse chain.PlatformvmClientWrapper
-	var txStatusRes *platformvm.GetTxStatusResponse
-	backoff.RetryFnExponentialForever(s.Logger, ctx, func() error {
-		txStatusRes, err = s.PChainIssueClient.(platformvm.Client).AwaitTxDecided(ctx, txID, time.Second)
-		if err != nil {
-			err = errors.WithStack(err)
-			return err
-		}
-		return nil
-	})
-
-	if txStatusRes.Status.String() != "Committed" {
-		return errors.Errorf("addDelegatorTx failed. txID:%q, status:%q, reason:%q",
-			bytes.Bytes32ToHex(txID), txStatusRes.Status.String(), txStatusRes.Reason)
-	}
-
-	return nil
 }
