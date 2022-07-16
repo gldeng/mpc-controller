@@ -117,27 +117,24 @@ func (d *Dispatcher) Channel() chan *EventObject {
 // run is a goroutine for receiving, enqueueing events.
 // It also regularly dequeues and publishes events every 500 milliseconds.
 func (d *Dispatcher) run(ctx context.Context) {
-	ticker := time.NewTicker(time.Second * 60)
-	defer ticker.Stop()
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			var etMap = map[string]int{}
-			evtObjs := d.eventQueue.List()
-			for _, evtObj := range evtObjs {
-				et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
-				etMap[et]++
-			}
-			d.eventLogger.Debug("Current events in queue", []logger.Field{
-				{"totalCount", d.eventQueue.Count()},
-				{"EventStats", etMap}}...)
 		case evtObj := <-d.publishChan:
 			d.enqueue(ctx, evtObj)
 		case <-time.Tick(time.Millisecond * 500):
 			if !d.eventQueue.Empty() {
+				var etMap = map[string]int{}
+				evtObjs := d.eventQueue.List()
+				for _, evtObj := range evtObjs {
+					et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
+					etMap[et]++
+				}
+				d.eventLogger.Debug("Current events in queue", []logger.Field{
+					{"totalCount", d.eventQueue.Count()},
+					{"EventStats", etMap}}...)
+
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
 					d.publish(ctx, evtObj)
 				}
