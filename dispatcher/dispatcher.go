@@ -172,15 +172,18 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 		//{"createdAt", evtObj.CreatedAt}}...
 		)
 
-		var etMap = map[string]int{}
+		var evtStatMap = map[string]int{}
+		var ets []string
 		evtObjs := d.eventQueue.List()
 		for _, evtObj := range evtObjs {
 			et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
-			etMap[et]++
+			ets = append(ets, et)
+			evtStatMap[et]++
 		}
 		d.eventLogger.Debug("Current events in queue", []logger.Field{
 			{"totalCount", d.eventQueue.Count()},
-			{"EventStats", etMap}}...)
+			{"EventStats", evtStatMap},
+			{"EventQueue", ets}}...)
 	}
 }
 
