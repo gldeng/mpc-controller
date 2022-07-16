@@ -29,10 +29,14 @@ func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
+	s.Logger.Debug("Signing exportTx", []logger.Field{{}}...)
+
 	sig, err := s.SignExportTx(ctx, txHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	s.Logger.Debug("Signed exportTx", []logger.Field{{}}...)
 
 	err = s.SetExportTxSig(sig)
 	if err != nil {
@@ -45,10 +49,14 @@ func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
+	s.Logger.Debug("Signing importTx", []logger.Field{{}}...)
+
 	sig, err = s.SignImportTx(ctx, txHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	s.Logger.Debug("Signed importTx", []logger.Field{{}}...)
 
 	err = s.SetImportTxSig(sig)
 	if err != nil {
