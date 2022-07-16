@@ -125,16 +125,6 @@ func (d *Dispatcher) run(ctx context.Context) {
 			d.enqueue(ctx, evtObj)
 		case <-time.Tick(time.Millisecond * 500):
 			if !d.eventQueue.Empty() {
-				var etMap = map[string]int{}
-				evtObjs := d.eventQueue.List()
-				for _, evtObj := range evtObjs {
-					et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
-					etMap[et]++
-				}
-				d.eventLogger.Debug("Current events in queue", []logger.Field{
-					{"totalCount", d.eventQueue.Count()},
-					{"EventStats", etMap}}...)
-
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
 					d.publish(ctx, evtObj)
 				}
@@ -181,6 +171,16 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 		//{"createdBy", evtObj.CreatedBy},
 		//{"createdAt", evtObj.CreatedAt}}...
 		)
+
+		var etMap = map[string]int{}
+		evtObjs := d.eventQueue.List()
+		for _, evtObj := range evtObjs {
+			et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
+			etMap[et]++
+		}
+		d.eventLogger.Debug("Current events in queue", []logger.Field{
+			{"totalCount", d.eventQueue.Count()},
+			{"EventStats", etMap}}...)
 	}
 }
 
