@@ -14,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
-	"math/rand"
-	"time"
 )
 
 type Cache interface {
@@ -60,95 +58,98 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.myIndex = index
 
 		ok := eh.isParticipant(evt)
-		if ok {
-			nonce, err := eh.getNonce(evtObj.Context)
-			if err != err {
-				eh.Logger.Error("Failed to get nonce", []logger.Field{{"error", err}}...)
-				return
-			}
-
-			partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
-			if err != nil {
-				eh.Logger.Error("Failed to get normalized participant keys", []logger.Field{{"error", err}}...)
-				return
-			}
-
-			signRequester := &SignRequester{
-				SignDoner: eh.SignDoner,
-				SignRequestArgs: SignRequestArgs{
-					TaskID:                 evt.Raw.TxHash.Hex(),
-					CompressedPartiPubKeys: partiKeys,
-					CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
-				},
-			}
-
-			taskCreator := StakeTaskCreator{
-				MpcManagerStakeRequestStarted: evt,
-				NetworkContext:                eh.NetworkContext,
-				PubKeyHex:                     eh.genPubKeyInfo.CompressedGenPubKeyHex,
-				Nonce:                         nonce,
-			}
-			stakeTask, err := taskCreator.CreateStakeTask()
-			if err != nil {
-				eh.Logger.Error("Failed to create stake task", []logger.Field{{"error", err}}...)
-				return
-			}
-
-			stakeTaskWrapper := &StakeTaskWrapper{
-				CChainIssueClient: eh.CChainIssueClient,
-				Logger:            eh.Logger,
-				PChainIssueClient: eh.PChainIssueClient,
-				SignRequester:     signRequester,
-				StakeTask:         stakeTask,
-			}
-
-			dur := rand.Intn(10000)
-			time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent SignTx can cause failure.
-
-			err = stakeTaskWrapper.SignTx(evtObj.Context)
-			if err != nil {
-				eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
-				return
-			}
-
-			time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent IssueTx can cause failure.
-
-			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
-			if err != nil {
-				time.Sleep(time.Second * 5)
-				newNonce, _ := eh.getNonce(evtObj.Context)
-				if newNonce == nonce+1 { // todo: this strategy not always work, improve it
-					eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{
-						{"error", err},
-						{"stakeTask", stakeTask}}...)
-					return
-				}
-				eh.Logger.Error("Failed to process ExportTx", []logger.Field{
-					{"error", err},
-					{"stakeTask", stakeTask}}...)
-				return
-			}
-
-			newEvt := events.StakingTaskDoneEvent{
-				ExportTxID:       ids[0],
-				ImportTxID:       ids[1],
-				AddDelegatorTxID: ids[2],
-
-				RequestID:   stakeTask.RequestID,
-				DelegateAmt: stakeTask.DelegateAmt,
-				StartTime:   stakeTask.StartTime,
-				EndTime:     stakeTask.EndTime,
-				NodeID:      stakeTask.NodeID,
-
-				PubKeyHex:     eh.genPubKeyInfo.CompressedGenPubKeyHex,
-				CChainAddress: stakeTask.CChainAddress,
-				PChainAddress: stakeTask.PChainAddress,
-				Nonce:         stakeTask.Nonce,
-
-				ParticipantPubKeys: partiKeys,
-			}
-			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
+		if !ok {
+			eh.Logger.Debug("Not participant in *contract.MpcManagerStakeRequestStarted event", []logger.Field{
+				{"requestId", evt.RequestId}}...)
 		}
+
+		nonce, err := eh.getNonce(evtObj.Context)
+		if err != err {
+			eh.Logger.Error("Failed to get nonce", []logger.Field{{"error", err}}...)
+			return
+		}
+
+		partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
+		if err != nil {
+			eh.Logger.Error("Failed to get normalized participant keys", []logger.Field{{"error", err}}...)
+			return
+		}
+
+		signRequester := &SignRequester{
+			SignDoner: eh.SignDoner,
+			SignRequestArgs: SignRequestArgs{
+				TaskID:                 evt.Raw.TxHash.Hex(),
+				CompressedPartiPubKeys: partiKeys,
+				CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
+			},
+		}
+
+		taskCreator := StakeTaskCreator{
+			MpcManagerStakeRequestStarted: evt,
+			NetworkContext:                eh.NetworkContext,
+			PubKeyHex:                     eh.genPubKeyInfo.CompressedGenPubKeyHex,
+			Nonce:                         nonce,
+		}
+		stakeTask, err := taskCreator.CreateStakeTask()
+		if err != nil {
+			eh.Logger.Error("Failed to create stake task", []logger.Field{{"error", err}}...)
+			return
+		}
+
+		stakeTaskWrapper := &StakeTaskWrapper{
+			CChainIssueClient: eh.CChainIssueClient,
+			Logger:            eh.Logger,
+			PChainIssueClient: eh.PChainIssueClient,
+			SignRequester:     signRequester,
+			StakeTask:         stakeTask,
+		}
+
+		//dur := rand.Intn(10000)
+		//time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent SignTx can cause failure.
+
+		err = stakeTaskWrapper.SignTx(evtObj.Context)
+		if err != nil {
+			eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
+			return
+		}
+
+		//time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent IssueTx can cause failure.
+
+		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
+		if err != nil {
+			//time.Sleep(time.Second * 5)
+			//newNonce, _ := eh.getNonce(evtObj.Context)
+			//if newNonce == nonce+1 { // todo: this strategy not always work, improve it
+			//	eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{
+			//		{"error", err},
+			//		{"stakeTask", stakeTask}}...)
+			//	return
+			//}
+			eh.Logger.Error("Failed to issue tx", []logger.Field{
+				{"error", err},
+				{"stakeTask", stakeTask}}...)
+			return
+		}
+
+		newEvt := events.StakingTaskDoneEvent{
+			ExportTxID:       ids[0],
+			ImportTxID:       ids[1],
+			AddDelegatorTxID: ids[2],
+
+			RequestID:   stakeTask.RequestID,
+			DelegateAmt: stakeTask.DelegateAmt,
+			StartTime:   stakeTask.StartTime,
+			EndTime:     stakeTask.EndTime,
+			NodeID:      stakeTask.NodeID,
+
+			PubKeyHex:     eh.genPubKeyInfo.CompressedGenPubKeyHex,
+			CChainAddress: stakeTask.CChainAddress,
+			PChainAddress: stakeTask.PChainAddress,
+			Nonce:         stakeTask.Nonce,
+
+			ParticipantPubKeys: partiKeys,
+		}
+		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 	}
 }
 
