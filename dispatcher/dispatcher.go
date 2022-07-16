@@ -166,23 +166,24 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 
 		d.eventLogger.Info("Received an event", []logger.Field{
 			{"eventType", et},
-			{"eventStep", evtObj.EventStep},
-			{"event", evtObj.Event},
+			//{"eventStep", evtObj.EventStep},
+			{"eventValue", evtObj.Event}}...,
 
-			{"parentEvtNo", evtObj.ParentEvtNo},
-			{"parentEvtID", evtObj.ParentEvtID},
+		//{"parentEvtNo", evtObj.ParentEvtNo},
+		//{"parentEvtID", evtObj.ParentEvtID},
 
-			{"rootEvtType", evtObj.RootEvtType},
-			{"rootEvtID", evtObj.RootEvtID},
-			{"rootEvtNo", evtObj.RootEvtNo},
-
-			{"evtStreamNo", evtObj.EvtStreamNo},
-			{"evtStreamID", evtObj.EvtStreamID},
-
-			{"eventNo", evtObj.EventNo},
-			{"eventID", evtObj.EventID},
-			{"createdBy", evtObj.CreatedBy},
-			{"createdAt", evtObj.CreatedAt}}...)
+		//{"rootEvtType", evtObj.RootEvtType},
+		//{"rootEvtID", evtObj.RootEvtID},
+		//{"rootEvtNo", evtObj.RootEvtNo},
+		//
+		//{"evtStreamNo", evtObj.EvtStreamNo},
+		//{"evtStreamID", evtObj.EvtStreamID},
+		//
+		//{"eventNo", evtObj.EventNo},
+		//{"eventID", evtObj.EventID},
+		//{"createdBy", evtObj.CreatedBy},
+		//{"createdAt", evtObj.CreatedAt}}...
+		)
 	}
 }
 
