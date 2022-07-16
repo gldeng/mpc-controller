@@ -90,14 +90,16 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				eh.Logger.Debug("Receive a contract.MpcManagerExportUTXORequest event", []logger.Field{{"event", evt}}...)
+				evtObj := dispatcher.NewRootEventObject("ExportUTXORequestWatcher", evt, ctx)
+				eh.Publisher.Publish(ctx, evtObj)
+
 				transformedEvt := events.ExportUTXORequestEvent{
 					TxID:          evt.TxId,
 					GenPubKeyHash: evt.GenPubKey,
 					TxHash:        evt.Raw.TxHash,
 				}
 				copier.Copy(&transformedEvt, evt)
-				evtObj := dispatcher.NewRootEventObject("ExportUTXORequestWatcher", &transformedEvt, ctx)
+				evtObj = dispatcher.NewEventObjectFromParent(evtObj, "", &transformedEvt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching ExportRewardRequest event for ExportUTXORequestWatcher", []logger.Field{{"error", err}}...)
