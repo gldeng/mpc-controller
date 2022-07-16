@@ -69,10 +69,14 @@ func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
+	s.Logger.Debug("Signing addDelegatorTx", []logger.Field{{}}...)
+
 	sig, err = s.SignAddDelegatorTx(ctx, txHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	s.Logger.Debug("Signed addDelegatorTx", []logger.Field{{}}...)
 
 	err = s.SetAddDelegatorTxSig(sig)
 	if err != nil {
