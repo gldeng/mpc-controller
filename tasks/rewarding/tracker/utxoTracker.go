@@ -104,9 +104,9 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				for _, utxo := range utxos {
 					ok, err := eh.checkRewardUTXO(ctx, utxo.TxID)
 					if err != nil {
-						eh.Logger.Error("Failed to check reward UTXO for txID", []logger.Field{
-							{"error", err},
-							{"txID", utxo.TxID}}...)
+						eh.Logger.Error("Failed to check reward UTXO for txID, which maybe returned by an atomic importTx to P-Chain, but not a result of addDelegatorTx", []logger.Field{
+							{"txID", utxo.TxID},
+							{"error", err}}...)
 						continue
 					}
 
