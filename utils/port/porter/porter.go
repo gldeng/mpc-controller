@@ -56,6 +56,8 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
+	p.Logger.Debug("Signing exportTx", []logger.Field{{}}...)
+
 	exportTxSig, err := p.SignExportTx(ctx, exportTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
@@ -83,6 +85,8 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
+
+	p.Logger.Debug("Signing importTx", []logger.Field{{}}...)
 
 	importTxSig, err := p.SignImportTx(ctx, importTxHash)
 	if err != nil {
