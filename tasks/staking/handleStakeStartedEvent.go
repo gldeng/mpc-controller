@@ -126,8 +126,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			//	return
 			//}
 			eh.Logger.Error("Failed to issue tx", []logger.Field{
-				{"error", err},
-				{"stakeTask", stakeTask}}...)
+				{"stakeTask", stakeTask},
+				{"error", err}}...)
 			return
 		}
 
