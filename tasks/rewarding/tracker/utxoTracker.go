@@ -217,6 +217,7 @@ func (eh *UTXOTracker) checkRewardUTXO(ctx context.Context, txID ids.ID) (bool, 
 		if version, err := platformvm.Codec.Unmarshal(utxoBytes, utxo); err != nil {
 			return false, errors.Wrapf(err, "error parsing UTXO, codec version:%v", version)
 		}
+		utxos = append(utxos, utxo)
 	}
 
 	if len(utxos) == 0 {
