@@ -60,7 +60,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		ok := eh.isParticipant(evt)
 		if !ok {
 			eh.Logger.Debug("Not participant in *contract.MpcManagerStakeRequestStarted event", []logger.Field{
-				{"requestId", evt.RequestId}}...)
+				{"requestId", evt.RequestId},
+				{"TxHash", evt.Raw.TxHash}}...)
 			return
 		}
 
@@ -167,7 +168,6 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManage
 	}
 
 	if !participating {
-		eh.Logger.Info("Not participated to stake request", []logger.Field{{"stakeReqId", req.RequestId}}...)
 		return false
 	}
 
