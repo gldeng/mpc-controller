@@ -125,23 +125,25 @@ func (d *Dispatcher) run(ctx context.Context) {
 			et := reflect.TypeOf(evtObj.Event).String()
 			d.eventLogger.Info("Received an event", []logger.Field{
 				{"eventType", et},
+				{"eventNo", evtObj.EventNo},
+				{"eventValue", evtObj.Event},
+
 				//{"eventStep", evtObj.EventStep},
-				{"eventValue", evtObj.Event}}...,
 
-			//{"parentEvtNo", evtObj.ParentEvtNo},
-			//{"parentEvtID", evtObj.ParentEvtID},
+				//{"parentEvtNo", evtObj.ParentEvtNo},
+				//{"parentEvtID", evtObj.ParentEvtID},
 
-			//{"rootEvtType", evtObj.RootEvtType},
-			//{"rootEvtID", evtObj.RootEvtID},
-			//{"rootEvtNo", evtObj.RootEvtNo},
-			//
-			//{"evtStreamNo", evtObj.EvtStreamNo},
-			//{"evtStreamID", evtObj.EvtStreamID},
-			//
-			//{"eventNo", evtObj.EventNo},
-			//{"eventID", evtObj.EventID},
-			//{"createdBy", evtObj.CreatedBy},
-			//{"createdAt", evtObj.CreatedAt}}...
+				//{"rootEvtType", evtObj.RootEvtType},
+				//{"rootEvtID", evtObj.RootEvtID},
+				//{"rootEvtNo", evtObj.RootEvtNo},
+				//
+				//{"evtStreamNo", evtObj.EvtStreamNo},
+				//{"evtStreamID", evtObj.EvtStreamID},
+				//
+				//{"eventID", evtObj.EventID},
+				//{"createdBy", evtObj.CreatedBy},
+				//{"createdAt", evtObj.CreatedAt}}...
+			}...,
 			)
 			if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
 				d.enqueue(ctx, evtObj)
