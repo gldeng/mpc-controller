@@ -111,8 +111,10 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			if err != nil {
 				time.Sleep(time.Second * 5)
 				newNonce, _ := eh.getNonce(evtObj.Context)
-				if newNonce == nonce+1 {
-					eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{{"stakeTask", stakeTask}}...)
+				if newNonce == nonce+1 { // todo: this strategy not always work, improve it
+					eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{
+						{"error", err},
+						{"stakeTask", stakeTask}}...)
 					return
 				}
 				eh.Logger.Error("Failed to process ExportTx", []logger.Field{
