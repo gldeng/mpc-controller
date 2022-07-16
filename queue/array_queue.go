@@ -1,6 +1,8 @@
 package queue
 
-import "sync"
+import (
+	"sync"
+)
 
 const (
 	defaultMinLen = 64
@@ -60,6 +62,18 @@ func (q *ArrayQueue) Peek() interface{} {
 		return nil
 	}
 	return (q.q)[len(q.q)-1]
+}
+
+func (q *ArrayQueue) List() []interface{} {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+
+	var list []interface{}
+	for _, e := range q.q {
+		list = append(list, e)
+	}
+
+	return list
 }
 
 func (q *ArrayQueue) Count() int {
