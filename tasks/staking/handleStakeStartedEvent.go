@@ -61,6 +61,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		if !ok {
 			eh.Logger.Debug("Not participant in *contract.MpcManagerStakeRequestStarted event", []logger.Field{
 				{"requestId", evt.RequestId}}...)
+			return
 		}
 
 		nonce, err := eh.getNonce(evtObj.Context)
