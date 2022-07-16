@@ -4,18 +4,18 @@ import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/pkg/errors"
 )
 
 const (
-	P2C IssueOrder = iota
-	C2P
+	INVALID IssueOrder = "Invalid"
+	P2C     IssueOrder = "P2C"
+	C2P     IssueOrder = "C2P"
 )
 
-type IssueOrder int
+type IssueOrder string
 
-var _ porter.TxIssuer = (*Issuer)(nil)
+//var _ porter.TxIssuer = (*Issuer)(nil)
 
 // todo: consider back off retry strategy on network partition
 
@@ -25,24 +25,32 @@ type Issuer struct {
 	IssueOrder        IssueOrder
 }
 
-func (i *Issuer) IssueExportTx(ctx context.Context, exportTxBytes []byte) (ids.ID, error) {
+func (i *Issuer) IssueExportTx(ctx context.Context, exportTxBytes []byte) (id ids.ID, order IssueOrder, err error) {
 	switch i.IssueOrder {
 	case P2C:
-		return i.PChainIssueClient.IssueTx(ctx, exportTxBytes)
+		order = P2C
+		id, err = i.PChainIssueClient.IssueTx(ctx, exportTxBytes)
+		return
 	case C2P:
-		return i.CChainIssueClient.IssueTx(ctx, exportTxBytes)
+		order = C2P
+		id, err = i.CChainIssueClient.IssueTx(ctx, exportTxBytes)
+		return
 	default:
-		return ids.ID{}, errors.New("invalid order")
+		return ids.ID{}, INVALID, errors.New("invalid order")
 	}
 }
 
-func (i *Issuer) IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, error) {
+func (i *Issuer) IssueImportTx(ctx context.Context, importTxBytes []byte) (id ids.ID, order IssueOrder, err error) {
 	switch i.IssueOrder {
 	case P2C:
-		return i.CChainIssueClient.IssueTx(ctx, importTxBytes)
+		order = P2C
+		id, err = i.CChainIssueClient.IssueTx(ctx, importTxBytes)
+		return
 	case C2P:
-		return i.PChainIssueClient.IssueTx(ctx, importTxBytes)
+		order = C2P
+		id, err = i.PChainIssueClient.IssueTx(ctx, importTxBytes)
+		return
 	default:
-		return ids.ID{}, errors.New("invalid order")
+		return ids.ID{}, INVALID, errors.New("invalid order")
 	}
 }

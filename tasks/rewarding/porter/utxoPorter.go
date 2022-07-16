@@ -97,6 +97,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 	}
 
 	args := Args{
+		Logger:     eh.Logger,
 		NetworkID:  eh.NetworkID(),
 		ExportFee:  eh.ExportFee(),
 		PChainID:   ids.Empty, // todo: config it
@@ -135,6 +136,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 }
 
 type Args struct {
+	Logger     logger.Logger
 	NetworkID  uint32
 	ExportFee  uint64
 	PChainID   ids.ID
@@ -180,7 +182,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 	mySigner := &signer.Signer{args.SignDoner, *args.SignReqArgs}
 	myVerifier := &secp256k1r.Verifier{PChainAddress: args.PChainAddr}
 	myIssuer := &portIssuer.Issuer{args.CChainIssueClient, args.PChainIssueClient, portIssuer.P2C}
-	myPorter := porter.Porter{myTxs, mySigner, myIssuer, myVerifier}
+	myPorter := porter.Porter{args.Logger, myTxs, mySigner, myIssuer, myVerifier}
 
 	txIds, err := myPorter.SignAndIssueTxs(ctx)
 	if err != nil {

@@ -3,7 +3,9 @@ package porter
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/port/issuer"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -35,11 +37,12 @@ type SigVerifier interface {
 }
 
 type TxIssuer interface {
-	IssueExportTx(ctx context.Context, exportTxBytes []byte) (ids.ID, error)
-	IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, error)
+	IssueExportTx(ctx context.Context, exportTxBytes []byte) (ids.ID, issuer.IssueOrder, error)
+	IssueImportTx(ctx context.Context, importTxBytes []byte) (ids.ID, issuer.IssueOrder, error)
 }
 
 type Porter struct {
+	logger.Logger
 	Txs
 	TxSigner
 	TxIssuer
@@ -105,10 +108,14 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	exportTxId, err := p.IssueExportTx(ctx, exportTxBytes)
+	exportTxId, issueOrder, err := p.IssueExportTx(ctx, exportTxBytes)
 	if err != nil {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
+
+	p.Debug("Issued exportTx", []logger.Field{
+		{"issueOrder", issueOrder},
+		{"exportTx", exportTxId}}...)
 
 	time.Sleep(time.Second * 10)
 
@@ -118,10 +125,14 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	importTxId, err := p.IssueImportTx(ctx, importTxBytes)
+	importTxId, issueOrder, err := p.IssueImportTx(ctx, importTxBytes)
 	if err != nil {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueImportTx")
 	}
+
+	p.Debug("Issued importTx", []logger.Field{
+		{"issueOrder", issueOrder},
+		{"importTx", importTxId}}...)
 
 	return [2]ids.ID{exportTxId, importTxId}, nil
 }
