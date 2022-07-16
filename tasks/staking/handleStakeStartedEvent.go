@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
+	"math/rand"
 	"time"
 )
 
@@ -101,11 +102,16 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 				StakeTask:         stakeTask,
 			}
 
+			dur := rand.Intn(10000)
+			time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent SignTx can cause failure.
+
 			err = stakeTaskWrapper.SignTx(evtObj.Context)
 			if err != nil {
 				eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
 				return
 			}
+
+			time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent IssueTx can cause failure.
 
 			ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 			if err != nil {

@@ -98,8 +98,10 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 		return errors.WithStack(err)
 	}
 	myIndex := eh.participantInfoMap[events.PrefixParticipantInfo+"-"+eh.MyPubKeyHashHex+"-"+groupIdHex].Index
-	dur := rand.Intn(5000)
+
+	dur := rand.Intn(10000)
 	time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent reporting can cause failure.
+
 	err = eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
 	if err != nil {
 		return errors.WithStack(err)

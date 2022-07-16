@@ -21,7 +21,9 @@ import (
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 // Accept event: *events.UTXOsFetchedEvent
@@ -183,6 +185,9 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 	myVerifier := &secp256k1r.Verifier{PChainAddress: args.PChainAddr}
 	myIssuer := &portIssuer.Issuer{args.CChainIssueClient, args.PChainIssueClient, portIssuer.P2C}
 	myPorter := porter.Porter{args.Logger, myTxs, mySigner, myIssuer, myVerifier}
+
+	dur := rand.Intn(10000)
+	time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent SignAndIssueTxs can cause failure.
 
 	txIds, err := myPorter.SignAndIssueTxs(ctx)
 	if err != nil {
