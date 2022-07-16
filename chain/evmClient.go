@@ -37,7 +37,7 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 	}
 
 	var status evm.Status
-	status, err = c.AwaitTxDecided(ctx, txID, 10*time.Second)
+	status, err = c.AwaitTxDecided(ctx, txID, 1*time.Second)
 	if err != nil {
 		return
 	}

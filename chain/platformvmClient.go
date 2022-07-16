@@ -37,7 +37,7 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 	}
 
 	var resp *platformvm.GetTxStatusResponse
-	resp, err = c.AwaitTxDecided(ctx, txID, 10*time.Second)
+	resp, err = c.AwaitTxDecided(ctx, txID, 1*time.Second)
 	if err != nil {
 		return
 	}
@@ -45,6 +45,18 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 		err = errors.Errorf("transaction failed with platformvm.Client. txID:%q, status:%q, reason:%q", txID, resp.Status.String(), resp.Reason)
 	}
 
+	return
+}
+
+func (c *PlatformvmClientWrapper) GetTxStatus(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp *platformvm.GetTxStatusResponse, err error) {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+		resp, err = c.Client.GetTxStatus(ctx, txID, options...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to GetTxStatus with platformvm.Client")
+			return err
+		}
+		return nil
+	})
 	return
 }
 
