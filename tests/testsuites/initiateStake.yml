@@ -9,7 +9,7 @@ testcases:
   - name: readAvaLidoAddress
     steps:
       - type: readfile
-        path: $HOME/mpctest/contracts/addresses/AVALIDO_ADDRESS
+        path: MYHOME/mpctest/contracts/addresses/AVALIDO_ADDRESS
         vars:
           content:
             from: result.content

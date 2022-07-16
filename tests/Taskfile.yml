@@ -3,6 +3,9 @@ version: '3'
 tasks:
   init:
     cmds:
+       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/createGroup.yml
+       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/requestKeygen.yml
+       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/initiateStake.yml
        - cmd: bash ./tests/scripts/kill.sh
          ignore_error: true
        - bash ./tests/scripts/clone.sh

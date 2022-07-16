@@ -11,7 +11,7 @@ testcases:
   - name: readMpcManagerAddress
     steps:
       - type: readfile
-        path: $HOME/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS
+        path: MYHOME/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS
         vars:
           content:
             from: result.content
