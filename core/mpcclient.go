@@ -21,7 +21,7 @@ type KeygenRequest struct {
 }
 
 type SignRequest struct {
-	RequestId              string   `json:"request_id"`
+	SigningID              string   `json:"request_id"`
 	CompressedGenPubKeyHex string   `json:"public_key"`
 	CompressedPartiPubKeys []string `json:"participant_public_keys"`
 	Hash                   string   `json:"message"`
@@ -158,7 +158,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	}
 
 	time.Sleep(time.Second * 2)
-	res, err = c.ResultDone(ctx, request.RequestId)
+	res, err = c.ResultDone(ctx, request.SigningID)
 	return
 }
 
