@@ -23,7 +23,7 @@ type SignRequestArgs struct {
 
 func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error) {
 	exportTxSignReq := core.SignRequest{
-		SigningID:              s.TaskID + "-" + strconv.Itoa(0),
+		SignReqID:              s.TaskID + "-" + strconv.Itoa(0),
 		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(exportTxHash),
@@ -31,7 +31,7 @@ func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) (
 
 	res, err := s.SignDone(ctx, &exportTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestID: %q", exportTxSignReq.SigningID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestID: %q", exportTxSignReq.SignReqID)
 	}
 
 	return bytes.BytesTo65Bytes(bytes.HexToBytes(res.Result)), nil
@@ -39,7 +39,7 @@ func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) (
 
 func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error) {
 	importTxSignReq := core.SignRequest{
-		SigningID:              s.TaskID + "-" + strconv.Itoa(1),
+		SignReqID:              s.TaskID + "-" + strconv.Itoa(1),
 		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(importTxHash),
@@ -47,7 +47,7 @@ func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) (
 
 	res, err := s.SignDone(ctx, &importTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestID: %q", importTxSignReq.SigningID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestID: %q", importTxSignReq.SignReqID)
 	}
 
 	return bytes.BytesTo65Bytes(bytes.HexToBytes(res.Result)), nil
@@ -55,7 +55,7 @@ func (s *SignRequester) SignImportTx(ctx context.Context, importTxHash []byte) (
 
 func (s *SignRequester) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHash []byte) ([65]byte, error) {
 	addDelegatorTxSignReq := core.SignRequest{
-		SigningID:              s.TaskID + "-" + strconv.Itoa(2),
+		SignReqID:              s.TaskID + "-" + strconv.Itoa(2),
 		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(addDelegatorTxHash),
@@ -63,7 +63,7 @@ func (s *SignRequester) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHa
 
 	res, err := s.SignDone(ctx, &addDelegatorTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestID: %q", addDelegatorTxSignReq.SigningID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestID: %q", addDelegatorTxSignReq.SignReqID)
 	}
 
 	return bytes.BytesTo65Bytes(bytes.HexToBytes(res.Result)), nil

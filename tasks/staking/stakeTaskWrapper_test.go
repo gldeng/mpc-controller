@@ -94,14 +94,14 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	exportTxHash := "3273f531ba059c12f98b4cf7890608c66da392b8d5fc218d6d32041c76fdb674"
 	exportTxsignature := "5b12ef4bf066a0d341f1bc4c47f597829a22f7b78dabbe1445a84b13053a2f334d7409466b993916dc0e4285911f21111460ea58da98ebe8fbb752bda74d77f301"
 	exportTxSignReq := core.SignRequest{
-		SigningID:              signRequestArgs.TaskID + "-" + strconv.Itoa(0),
+		SignReqID:              signRequestArgs.TaskID + "-" + strconv.Itoa(0),
 		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 		Hash:                   exportTxHash,
 	}
 	mockExportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result { // todo: use NewSignDoner() and Expecter Interfaces.
 		output := &core.Result{
-			RequestId:     request.SigningID,
+			MPCReqID:      request.SignReqID,
 			Result:        exportTxsignature,
 			RequestType:   "SIGN",
 			RequestStatus: "DONE",
@@ -113,14 +113,14 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	importTxHash := "6c99c91ed157e0c2d7cbd790ed89561b7e4bd71f550d4f176a85122afa90c135"
 	importTxsignature := "db5abfea3856cdb6013adae8b8ecd006146158b9d90a31f8aa9ea21b9a08274c71a8f52078236b35a76bc5b62686ae01bfdf585e1785d7be891d6e00d70fc58000"
 	importTxSignReq := core.SignRequest{
-		SigningID:              signRequestArgs.TaskID + "-" + strconv.Itoa(1),
+		SignReqID:              signRequestArgs.TaskID + "-" + strconv.Itoa(1),
 		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 		Hash:                   importTxHash,
 	}
 	mockImportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{
-			RequestId:     request.SigningID,
+			MPCReqID:      request.SignReqID,
 			Result:        importTxsignature,
 			RequestType:   "SIGN",
 			RequestStatus: "DONE",
@@ -132,14 +132,14 @@ func (suite *StakeTaskWrapperTestSuite) TestSignTx() {
 	addDelegatorTxHash := "5884ba92bb58372023c5fa3fe699e152188302f5b1e22ea4b8c9dd623e3b283c"
 	addDelegatorTxsignature := "144b6137be716be2e8b22177fc3be4de99c18fc8b9e29fb3eecaa673961fc36e0cbc0449aeca034a10a2f52a31b245b0dcb032d06a317c63fd0adcc3862cb4fe01"
 	addDelegatorTxSignReq := core.SignRequest{
-		SigningID:              signRequestArgs.TaskID + "-" + strconv.Itoa(2),
+		SignReqID:              signRequestArgs.TaskID + "-" + strconv.Itoa(2),
 		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 		Hash:                   addDelegatorTxHash,
 	}
 	mockaddDelegatorTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{
-			RequestId:     request.SigningID,
+			MPCReqID:      request.SignReqID,
 			Result:        addDelegatorTxsignature,
 			RequestType:   "SIGN",
 			RequestStatus: "DONE",

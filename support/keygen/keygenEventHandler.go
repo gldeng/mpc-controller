@@ -73,7 +73,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	group := eh.groupInfoMap[events.PrefixGroupInfo+"-"+groupIdHex]
 
 	keyGenReq := &core.KeygenRequest{
-		RequestId:              reqId,
+		KeygenReqID:            reqId,
 		CompressedPartiPubKeys: group.PartPubKeyHexs,
 		Threshold:              group.Threshold,
 	}

@@ -33,14 +33,14 @@ func (suite *SignRequesterTestSuite) TestSignExportTx() {
 	signature := "c3ec6ebfc1c44719550c138795e7a69e356e84be17f6ef968523bf0ebb30bdbe7bc99b420d6d5f070056e3495fa3c6e51d9195400a322b1fa061a90a517232a400"
 
 	exportTxSignReq := core.SignRequest{
-		SigningID:              suite.TaskID + "-" + strconv.Itoa(0),
+		SignReqID:              suite.TaskID + "-" + strconv.Itoa(0),
 		CompressedGenPubKeyHex: suite.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: suite.CompressedPartiPubKeys,
 		Hash:                   hash,
 	}
 	mockResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{
-			RequestId:     request.SigningID,
+			MPCReqID:      request.SignReqID,
 			Result:        signature,
 			RequestType:   "SIGN",
 			RequestStatus: "DONE",
@@ -70,14 +70,14 @@ func (suite *SignRequesterTestSuite) TestSignImportTx() {
 	signature := "e3a7a5130e7848c51d9b64abb21a90d96cf08e5192a93ee95d49a6c2faf876fd59570d255db00d513bf693153c73d1d4b169d2f290e676ead48aaf9269cad72700"
 
 	exportTxSignReq := core.SignRequest{
-		SigningID:              suite.TaskID + "-" + strconv.Itoa(1),
+		SignReqID:              suite.TaskID + "-" + strconv.Itoa(1),
 		CompressedGenPubKeyHex: suite.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: suite.CompressedPartiPubKeys,
 		Hash:                   hash,
 	}
 	mockResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{
-			RequestId:     request.SigningID,
+			MPCReqID:      request.SignReqID,
 			Result:        signature,
 			RequestType:   "SIGN",
 			RequestStatus: "DONE",
@@ -107,14 +107,14 @@ func (suite *SignRequesterTestSuite) TestSignAddDelegatorTx() {
 	signature := "94059a6d9f4ae471169369755012050c37884d36b3a83b2b79b059c90905f7ba2372ca48eecc9b48f46155b1c4c16891365f14c0e830076502f704f1f38a16da00"
 
 	exportTxSignReq := core.SignRequest{
-		SigningID:              suite.TaskID + "-" + strconv.Itoa(2),
+		SignReqID:              suite.TaskID + "-" + strconv.Itoa(2),
 		CompressedGenPubKeyHex: suite.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: suite.CompressedPartiPubKeys,
 		Hash:                   hash,
 	}
 	mockResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 		output := &core.Result{
-			RequestId:     request.SigningID,
+			MPCReqID:      request.SignReqID,
 			Result:        signature,
 			RequestType:   "SIGN",
 			RequestStatus: "DONE",

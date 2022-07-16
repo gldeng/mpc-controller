@@ -15,20 +15,20 @@ import (
 )
 
 type KeygenRequest struct {
-	RequestId              string   `json:"request_id"`
+	KeygenReqID            string   `json:"request_id"`
 	CompressedPartiPubKeys []string `json:"public_keys"`
 	Threshold              uint64   `json:"t"`
 }
 
 type SignRequest struct {
-	SigningID              string   `json:"request_id"`
+	SignReqID              string   `json:"request_id"`
 	CompressedGenPubKeyHex string   `json:"public_key"`
 	CompressedPartiPubKeys []string `json:"participant_public_keys"`
 	Hash                   string   `json:"message"`
 }
 
 type Result struct {
-	RequestId     string `json:"request_id"`
+	MPCReqID      string `json:"request_id"`
 	Result        string `json:"result"`
 	RequestType   string `json:"request_type"`
 	RequestStatus string `json:"request_status"`
@@ -147,7 +147,7 @@ func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (
 	}
 
 	time.Sleep(time.Second * 2)
-	res, err = c.ResultDone(ctx, request.RequestId)
+	res, err = c.ResultDone(ctx, request.KeygenReqID)
 	return
 }
 
@@ -158,20 +158,20 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	}
 
 	time.Sleep(time.Second * 2)
-	res, err = c.ResultDone(ctx, request.SigningID)
+	res, err = c.ResultDone(ctx, request.SignReqID)
 	return
 }
 
-func (c *MpcClientImp) ResultDone(ctx context.Context, reqId string) (res *Result, err error) {
+func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
 	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		res, err = c.Result(ctx, reqId)
+		res, err = c.Result(ctx, mpcReqId)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		if res.RequestStatus != "DONE" {
-			c.log.Debug("Request not Done.", []logger.Field{{"reqId", reqId}}...)
-			return errors.Errorf("Request not DONE. ReqId: %q", reqId)
+			c.log.Debug("MPC request not Done.", []logger.Field{{"mpcReqId", mpcReqId}}...)
+			return errors.Errorf("MPC request not DONE. mpcReqId: %q", mpcReqId)
 		}
 		return nil
 	})
