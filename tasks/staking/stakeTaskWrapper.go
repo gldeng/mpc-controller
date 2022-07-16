@@ -86,6 +86,8 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
+	s.Logger.Debug("Issued exportTx from C-Chain", []logger.Field{{"exportTxCChain", exportId}}...)
+
 	// ImportTx
 	time.Sleep(time.Second * 10) // sleep to avoid error: "failed to get shared memory"
 
@@ -98,6 +100,8 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	s.Logger.Debug("Issued importTx to P-Chain", []logger.Field{{"importTxPChain", importId}}...)
 
 	// AddDelegatorTx
 	time.Sleep(time.Second * 10) // sleep to avoid error: "failed to get shared memory"
@@ -116,6 +120,8 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	s.Logger.Debug("Issued addDelegatorTx to P-Chain", []logger.Field{{"addDelegatorTxPChain", addDelegatorId}}...)
 
 	return []ids.ID{exportId, importId, addDelegatorId}, nil
 }
