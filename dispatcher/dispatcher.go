@@ -128,7 +128,7 @@ func (d *Dispatcher) run(ctx context.Context) {
 			var etMap = map[string]int{}
 			evtObjs := d.eventQueue.List()
 			for _, evtObj := range evtObjs {
-				et := reflect.TypeOf(evtObj.(EventObject).Event).String()
+				et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
 				etMap[et]++
 			}
 			d.eventLogger.Debug("Current events in queue", []logger.Field{
