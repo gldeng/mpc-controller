@@ -90,6 +90,7 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
+				eh.Logger.Debug("Receive a contract.MpcManagerExportUTXORequest event", []logger.Field{{"event", evt}}...)
 				transformedEvt := events.ExportUTXORequestEvent{
 					TxID:          evt.TxId,
 					GenPubKeyHash: evt.GenPubKey,
