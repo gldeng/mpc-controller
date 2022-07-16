@@ -9,6 +9,8 @@ import (
 // Events concerning staking
 
 type StakingTaskDoneEvent struct {
+	TaskID common.Hash // TxHash
+
 	ExportTxID       ids.ID
 	ImportTxID       ids.ID
 	AddDelegatorTxID ids.ID

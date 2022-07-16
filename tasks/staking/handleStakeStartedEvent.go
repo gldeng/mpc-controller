@@ -132,6 +132,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 
 		newEvt := events.StakingTaskDoneEvent{
+			TaskID: evt.Raw.TxHash,
+
 			ExportTxID:       ids[0],
 			ImportTxID:       ids[1],
 			AddDelegatorTxID: ids[2],
