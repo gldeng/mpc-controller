@@ -7,7 +7,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/port/issuer"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type Txs interface {
@@ -125,7 +124,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		{"issueOrder", issueOrder},
 		{"exportTx", exportTxId}}...)
 
-	time.Sleep(time.Second * 5)
+	//time.Sleep(time.Second * 5)
 
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()

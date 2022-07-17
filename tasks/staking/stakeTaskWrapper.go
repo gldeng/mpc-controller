@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // todo: consider refactoring with Template Method design pattern
@@ -97,8 +96,8 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 
 	s.Logger.Debug("Issued exportTx from C-Chain", []logger.Field{{"exportTxCChain", exportId}}...)
 
-	// ImportTx
-	time.Sleep(time.Second * 5) // sleep to avoid error: "failed to get shared memory"
+	//// ImportTx
+	//time.Sleep(time.Second * 5) // sleep to avoid error: "failed to get shared memory"
 
 	importTx, err := s.GetSignedImportTx()
 	if err != nil {
@@ -112,8 +111,8 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 
 	s.Logger.Debug("Issued importTx to P-Chain", []logger.Field{{"importTxPChain", importId}}...)
 
-	// AddDelegatorTx
-	time.Sleep(time.Second * 5) // sleep to avoid error: "failed to get shared memory"
+	//// AddDelegatorTx
+	//time.Sleep(time.Second * 5) // sleep to avoid error: "failed to get shared memory"
 
 	addDelegatorTx, err := s.GetSignedAddDelegatorTx()
 	if err != nil {
