@@ -121,6 +121,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						}
 
 						if ok {
+							eh.Logger.Debug("Casually hit an importTx when tracking stake UTXO", []logger.Field{{"txID", utxo.TxID}}...)
 							continue
 						}
 
