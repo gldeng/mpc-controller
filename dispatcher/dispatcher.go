@@ -68,6 +68,8 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen in
 		eventQueue: q,
 		eventMap:   make(map[string][]EventHandler),
 
+		enqueueDur: enqueueDur,
+
 		once:        new(sync.Once),
 		queueMu:     new(sync.Mutex),
 		subscribeMu: new(sync.Mutex),
