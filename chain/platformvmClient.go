@@ -48,6 +48,18 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 	return
 }
 
+func (c *PlatformvmClientWrapper) GetTx(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp []byte, err error) {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+		resp, err = c.Client.GetTx(ctx, txID, options...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to GetTx with platformvm.Client")
+			return err
+		}
+		return nil
+	})
+	return
+}
+
 func (c *PlatformvmClientWrapper) GetTxStatus(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp *platformvm.GetTxStatusResponse, err error) {
 	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
 		resp, err = c.Client.GetTxStatus(ctx, txID, options...)
