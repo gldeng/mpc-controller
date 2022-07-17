@@ -128,7 +128,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						continue
 					}
 
-					dur := rand.Intn(10000)
+					dur := rand.Intn(1000)
 					time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent reportUTXO can cause failure.
 
 					txHash, err := eh.reportUTXO(ctx, groupIdBytes, partiIndex, genPubKeyBytes, utxo.TxID, utxo.OutputIndex)

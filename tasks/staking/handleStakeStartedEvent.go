@@ -106,7 +106,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			StakeTask:         stakeTask,
 		}
 
-		//dur := rand.Intn(10000)
+		//dur := rand.Intn(1000)
 		//time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent SignTx can cause failure.
 
 		err = stakeTaskWrapper.SignTx(evtObj.Context)

@@ -146,7 +146,7 @@ func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (
 		return
 	}
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 	res, err = c.ResultDone(ctx, request.KeygenReqID)
 	return
 }
@@ -157,7 +157,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 		return
 	}
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 	res, err = c.ResultDone(ctx, request.SignReqID)
 	return
 }

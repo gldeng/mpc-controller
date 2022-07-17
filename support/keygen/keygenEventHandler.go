@@ -99,7 +99,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	}
 	myIndex := eh.participantInfoMap[events.PrefixParticipantInfo+"-"+eh.MyPubKeyHashHex+"-"+groupIdHex].Index
 
-	dur := rand.Intn(10000)
+	dur := rand.Intn(1000)
 	time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent reporting can cause failure.
 
 	err = eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)

@@ -42,7 +42,7 @@ func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatc
 		if myIndex == nil {
 			break
 		}
-		dur := rand.Intn(10000)
+		dur := rand.Intn(1000)
 		time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent joinRequest can cause failure.
 
 		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
