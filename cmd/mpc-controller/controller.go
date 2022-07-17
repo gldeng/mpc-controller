@@ -86,7 +86,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create dispatcher
-	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, queue.NewArrayQueue(1024), 1024)
+	// todo: consider config args, and values need to be tune for best performance and stabability
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, queue.NewArrayQueue(1024), 1024, time.Second*60)
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)

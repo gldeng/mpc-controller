@@ -47,9 +47,11 @@ type Channeller interface {
 type Dispatcher struct {
 	eventLogger logger.Logger
 
-	publishChan chan *EventObject
-	eventQueue  Queue
-	eventMap    map[string][]EventHandler
+	eventChan  chan *EventObject
+	eventQueue Queue
+	eventMap   map[string][]EventHandler
+
+	enqueueDur time.Duration
 
 	once        *sync.Once
 	queueMu     *sync.Mutex
@@ -58,13 +60,13 @@ type Dispatcher struct {
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
 // and runs a goroutine for receiving and publishing event objects.
-func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen int) *Dispatcher {
+func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen int, enqueueDur time.Duration) *Dispatcher {
 	dispatcher := &Dispatcher{
 		eventLogger: logger,
 
-		publishChan: make(chan *EventObject, bufLen),
-		eventQueue:  q,
-		eventMap:    make(map[string][]EventHandler),
+		eventChan:  make(chan *EventObject, bufLen),
+		eventQueue: q,
+		eventMap:   make(map[string][]EventHandler),
 
 		once:        new(sync.Once),
 		queueMu:     new(sync.Mutex),
@@ -100,55 +102,65 @@ func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 
 // Publish sends the received event object to underlying channel.
 // All event objects will be serialized in a queue and published later in FIFO order.
-func (p *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
+func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	select {
 	case <-ctx.Done():
 		return
-	case p.publishChan <- evtObj:
+	case d.eventChan <- evtObj:
+		et := reflect.TypeOf(evtObj.Event).String()
+		d.eventLogger.Info("Received an event", []logger.Field{
+			{"eventType", et},
+			{"eventNo", evtObj.EventNo},
+			{"eventID", evtObj.EventID},
+			{"eventValue", evtObj.Event},
+			{"eventChanLen", len(d.eventChan)},
+
+			//{"eventStep", evtObj.EventStep},
+
+			//{"parentEvtNo", evtObj.ParentEvtNo},
+			//{"parentEvtID", evtObj.ParentEvtID},
+
+			//{"rootEvtType", evtObj.RootEvtType},
+			//{"rootEvtID", evtObj.RootEvtID},
+			//{"rootEvtNo", evtObj.RootEvtNo},
+			//
+			//{"evtStreamNo", evtObj.EvtStreamNo},
+			//{"evtStreamID", evtObj.EvtStreamID},
+			//
+			//{"eventID", evtObj.EventID},
+			//{"createdBy", evtObj.CreatedBy},
+			//{"createdAt", evtObj.CreatedAt}}...
+		}...)
 	}
 }
 
 // Channel exposes the underlying channel for users to send event objects externally,
 // e.g. Dispatcher.Channel <- &myEventObject
 func (d *Dispatcher) Channel() chan *EventObject {
-	return d.publishChan
+	return d.eventChan
 }
 
 // run is a goroutine for receiving, enqueueing events.
 // It also regularly dequeues and publishes events every 500 milliseconds.
 func (d *Dispatcher) run(ctx context.Context) {
+	ticker := time.NewTicker(d.enqueueDur)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case evtObj := <-d.publishChan:
-			et := reflect.TypeOf(evtObj.Event).String()
-			d.eventLogger.Info("Received an event", []logger.Field{
-				{"eventType", et},
-				{"eventNo", evtObj.EventNo},
-				{"eventValue", evtObj.Event},
+		case <-ticker.C:
+			select {
+			case evtObj := <-d.eventChan:
+				et := reflect.TypeOf(evtObj.Event).String()
+				if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
+					d.enqueue(ctx, evtObj)
+				}
+			default:
 
-				//{"eventStep", evtObj.EventStep},
-
-				//{"parentEvtNo", evtObj.ParentEvtNo},
-				//{"parentEvtID", evtObj.ParentEvtID},
-
-				//{"rootEvtType", evtObj.RootEvtType},
-				//{"rootEvtID", evtObj.RootEvtID},
-				//{"rootEvtNo", evtObj.RootEvtNo},
-				//
-				//{"evtStreamNo", evtObj.EvtStreamNo},
-				//{"evtStreamID", evtObj.EvtStreamID},
-				//
-				//{"eventID", evtObj.EventID},
-				//{"createdBy", evtObj.CreatedBy},
-				//{"createdAt", evtObj.CreatedAt}}...
-			}...,
-			)
-			if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
-				d.enqueue(ctx, evtObj)
 			}
-		case <-time.Tick(time.Millisecond * 500):
+		case <-time.Tick(time.Millisecond * 100):
 			if !d.eventQueue.Empty() {
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
 					d.publish(ctx, evtObj)
