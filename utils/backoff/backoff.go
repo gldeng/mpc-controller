@@ -13,7 +13,7 @@ func ExponentialForever() backoff.Policy {
 		backoff.WithMaxRetries(0),
 		backoff.WithMinInterval(time.Millisecond*100),
 		backoff.WithMaxInterval(time.Second*1),
-		backoff.WithMultiplier(1.2),
+		backoff.WithMultiplier(1.1),
 		backoff.WithJitterFactor(0.05),
 	)
 	return p
