@@ -11,9 +11,9 @@ import (
 func ExponentialForever() backoff.Policy {
 	p := backoff.Exponential(
 		backoff.WithMaxRetries(0),
-		backoff.WithMinInterval(time.Second*5),
-		backoff.WithMaxInterval(time.Minute),
-		backoff.WithMultiplier(1.5),
+		backoff.WithMinInterval(time.Millisecond*500),
+		backoff.WithMaxInterval(time.Second*10),
+		backoff.WithMultiplier(1.2),
 		backoff.WithJitterFactor(0.05),
 	)
 
