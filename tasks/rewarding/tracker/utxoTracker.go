@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/dispatcher"
@@ -104,13 +105,25 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				for _, utxo := range utxos {
 					ok, err := eh.checkRewardUTXO(ctx, utxo.TxID)
 					if err != nil {
-						eh.Logger.Error("Failed to check reward UTXO for txID, which maybe returned by an atomic importTx to P-Chain, but not a result of addDelegatorTx", []logger.Field{
+						eh.Logger.Error("Failed to check reward UTXO for txID", []logger.Field{
 							{"txID", utxo.TxID},
 							{"error", err}}...)
 						continue
 					}
 
 					if !ok {
+						ok, err := eh.checkImportTx(ctx, utxo.TxID)
+						if err != nil {
+							eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
+								{"txID", utxo.TxID},
+								{"error", err}}...)
+							return
+						}
+
+						if ok {
+							continue
+						}
+
 						eh.Logger.Debug("No reward UTXO found for txID", []logger.Field{{"txID", utxo.TxID}}...)
 						continue
 					}
@@ -228,4 +241,20 @@ func (eh *UTXOTracker) checkRewardUTXO(ctx context.Context, txID ids.ID) (bool, 
 		return false, nil
 	}
 	return true, nil
+}
+
+func (eh *UTXOTracker) checkImportTx(ctx context.Context, txID ids.ID) (bool, error) {
+	txBytes, err := eh.PChainClient.GetTx(ctx, txID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to GetTx")
+	}
+	tx := &txs.Tx{}
+	if version, err := platformvm.Codec.Unmarshal(txBytes, tx); err != nil {
+		return false, errors.Wrapf(err, "error parsing tx, codec version:%v", version)
+	}
+	_, ok := tx.Unsigned.(*txs.ImportTx)
+	if ok {
+		return true, nil
+	}
+	return false, nil
 }
