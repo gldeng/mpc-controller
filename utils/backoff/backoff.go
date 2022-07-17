@@ -16,8 +16,19 @@ func ExponentialForever() backoff.Policy {
 		backoff.WithMultiplier(1.2),
 		backoff.WithJitterFactor(0.05),
 	)
-
 	return p
+}
+
+func ConstantForever(dur time.Duration) backoff.Policy {
+	p := backoff.Constant(
+		backoff.WithMaxRetries(0),
+		backoff.WithInterval(dur))
+	return p
+}
+
+func RetryFnConstantForever(log logger.Logger, ctx context.Context, dur time.Duration, fn func() error) error {
+	policy := ConstantForever(dur)
+	return RetryFn(log, ctx, policy, fn)
 }
 
 func RetryFnExponentialForever(log logger.Logger, ctx context.Context, fn func() error) error {
