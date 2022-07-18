@@ -57,21 +57,18 @@ func NewMpcClient(log logger.Logger, url string) (*MpcClientImp, error) {
 func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error {
 	normalized, err := crypto.NormalizePubKeys(request.CompressedPartiPubKeys)
 	if err != nil {
-		c.log.Error("Failed to normalize public keys", logger.Field{"error", err})
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to normalize public keys")
 	}
 	request.CompressedPartiPubKeys = normalized
 	payloadBytes, err := json.Marshal(request)
 	if err != nil {
-		c.log.Error("Failed to marshal KeygenRequest", logger.Field{"error", err})
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to marshal KeygenRequest")
 	}
 
 	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
 		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
-			c.log.Error("Failed to post keygen request", logger.Field{"error", err})
-			return errors.WithStack(err)
+			return errors.Wrapf(err, "failed to post keygen request")
 		}
 		return nil
 	})
@@ -86,15 +83,13 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error
 func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
 	payloadBytes, err := json.Marshal(request)
 	if err != nil {
-		c.log.Error("Failed to marshal SignRequest", logger.Field{"error", err})
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to marshal SignRequest")
 	}
 
 	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
 		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
-			c.log.Error("Failed to post sign request", logger.Field{"error", err})
-			return errors.WithStack(err)
+			return errors.Wrapf(err, "failed to post sign request")
 		}
 		return nil
 	})
@@ -114,8 +109,7 @@ func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error
 	err := backoff.RetryFnExponentialForever(c.log, ctx, func() error {
 		res_, err := http.Post(c.url+"/result/"+reqId, "application/json", payload)
 		if err != nil {
-			c.log.Error("Failed to post result request", logger.Field{"error", err})
-			return errors.WithStack(err)
+			return errors.Wrapf(err, "failed to post result request")
 		}
 		res = res_
 		return nil
@@ -130,15 +124,14 @@ func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error
 	body, _ := ioutil.ReadAll(res.Body)
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		c.log.Error("Failed to unmarshal response body", logger.Field{"error", err})
-		return nil, errors.WithStack(err)
-
+		return nil, errors.Wrapf(err, "failed to unmarshal response body")
 	}
 	return &result, nil
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Request and wait until it's DONE
+// todo: add retry times limit
 
 func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (res *Result, err error) {
 	err = c.Keygen(ctx, request)
@@ -146,7 +139,7 @@ func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (
 		return
 	}
 
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 5)
 	res, err = c.ResultDone(ctx, request.KeygenReqID)
 	return
 }
@@ -157,7 +150,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 		return
 	}
 
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 5)
 	res, err = c.ResultDone(ctx, request.SignReqID)
 	return
 }
@@ -166,11 +159,10 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
 		res, err = c.Result(ctx, mpcReqId)
 		if err != nil {
-			return errors.WithStack(err)
+			return errors.Wrapf(err, "failed to check result")
 		}
 
 		if res.RequestStatus != "DONE" {
-			c.log.Debug("MPC request not Done.", []logger.Field{{"mpcReqId", mpcReqId}}...)
 			return errors.Errorf("MPC request not DONE. mpcReqId: %q", mpcReqId)
 		}
 		return nil
