@@ -23,7 +23,9 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 			err = errors.Wrapf(err, "failed to IssueTx with evm.Client")
 			if strings.Contains(err.Error(), "insufficient funds") ||
 				strings.Contains(err.Error(), "tx has no imported inputs") ||
-				strings.Contains(err.Error(), "invalid nonce") {
+				strings.Contains(err.Error(), "invalid nonce") ||
+				strings.Contains(err.Error(), "invalid block due to conflicting atomic inputs") ||
+				strings.Contains(err.Error(), "due to: not found") {
 				return nil
 			}
 			return err
