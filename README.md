@@ -17,7 +17,7 @@ You can find test suites from `tests/Taskfile.yml`.
 - keystore to strength private key security
 - automatic panic recover
 - distributed trace, log and monitor
-- deal with casual error: invalid nonce
+- deal with casual error: invalid nonce and nonce misused
 - check and sync participant upon startup, there ere maybe groups created during mpc-controller downtime.
 - add mpc-controller version info
 - mechanism to check result from mpc-server and resume task on mpc-controller startup
@@ -28,4 +28,6 @@ You can find test suites from `tests/Taskfile.yml`.
 - restore data on startup
 - automate tracking balance of addresses that receive principal and reward.
 - take measures to deal with failed tasks
+- take measures to avoid double-spend, maybe introduce SPE(single-participant-execution) strategy or consensus
+- take measures to deal with package lost and disorder arrival
 - ...
