@@ -87,6 +87,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Create dispatcher
 	// todo: consider config args, and values need to be tune for best performance and stabability
+	// Issue: when enquenDur is large than 5 minutes, it won't print more log.
 	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, queue.NewArrayQueue(1024), 1024, time.Second*5)
 
 	// Get MpcManager contract address
