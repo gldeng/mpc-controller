@@ -111,11 +111,11 @@ func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	case d.eventChan <- evtObj:
 		et := reflect.TypeOf(evtObj.Event).String()
 		d.eventLogger.Info("Received an event", []logger.Field{
+			{"eventChanLen", len(d.eventChan)},
 			{"eventType", et},
 			{"eventNo", evtObj.EventNo},
 			{"eventID", evtObj.EventID},
 			{"eventValue", evtObj.Event},
-			{"eventChanLen", len(d.eventChan)},
 
 			//{"eventStep", evtObj.EventStep},
 
