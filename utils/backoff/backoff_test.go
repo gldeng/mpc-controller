@@ -13,7 +13,7 @@ import (
 )
 
 func TestExponentialForever(t *testing.T) {
-	p := ExponentialForever()
+	p := ExponentialPolicy(0, time.Second, time.Second*10)
 
 	flakyFunc := func() error {
 		return errors.New("failed to dial ...")
@@ -50,7 +50,7 @@ func TestExponentialForever(t *testing.T) {
 }
 
 func TestRetryFn(t *testing.T) {
-	p := ExponentialForever()
+	p := ExponentialPolicy(0, time.Second, time.Second*10)
 
 	type scenario struct {
 		name    string
@@ -107,7 +107,7 @@ func TestRetryFnExponentialForever(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
-			err := RetryFnExponentialForever(logger.Default(), ctx, scenario.fn)
+			err := RetryFnExponentialForever(logger.Default(), ctx, time.Second, time.Second*10, scenario.fn)
 			assert.True(t, err != nil == scenario.wantErr)
 		})
 	}

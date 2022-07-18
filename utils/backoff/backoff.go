@@ -8,33 +8,57 @@ import (
 	"time"
 )
 
-func ExponentialForever() backoff.Policy {
+func ConstantPolicy(maxRetries int, dur time.Duration) backoff.Policy {
+	p := backoff.Constant(
+		backoff.WithMaxRetries(maxRetries), // 0 for forever retry
+		backoff.WithInterval(dur))
+	return p
+}
+
+func RetryFnConstant(log logger.Logger, ctx context.Context, maxRetries int, dur time.Duration, fn func() error) error {
+	policy := ConstantPolicy(maxRetries, dur)
+	return RetryFn(log, ctx, policy, fn)
+}
+
+func RetryFnConstant10Times(log logger.Logger, ctx context.Context, dur time.Duration, fn func() error) error {
+	policy := ConstantPolicy(10, dur)
+	return RetryFn(log, ctx, policy, fn)
+}
+
+func RetryFnConstantForever(log logger.Logger, ctx context.Context, dur time.Duration, fn func() error) error { // handy function
+	policy := ConstantPolicy(0, dur)
+	return RetryFn(log, ctx, policy, fn)
+}
+
+// ----------
+
+func ExponentialPolicy(maxRetries int, minInterval, maxInterval time.Duration) backoff.Policy {
 	p := backoff.Exponential(
-		backoff.WithMaxRetries(0),
-		backoff.WithMinInterval(time.Millisecond*500),
-		backoff.WithMaxInterval(time.Second*5),
+		backoff.WithMaxRetries(maxRetries), // 0 for forever retry
+		backoff.WithMinInterval(minInterval),
+		backoff.WithMaxInterval(maxInterval),
 		backoff.WithMultiplier(1.5),
 		backoff.WithJitterFactor(0.05),
 	)
 	return p
 }
 
-func ConstantForever(dur time.Duration) backoff.Policy {
-	p := backoff.Constant(
-		backoff.WithMaxRetries(0),
-		backoff.WithInterval(dur))
-	return p
-}
-
-func RetryFnConstantForever(log logger.Logger, ctx context.Context, dur time.Duration, fn func() error) error {
-	policy := ConstantForever(dur)
+func RetryFnExponential(log logger.Logger, ctx context.Context, maxRetries int, minInterval, maxInterval time.Duration, fn func() error) error {
+	policy := ExponentialPolicy(maxRetries, minInterval, maxInterval)
 	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnExponentialForever(log logger.Logger, ctx context.Context, fn func() error) error {
-	policy := ExponentialForever()
+func RetryFnExponential10Times(log logger.Logger, ctx context.Context, minInterval, maxInterval time.Duration, fn func() error) error {
+	policy := ExponentialPolicy(10, minInterval, maxInterval)
 	return RetryFn(log, ctx, policy, fn)
 }
+
+func RetryFnExponentialForever(log logger.Logger, ctx context.Context, minInterval, maxInterval time.Duration, fn func() error) error { // handy function
+	policy := ExponentialPolicy(0, minInterval, maxInterval)
+	return RetryFn(log, ctx, policy, fn)
+}
+
+// ----------
 
 func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn func() error) error {
 	b := policy.Start(ctx)
