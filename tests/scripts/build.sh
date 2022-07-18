@@ -24,10 +24,6 @@ fi
 
 # Build mpc-server
 
-## Note: install libgmp-dev and libssl-dev before building mpc-server
-#sudo apt-get install libgmp-dev
-#sudo apt-get install libssl-dev
-
 cd ../mpc-server
 cd messenger
 if [ ! -d "target" ]; then
