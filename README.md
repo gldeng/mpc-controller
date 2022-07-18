@@ -30,4 +30,5 @@ You can find test suites from `tests/Taskfile.yml`.
 - take measures to deal with failed tasks
 - take measures to avoid double-spend, maybe introduce SPE(single-participant-execution) strategy or consensus
 - take measures to deal with package lost and disorder arrival
+- add RetryFnExponential to enable retry in limit number of times.
 - ...
