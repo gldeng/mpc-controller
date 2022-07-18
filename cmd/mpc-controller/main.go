@@ -1,19 +1,5 @@
 package main
 
-// todo: keystore to strength private key security
-// todo: automatic panic recover
-// todo: distributed trace, log and monitor
-// todo: deal with error: invalid nonce
-// todo: check and sync participant upon startup, there ere maybe groups created during mpc-controller downtime.
-// todo: add mpc-controller version info
-// todo: mechanism to check result from mpc-server and resume task on mpc-controller startup
-// todo: history even track for mpc-coordinator smart contract.
-// todo: log rotation with lumberjack: https://github.com/natefinch/lumberjack
-
-// todo: add main_test.go
-// todo: apply confluentinc/bincover: https://github.com/confluentinc/bincover
-// todo: restore data on startup
-
 import (
 	"context"
 	"fmt"

@@ -13,3 +13,18 @@ You can find test suites from `tests/Taskfile.yml`.
 - Run tests: `task tests:testSuiteName`, e.g., `task tests:initiateStake`, `task tests:initiateStakeLoop`
 - Check working directory: `cd $HOME/mpctest`
 - Tear down: `task tests:cleanup`
+## Todo List
+- keystore to strength private key security
+- automatic panic recover
+- distributed trace, log and monitor
+- deal with casual error: invalid nonce
+- check and sync participant upon startup, there ere maybe groups created during mpc-controller downtime.
+- add mpc-controller version info
+- mechanism to check result from mpc-server and resume task on mpc-controller startup
+- history even track for mpc-coordinator smart contract.
+- log rotation with lumberjack: https://github.com/natefinch/lumberjack
+- add main_test.go
+- apply confluentinc/bincover: https://github.com/confluentinc/bincover
+- restore data on startup
+- automate tracking balance of addresses that receive principal and reward.
+- ...
