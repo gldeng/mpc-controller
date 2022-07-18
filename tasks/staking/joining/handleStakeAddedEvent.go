@@ -74,7 +74,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 
 	var tx *types.Transaction
 
-	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
+	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		var err error
 		tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
 		if err != nil {

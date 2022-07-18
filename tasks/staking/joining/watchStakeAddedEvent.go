@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // Accept event: *events.ContractFiltererCreatedEvent
@@ -67,7 +68,7 @@ func (eh *StakeRequestAddedEventWatcher) subscribeStakeRequestAdded(ctx context.
 		eh.sub.Unsubscribe()
 	}
 
-	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
+	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
 			eh.Logger.Error("Failed to create MpcManagerFilterer", []logger.Field{{"error", err}}...)

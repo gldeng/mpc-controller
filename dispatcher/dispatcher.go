@@ -180,7 +180,7 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 
 	et := reflect.TypeOf(evtObj.Event).String()
 
-	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, func() error {
+	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		if !d.eventQueue.Full() {
 			d.eventQueue.Enqueue(evtObj)
 			return nil

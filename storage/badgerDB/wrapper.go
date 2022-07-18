@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type BadgerDB struct {
@@ -17,7 +18,7 @@ type BadgerDB struct {
 // Classic k-v storage
 
 func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
-	err = backoff.RetryFnExponentialForever(b.Logger, ctx, func() error {
+	err = backoff.RetryFnExponentialForever(b.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		err = b.Update(func(txn *badger.Txn) error {
 			err := txn.Set(key, val)
 			return errors.WithStack(err)
@@ -31,7 +32,7 @@ func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
 }
 
 func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error) {
-	err = backoff.RetryFnExponentialForever(b.Logger, ctx, func() error {
+	err = backoff.RetryFnExponentialForever(b.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		err = b.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(key)
 			if err != nil {

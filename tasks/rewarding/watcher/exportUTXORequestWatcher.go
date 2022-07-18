@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // Accept event: *events.ContractFiltererCreatedEvent
@@ -63,7 +64,7 @@ func (eh *ExportUTXORequestWatcher) subscribeExportUTXORequestEvent(ctx context.
 		eh.sub.Unsubscribe()
 	}
 
-	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, func() error {
+	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create MpcManagerFilterer for ExportUTXORequestWatcher")

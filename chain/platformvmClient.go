@@ -19,7 +19,7 @@ type PlatformvmClientWrapper struct {
 }
 
 func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, options ...rpc.Option) (txID ids.ID, err error) {
-	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		txID, err = c.Client.IssueTx(ctx, tx, options...)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to IssueTx with platformvm.Client")
@@ -49,7 +49,7 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 }
 
 func (c *PlatformvmClientWrapper) GetTx(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp []byte, err error) {
-	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		resp, err = c.Client.GetTx(ctx, txID, options...)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to GetTx with platformvm.Client")
@@ -61,7 +61,7 @@ func (c *PlatformvmClientWrapper) GetTx(ctx context.Context, txID ids.ID, option
 }
 
 func (c *PlatformvmClientWrapper) GetTxStatus(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp *platformvm.GetTxStatusResponse, err error) {
-	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		resp, err = c.Client.GetTxStatus(ctx, txID, options...)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to GetTxStatus with platformvm.Client")
@@ -73,7 +73,7 @@ func (c *PlatformvmClientWrapper) GetTxStatus(ctx context.Context, txID ids.ID, 
 }
 
 func (c *PlatformvmClientWrapper) AwaitTxDecided(ctx context.Context, txID ids.ID, freq time.Duration, options ...rpc.Option) (resp *platformvm.GetTxStatusResponse, err error) {
-	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		resp, err = c.Client.AwaitTxDecided(ctx, txID, freq, options...)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to AwaitTxDecided with platformvm.Client")
@@ -85,7 +85,7 @@ func (c *PlatformvmClientWrapper) AwaitTxDecided(ctx context.Context, txID ids.I
 }
 
 func (c *PlatformvmClientWrapper) GetRewardUTXOs(ctx context.Context, args *api.GetTxArgs, opts ...rpc.Option) (utxoBytes [][]byte, err error) {
-	backoff.RetryFnExponentialForever(c.Logger, ctx, func() error {
+	backoff.RetryFnExponentialForever(c.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
 		utxoBytes, err = c.Client.GetRewardUTXOs(ctx, args, opts...)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to get reward UTXOs for txID %q", args.TxID)

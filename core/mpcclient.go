@@ -65,7 +65,7 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error
 		return errors.Wrapf(err, "failed to marshal KeygenRequest")
 	}
 
-	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
+	err = backoff.RetryFnExponentialForever(c.log, ctx, time.Millisecond*100, time.Second*10, func() error {
 		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
 			return errors.Wrapf(err, "failed to post keygen request")
@@ -86,7 +86,7 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
 		return errors.Wrapf(err, "failed to marshal SignRequest")
 	}
 
-	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
+	err = backoff.RetryFnExponentialForever(c.log, ctx, time.Millisecond*100, time.Second*10, func() error {
 		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
 			return errors.Wrapf(err, "failed to post sign request")
@@ -106,7 +106,7 @@ func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error
 
 	var res *http.Response
 
-	err := backoff.RetryFnExponentialForever(c.log, ctx, func() error {
+	err := backoff.RetryFnExponentialForever(c.log, ctx, time.Millisecond*100, time.Second*10, func() error {
 		res_, err := http.Post(c.url+"/result/"+reqId, "application/json", payload)
 		if err != nil {
 			return errors.Wrapf(err, "failed to post result request")
@@ -156,7 +156,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 }
 
 func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
-	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
+	err = backoff.RetryFnExponentialForever(c.log, ctx, time.Millisecond*100, time.Second*10, func() error {
 		res, err = c.Result(ctx, mpcReqId)
 		if err != nil {
 			return errors.Wrapf(err, "failed to check result")
