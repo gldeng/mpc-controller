@@ -27,4 +27,5 @@ You can find test suites from `tests/Taskfile.yml`.
 - apply confluentinc/bincover: https://github.com/confluentinc/bincover
 - restore data on startup
 - automate tracking balance of addresses that receive principal and reward.
+- take measures to deal with failed tasks
 - ...
