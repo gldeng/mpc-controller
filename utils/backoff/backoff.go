@@ -62,21 +62,22 @@ func RetryFnExponentialForever(log logger.Logger, ctx context.Context, minInterv
 
 func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn func() error) error {
 	b := policy.Start(ctx)
-	var lastErr error
-	var lastRetryAt = time.Now()
-	var retryNum = 1
+	var errStack error
+	var startAt = time.Now()
+	var retryNum = 0
 	for backoff.Continue(b) {
-		err := fn()
+		err := fn() // todo: tell RetryFn whether continue retry, "fn func() (bool, error)", or just "fn func() bool"
 		if err == nil {
 			return nil
 		}
-		lastErr = err
-		log.Debug("Retry", []logger.Field{
-			{"error", err},
-			{"retryNum", retryNum},
-			{"retryAfter", time.Now().Sub(lastRetryAt).Seconds()}}...)
-		lastRetryAt = time.Now()
+		errStack = errors.WithStack(err)
+		//log.Debug("Retry", []logger.Field{
+		//	{"error", err},
+		//	{"retryNum", retryNum},
+		//	{"retryAfter", time.Now().Sub(startAt).Seconds()}}...)
+		//startAt = time.Now()
 		retryNum++
 	}
-	return errors.Wrapf(lastErr, "failed to retry")
+	retryDur := time.Now().Sub(startAt).Seconds()
+	return errors.Wrapf(errStack, "exited after retrying %v times in %v seconds", retryNum, retryDur)
 }
