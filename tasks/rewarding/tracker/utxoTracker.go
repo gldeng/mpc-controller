@@ -21,7 +21,6 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"math/big"
-	"math/rand"
 	"sync"
 	"time"
 )
@@ -128,9 +127,6 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						eh.Logger.Debug("No reward UTXO found for txID", []logger.Field{{"txID", utxo.TxID}}...)
 						continue
 					}
-
-					dur := rand.Intn(1000)
-					time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent reportUTXO can cause failure.
 
 					txHash, err := eh.reportUTXO(ctx, groupIdBytes, partiIndex, genPubKeyBytes, utxo.TxID, utxo.OutputIndex)
 					if err != nil {

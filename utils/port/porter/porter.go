@@ -124,8 +124,6 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		{"issueOrder", issueOrder},
 		{"exportTx", exportTxId}}...)
 
-	//time.Sleep(time.Second * 5)
-
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()
 	if err != nil {

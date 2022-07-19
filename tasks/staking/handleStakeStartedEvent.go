@@ -106,27 +106,14 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			StakeTask:         stakeTask,
 		}
 
-		//dur := rand.Intn(1000)
-		//time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent SignTx can cause failure.
-
 		err = stakeTaskWrapper.SignTx(evtObj.Context)
 		if err != nil {
 			eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
 			return
 		}
 
-		//time.Sleep(time.Millisecond * time.Duration(dur)) // sleep because concurrent IssueTx can cause failure.
-
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
-			//time.Sleep(time.Second * 5)
-			//newNonce, _ := eh.getNonce(evtObj.Context)
-			//if newNonce == nonce+1 { // todo: this strategy not always work, improve it
-			//	eh.Logger.Debug("stakeTask has been executed by other mpc-controller", []logger.Field{
-			//		{"error", err},
-			//		{"stakeTask", stakeTask}}...)
-			//	return
-			//}
 			eh.Logger.Error("Failed to issue tx", []logger.Field{
 				{"stakeTask", stakeTask},
 				{"error", err}}...)

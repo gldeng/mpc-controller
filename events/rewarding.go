@@ -32,20 +32,6 @@ type UTXOReportedEvent struct {
 	PartiIndex     *big.Int
 }
 
-//type ExportUTXORequestAddedEvent struct {
-//	TxID ids.ID
-//	PublicKeyHash    common.Hash
-//	TxHash           common.Hash
-//}
-
-//type JoinedExportUTXORequestEvent struct {
-//	GroupIDHex       string
-//	MyIndex          *big.Int
-//	CompressedGenPubKeyHex        string
-//	TxID ids.ID
-//	TxHash           common.Hash
-//}
-
 type ExportUTXORequestEvent struct {
 	TxID               ids.ID
 	OutputIndex        uint32         `copier:"must"`
