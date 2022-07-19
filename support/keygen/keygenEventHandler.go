@@ -162,7 +162,7 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 
 	var tx *types.Transaction
 
-	err = backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
 		var err error
 		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
 		if err != nil {

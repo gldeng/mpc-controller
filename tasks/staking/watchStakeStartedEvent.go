@@ -71,7 +71,7 @@ func (eh *StakeRequestStartedEventWatcher) subscribeStakeRequestStarted(ctx cont
 		eh.sub.Unsubscribe()
 	}
 
-	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
+	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Second, time.Second*10, func() error {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
 			eh.Logger.Error("Failed to create MpcManagerFilterer", []logger.Field{{"error", err}}...)

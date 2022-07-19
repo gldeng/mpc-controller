@@ -18,7 +18,7 @@ type RpcEthClientWrapper struct {
 }
 
 func (m *RpcEthClientWrapper) TransactionReceipt(ctx context.Context, txHash common.Hash) (r *types.Receipt, err error) {
-	err = backoff.RetryFnExponentialForever(m.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(m.Logger, ctx, time.Second, time.Second*10, func() error {
 		r, err = m.Client.TransactionReceipt(ctx, txHash)
 		if err != nil {
 			m.Error("Failed to query transaction receipt", logger.Field{"error", err})
@@ -31,7 +31,7 @@ func (m *RpcEthClientWrapper) TransactionReceipt(ctx context.Context, txHash com
 }
 
 func (m *RpcEthClientWrapper) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (nonce uint64, err error) {
-	err = backoff.RetryFnExponentialForever(m.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(m.Logger, ctx, time.Second, time.Second*10, func() error {
 		nonce, err = m.Client.NonceAt(ctx, account, blockNumber)
 		if err != nil {
 			m.Error("Failed to query nonce", logger.Field{"error", err})
@@ -44,7 +44,7 @@ func (m *RpcEthClientWrapper) NonceAt(ctx context.Context, account common.Addres
 }
 
 func (m *RpcEthClientWrapper) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (bl *big.Int, err error) {
-	err = backoff.RetryFnExponentialForever(m.Logger, ctx, time.Millisecond*100, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(m.Logger, ctx, time.Second, time.Second*10, func() error {
 		bl, err = m.Client.BalanceAt(ctx, account, blockNumber)
 		if err != nil {
 			m.Error("Failed to query balance", logger.Field{"error", err})
