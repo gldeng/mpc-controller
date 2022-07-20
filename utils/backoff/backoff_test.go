@@ -3,7 +3,6 @@ package backoff
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/logger"
 	"github.com/lestrrat-go/backoff/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -50,20 +49,20 @@ func TestExponentialForever(t *testing.T) {
 }
 
 func TestRetryFn(t *testing.T) {
-	p := ExponentialPolicy(0, time.Second, time.Second*10)
+	p := ExponentialPolicy(10, time.Second, time.Second*10)
 
 	type scenario struct {
 		name    string
-		fn      func() error
+		fn      func() (bool, error)
 		wantErr bool
 	}
 
-	flakyFuncErr := func() error {
-		return errors.New("failed to dial ...")
+	flakyFuncErr := func() (bool, error) {
+		return true, errors.New("failed to dial ...")
 	}
 
-	flakyFuncNil := func() error {
-		return nil
+	flakyFuncNil := func() (bool, error) {
+		return false, nil
 	}
 
 	scenarios := []scenario{
@@ -76,7 +75,7 @@ func TestRetryFn(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
-			err := RetryFn(logger.Default(), ctx, p, scenario.fn)
+			err := RetryFn(ctx, p, scenario.fn)
 			assert.True(t, err != nil == scenario.wantErr)
 		})
 	}
@@ -85,16 +84,16 @@ func TestRetryFn(t *testing.T) {
 func TestRetryFnExponentialForever(t *testing.T) {
 	type scenario struct {
 		name    string
-		fn      func() error
+		fn      func() (bool, error)
 		wantErr bool
 	}
 
-	flakyFuncErr := func() error {
-		return errors.New("failed to dial ...")
+	flakyFuncErr := func() (bool, error) {
+		return true, errors.New("failed to dial ...")
 	}
 
-	flakyFuncNil := func() error {
-		return nil
+	flakyFuncNil := func() (bool, error) {
+		return false, nil
 	}
 
 	scenarios := []scenario{
@@ -107,7 +106,7 @@ func TestRetryFnExponentialForever(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
-			err := RetryFnExponentialForever(logger.Default(), ctx, time.Second, time.Second*10, scenario.fn)
+			err := RetryFnExponentialForever(ctx, time.Second, time.Second*10, scenario.fn)
 			assert.True(t, err != nil == scenario.wantErr)
 		})
 	}
