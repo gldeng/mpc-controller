@@ -144,7 +144,6 @@ func (d *Dispatcher) Channel() chan *EventObject {
 }
 
 // run is a goroutine for receiving, enqueueing events.
-// It also regularly dequeues and publishes events every 500 milliseconds.
 func (d *Dispatcher) run(ctx context.Context) {
 	ticker := time.NewTicker(d.enqueueDur)
 	defer ticker.Stop()
