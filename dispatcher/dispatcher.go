@@ -53,6 +53,7 @@ type Dispatcher struct {
 	eventMap   map[string][]EventHandler
 
 	enqueueDur time.Duration
+	dequeueDur time.Duration
 
 	once        *sync.Once
 	queueMu     *sync.Mutex
@@ -61,15 +62,16 @@ type Dispatcher struct {
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
 // and runs a goroutine for receiving and publishing event objects.
-func NewDispatcher(ctx context.Context, logger logger.Logger, q Queue, bufLen int, enqueueDur time.Duration) *Dispatcher {
+func NewDispatcher(ctx context.Context, logger logger.Logger, evtQueue Queue, evtChanLen int, enqueueDur, dequeueDur time.Duration) *Dispatcher {
 	dispatcher := &Dispatcher{
 		eventLogger: logger,
 
-		eventChan:  make(chan *EventObject, bufLen),
-		eventQueue: q,
+		eventChan:  make(chan *EventObject, evtChanLen),
+		eventQueue: evtQueue,
 		eventMap:   make(map[string][]EventHandler),
 
 		enqueueDur: enqueueDur,
+		dequeueDur: dequeueDur,
 
 		once:        new(sync.Once),
 		queueMu:     new(sync.Mutex),
@@ -145,14 +147,16 @@ func (d *Dispatcher) Channel() chan *EventObject {
 
 // run is a goroutine for receiving, enqueueing events.
 func (d *Dispatcher) run(ctx context.Context) {
-	ticker := time.NewTicker(d.enqueueDur)
-	defer ticker.Stop()
+	enqueueTicker := time.NewTicker(d.enqueueDur)
+	defer enqueueTicker.Stop()
+	dequeueTicker := time.NewTicker(d.dequeueDur)
+	defer dequeueTicker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-enqueueTicker.C:
 			select {
 			case evtObj := <-d.eventChan:
 				et := reflect.TypeOf(evtObj.Event).String()
@@ -162,7 +166,7 @@ func (d *Dispatcher) run(ctx context.Context) {
 			default:
 
 			}
-		case <-time.Tick(time.Millisecond * 100):
+		case <-dequeueTicker.C:
 			if !d.eventQueue.Empty() {
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
 					d.publish(ctx, evtObj)
