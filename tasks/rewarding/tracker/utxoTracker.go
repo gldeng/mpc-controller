@@ -31,6 +31,7 @@ const (
 
 // Accept event: *events.ReportedGenPubKeyEvent
 
+// Emit event: *events.UTXOsFetchedEvent
 // Emit event: *events.UTXOReportedEvent
 
 type UTXOTracker struct {
@@ -74,32 +75,23 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for addr, evt := range eh.genPubKeyEvtObjMap {
-				utxos, err := eh.getUTXOs(ctx, addr)
+				rawUtxos, err := eh.getUTXOs(ctx, addr)
 				if err != nil {
 					eh.Logger.Error("Failed to get native UTXOs", []logger.Field{{"error", err}}...)
 					continue
 				}
 
-				if len(utxos) == 0 {
+				if len(rawUtxos) == 0 {
 					continue
 				}
 
-				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(utxos)
-				utxoFetchedEvt := &events.UTXOsFetchedEvent{
-					NativeUTXOs: utxos,
-					MpcUTXOs:    mpcUTXOs,
-				}
+				var filterUtxos []*avax.UTXO
+				reportedGenPubKey := evt.Event.(*events.ReportedGenPubKeyEvent)
+				groupIdBytes := bytes.HexTo32Bytes(reportedGenPubKey.GroupIdHex)
+				partiIndex := reportedGenPubKey.PartiIndex
+				genPubKeyBytes := bytes.HexToBytes(reportedGenPubKey.GenPubKeyHex)
 
-				copier.Copy(&utxoFetchedEvt, evt.Event.(*events.ReportedGenPubKeyEvent))
-
-				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
-				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
-
-				groupIdBytes := bytes.HexTo32Bytes(utxoFetchedEvt.GroupIdHex)
-				partiIndex := utxoFetchedEvt.PartiIndex
-				genPubKeyBytes := bytes.HexToBytes(utxoFetchedEvt.GenPubKeyHex)
-
-				for _, utxo := range utxos {
+				for _, utxo := range rawUtxos {
 					if _, ok := eh.reportedUTXOMap[utxo.TxID]; ok {
 						continue
 					}
@@ -120,6 +112,25 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						continue
 					}
 
+					filterUtxos = append(filterUtxos, utxo)
+				}
+
+				if len(filterUtxos) == 0 {
+					continue
+				}
+
+				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(filterUtxos)
+				utxoFetchedEvt := &events.UTXOsFetchedEvent{
+					NativeUTXOs: filterUtxos,
+					MpcUTXOs:    mpcUTXOs,
+				}
+
+				copier.Copy(&utxoFetchedEvt, reportedGenPubKey)
+
+				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
+				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
+
+				for _, utxo := range filterUtxos {
 					txHash, err := eh.reportUTXO(ctx, groupIdBytes, partiIndex, genPubKeyBytes, utxo.TxID, utxo.OutputIndex)
 					if err != nil {
 						eh.Logger.Error("Failed to report UTXO", []logger.Field{{"error", err}}...)
