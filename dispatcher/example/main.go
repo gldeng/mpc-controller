@@ -15,7 +15,7 @@ func main() {
 	defer cancel()
 	logger.DevMode = true
 	log := logger.Default()
-	d := dispatcher.NewDispatcher(ctx, log, queue.NewArrayQueue(1024), 1024)
+	d := dispatcher.NewDispatcher(ctx, log, queue.NewArrayQueue(1024), 1024, time.Second*5)
 
 	// Subscribe events to event handlers
 	d.Subscribe(&MessageEvent{}, &MessageShower{d})
