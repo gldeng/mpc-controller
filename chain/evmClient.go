@@ -17,7 +17,7 @@ type EvmClientWrapper struct {
 }
 
 func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID ids.ID, err error) {
-	backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
 		txID, err = c.Client.IssueTx(ctx, txBytes)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to IssueTx with evm.Client")
@@ -66,7 +66,7 @@ func (c *EvmClientWrapper) AwaitTxDecided(ctx context.Context, txID ids.ID, freq
 }
 
 func (c *EvmClientWrapper) GetAtomicTxStatus(ctx context.Context, txID ids.ID) (status evm.Status, err error) {
-	backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
 		status, err = c.Client.GetAtomicTxStatus(ctx, txID)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to GetAtomicTxStatus with evm.Client")

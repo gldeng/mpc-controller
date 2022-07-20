@@ -152,10 +152,9 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 	}
 }
 
-func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) ([]*avax.UTXO, error) {
+func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
 	var utxoBytesArr [][]byte
-	backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
-		var err error
+	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
 		utxoBytesArr, _, _, err = eh.PChainClient.GetUTXOs(ctx, []ids.ShortID{addr}, 0, addr, ids.ID{})
 		if err != nil {
 			return errors.Wrap(err, "failed to request native UTXOs")
@@ -163,7 +162,11 @@ func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) ([]*avax.
 		return nil
 	})
 
-	utxos, err := myAvax.ParseUTXOs(utxoBytesArr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get UTXOs")
+	}
+
+	utxos, err = myAvax.ParseUTXOs(utxoBytesArr)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse native UTXO bytes")
 	}
@@ -185,7 +188,7 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 
 	var tx *types.Transaction
 
-	backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
 		tx, err = transactor.ReportUTXO(eh.Signer, groupId, partiIndex, genPubKey, txID, outputIndex)
 		if err != nil {
 			err = errors.Wrap(err, "failed to ReportUTXO")
