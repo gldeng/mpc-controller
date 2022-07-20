@@ -17,6 +17,7 @@ type Queue interface {
 	Empty() bool
 	Full() bool
 	Count() int
+	Capacity() int
 }
 
 type Dispatcherrer interface {
@@ -180,13 +181,13 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 
 	et := reflect.TypeOf(evtObj.Event).String()
 
-	err := backoff.RetryFnExponentialForever(d.eventLogger, ctx, time.Second, time.Second*10, func() error {
+	err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
 		if !d.eventQueue.Full() {
 			d.eventQueue.Enqueue(evtObj)
-			return nil
+			return false, nil
 		}
 		d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
-		return errors.New("The event queue is full!")
+		return true, errors.Errorf("the event queue is full. eventCount:%v!", d.eventQueue.Count())
 	})
 
 	if err != nil {
@@ -196,18 +197,21 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 			{"eventValue", evtObj.Event}}...)
 	}
 
-	var evtStatMap = map[string]int{}
-	var ets []string
-	evtObjs := d.eventQueue.List()
-	for _, evtObj := range evtObjs {
-		et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
-		ets = append(ets, et)
-		evtStatMap[et]++
+	if float64(d.eventQueue.Count()) > float64(d.eventQueue.Capacity())*0.8 {
+		var evtStatMap = map[string]int{}
+		var ets []string
+		evtObjs := d.eventQueue.List()
+		for _, evtObj := range evtObjs {
+			et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
+			ets = append(ets, et)
+			evtStatMap[et]++
+		}
+		d.eventLogger.Warn("Too many events in queue", []logger.Field{
+			{"totalCount", d.eventQueue.Count()},
+			{"EventStats", evtStatMap},
+			{"EventQueue", ets},
+		}...)
 	}
-	d.eventLogger.Debug("Current events in queue", []logger.Field{
-		{"totalCount", d.eventQueue.Count()},
-		{"EventStats", evtStatMap},
-		{"EventQueue", ets}}...)
 }
 
 // publish concurrently run event handlers to the same event type.
