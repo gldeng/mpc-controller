@@ -82,7 +82,6 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				}
 
 				if len(utxos) == 0 {
-					//eh.Logger.Debug("Found no native UTXOs", []logger.Field{{"pChainAddress", addr}}...)
 					continue
 				}
 
