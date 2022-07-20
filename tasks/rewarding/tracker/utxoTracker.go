@@ -154,23 +154,22 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 
 func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
 	var utxoBytesArr [][]byte
-	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		utxoBytesArr, _, _, err = eh.PChainClient.GetUTXOs(ctx, []ids.ShortID{addr}, 0, addr, ids.ID{})
 		if err != nil {
-			return errors.Wrap(err, "failed to request native UTXOs")
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to get UTXOs")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get UTXOs")
+		return
 	}
 
 	utxos, err = myAvax.ParseUTXOs(utxoBytesArr)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse native UTXO bytes")
 	}
-
 	var utxosFiltered []*avax.UTXO
 	for _, utxo := range utxos {
 		if utxo != nil {
@@ -187,31 +186,25 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 	}
 
 	var tx *types.Transaction
-
-	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		tx, err = transactor.ReportUTXO(eh.Signer, groupId, partiIndex, genPubKey, txID, outputIndex)
 		if err != nil {
-			err = errors.Wrap(err, "failed to ReportUTXO")
-			return err
+			return true, errors.WithStack(err)
 		}
-
-		time.Sleep(time.Second * 3)
-
+		time.Sleep(time.Second * 5)
 		var rcpt *types.Receipt
 		rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
-
 		if rcpt.Status != 1 {
-			err = errors.Errorf("failed to report UTXO, tx receipt:%v", rcpt)
-			return err
+			return true, errors.Errorf("tx receipt status != 1")
 		}
-
 		newTxHash := tx.Hash()
 		txHash = &newTxHash
-		return nil
+		return false, nil
 	})
+	err = errors.Wrapf(err, "failed to report UTXO, txID:%v, outputIndex:%v", bytes.Bytes32ToHex(txID), outputIndex)
 	return
 }
 

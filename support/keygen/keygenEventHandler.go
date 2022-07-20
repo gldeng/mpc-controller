@@ -162,27 +162,24 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 
 	var tx *types.Transaction
 
-	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		var err error
 		tx, err = transactor.ReportGeneratedKey(eh.Signer, groupId, myIndex, genPubKey)
 		if err != nil {
-			return errors.Wrapf(err, "failed to report genereated public key. GenPubKey: %v, PartiIndex: %v", bytes.BytesToHex(genPubKey), myIndex)
+			return true, errors.WithStack(err)
 		}
-
-		time.Sleep(time.Second * 3)
-
+		time.Sleep(time.Second * 5)
 		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
 
 		if rcpt.Status != 1 {
-			return errors.New("Transaction failed")
+			return true, errors.Errorf("tx receipt stauts != 1")
 		}
-
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to report generated key. genPubKey:%v, partiIndex:%v", bytes.BytesToHex(genPubKey), myIndex)
 	return
 }
 
