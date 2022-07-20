@@ -27,8 +27,8 @@ import (
 
 const (
 	// todo: to tune and make it long enough for consequential exporting reward process completed
-	// to avoid double check on the same UTXO data set.
-	checkUTXOInterval = time.Second * 1
+	// to avoid double check and report the same UTXO data set.
+	checkUTXOInterval = time.Minute * 10
 )
 
 // Accept event: *events.ReportedGenPubKeyEvent
