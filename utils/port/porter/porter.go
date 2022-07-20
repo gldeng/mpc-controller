@@ -55,14 +55,10 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	p.Logger.Debug("Signing exportTx", []logger.Field{{}}...)
-
 	exportTxSig, err := p.SignExportTx(ctx, exportTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
-
-	p.Logger.Debug("Signed exportTx", []logger.Field{{}}...)
 
 	ok, err := p.VerifySig(exportTxHash, exportTxSig)
 	if err != nil {
@@ -85,14 +81,10 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	p.Logger.Debug("Signing importTx", []logger.Field{{}}...)
-
 	importTxSig, err := p.SignImportTx(ctx, importTxHash)
 	if err != nil {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
-
-	p.Logger.Debug("Signed importTx", []logger.Field{{}}...)
 
 	ok, err = p.VerifySig(importTxHash, importTxSig)
 	if err != nil {
@@ -115,14 +107,10 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	exportTxId, issueOrder, err := p.IssueExportTx(ctx, exportTxBytes)
+	exportTxId, _, err := p.IssueExportTx(ctx, exportTxBytes)
 	if err != nil {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
-
-	p.Debug("Issued exportTx", []logger.Field{
-		{"issueOrder", issueOrder},
-		{"exportTx", exportTxId}}...)
 
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()
@@ -130,14 +118,10 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
-	importTxId, issueOrder, err := p.IssueImportTx(ctx, importTxBytes)
+	importTxId, _, err := p.IssueImportTx(ctx, importTxBytes)
 	if err != nil {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueImportTx")
 	}
-
-	p.Debug("Issued importTx", []logger.Field{
-		{"issueOrder", issueOrder},
-		{"importTx", importTxId}}...)
 
 	return [2]ids.ID{exportTxId, importTxId}, nil
 }

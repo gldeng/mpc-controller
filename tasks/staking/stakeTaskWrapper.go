@@ -25,14 +25,10 @@ func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
-	s.Logger.Debug("Signing exportTx", []logger.Field{{}}...)
-
 	sig, err := s.SignExportTx(ctx, txHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	s.Logger.Debug("Signed exportTx", []logger.Field{{}}...)
 
 	err = s.SetExportTxSig(sig)
 	if err != nil {
@@ -45,14 +41,10 @@ func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
-	s.Logger.Debug("Signing importTx", []logger.Field{{}}...)
-
 	sig, err = s.SignImportTx(ctx, txHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	s.Logger.Debug("Signed importTx", []logger.Field{{}}...)
 
 	err = s.SetImportTxSig(sig)
 	if err != nil {
@@ -65,14 +57,10 @@ func (s *StakeTaskWrapper) SignTx(ctx context.Context) error {
 		return errors.WithStack(err)
 	}
 
-	s.Logger.Debug("Signing addDelegatorTx", []logger.Field{{}}...)
-
 	sig, err = s.SignAddDelegatorTx(ctx, txHash)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	s.Logger.Debug("Signed addDelegatorTx", []logger.Field{{}}...)
 
 	err = s.SetAddDelegatorTxSig(sig)
 	if err != nil {
@@ -94,8 +82,6 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	s.Logger.Debug("Issued exportTx from C-Chain", []logger.Field{{"exportTxCChain", exportId}}...)
-
 	importTx, err := s.GetSignedImportTx()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -106,8 +92,6 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	s.Logger.Debug("Issued importTx to P-Chain", []logger.Field{{"importTxPChain", importId}}...)
-
 	addDelegatorTx, err := s.GetSignedAddDelegatorTx()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -117,8 +101,6 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-
-	s.Logger.Debug("Issued addDelegatorTx to P-Chain", []logger.Field{{"addDelegatorTxPChain", addDelegatorId}}...)
 
 	return []ids.ID{exportId, importId, addDelegatorId}, nil
 }
