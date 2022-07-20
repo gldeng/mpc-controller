@@ -81,7 +81,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 			return true, errors.WithStack(err)
 		}
 
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 5)
 
 		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
