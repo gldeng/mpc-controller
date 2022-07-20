@@ -28,7 +28,7 @@ import (
 const (
 	// todo: to tune and make it long enough for consequential exporting reward process completed
 	// to avoid double check on the same UTXO data set.
-	checkUTXOInterval = time.Minute * 5
+	checkUTXOInterval = time.Second * 1
 )
 
 // Accept event: *events.ReportedGenPubKeyEvent
@@ -82,7 +82,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				}
 
 				if len(utxos) == 0 {
-					eh.Logger.Debug("Found no native UTXOs", []logger.Field{{"pChainAddress", addr}}...)
+					//eh.Logger.Debug("Found no native UTXOs", []logger.Field{{"pChainAddress", addr}}...)
 					continue
 				}
 
@@ -102,29 +102,19 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				partiIndex := utxoFetchedEvt.PartiIndex
 				genPubKeyBytes := bytes.HexToBytes(utxoFetchedEvt.GenPubKeyHex)
 				for _, utxo := range utxos {
-					ok, err := eh.checkRewardUTXO(ctx, utxo.TxID)
+					ok, err := eh.checkImportTx(ctx, utxo.TxID)
 					if err != nil {
-						eh.Logger.Error("Failed to check reward UTXO for txID", []logger.Field{
+						eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
 							{"txID", utxo.TxID},
 							{"error", err}}...)
 						continue
 					}
 
-					if !ok {
-						ok, err := eh.checkImportTx(ctx, utxo.TxID)
-						if err != nil {
-							eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
-								{"txID", utxo.TxID},
-								{"error", err}}...)
-							return
-						}
-
-						if ok {
-							eh.Logger.Debug("Casually hit an importTx when tracking stake UTXO", []logger.Field{{"txID", utxo.TxID}}...)
-							continue
-						}
-
-						eh.Logger.Debug("No reward UTXO found for txID", []logger.Field{{"txID", utxo.TxID}}...)
+					// An address dedicated to delegate stake may receive three kinds of native UTXO on P-Chain,
+					// namely atomic importTx UTXO, principal UTXO and reward UTXO after stake period end.
+					// ImportTx UTXOs serves for addDelegatorTx in our program and should be excluded from exporting its avax to C-Chain
+					// todo: confirm whether there other potential UTXO that should be excluded, too.
+					if ok {
 						continue
 					}
 
