@@ -18,21 +18,22 @@ type BadgerDB struct {
 // Classic k-v storage
 
 func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
-	err = backoff.RetryFnExponentialForever(b.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
 		err = b.Update(func(txn *badger.Txn) error {
 			err := txn.Set(key, val)
 			return errors.WithStack(err)
 		})
 		if err != nil {
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
-	return errors.WithStack(err)
+	err = errors.Wrapf(err, "failed to set k-v. key:%v, val:%v", string(key), string(val))
+	return
 }
 
 func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error) {
-	err = backoff.RetryFnExponentialForever(b.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
 		err = b.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(key)
 			if err != nil {
@@ -45,9 +46,12 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 			})
 			return errors.WithStack(err)
 		})
-		return errors.WithStack(err)
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+		return false, nil
 	})
-	err = errors.WithStack(err)
+	err = errors.Wrapf(err, "failed to get value by key. key:%v", string(key))
 	return
 }
 

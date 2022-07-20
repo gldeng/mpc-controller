@@ -68,23 +68,20 @@ func (eh *StakeRequestAddedEventWatcher) subscribeStakeRequestAdded(ctx context.
 		eh.sub.Unsubscribe()
 	}
 
-	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
-			eh.Logger.Error("Failed to create MpcManagerFilterer", []logger.Field{{"error", err}}...)
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
 
 		newSub, err := filter.WatchStakeRequestAdded(nil, sink, pubKeys)
 		if err != nil {
-			eh.Logger.Error("Failed to watch StakeRequestAdded event", []logger.Field{{"error", err}}...)
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
-
 		eh.sub = newSub
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to subscribe StakeRequestAdded event")
 	return err
 }
 

@@ -70,42 +70,39 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 	}
 
 	var tx *types.Transaction
-
-	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		var err error
 		tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
 		if err != nil {
 			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
 				tx = nil
-				eh.Logger.Info("Cannot join anymore", []logger.Field{{"reqId", req.RequestId}, {"myIndex", myIndex}}...)
-				return nil
+				return false, nil
 			}
-			return errors.Wrapf(err, "failed to join request. ReqId: %v, PartiIndex: %v", req.RequestId, myIndex)
+			return true, errors.WithStack(err)
 		}
 
 		time.Sleep(time.Second * 3)
 
 		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
 
 		if rcpt.Status != 1 {
-			return errors.New("Transaction failed")
+			return true, errors.New("tx receipt status != 1")
 		}
 
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to join request. reqID:%v, partiIndex:%v", req.RequestId, myIndex)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return
 	}
-
 	if tx != nil {
 		txHash_ := tx.Hash()
-		return &txHash_, nil
+		txHash = &txHash_
+		return
 
 	}
-
-	return nil, err
+	return
 }

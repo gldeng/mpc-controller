@@ -54,7 +54,7 @@ func NewMpcClient(log logger.Logger, url string) (*MpcClientImp, error) {
 // ---------------------------------------------------------------------------------------------------------------------
 // Request
 
-func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error {
+func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err error) {
 	normalized, err := crypto.NormalizePubKeys(request.CompressedPartiPubKeys)
 	if err != nil {
 		return errors.Wrapf(err, "failed to normalize public keys")
@@ -65,68 +65,58 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error
 		return errors.Wrapf(err, "failed to marshal KeygenRequest")
 	}
 
-	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
-			return errors.Wrapf(err, "failed to post keygen request")
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
-
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
+	err = errors.Wrapf(err, "failed to post keygen request")
+	return
 }
 
-func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
+func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err error) {
 	payloadBytes, err := json.Marshal(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal SignRequest")
 	}
 
-	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
-			return errors.Wrapf(err, "failed to post sign request")
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
+	err = errors.Wrapf(err, "failed to post sign request")
 
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
+	return
 }
 
-func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error) {
+func (c *MpcClientImp) Result(ctx context.Context, reqId string) (res *Result, err error) {
 	payload := strings.NewReader("")
-
-	var res *http.Response
-
-	err := backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() error {
-		res_, err := http.Post(c.url+"/result/"+reqId, "application/json", payload)
+	var res_ *http.Response
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+		res_, err = http.Post(c.url+"/result/"+reqId, "application/json", payload)
 		if err != nil {
-			return errors.Wrapf(err, "failed to post result request")
+			return true, errors.WithStack(err)
 		}
-		res = res_
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to post result request")
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return
 	}
-	defer res.Body.Close()
 
-	var result Result
-	body, _ := ioutil.ReadAll(res.Body)
-	err = json.Unmarshal(body, &result)
+	defer res_.Body.Close()
+	body, _ := ioutil.ReadAll(res_.Body)
+	err = json.Unmarshal(body, res)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal response body")
+		err = errors.Wrapf(err, "failed to unmarshal response body")
+		return
 	}
-	return &result, nil
+	return
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -156,17 +146,16 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 }
 
 func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
-	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		res, err = c.Result(ctx, mpcReqId)
 		if err != nil {
-			return errors.Wrapf(err, "failed to check result")
+			return true, errors.WithStack(err)
 		}
-
 		if res.RequestStatus != "DONE" {
-			return errors.Errorf("MPC request not DONE. mpcReqId: %q", mpcReqId)
+			return true, nil
 		}
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to request mpc result or mpc not completed. mpcReqID:%q", mpcReqId)
 	return
 }

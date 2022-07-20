@@ -63,22 +63,20 @@ func (eh *ExportUTXORequestWatcher) subscribeExportUTXORequestEvent(ctx context.
 	if eh.sub != nil {
 		eh.sub.Unsubscribe()
 	}
-
-	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create MpcManagerFilterer for ExportUTXORequestWatcher")
+			return true, errors.WithStack(err)
 		}
 
 		newSub, err := filter.WatchExportUTXORequest(nil, sink, pubKeys)
 		if err != nil {
-			return errors.Wrapf(err, "failed to watch ExportUTXORequest for ExportUTXORequestWatcher")
+			return true, errors.WithStack(err)
 		}
-
 		eh.sub = newSub
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to subscribe ExportUTXORequest event")
 	return err
 }
 

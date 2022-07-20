@@ -58,29 +58,26 @@ func (eh *KeygenRequestAddedEventWatcher) doWatchKeygenRequestAdded(ctx context.
 	}
 }
 
-func (eh *KeygenRequestAddedEventWatcher) subscribeKeygenRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupIds [][32]byte) error {
+func (eh *KeygenRequestAddedEventWatcher) subscribeKeygenRequestAdded(ctx context.Context, sink chan<- *contract.MpcManagerKeygenRequestAdded, groupIds [][32]byte) (err error) {
 	if eh.sub != nil {
 		eh.sub.Unsubscribe()
 	}
-
-	err := backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
-			eh.Logger.Error("Failed to create MpcManagerFilterer", []logger.Field{{"error", err}}...)
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
 
 		newSub, err := filter.WatchKeygenRequestAdded(nil, sink, groupIds)
 		if err != nil {
-			eh.Logger.Error("Failed to watch KeygenRequestAdded event", []logger.Field{{"error", err}}...)
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
 
 		eh.sub = newSub
-		return nil
+		return false, nil
 	})
-
-	return err
+	err = errors.Wrapf(err, "failed to subscribe KeygenRequestAdded event")
+	return
 }
 
 func (eh *KeygenRequestAddedEventWatcher) watchKeygenRequestAdded(ctx context.Context) {

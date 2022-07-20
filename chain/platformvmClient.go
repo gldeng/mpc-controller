@@ -19,19 +19,17 @@ type PlatformvmClientWrapper struct {
 }
 
 func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, options ...rpc.Option) (txID ids.ID, err error) {
-	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		txID, err = c.Client.IssueTx(ctx, tx, options...)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to IssueTx with platformvm.Client")
 			if strings.Contains(err.Error(), "failed to read consumed UTXO") && strings.Contains(err.Error(), "due to: not found") {
-				return nil
+				return false, errors.WithStack(err)
 			}
-			return err
+			return true, errors.WithStack(err)
 		}
-
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to Issue tx")
 	if err != nil {
 		return
 	}
@@ -42,58 +40,55 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 		return
 	}
 	if resp.Status.String() != "Committed" {
-		err = errors.Errorf("transaction failed with platformvm.Client. txID:%q, status:%q, reason:%q", txID, resp.Status.String(), resp.Reason)
+		err = errors.Errorf("issued transaction failed. txID:%q, status:%q, reason:%q", txID, resp.Status.String(), resp.Reason)
 	}
-
 	return
 }
 
 func (c *PlatformvmClientWrapper) GetTx(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp []byte, err error) {
-	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		resp, err = c.Client.GetTx(ctx, txID, options...)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to GetTx with platformvm.Client")
-			return err
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
+	err = errors.Wrapf(err, "failed to get tx")
 	return
 }
 
 func (c *PlatformvmClientWrapper) GetTxStatus(ctx context.Context, txID ids.ID, options ...rpc.Option) (resp *platformvm.GetTxStatusResponse, err error) {
-	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		resp, err = c.Client.GetTxStatus(ctx, txID, options...)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to GetTxStatus with platformvm.Client")
-			return err
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
+	err = errors.Wrapf(err, "failed to get tx status")
 	return
 }
 
 func (c *PlatformvmClientWrapper) AwaitTxDecided(ctx context.Context, txID ids.ID, freq time.Duration, options ...rpc.Option) (resp *platformvm.GetTxStatusResponse, err error) {
-	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		resp, err = c.Client.AwaitTxDecided(ctx, txID, freq, options...)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to AwaitTxDecided with platformvm.Client")
-			return err
+			return true, errors.WithStack(err)
 		}
-		return nil
+		return false, nil
 	})
+	err = errors.Wrapf(err, "failed to await tx decided")
 	return
 }
 
 func (c *PlatformvmClientWrapper) GetRewardUTXOs(ctx context.Context, args *api.GetTxArgs, opts ...rpc.Option) (utxoBytes [][]byte, err error) {
-	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		utxoBytes, err = c.Client.GetRewardUTXOs(ctx, args, opts...)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to get reward UTXOs for txID %q", args.TxID)
-			return err
+			return true, errors.WithStack(err)
 		}
-
-		return nil
+		return false, nil
 	})
-
+	err = errors.Wrapf(err, "failed to get reward UTXOs for txID %q", args.TxID)
 	return
 }

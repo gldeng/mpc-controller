@@ -66,29 +66,26 @@ func (eh *StakeRequestStartedEventWatcher) doWatchStakeRequestStarted(ctx contex
 	}
 }
 
-func (eh *StakeRequestStartedEventWatcher) subscribeStakeRequestStarted(ctx context.Context, sink chan<- *contract.MpcManagerStakeRequestStarted, pubKeys [][]byte) error {
+func (eh *StakeRequestStartedEventWatcher) subscribeStakeRequestStarted(ctx context.Context, sink chan<- *contract.MpcManagerStakeRequestStarted, pubKeys [][]byte) (err error) {
 	if eh.sub != nil {
 		eh.sub.Unsubscribe()
 	}
 
-	err := backoff.RetryFnExponentialForever(eh.Logger, ctx, time.Second, time.Second*10, func() error {
+	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
 		filter, err := contract.NewMpcManagerFilterer(eh.ContractAddr, eh.filterer)
 		if err != nil {
-			eh.Logger.Error("Failed to create MpcManagerFilterer", []logger.Field{{"error", err}}...)
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
 
 		newSub, err := filter.WatchStakeRequestStarted(nil, sink, pubKeys)
 		if err != nil {
-			eh.Logger.Error("Failed to watch StakeRequestStarted event", []logger.Field{{"error", err}}...)
-			return errors.WithStack(err)
+			return true, errors.WithStack(err)
 		}
-
 		eh.sub = newSub
-		return nil
+		return false, nil
 	})
-
-	return err
+	err = errors.Wrapf(err, "failed to subscribe StakeRequestStarted event")
+	return
 }
 
 func (eh *StakeRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.Context) {
