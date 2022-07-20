@@ -26,9 +26,7 @@ import (
 )
 
 const (
-	// todo: to tune and make it long enough for consequential exporting reward process completed
-	// to avoid double check and report the same UTXO data set.
-	checkUTXOInterval = time.Minute * 10
+	checkUTXOInterval = time.Second * 1
 )
 
 // Accept event: *events.ReportedGenPubKeyEvent
@@ -48,6 +46,7 @@ type UTXOTracker struct {
 	once               sync.Once
 	lock               sync.Mutex
 	genPubKeyEvtObjMap map[ids.ShortID]*dispatcher.EventObject // todo: persistence and restore
+	reportedUTXOMap    map[ids.ID]uint32                       // todo: persistence and restore, or cache
 }
 
 func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -55,6 +54,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	case *events.ReportedGenPubKeyEvent:
 		eh.once.Do(func() {
 			eh.genPubKeyEvtObjMap = make(map[ids.ShortID]*dispatcher.EventObject)
+			eh.reportedUTXOMap = make(map[ids.ID]uint32)
 			go func() {
 				eh.getAndReportUTXOs(ctx)
 			}()
@@ -101,6 +101,10 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				partiIndex := utxoFetchedEvt.PartiIndex
 				genPubKeyBytes := bytes.HexToBytes(utxoFetchedEvt.GenPubKeyHex)
 				for _, utxo := range utxos {
+					if _, ok := eh.reportedUTXOMap[utxo.TxID]; ok {
+						continue
+					}
+
 					ok, err := eh.checkImportTx(ctx, utxo.TxID)
 					if err != nil {
 						eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
@@ -122,6 +126,8 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						eh.Logger.Error("Failed to report UTXO", []logger.Field{{"error", err}}...)
 						continue
 					}
+
+					eh.reportedUTXOMap[utxo.TxID] = utxo.OutputIndex
 
 					utxoReportedEvt := &events.UTXOReportedEvent{
 						TxID:           utxo.TxID,
