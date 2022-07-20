@@ -111,7 +111,8 @@ func (c *MpcClientImp) Result(ctx context.Context, reqId string) (res *Result, e
 
 	defer res_.Body.Close()
 	body, _ := ioutil.ReadAll(res_.Body)
-	err = json.Unmarshal(body, res)
+	res = new(Result)
+	err = json.Unmarshal(body, &res)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to unmarshal response body")
 		return

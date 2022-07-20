@@ -114,7 +114,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
-			eh.Logger.Error("Failed to issue tx", []logger.Field{
+			eh.Logger.Error("Failed to perform stake task", []logger.Field{
 				{"stakeTask", stakeTask},
 				{"error", err}}...)
 			return
