@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"math/big"
 	"sync"
@@ -83,10 +84,20 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 					continue
 				}
 
-				reportedGenPubEvt := evt.Event.(*events.ReportedGenPubKeyEvent)
-				groupIdBytes := bytes.HexTo32Bytes(reportedGenPubEvt.GroupIdHex)
-				partiIndex := reportedGenPubEvt.PartiIndex
-				genPubKeyBytes := bytes.HexToBytes(reportedGenPubEvt.GenPubKeyHex)
+				mpcUTXOs := myAvax.MpcUTXOsFromUTXOs(utxos)
+				utxoFetchedEvt := &events.UTXOsFetchedEvent{
+					NativeUTXOs: utxos,
+					MpcUTXOs:    mpcUTXOs,
+				}
+
+				copier.Copy(&utxoFetchedEvt, evt.Event.(*events.ReportedGenPubKeyEvent))
+
+				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
+				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
+
+				groupIdBytes := bytes.HexTo32Bytes(utxoFetchedEvt.GroupIdHex)
+				partiIndex := utxoFetchedEvt.PartiIndex
+				genPubKeyBytes := bytes.HexToBytes(utxoFetchedEvt.GenPubKeyHex)
 
 				for _, utxo := range utxos {
 					if _, ok := eh.reportedUTXOMap[utxo.TxID]; ok {
@@ -125,7 +136,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						GroupIDBytes:   groupIdBytes,
 						PartiIndex:     partiIndex,
 					}
-					eh.Publisher.Publish(ctx, dispatcher.NewRootEventObject("UTXOTracker", utxoReportedEvt, ctx))
+					eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(utxoFetchedEvtObj, "UTXOTracker", utxoReportedEvt, ctx))
 				}
 			}
 			eh.lock.Unlock()
