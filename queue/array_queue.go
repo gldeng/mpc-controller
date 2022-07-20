@@ -83,6 +83,10 @@ func (q *ArrayQueue) Count() int {
 	return len(q.q)
 }
 
+func (q *ArrayQueue) Capacity() int {
+	return q.maxLen
+}
+
 func (q *ArrayQueue) Empty() bool {
 	q.mu.RLock()
 	defer q.mu.RUnlock()
