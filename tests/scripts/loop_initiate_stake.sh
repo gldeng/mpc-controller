@@ -12,6 +12,6 @@ do
     sleep 30
     venom run tests/testsuites/initiateStake.yml
     LOOP_INITIATE_STAKE=$((LOOP_INITIATE_STAKE+1))
-    echo Looped initiateStake request times: $LOOP_INITIATE_STAKE
+    echo Looped initiateStake at $(date +%Y-%m-%d/%H:%M:%S), total times: $LOOP_INITIATE_STAKE
     sleep 300
 done
