@@ -20,6 +20,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"golang.org/x/sync/errgroup"
@@ -74,6 +75,7 @@ func (c *MpcController) Run(ctx context.Context) error {
 func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Parse config
 	config := config.ParseFile(c.String(configFile))
+	pss := c.String(password)
 
 	// Create logger
 	logger.DevMode = config.EnableDevMode
@@ -95,6 +97,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Create mpcClient
 	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
+
+	// Decrypt private key
+	config.ControllerKey = decryptKey(config.ControllerId, pss, config.ControllerKey)
 
 	// Parse private myPrivKey
 	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
@@ -257,4 +262,13 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 		config.GasFixed,
 	)
 	return networkCtx
+}
+
+func decryptKey(id, pss, keyHex string) string {
+	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(keyHex))
+	if err != nil {
+		err = errors.Wrapf(err, "failed to decrypt keyHex for %v", id)
+		panic(fmt.Sprintf("%+v", err))
+	}
+	return string(keyBytes)
 }
