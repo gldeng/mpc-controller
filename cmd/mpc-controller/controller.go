@@ -75,6 +75,7 @@ func (c *MpcController) Run(ctx context.Context) error {
 func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Parse config
 	config := config.ParseFile(c.String(configFile))
+	pss := c.String(password)
 
 	// Create logger
 	logger.DevMode = config.EnableDevMode
@@ -98,7 +99,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
 
 	// Decrypt private key
-	config.ControllerKey = decryptKey(config.ControllerId, config.ControllerKey)
+	config.ControllerKey = decryptKey(config.ControllerId, pss, config.ControllerKey)
 
 	// Parse private myPrivKey
 	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
@@ -263,14 +264,7 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 	return networkCtx
 }
 
-func decryptKey(id, keyHex string) string {
-	fmt.Printf("Please enter keyHex password for %v:", id)
-	var pss string
-	_, err := fmt.Scanln(&pss) // todo: hide input for more security
-	if err != nil {
-		err = errors.Wrapf(err, "failed to read from stdin")
-		panic(fmt.Sprintf("%+v", err))
-	}
+func decryptKey(id, pss, keyHex string) string {
 	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(keyHex))
 	if err != nil {
 		err = errors.Wrapf(err, "failed to decrypt keyHex for %v", id)

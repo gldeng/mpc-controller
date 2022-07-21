@@ -13,6 +13,7 @@ import (
 
 const (
 	configFile = "configFile"
+	password   = "password"
 )
 
 func RunMpcController(c *cli.Context) error {
@@ -46,6 +47,11 @@ func main() {
 				Name:     configFile,
 				Required: true,
 				Usage:    "The config file path for mpc-controller",
+			},
+			&cli.StringFlag{
+				Name:     password,
+				Required: true,
+				Usage:    "The password to decrypt mpc-controller key",
 			},
 		},
 		Action: RunMpcController,
