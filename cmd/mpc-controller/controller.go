@@ -263,18 +263,18 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 	return networkCtx
 }
 
-func decryptKey(id, key string) string {
-	fmt.Printf("Please enter key password for %v:", id)
+func decryptKey(id, keyHex string) string {
+	fmt.Printf("Please enter keyHex password for %v:", id)
 	var pss string
 	_, err := fmt.Scanln(&pss) // todo: hide input for more security
 	if err != nil {
 		err = errors.Wrapf(err, "failed to read from stdin")
 		panic(fmt.Sprintf("%+v", err))
 	}
-	plainKey, err := keystore.Decrypt(pss, key)
+	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(keyHex))
 	if err != nil {
-		err = errors.Wrapf(err, "failed to decrypt key for %v", id)
+		err = errors.Wrapf(err, "failed to decrypt keyHex for %v", id)
 		panic(fmt.Sprintf("%+v", err))
 	}
-	return plainKey
+	return string(keyBytes)
 }
