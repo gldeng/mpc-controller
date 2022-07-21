@@ -1,35 +1,36 @@
 package keystore
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+	"github.com/tidwall/secret"
+)
 
 var (
+	ErrEncrypt = errors.New("encrypt failed")
 	ErrDecrypt = errors.New("decrypt failed")
 )
 
-func Encrypt(plaintext string) (pss, ciphertext string) {
-	pss = randomPass()
-	ciphertext = doEncrypt(pss, plaintext)
-	return
+func Encrypt(key string, data []byte) []byte {
+	encryptBytes, _ := doEncrypt(key, data)
+	return encryptBytes
 }
 
-func Decrypt(pss, ciphertext string) (plaintext string, err error) {
-	return doDecrypt(pss, ciphertext)
+func Decrypt(key string, data []byte) ([]byte, error) {
+	return doDecrypt(key, data)
 }
 
-// todo: enhance security of password generation
-func randomPass() string {
-	return "QrfV2_PsW"
-}
-
-// todo: concrete implementation with safe crypto algorithm
-func doEncrypt(pass, plaintext string) (ciphertext string) {
-	return plaintext
-}
-
-// todo: concrete implementation with safe crypto algorithm
-func doDecrypt(pss, ciphertext string) (plaintext string, err error) {
-	if pss != "QrfV2_PsW" {
-		return "", errors.WithStack(ErrDecrypt)
+func doEncrypt(key string, data []byte) ([]byte, error) {
+	bytes, err := secret.Encrypt(key, data)
+	if err != nil {
+		return nil, errors.WithStack(ErrEncrypt)
 	}
-	return ciphertext, nil
+	return bytes, nil
+}
+
+func doDecrypt(key string, data []byte) ([]byte, error) {
+	bytes, err := secret.Decrypt(key, data)
+	if err != nil {
+		return nil, errors.Wrapf(ErrDecrypt, err.Error())
+	}
+	return bytes, nil
 }

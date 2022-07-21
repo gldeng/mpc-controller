@@ -18,6 +18,7 @@ require (
 	github.com/swaggest/rest v0.2.29
 	github.com/swaggest/swgui v1.4.5
 	github.com/swaggest/usecase v1.1.3
+	github.com/tidwall/secret v0.1.0
 	github.com/urfave/cli/v2 v2.10.3
 	go.uber.org/zap v1.21.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
