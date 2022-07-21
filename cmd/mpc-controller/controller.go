@@ -20,6 +20,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"golang.org/x/sync/errgroup"
@@ -95,6 +96,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Create mpcClient
 	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
+
+	// Decrypt private key
+	config.ControllerKey = decryptKey(config.ControllerId, config.ControllerKey)
 
 	// Parse private myPrivKey
 	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
@@ -257,4 +261,20 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 		config.GasFixed,
 	)
 	return networkCtx
+}
+
+func decryptKey(id, key string) string {
+	fmt.Printf("Please enter key password for %v:", id)
+	var pss string
+	_, err := fmt.Scanln(&pss) // todo: hide input for more security
+	if err != nil {
+		err = errors.Wrapf(err, "failed to read from stdin")
+		panic(fmt.Sprintf("%+v", err))
+	}
+	plainKey, err := keystore.Decrypt(pss, key)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to decrypt key for %v", id)
+		panic(fmt.Sprintf("%+v", err))
+	}
+	return plainKey
 }
