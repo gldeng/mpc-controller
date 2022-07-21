@@ -28,5 +28,8 @@ func doEncrypt(pass, plaintext string) (ciphertext string) {
 
 // todo: concrete implementation with safe crypto algorithm
 func doDecrypt(pss, ciphertext string) (plaintext string, err error) {
+	if pss != "QrfV2_PsW" {
+		return "", errors.WithStack(ErrDecrypt)
+	}
 	return ciphertext, nil
 }
