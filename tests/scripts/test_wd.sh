@@ -12,4 +12,5 @@ cd $LAST_TEST_WD
 
 mkdir -p avalanchego
 mkdir -p mpc-server
+mkdir -p mpc-server-mock
 mkdir -p mpc-controller

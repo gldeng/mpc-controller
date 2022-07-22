@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 mkdir -p $HOME/mpctest
-
 mkdir -p $HOME/mpctest/mpc-controller
+mkdir -p $HOME/mpctest/mpc-server-mock
 
 if [ ! -d "$HOME/mpctest/avalanchego" ]; then
   git clone git@github.com:ava-labs/avalanchego.git $HOME/mpctest/avalanchego
