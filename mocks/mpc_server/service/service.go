@@ -8,7 +8,11 @@ import (
 	"net/http"
 )
 
-func ListenAndServe(port string) {
+func ListenAndServe(port string, participants, threshold int) {
+	// Set group info
+	usecases.Participants = participants
+	usecases.Threshold = threshold
+
 	s := web.DefaultService()
 
 	// Init API documentation schema.
