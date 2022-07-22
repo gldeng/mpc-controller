@@ -17,7 +17,7 @@ testcases:
         assertions:
           - result.content ShouldNotBeEmpty
 
-  - name: Create a new group of three participants with threshold 1
+  - name: Create a new group of 7 participants with threshold 4
     steps:
       - script: cast send --rpc-url {{.C_CHAIN_RPC_URL}} --from {{.ROLE_DEFAULT_ADMIN}} --private-key {{.ROLE_DEFAULT_ADMIN_PK}} {{.readMpcManagerAddress.content}} "createGroup(bytes[],uint256)" {{.MPC_PLAYER_PUBKEYS}} 4
         assertions: # todo: to improve assertion with getGroup, plus check ParticipantAdded event, both of which should be reflected in mpc-controller.
