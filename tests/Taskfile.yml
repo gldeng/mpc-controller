@@ -8,8 +8,8 @@ tasks:
       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/initiateStake.yml
       - cmd: bash ./tests/scripts/kill.sh
         ignore_error: true
-      - bash ./tests/scripts/clone.sh
-      - bash ./tests/scripts/build.sh
+      - bash ./tests/scripts/clone_with_mpc_server_mock.sh
+      - bash ./tests/scripts/build_with_mpc_server_mock.sh
       - bash ./tests/scripts/test_wd.sh
       - bash ./tests/scripts/start_avalanche.sh
       - bash ./tests/scripts/start_mpc-server_mock.sh

@@ -45,14 +45,3 @@ if [ ! -d "target" ]; then
 fi
 
 cd $LAST_WD
-
-# Build mpc-server mock
-
-if [ ! -f "$HOME/mpctest/mpc-server-mock/mpc_server" ]; then
-  echo "Start building mpc-server-mock..."
-  cd ./tests/mocks/mpc_server/
-  go clean
-  go build -o mpc-server-mock
-  mv mpc-server-mock $HOME/mpctest/mpc-server-mock/
-  cd $LAST_WD
-fi
