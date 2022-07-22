@@ -7,6 +7,8 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/port/issuer"
 	"github.com/pkg/errors"
+	"math/rand"
+	"time"
 )
 
 type Txs interface {
@@ -100,6 +102,9 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 	if err != nil {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to set importTx signature")
 	}
+
+	n := rand.Intn(10000)
+	time.Sleep(time.Millisecond * time.Duration(n)) // reduce concurrent conflict
 
 	// Issue ExportTx
 	exportTxBytes, err := p.SignedExportTxBytes()
