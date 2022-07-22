@@ -10,6 +10,6 @@ You can find test suites from `tests/Taskfile.yml`.
 - Install library dependencies: `sudo apt install gcc-multilib libgmp-dev libssl-dev`
   (required on some Ubuntu OS).
 - Install toolchain dependencies:  [Task](https://github.com/go-task/task), [Venom](https://github.com/ovh/venom),  [Foundry](https://github.com/foundry-rs/foundry), [Golang](https://go.dev/), [Rust](https://www.rust-lang.org/)
-- Run tests: `task tests:testSuiteName`, e.g., `task tests:initiateStake`, `task tests:initiateStakeLoop`
+- Run tests: `task tests:testSuiteName`, e.g., `task tests:initiateStake`, `task tests:initiateStakeLoop`. Especially you can also run tests with mpc-server-mock, e.g., `task tests:initiateStakeWithMpcServerMock`, `task tests:initiateStakeLoopWithMpcServerMock`
 - Check working directory: `cd $HOME/mpctest`
 - Tear down: `task tests:cleanup`
