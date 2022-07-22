@@ -52,7 +52,7 @@ if [ ! -f "$HOME/mpctest/mpc-server-mock/mpc_server" ]; then
   echo "Start building mpc-server-mock..."
   cd ./tests/mocks/mpc_server/
   go clean
-  go build
-  mv mpc_server $HOME/mpctest/mpc-server-mock/
+  go build -o mpc-server-mock
+  mv mpc-server-mock $HOME/mpctest/mpc-server-mock/
   cd $LAST_WD
 fi
