@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/mocks/mpc_server/service"
+	"github.com/avalido/mpc-controller/tests/mocks/mpc_server/service"
 )
 
 func main() {
