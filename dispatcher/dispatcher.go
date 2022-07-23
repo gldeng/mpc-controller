@@ -112,6 +112,14 @@ func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	case <-ctx.Done():
 		return
 	case d.eventChan <- evtObj:
+		d.eventLogger.Debug("An event en-channelled", []logger.Field{{"chanLen", len(d.eventChan)}}...)
+		if float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8 {
+			d.eventLogger.Warn("Too many events in event channel", []logger.Field{
+				{"chanLen", len(d.eventChan)},
+				{"chanCap", cap(d.eventChan)},
+			}...)
+		}
+
 		//et := reflect.TypeOf(evtObj.Event).String()
 		//d.eventLogger.Info("Received an event", []logger.Field{
 		//	{"eventChanLen", len(d.eventChan)},
@@ -200,6 +208,7 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 			{"eventValue", evtObj.Event}}...)
 	}
 
+	d.eventLogger.Debug("An event enqueued", []logger.Field{{"queueCount", d.eventQueue.Count()}}...)
 	if float64(d.eventQueue.Count()) > float64(d.eventQueue.Capacity())*0.8 {
 		var evtStatMap = map[string]int{}
 		var ets []string
@@ -209,10 +218,10 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 			ets = append(ets, et)
 			evtStatMap[et]++
 		}
-		d.eventLogger.Warn("Too many events in queue", []logger.Field{
-			{"totalCount", d.eventQueue.Count()},
+		d.eventLogger.Warn("Too many events in event queue", []logger.Field{
+			{"queueCount", d.eventQueue.Count()},
 			{"EventStats", evtStatMap},
-			{"EventQueue", ets},
+			//{"EventQueue", ets},
 		}...)
 	}
 }
