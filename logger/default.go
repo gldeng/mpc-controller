@@ -6,12 +6,15 @@ import (
 	"time"
 )
 
-var DefaultLogger Logger
-
 var DevMode bool
 
 // Default return a Logger right depending on go.uber.org/zap Logger.
 func Default() Logger {
+	return DefaultWithCallerSkip(1)
+}
+
+// DefaultWithCallerSkip is same as Default except caller skip can be specified.
+func DefaultWithCallerSkip(skip int) Logger {
 	var logger *uberZap.Logger
 	var logConfig uberZap.Config
 
@@ -19,14 +22,13 @@ func Default() Logger {
 		logConfig = uberZap.NewDevelopmentConfig()
 		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
 		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
+		logger, _ = logConfig.Build(uberZap.AddCallerSkip(skip))
 	} else {
 		logConfig = uberZap.NewProductionConfig()
 		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
-		logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
+		logger, _ = logConfig.Build(uberZap.AddCallerSkip(skip))
 	}
-	DefaultLogger = NewZap(logger)
-	return DefaultLogger
+	return NewZap(logger)
 }
 
 // A UTC variation of ZapCore.ISO8601TimeEncoder with nanosecond precision
