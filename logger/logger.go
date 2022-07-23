@@ -25,3 +25,21 @@ type Logger interface {
 
 	With(fields ...Field) Logger
 }
+
+// StdLogger declares standard logging methods
+type StdLogger interface {
+	Debugf(string, ...interface{})
+	Infof(string, ...interface{})
+
+	Warnf(string, ...interface{})
+	WarnOnErrorf(error, string, ...interface{})
+	WarnOnNotOkf(bool, string, ...interface{})
+
+	Errorf(string, ...interface{})
+	ErrorOnErrorf(error, string, ...interface{})
+	ErrorOnNotOkf(bool, string, ...interface{})
+
+	Fatalf(string, ...interface{})
+	FatalOnErrorf(error, string, ...interface{})
+	FatalOnNotOkf(bool, string, ...interface{})
+}
