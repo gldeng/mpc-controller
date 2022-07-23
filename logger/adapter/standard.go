@@ -3,6 +3,7 @@ package adapter
 import (
 	"fmt"
 	"github.com/avalido/mpc-controller/logger"
+	"strings"
 )
 
 var _ logger.StdLogger = (*StdLoggerAdapter)(nil)
@@ -12,45 +13,56 @@ type StdLoggerAdapter struct {
 }
 
 func (l *StdLoggerAdapter) Debugf(format string, a ...interface{}) {
-	l.Debug(fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.Debug(msg)
 }
 
 func (l *StdLoggerAdapter) Infof(format string, a ...interface{}) {
-	l.Info(fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.Info(msg)
 }
 
 func (l *StdLoggerAdapter) Warnf(format string, a ...interface{}) {
-	l.Warn(fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.Warn(msg)
 }
 
 func (l *StdLoggerAdapter) WarnOnErrorf(err error, format string, a ...interface{}) {
-	l.WarnOnError(err, fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.WarnOnError(err, msg)
 }
 
 func (l *StdLoggerAdapter) WarnOnNotOkf(ok bool, format string, a ...interface{}) {
-	l.WarnOnNotOk(ok, fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.WarnOnNotOk(ok, msg)
 }
 
 func (l *StdLoggerAdapter) Errorf(format string, a ...interface{}) {
-	l.Error(fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.Error(msg)
 }
 
 func (l *StdLoggerAdapter) ErrorOnErrorf(err error, format string, a ...interface{}) {
-	l.ErrorOnError(err, fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.ErrorOnError(err, msg)
 }
 
 func (l *StdLoggerAdapter) ErrorOnNotOkf(ok bool, format string, a ...interface{}) {
-	l.ErrorOnNotOk(ok, fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.ErrorOnNotOk(ok, msg)
 }
 
 func (l *StdLoggerAdapter) Fatalf(format string, a ...interface{}) {
-	l.Fatalf(fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.Fatalf(msg)
 }
 
 func (l *StdLoggerAdapter) FatalOnErrorf(err error, format string, a ...interface{}) {
-	l.FatalOnError(err, fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.FatalOnError(err, msg)
 }
 
 func (l *StdLoggerAdapter) FatalOnNotOkf(ok bool, format string, a ...interface{}) {
-	l.FatalOnNotOk(ok, fmt.Sprintf(format, a...))
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.FatalOnNotOk(ok, msg)
 }
