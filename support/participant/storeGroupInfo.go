@@ -85,4 +85,5 @@ func (g *GroupInfoStorer) publishStoredEvent(ctx context.Context, key string, gr
 	}
 
 	g.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "GroupInfoStorer", &newEvt, parentEvtObj.Context))
+	g.Logger.Info("Group created.", logger.Field{"GroupInfoStoredEvent", newEvt})
 }
