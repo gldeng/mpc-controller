@@ -17,21 +17,26 @@ func Default() Logger {
 
 	if DevMode {
 		logConfig = uberZap.NewDevelopmentConfig()
-		logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
+		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
 		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
 	} else {
 		logConfig = uberZap.NewProductionConfig()
-		logConfig.EncoderConfig.EncodeTime = iso8601UTCTimeEncoder
+		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
 		logger, _ = logConfig.Build(uberZap.AddCallerSkip(1))
 	}
 	DefaultLogger = NewZap(logger)
 	return DefaultLogger
 }
 
-// A UTC variation of ZapCore.ISO8601TimeEncoder with millisecond precision
+// A UTC variation of ZapCore.ISO8601TimeEncoder with microsecond precision
 func iso8601UTCTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Local().Format("2006-01-02T15:04:05.000Z"))
+	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000000Z"))
+}
+
+// A Local variation of ZapCore.ISO8601TimeEncoder with microsecond precision
+func iso8601LocalTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	enc.AppendString(t.Local().Format("2006-01-02T15:04:05.000000Z"))
 }
 
 func Debug(msg string, fields ...Field) {
