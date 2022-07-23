@@ -119,7 +119,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
-			switch errors.Cause(err).(type) {
+			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 			case *chain.ErrTypInsufficientFunds:
 				// todo: further handling
 			case *chain.ErrTypInvalidNonce:
