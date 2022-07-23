@@ -119,9 +119,14 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 	ids, err := doExportUTXO(ctx, &args)
 	if err != nil {
-		eh.Logger.Error("Failed to export UTXO", []logger.Field{
-			{"error", err},
-			{"exportUTXORequestEvent", exportUTXOReqEvt}}...)
+		switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+		case *chain.ErrTypNotFound:
+			// todo: further handling
+		default:
+			eh.Logger.Error("Failed to export UTXO", []logger.Field{
+				{"error", err},
+				{"exportUTXORequestEvent", exportUTXOReqEvt}}...)
+		}
 		return
 	}
 

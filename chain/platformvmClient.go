@@ -22,10 +22,13 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		txID, err = c.Client.IssueTx(ctx, tx, options...)
 		if err != nil {
-			if strings.Contains(err.Error(), "failed to read consumed UTXO") && strings.Contains(err.Error(), "due to: not found") {
-				return false, errors.WithStack(err)
+			errMsg := err.Error()
+			switch {
+			case strings.Contains(errMsg, ErrMsgNotFound):
+				return false, errors.WithStack(&ErrTypNotFound{Cause: err})
+			default:
+				return true, errors.WithStack(err) // todo: exploring more concrete error types
 			}
-			return true, errors.WithStack(err)
 		}
 		return false, nil
 	})
