@@ -138,6 +138,13 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		ImportedTxID: ids[1],
 	}
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "ExportUTXORequestWatcher", newEvt, evtObj.Context))
+
+	switch utxo.OutputIndex {
+	case 0:
+		eh.Logger.Info("Principal UTXO Exported", logger.Field{"UTXOExportedEvent", newEvt})
+	case 1:
+		eh.Logger.Info("Reward UTXO Exported", logger.Field{"UTXOExportedEvent", newEvt})
+	}
 }
 
 type Args struct {
