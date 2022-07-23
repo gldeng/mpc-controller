@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-#task tests:initiateStake
-
 LOOP_INITIATE_STAKE=0
 
 echo Starting loop initiateStake request
