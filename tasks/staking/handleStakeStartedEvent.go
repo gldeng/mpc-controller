@@ -14,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
+	"math/rand"
+	"time"
 )
 
 type Cache interface {
@@ -112,11 +114,27 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
+		n := rand.Intn(10000)
+		time.Sleep(time.Millisecond * time.Duration(n)) // reduce concurrent conflict
+
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
-			eh.Logger.Error("Failed to perform stake task", []logger.Field{
-				{"stakeTask", stakeTask},
-				{"error", err}}...)
+			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+			case *chain.ErrTypInsufficientFunds:
+				// todo: further handling
+			case *chain.ErrTypInvalidNonce:
+				// todo: further handling
+			case *chain.ErrTypConflictAtomicInputs:
+				// todo: further handling
+			case *chain.ErrTypTxHasNoImportedInputs:
+				// todo: further handling
+			case *chain.ErrTypNotFound:
+				// todo: further handling
+			default:
+				eh.Logger.Error("Failed to perform stake task", []logger.Field{
+					{"stakeTask", stakeTask},
+					{"error", err}}...)
+			}
 			return
 		}
 
