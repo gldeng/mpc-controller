@@ -1,16 +1,28 @@
 package adapter
 
 import (
+	"fmt"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/dgraph-io/badger/v3"
 )
 
-var _ badger.Logger = (*BadgerDBLoggerAdapter)(nil)
+var _ logger.BadgerDBLogger = (*BadgerDBLoggerAdapter)(nil)
 
 type BadgerDBLoggerAdapter struct {
-	logger.StdLogger
+	logger.Logger
+}
+
+func (l *BadgerDBLoggerAdapter) Debugf(format string, a ...interface{}) {
+	l.Debug(fmt.Sprintf(format, a...))
+}
+
+func (l *BadgerDBLoggerAdapter) Infof(format string, a ...interface{}) {
+	l.Info(fmt.Sprintf(format, a...))
 }
 
 func (l *BadgerDBLoggerAdapter) Warningf(format string, a ...interface{}) {
-	l.Warnf(format, a...)
+	l.Warn(fmt.Sprintf(format, a...))
+}
+
+func (l *BadgerDBLoggerAdapter) Errorf(format string, a ...interface{}) {
+	l.Error(fmt.Sprintf(format, a...))
 }
