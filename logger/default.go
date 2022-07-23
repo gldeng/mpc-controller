@@ -29,14 +29,14 @@ func Default() Logger {
 	return DefaultLogger
 }
 
-// A UTC variation of ZapCore.ISO8601TimeEncoder with microsecond precision
+// A UTC variation of ZapCore.ISO8601TimeEncoder with nanosecond precision
 func iso8601UTCTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000000Z"))
+	enc.AppendString(t.UTC().Format("2006-01-02T15:04:05.000000000Z"))
 }
 
-// A Local variation of ZapCore.ISO8601TimeEncoder with microsecond precision
+// A Local variation of ZapCore.ISO8601TimeEncoder with nanosecond precision
 func iso8601LocalTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Local().Format("2006-01-02T15:04:05.000000Z"))
+	enc.AppendString(t.Local().Format("2006-01-02T15:04:05.000000000Z"))
 }
 
 func Debug(msg string, fields ...Field) {
