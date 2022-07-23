@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
 mkdir -p $HOME/mpctest
-
 mkdir -p $HOME/mpctest/mpc-controller
 
 if [ ! -d "$HOME/mpctest/avalanchego" ]; then
   git clone git@github.com:ava-labs/avalanchego.git $HOME/mpctest/avalanchego
+  LAST_WD=$(pwd)
+  cd $HOME/mpctest/avalanchego
+  git checkout tags/v1.7.14
+  cd $LAST_WD
   cp ./tests/configs/genesis/genesis_local.go $HOME/mpctest/avalanchego/genesis/genesis_local.go
 fi
 
