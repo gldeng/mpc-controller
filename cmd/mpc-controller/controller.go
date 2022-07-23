@@ -45,6 +45,7 @@ type Service interface {
 }
 
 type MpcController struct {
+	Logger   logger.Logger
 	ID       string
 	Services []Service
 }
@@ -56,11 +57,11 @@ func (c *MpcController) Run(ctx context.Context) error {
 
 		service := service
 		g.Go(func() error {
-			fmt.Printf("Service %q started at: %v \n", name, time.Now())
+			c.Logger.Info(fmt.Sprintf("%v service %v starting...", c.ID, name))
 			if err := service.Start(ctx); err != nil {
 				return errors.Wrapf(err, "failed starting service: %v", name)
 			}
-			fmt.Printf("Service %q stopped at: %v\n", name, time.Now())
+			c.Logger.Info(fmt.Sprintf("%v service %v stopped", c.ID, name))
 			return nil
 		})
 	}
@@ -84,7 +85,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Create database
 	myDB := &badgerDB.BadgerDB{
 		Logger: myLogger,
-		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath),
+		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, myLogger),
 	}
 
 	// Create dispatcher
@@ -216,7 +217,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	controller := MpcController{
-		ID: config.ControllerId,
+		Logger: myLogger,
+		ID:     config.ControllerId,
 		Services: []Service{
 			&cacheWrapper,
 			&filterReconnector,
