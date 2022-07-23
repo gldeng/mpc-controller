@@ -112,30 +112,30 @@ func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	case <-ctx.Done():
 		return
 	case d.eventChan <- evtObj:
-		et := reflect.TypeOf(evtObj.Event).String()
-		d.eventLogger.Info("Received an event", []logger.Field{
-			{"eventChanLen", len(d.eventChan)},
-			{"eventType", et},
-			{"eventNo", evtObj.EventNo},
-			{"eventID", evtObj.EventID},
-			{"eventValue", evtObj.Event},
+		//et := reflect.TypeOf(evtObj.Event).String()
+		//d.eventLogger.Info("Received an event", []logger.Field{
+		//	{"eventChanLen", len(d.eventChan)},
+		//	{"eventType", et},
+		//	{"eventNo", evtObj.EventNo},
+		//	{"eventID", evtObj.EventID},
+		//	{"eventValue", evtObj.Event},
 
-			//{"eventStep", evtObj.EventStep},
+		//{"eventStep", evtObj.EventStep},
 
-			//{"parentEvtNo", evtObj.ParentEvtNo},
-			//{"parentEvtID", evtObj.ParentEvtID},
+		//{"parentEvtNo", evtObj.ParentEvtNo},
+		//{"parentEvtID", evtObj.ParentEvtID},
 
-			//{"rootEvtType", evtObj.RootEvtType},
-			//{"rootEvtID", evtObj.RootEvtID},
-			//{"rootEvtNo", evtObj.RootEvtNo},
-			//
-			//{"evtStreamNo", evtObj.EvtStreamNo},
-			//{"evtStreamID", evtObj.EvtStreamID},
-			//
-			//{"eventID", evtObj.EventID},
-			//{"createdBy", evtObj.CreatedBy},
-			//{"createdAt", evtObj.CreatedAt}}...
-		}...)
+		//{"rootEvtType", evtObj.RootEvtType},
+		//{"rootEvtID", evtObj.RootEvtID},
+		//{"rootEvtNo", evtObj.RootEvtNo},
+		//
+		//{"evtStreamNo", evtObj.EvtStreamNo},
+		//{"evtStreamID", evtObj.EvtStreamID},
+		//
+		//{"eventID", evtObj.EventID},
+		//{"createdBy", evtObj.CreatedBy},
+		//{"createdAt", evtObj.CreatedAt}}...
+		//}...)
 	}
 }
 
