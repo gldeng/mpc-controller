@@ -115,7 +115,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	}
 
 	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
-	eh.Logger.Info("Generated public key reported", logger.Field{"ReportedGenPubKeyEvent", reportedEvt})
+	eh.Logger.Info("Public key generated", logger.Field{"ReportedGenPubKeyEvent", reportedEvt})
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
 		GenPubKeyHashHex:       dnmGenPubKeyHash.Hex(),
