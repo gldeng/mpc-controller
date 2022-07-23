@@ -119,9 +119,22 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
-			eh.Logger.Error("Failed to perform stake task", []logger.Field{
-				{"stakeTask", stakeTask},
-				{"error", err}}...)
+			switch errors.Cause(err).(type) {
+			case *chain.ErrTypInsufficientFunds:
+				// todo: further handling
+			case *chain.ErrTypInvalidNonce:
+				// todo: further handling
+			case *chain.ErrTypConflictAtomicInputs:
+				// todo: further handling
+			case *chain.ErrTypTxHasNoImportedInputs:
+				// todo: further handling
+			case *chain.ErrTypNotFound:
+				// todo: further handling
+			default:
+				eh.Logger.Error("Failed to perform stake task", []logger.Field{
+					{"stakeTask", stakeTask},
+					{"error", err}}...)
+			}
 			return
 		}
 

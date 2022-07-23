@@ -25,14 +25,21 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		txID, err = c.Client.IssueTx(ctx, txBytes)
 		if err != nil {
-			if strings.Contains(err.Error(), "insufficient funds") ||
-				strings.Contains(err.Error(), "tx has no imported inputs") ||
-				strings.Contains(err.Error(), "invalid nonce") ||
-				strings.Contains(err.Error(), "invalid block due to conflicting atomic inputs") ||
-				strings.Contains(err.Error(), "due to: not found") {
-				return false, err
+			errMsg := err.Error()
+			switch {
+			case strings.Contains(errMsg, ErrMsgInsufficientFunds):
+				return false, errors.WithStack(&ErrTypInsufficientFunds{Cause: err})
+			case strings.Contains(errMsg, ErrMsgInvalidNonce):
+				return false, errors.WithStack(&ErrTypInvalidNonce{Cause: err})
+			case strings.Contains(errMsg, ErrMsgConflictAtomicInputs):
+				return false, errors.WithStack(&ErrTypConflictAtomicInputs{Cause: err})
+			case strings.Contains(errMsg, ErrMsgTxHasNoImportedInputs):
+				return false, errors.WithStack(&ErrTypTxHasNoImportedInputs{Cause: err})
+			case strings.Contains(errMsg, ErrMsgNotFound):
+				return false, errors.WithStack(&ErrTypNotFound{Cause: err})
+			default:
+				return true, errors.WithStack(err) // todo: exploring more concrete error types
 			}
-			return true, err
 		}
 		return false, nil
 	})
