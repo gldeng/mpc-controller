@@ -13,6 +13,7 @@ import (
 	"github.com/avalido/mpc-controller/contract/reconnector"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
+	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
@@ -83,9 +84,10 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	myLogger := logger.Default()
 
 	// Create database
+	badgerDBLogger := &adapter.BadgerDBLoggerAdapter{Logger: logger.DefaultWithCallerSkip(3)}
 	myDB := &badgerDB.BadgerDB{
 		Logger: myLogger,
-		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, myLogger),
+		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, badgerDBLogger),
 	}
 
 	// Create dispatcher
