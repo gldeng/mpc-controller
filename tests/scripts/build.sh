@@ -4,6 +4,7 @@
 if [ ! -f "$HOME/mpctest/mpc-controller/mpc-controller" ]; then
   echo "Start building mpc-controller..."
   cd ./cmd/mpc-controller
+  go clean
   go build
   mv mpc-controller $HOME/mpctest/mpc-controller/
   cd ../../

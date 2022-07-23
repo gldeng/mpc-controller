@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 mkdir -p $HOME/mpctest
-
 mkdir -p $HOME/mpctest/mpc-controller
 
 if [ ! -d "$HOME/mpctest/avalanchego" ]; then

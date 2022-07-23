@@ -37,7 +37,18 @@ func Sign() usecase.IOInteractor {
 			return nil
 		}
 
-		if lastSignReq.hits != 1 {
+		if lastSignReq.hits == Threshold+1 {
+			lastSignReq.hits++
+			storer.StoreSignRequestModel(lastSignReq)
+			logger.Error("Received redundant sign request", []logger.Field{
+				{"reqId", in.RequestId},
+				{"hits", lastSignReq.hits},
+				{"status", lastSignReq.status},
+				{"signature", lastSignReq.result}}...)
+			return errors.Errorf("Sign for request %q has been done, extra request not allowed", in.RequestId)
+		}
+
+		if lastSignReq.hits != Threshold {
 			lastSignReq.hits++
 			storer.StoreSignRequestModel(lastSignReq)
 			logger.Debug("Mpc-server received sign request", []logger.Field{

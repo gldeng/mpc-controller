@@ -4,6 +4,12 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 )
 
+// Group info
+var (
+	Participants = 7
+	Threshold    = 4
+)
+
 // Types for network request input and output
 
 type KeygenInput struct {

@@ -14,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
+	"math/rand"
+	"time"
 )
 
 type Cache interface {
@@ -111,6 +113,9 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
 			return
 		}
+
+		n := rand.Intn(10000)
+		time.Sleep(time.Millisecond * time.Duration(n)) // reduce concurrent conflict
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
