@@ -7,7 +7,7 @@ echo Starting loop initiateStake request
 while true
 do
     bash ./tests/scripts/fund_participants.sh
-    slep 10
+    sleep 10
 	  bash ./tests/scripts/fund_initiateStake.sh
     sleep 10
     venom run tests/testsuites/initiateStake.yml
