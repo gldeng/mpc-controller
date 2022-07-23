@@ -148,6 +148,12 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 						PartiIndex:     partiIndex,
 					}
 					eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(utxoFetchedEvtObj, "UTXOTracker", utxoReportedEvt, ctx))
+					switch utxo.OutputIndex {
+					case 0:
+						eh.Logger.Info("Principal UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
+					case 1:
+						eh.Logger.Info("Reward UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
+					}
 				}
 			}
 			eh.lock.Unlock()
