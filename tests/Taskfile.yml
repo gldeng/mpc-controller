@@ -1,54 +1,6 @@
 version: '3'
 
 tasks:
-  initWithMpcServerMock:
-    cmds:
-      - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/createGroup.yml
-      - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/requestKeygen.yml
-      - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/initiateStake.yml
-      - cmd: bash ./tests/scripts/kill.sh
-        ignore_error: true
-      - bash ./tests/scripts/clone_with_mpc_server_mock.sh
-      - bash ./tests/scripts/build_with_mpc_server_mock.sh
-      - bash ./tests/scripts/test_wd.sh
-      - bash ./tests/scripts/start_avalanche.sh
-      - bash ./tests/scripts/start_mpc-server_mock.sh
-      - sleep 20
-      - bash ./tests/scripts/deploy_contract.sh
-      - bash ./tests/scripts/start_mpc-controller_with_mpc_server_mock.sh
-      - bash ./tests/scripts/fund_participants.sh
-      - sleep 10
-
-  createGroupWithMpcServerMock:
-    cmds:
-      - task: initWithMpcServerMock
-      - venom run tests/testsuites/createGroup.yml
-      - sleep 10
-
-  requestKeygenWithMpcServerMock:
-    cmds:
-      - task: createGroupWithMpcServerMock
-      - venom run tests/testsuites/requestKeygen.yml
-      - sleep 10
-
-  initiateStakeWithMpcServerMock:
-    cmds:
-      - task: requestKeygenWithMpcServerMock
-      - bash ./tests/scripts/fund_initiateStake.sh
-      - sleep 10
-      - venom run tests/testsuites/initiateStake.yml
-      - sleep 30
-
-  initiateStakeLoopWithMpcServerMock:
-    cmds:
-      - bash ./tests/scripts/loop_initiate_stake_with_mpc_server_mock.sh
-
-
-
-
-
-
-
   init:
     cmds:
        - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/createGroup.yml
@@ -90,14 +42,6 @@ tasks:
   initiateStakeLoop:
     cmds:
       - bash ./tests/scripts/loop_initiate_stake.sh
-
-
-
-
-
-
-
-
 
   cleanup: # todo: add more cleanup operation, such as rm -rf $HOME/mpctest if needed
     cmds:
