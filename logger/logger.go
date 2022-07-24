@@ -1,9 +1,19 @@
 package logger
 
+import "fmt"
+
 // Field is the simple container for a single log field
 type Field struct {
 	Key   string
 	Value interface{}
+}
+
+func AppendErrorFiled(err error, fields ...Field) []Field {
+	var errorFields []Field
+	errorFields = append(errorFields, fields...)
+	errMsg := fmt.Sprintf("%+v", err)
+	errorFields = append(errorFields, Field{"error", errMsg})
+	return errorFields
 }
 
 // Logger declares base logging methods
