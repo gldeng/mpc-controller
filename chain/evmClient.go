@@ -34,25 +34,11 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 			case strings.Contains(errMsg, ErrMsgConflictAtomicInputs):
 				return false, errors.WithStack(&ErrTypConflictAtomicInputs{Cause: err})
 			case strings.Contains(errMsg, ErrMsgTxHasNoImportedInputs):
-				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
-					txID, err = c.Client.IssueTx(ctx, txBytes)
-					if err != nil {
-						return true, errors.WithStack(err)
-					}
-					return false, nil
-				})
-				return false, errors.WithStack(&ErrTypTxHasNoImportedInputs{Cause: err})
+				return true, errors.WithStack(&ErrTypTxHasNoImportedInputs{Cause: err})
 			case strings.Contains(errMsg, ErrMsgNotFound):
-				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
-					txID, err = c.Client.IssueTx(ctx, txBytes)
-					if err != nil {
-						return true, errors.WithStack(err)
-					}
-					return false, nil
-				})
-				return false, errors.WithStack(&ErrTypNotFound{Cause: err})
+				return true, errors.WithStack(&ErrTypNotFound{Cause: err})
 			default:
-				return true, errors.WithStack(err) // todo: exploring more concrete error types
+				return true, errors.WithStack(err) // todo: exploring more concrete error types, including connection failure
 			}
 		}
 		return false, nil

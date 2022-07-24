@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/rpc"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	mpcErrors "github.com/avalido/mpc-controller/errors"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/pkg/errors"
@@ -25,25 +26,11 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 			errMsg := err.Error()
 			switch {
 			case strings.Contains(errMsg, "shared memory: not found"):
-				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
-					txID, err = c.Client.IssueTx(ctx, tx, options...)
-					if err != nil {
-						return true, errors.WithStack(err)
-					}
-					return false, nil
-				})
-				return false, errors.WithStack(&ErrTypSharedMemoryNotFound{Cause: err})
+				return true, errors.WithStack(mpcErrors.Wrap(err, &ErrTypSharedMemoryNotFound{}))
 			case strings.Contains(errMsg, "consumed UTXO") && strings.Contains(errMsg, "not found"):
-				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
-					txID, err = c.Client.IssueTx(ctx, tx, options...)
-					if err != nil {
-						return true, errors.WithStack(err)
-					}
-					return false, nil
-				})
-				return false, errors.WithStack(&ErrTypConsumedUTXONotFound{Cause: err})
+				return true, errors.WithStack(mpcErrors.Wrap(err, &ErrTypConsumedUTXONotFound{}))
 			default:
-				return true, errors.WithStack(err) // todo: exploring more concrete error types
+				return true, errors.WithStack(err) // todo: exploring more concrete error types, including connection failure
 			}
 		}
 		return false, nil
