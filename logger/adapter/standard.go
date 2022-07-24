@@ -32,9 +32,9 @@ func (l *StdLoggerAdapter) WarnOnErrorf(err error, format string, a ...interface
 	l.WarnOnError(err, msg)
 }
 
-func (l *StdLoggerAdapter) WarnOnNotOkf(ok bool, format string, a ...interface{}) {
+func (l *StdLoggerAdapter) WarnOnTruef(ok bool, format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.WarnOnNotOk(ok, msg)
+	l.WarnOnTrue(ok, msg)
 }
 
 func (l *StdLoggerAdapter) Errorf(format string, a ...interface{}) {
@@ -47,9 +47,9 @@ func (l *StdLoggerAdapter) ErrorOnErrorf(err error, format string, a ...interfac
 	l.ErrorOnError(err, msg)
 }
 
-func (l *StdLoggerAdapter) ErrorOnNotOkf(ok bool, format string, a ...interface{}) {
+func (l *StdLoggerAdapter) ErrorOnTruef(ok bool, format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.ErrorOnNotOk(ok, msg)
+	l.ErrorOnTrue(ok, msg)
 }
 
 func (l *StdLoggerAdapter) Fatalf(format string, a ...interface{}) {
@@ -62,7 +62,7 @@ func (l *StdLoggerAdapter) FatalOnErrorf(err error, format string, a ...interfac
 	l.FatalOnError(err, msg)
 }
 
-func (l *StdLoggerAdapter) FatalOnNotOkf(ok bool, format string, a ...interface{}) {
+func (l *StdLoggerAdapter) FatalOnTruef(ok bool, format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.FatalOnNotOk(ok, msg)
+	l.FatalOnTrue(ok, msg)
 }

@@ -63,7 +63,7 @@ func WarnOnError(err error, msg string, fields ...Field) {
 
 func WarnOnNotOk(ok bool, msg string, fields ...Field) {
 	logger := Default()
-	logger.WarnOnNotOk(ok, msg, fields...)
+	logger.WarnOnTrue(ok, msg, fields...)
 }
 
 func Error(msg string, fields ...Field) {
@@ -78,7 +78,7 @@ func ErrorOnError(err error, msg string, fields ...Field) {
 
 func ErrorOnNotOk(ok bool, msg string, fields ...Field) {
 	logger := Default()
-	logger.ErrorOnNotOk(ok, msg, fields...)
+	logger.ErrorOnTrue(ok, msg, fields...)
 }
 
 func Fatal(msg string, fields ...Field) {
@@ -93,7 +93,7 @@ func FatalOnError(err error, msg string, fields ...Field) {
 
 func FatalOnNotOk(ok bool, msg string, fields ...Field) {
 	logger := Default()
-	logger.FatalOnNotOk(ok, msg, fields...)
+	logger.FatalOnTrue(ok, msg, fields...)
 }
 
 func With(fields ...Field) Logger {

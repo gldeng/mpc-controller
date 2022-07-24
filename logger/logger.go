@@ -13,15 +13,15 @@ type Logger interface {
 
 	Warn(msg string, fields ...Field)
 	WarnOnError(err error, msg string, fields ...Field)
-	WarnOnNotOk(ok bool, msg string, fields ...Field)
+	WarnOnTrue(ok bool, msg string, fields ...Field)
 
 	Error(msg string, fields ...Field)
 	ErrorOnError(err error, msg string, fields ...Field)
-	ErrorOnNotOk(ok bool, msg string, fields ...Field)
+	ErrorOnTrue(ok bool, msg string, fields ...Field)
 
 	Fatal(msg string, fields ...Field)
 	FatalOnError(err error, msg string, fields ...Field)
-	FatalOnNotOk(ok bool, msg string, fields ...Field)
+	FatalOnTrue(ok bool, msg string, fields ...Field)
 
 	With(fields ...Field) Logger
 }
@@ -33,15 +33,15 @@ type StdLogger interface {
 
 	Warnf(string, ...interface{})
 	WarnOnErrorf(error, string, ...interface{})
-	WarnOnNotOkf(bool, string, ...interface{})
+	WarnOnTruef(bool, string, ...interface{})
 
 	Errorf(string, ...interface{})
 	ErrorOnErrorf(error, string, ...interface{})
-	ErrorOnNotOkf(bool, string, ...interface{})
+	ErrorOnTruef(bool, string, ...interface{})
 
 	Fatalf(string, ...interface{})
 	FatalOnErrorf(error, string, ...interface{})
-	FatalOnNotOkf(bool, string, ...interface{})
+	FatalOnTruef(bool, string, ...interface{})
 }
 
 // BadgerDBLogger declares customized logging methods for BadgerDB
