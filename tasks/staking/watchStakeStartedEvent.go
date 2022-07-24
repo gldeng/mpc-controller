@@ -54,7 +54,7 @@ func (eh *StakeRequestStartedEventWatcher) Do(ctx context.Context, evtObj *dispa
 }
 
 func (eh *StakeRequestStartedEventWatcher) doWatchStakeRequestStarted(ctx context.Context) {
-	newSink := make(chan *contract.MpcManagerStakeRequestStarted, 1024) // todo: config capacity?
+	newSink := make(chan *contract.MpcManagerStakeRequestStarted)
 	err := eh.subscribeStakeRequestStarted(ctx, newSink, eh.pubKeyBytes)
 	if err == nil {
 		eh.sink = newSink
