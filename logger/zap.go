@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	uberZap "go.uber.org/zap"
 )
 
@@ -34,11 +33,7 @@ func (l *zap) Warn(msg string, fields ...Field) {
 // WarnOnError implements Logger.Warn for go.uber.org/zap logger
 func (l *zap) WarnOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		var errorFields []Field
-		errorFields = append(errorFields, fields...)
-		errMsg := fmt.Sprintf("%+v", err)
-		errorFields = append(errorFields, Field{"error", errMsg})
-		l.l.Warn(msg, l.zapFields(errorFields...)...)
+		l.l.Warn(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
 	}
 }
 
@@ -57,7 +52,8 @@ func (l *zap) Error(msg string, fields ...Field) {
 // ErrorOnError implements Logger.Error for go.uber.org/zap logger
 func (l *zap) ErrorOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.l.Error(msg, l.zapFields(fields...)...)
+
+		l.l.Error(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
 	}
 }
 
@@ -76,7 +72,7 @@ func (l *zap) Fatal(msg string, fields ...Field) {
 // FatalOnError implements Logger.Fatal for go.uber.org/zap logger
 func (l *zap) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.l.Fatal(msg, l.zapFields(fields...)...)
+		l.l.Fatal(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
 	}
 }
 
