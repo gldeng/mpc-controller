@@ -112,11 +112,11 @@ func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	case <-ctx.Done():
 		return
 	case d.eventChan <- evtObj:
-		d.eventLogger.Debug("An event en-channelled", []logger.Field{{"chanLen", len(d.eventChan)}}...)
+		d.eventLogger.Debug("Received an event", []logger.Field{{"bufferedEvents", len(d.eventChan)}}...)
 		if float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8 {
-			d.eventLogger.Warn("Too many events in event channel", []logger.Field{
-				{"chanLen", len(d.eventChan)},
-				{"chanCap", cap(d.eventChan)},
+			d.eventLogger.Warn("Too many events buffered", []logger.Field{
+				{"bufferedEvents", len(d.eventChan)},
+				{"evtChanCapacity", cap(d.eventChan)},
 			}...)
 		}
 
@@ -208,7 +208,6 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 			{"eventValue", evtObj.Event}}...)
 	}
 
-	d.eventLogger.Debug("An event enqueued", []logger.Field{{"queueCount", d.eventQueue.Count()}}...)
 	if float64(d.eventQueue.Count()) > float64(d.eventQueue.Capacity())*0.8 {
 		var evtStatMap = map[string]int{}
 		var ets []string
