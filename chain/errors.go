@@ -7,8 +7,9 @@ const (
 	ErrMsgConflictAtomicInputs  = "conflicting atomic inputs"
 	ErrMsgTxHasNoImportedInputs = "tx has no imported inputs"
 
-	ErrMsgNotFound             = "due to: not found"
-	ErrMsgSharedMemoryNotFound = "shared memory: not found"
+	ErrMsgNotFound             = "not found"
+	ErrMsgSharedMemoryNotFound = "shared memory not found"
+	ErrMsgConsumedUTXONotFound = "consumed UTXO not found"
 )
 
 // ----------error types ----------
@@ -116,5 +117,23 @@ func (e *ErrTypSharedMemoryNotFound) Error() string {
 }
 
 func (e *ErrTypSharedMemoryNotFound) Unwrap() error {
+	return e.Cause
+}
+
+// ----------
+
+type ErrTypConsumedUTXONotFound struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypConsumedUTXONotFound) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgConsumedUTXONotFound
+	}
+	return e.ErrMsg
+}
+
+func (e *ErrTypConsumedUTXONotFound) Unwrap() error {
 	return e.Cause
 }
