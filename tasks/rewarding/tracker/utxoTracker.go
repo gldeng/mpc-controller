@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	checkUTXOInterval = time.Second * 1
+	checkUTXOInterval = time.Second * 15
 )
 
 // Accept event: *events.ReportedGenPubKeyEvent
@@ -75,45 +75,18 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 		case <-t.C:
 			eh.lock.Lock()
 			for addr, evt := range eh.genPubKeyEvtObjMap {
-				rawUtxos, err := eh.getUTXOs(ctx, addr)
+				filterUtxos, err := eh.getAndFilterUTXOs(ctx, addr)
 				if err != nil {
-					eh.Logger.Error("Failed to get native UTXOs", []logger.Field{{"error", err}}...)
+					eh.Logger.Debug("Failed to get and filter UTXOs for given P-Chain address", []logger.Field{
+						{"pChainAddr", addr},
+						{"error", err}}...)
 					continue
 				}
 
-				if len(rawUtxos) == 0 {
-					continue
-				}
-
-				var filterUtxos []*avax.UTXO
 				reportedGenPubKey := evt.Event.(*events.ReportedGenPubKeyEvent)
 				groupIdBytes := bytes.HexTo32Bytes(reportedGenPubKey.GroupIdHex)
 				partiIndex := reportedGenPubKey.PartiIndex
 				genPubKeyBytes := bytes.HexToBytes(reportedGenPubKey.GenPubKeyHex)
-
-				for _, utxo := range rawUtxos {
-					if _, ok := eh.reportedUTXOMap[utxo.TxID]; ok {
-						continue
-					}
-
-					ok, err := eh.checkImportTx(ctx, utxo.TxID)
-					if err != nil {
-						eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
-							{"txID", utxo.TxID},
-							{"error", err}}...)
-						continue
-					}
-
-					// An address dedicated to delegate stake may receive three kinds of native UTXO on P-Chain,
-					// namely atomic importTx UTXO, principal UTXO and reward UTXO after stake period end.
-					// ImportTx UTXOs serves for addDelegatorTx in our program and should be excluded from exporting its avax to C-Chain
-					// todo: confirm whether there other potential UTXO that should be excluded, too.
-					if ok {
-						continue
-					}
-
-					filterUtxos = append(filterUtxos, utxo)
-				}
 
 				if len(filterUtxos) == 0 {
 					continue
@@ -130,37 +103,99 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
 				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
 
-				for _, utxo := range filterUtxos {
-					txHash, err := eh.reportUTXO(ctx, groupIdBytes, partiIndex, genPubKeyBytes, utxo.TxID, utxo.OutputIndex)
-					if err != nil {
-						eh.Logger.Error("Failed to report UTXO", []logger.Field{{"error", err}}...)
-						continue
-					}
-
-					eh.reportedUTXOMap[utxo.TxID] = utxo.OutputIndex
-
-					utxoReportedEvt := &events.UTXOReportedEvent{
-						TxID:           utxo.TxID,
-						OutputIndex:    utxo.OutputIndex,
-						TxHash:         txHash,
-						GenPubKeyBytes: genPubKeyBytes,
-						GroupIDBytes:   groupIdBytes,
-						PartiIndex:     partiIndex,
-					}
-					eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(utxoFetchedEvtObj, "UTXOTracker", utxoReportedEvt, ctx))
-					switch utxo.OutputIndex {
-					case 0:
-						eh.Logger.Debug("Principal UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
-					case 1:
-						eh.Logger.Debug("Reward UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
-					}
-				}
+				eh.reportUTXOs(ctx, utxoFetchedEvtObj, filterUtxos, groupIdBytes, partiIndex, genPubKeyBytes)
 			}
 			eh.lock.Unlock()
 		case <-ctx.Done():
 			return
 		}
 	}
+}
+
+func (eh *UTXOTracker) reportUTXOs(ctx context.Context, utxoFetchedEvtObj *dispatcher.EventObject, filterUtxos []*avax.UTXO, groupId [32]byte, partiIndex *big.Int, genPubKey []byte) {
+	for _, utxo := range filterUtxos {
+		txHash, err := eh.reportUTXO(ctx, groupId, partiIndex, genPubKey, utxo.TxID, utxo.OutputIndex)
+		if err != nil {
+			eh.Logger.Error("Failed to report UTXO", []logger.Field{{"error", err}}...)
+			continue
+		}
+
+		eh.reportedUTXOMap[utxo.TxID] = utxo.OutputIndex
+
+		utxoReportedEvt := &events.UTXOReportedEvent{
+			TxID:           utxo.TxID,
+			OutputIndex:    utxo.OutputIndex,
+			TxHash:         txHash,
+			GenPubKeyBytes: genPubKey,
+			GroupIDBytes:   groupId,
+			PartiIndex:     partiIndex,
+		}
+		eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(utxoFetchedEvtObj, "UTXOTracker", utxoReportedEvt, ctx))
+		switch utxo.OutputIndex {
+		case 0:
+			eh.Logger.Debug("Principal UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
+		case 1:
+			eh.Logger.Debug("Reward UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
+		}
+
+		addr := utxoFetchedEvtObj.Event.(*events.UTXOsFetchedEvent).PChainAddress
+
+		// wait until the reported utxo being exported
+		err = backoff.RetryFnConstantForever(ctx, time.Second, func() (retry bool, err error) {
+			lastFilterUttxos, err := eh.getAndFilterUTXOs(ctx, addr)
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
+			for _, lastFilterUtxo := range lastFilterUttxos {
+				if lastFilterUtxo.TxID == utxoReportedEvt.TxID && lastFilterUtxo.OutputIndex == utxoReportedEvt.OutputIndex { // reported utxo unexported
+					return true, nil
+				}
+			}
+			return false, nil
+		})
+
+		eh.Logger.ErrorOnError(err, "Failed to get and filter UTXOs for given P-Chain address", []logger.Field{
+			{"pChainAddr", addr},
+			{"error", err}}...)
+	}
+}
+
+func (eh *UTXOTracker) getAndFilterUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
+	rawUtxos, err := eh.getUTXOs(ctx, addr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get native UTXOs")
+	}
+
+	if len(rawUtxos) == 0 {
+		return nil, nil
+	}
+
+	var filterUtxos []*avax.UTXO
+
+	for _, utxo := range rawUtxos {
+		if _, ok := eh.reportedUTXOMap[utxo.TxID]; ok {
+			continue
+		}
+
+		ok, err := eh.checkImportTx(ctx, utxo.TxID)
+		if err != nil {
+			eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
+				{"txID", utxo.TxID},
+				{"error", err}}...)
+			continue
+		}
+
+		// An address dedicated to delegate stake may receive three kinds of native UTXO on P-Chain,
+		// namely atomic importTx UTXO, principal UTXO and reward UTXO after stake period end.
+		// ImportTx UTXOs serves for addDelegatorTx in our program and should be excluded from exporting its avax to C-Chain
+		// todo: confirm whether there other potential UTXO that should be excluded, too.
+		if ok {
+			continue
+		}
+
+		filterUtxos = append(filterUtxos, utxo)
+	}
+	return filterUtxos, nil
 }
 
 func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
