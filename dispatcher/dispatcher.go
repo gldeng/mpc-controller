@@ -52,8 +52,9 @@ type Dispatcher struct {
 	eventQueue Queue
 	eventMap   map[string][]EventHandler
 
+	handlingChan chan *EventObject
+
 	enqueueDur time.Duration
-	dequeueDur time.Duration
 
 	once        *sync.Once
 	queueMu     *sync.Mutex
@@ -62,7 +63,7 @@ type Dispatcher struct {
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
 // and runs a goroutine for receiving and publishing event objects.
-func NewDispatcher(ctx context.Context, logger logger.Logger, evtQueue Queue, evtChanLen int, enqueueDur, dequeueDur time.Duration) *Dispatcher {
+func NewDispatcher(ctx context.Context, logger logger.Logger, evtQueue Queue, evtChanLen int, enqueueDur time.Duration) *Dispatcher {
 	dispatcher := &Dispatcher{
 		eventLogger: logger,
 
@@ -70,8 +71,9 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, evtQueue Queue, ev
 		eventQueue: evtQueue,
 		eventMap:   make(map[string][]EventHandler),
 
+		handlingChan: make(chan *EventObject),
+
 		enqueueDur: enqueueDur,
-		dequeueDur: dequeueDur,
 
 		once:        new(sync.Once),
 		queueMu:     new(sync.Mutex),
@@ -157,13 +159,29 @@ func (d *Dispatcher) Channel() chan *EventObject {
 func (d *Dispatcher) run(ctx context.Context) {
 	enqueueTicker := time.NewTicker(d.enqueueDur)
 	defer enqueueTicker.Stop()
-	dequeueTicker := time.NewTicker(d.dequeueDur)
+	dequeueTicker := time.NewTicker(d.enqueueDur / 10)
 	defer dequeueTicker.Stop()
 
+	wg := new(sync.WaitGroup)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case evtObj := <-d.handlingChan:
+				d.publish(ctx, evtObj)
+			}
+		}
+	}()
+
+loop:
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			break loop
 		case <-enqueueTicker.C:
 			select {
 			case evtObj := <-d.eventChan:
@@ -177,11 +195,16 @@ func (d *Dispatcher) run(ctx context.Context) {
 		case <-dequeueTicker.C:
 			if !d.eventQueue.Empty() {
 				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
-					d.publish(ctx, evtObj)
+					select {
+					case <-ctx.Done():
+						break
+					case d.handlingChan <- evtObj:
+					}
 				}
 			}
 		}
 	}
+	wg.Wait()
 }
 
 // enqueue receives and serializes the given event object in queue,
