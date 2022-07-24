@@ -40,12 +40,12 @@ func New(log logger.Logger,
 	wsClient *ethclient.Client) *MpcProvider {
 
 	rpcCoordinator, err := contract.NewMpcManager(*coordinatorAddr, rpcClient)
-	log.FatalOnError(err, "Failed to create MpcManager bindings", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create MpcManager bindings")
 	wsCoordinator, err := contract.NewMpcManager(*coordinatorAddr, wsClient)
-	log.FatalOnError(err, "Failed to create MpcManager bindings", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create MpcManager bindings")
 
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, chainId)
-	log.FatalOnError(err, "Failed to create transaction signer", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create transaction signer")
 
 	return &MpcProvider{
 		log:            log,

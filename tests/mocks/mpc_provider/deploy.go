@@ -16,10 +16,10 @@ import (
 
 func DeployMpcManager(log logger.Logger, chainId *big.Int, client *ethclient.Client, privKey *ecdsa.PrivateKey) (*common.Address, *contract.MpcManager, error) {
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, chainId)
-	log.FatalOnError(err, "Failed to create transaction signer", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create transaction signer")
 
 	addr, tx, MpcManager, err := contract.DeployMpcManager(signer, client)
-	log.FatalOnError(err, "Failed to deploy AvaLido smart contract", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to deploy AvaLido smart contract")
 
 	time.Sleep(time.Second * 5)
 	rcp, err := client.TransactionReceipt(context.Background(), tx.Hash())

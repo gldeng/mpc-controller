@@ -102,7 +102,7 @@ func (eh *StakeRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.
 				eh.Logger.Debug("Stake request started", []logger.Field{
 					{"StakeRequestStartedEvent", evt}}...)
 			case err := <-eh.sub.Err():
-				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestStarted event", []logger.Field{{"error", err}}...)
+				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestStarted event")
 			}
 		}
 	}()

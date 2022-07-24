@@ -36,12 +36,12 @@ func New(log logger.Logger,
 	cWsClient *ethclient.Client) *AvaLidoStaker {
 
 	rpcAvaLido, err := contract.NewAvaLido(*avaLidoAddr, cRpcClient)
-	log.FatalOnError(err, "Failed to create AvaLido bindings", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create AvaLido bindings")
 	wsAvaLido, err := contract.NewAvaLido(*avaLidoAddr, cWsClient)
-	log.FatalOnError(err, "Failed to create AvaLido bindings", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create AvaLido bindings")
 
 	signer, err := bind.NewKeyedTransactorWithChainID(cPrivateKey, cChainId)
-	log.FatalOnError(err, "Failed to create transaction signer", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create transaction signer")
 
 	return &AvaLidoStaker{
 		log:         log,

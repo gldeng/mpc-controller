@@ -86,7 +86,7 @@ func (eh *ParticipantAddedEventWatcher) watchParticipantAdded(ctx context.Contex
 				evtObj := dispatcher.NewRootEventObject("ParticipantAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
-				eh.Logger.ErrorOnError(err, "Got an error during watching ParticipantAdded event", []logger.Field{{"error", err}}...)
+				eh.Logger.ErrorOnError(err, "Got an error during watching ParticipantAdded event")
 			}
 		}
 	}()

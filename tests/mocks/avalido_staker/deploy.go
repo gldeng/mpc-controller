@@ -18,10 +18,10 @@ import (
 
 func DeployAvaLido(log logger.Logger, chainId *big.Int, client *ethclient.Client, privKey *ecdsa.PrivateKey, MpcManagerAddr *common.Address) (*common.Address, *contract.AvaLido, error) {
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, chainId)
-	log.FatalOnError(err, "Failed to create transaction signer", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to create transaction signer")
 
 	addr, tx, avalido, err := contract.DeployAvaLido(signer, client, *MpcManagerAddr)
-	log.FatalOnError(err, "Failed to deploy AvaLido smart contract", logger.Field{"error", err})
+	log.FatalOnError(err, "Failed to deploy AvaLido smart contract")
 
 	time.Sleep(time.Second * 5)
 	rcp, err := client.TransactionReceipt(context.Background(), tx.Hash())

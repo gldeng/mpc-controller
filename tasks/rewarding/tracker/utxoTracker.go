@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/api"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
@@ -154,9 +155,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context, utxoFetchedEvtObj *dispa
 			return false, nil
 		})
 
-		eh.Logger.ErrorOnError(err, "Failed to get and filter UTXOs for given P-Chain address", []logger.Field{
-			{"pChainAddr", addr},
-			{"error", err}}...)
+		eh.Logger.ErrorOnError(err, fmt.Sprintf("Failed to get and filter UTXOs for address %v", addr))
 	}
 }
 

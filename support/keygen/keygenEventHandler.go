@@ -61,7 +61,7 @@ func (eh *KeygenRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispat
 		eh.participantInfoMap[evt.Key] = evt.Val
 	case *contract.MpcManagerKeygenRequestAdded:
 		err := eh.do(evtObj.Context, evt, evtObj)
-		eh.Logger.ErrorOnError(err, "Failed to deal with MpcManagerKeygenRequestAdded event.", []logger.Field{{"error", err}}...)
+		eh.Logger.ErrorOnError(err, "Failed to deal with MpcManagerKeygenRequestAdded event.")
 	}
 }
 

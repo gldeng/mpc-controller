@@ -92,7 +92,7 @@ func (eh *KeygenRequestAddedEventWatcher) watchKeygenRequestAdded(ctx context.Co
 				evtObj := dispatcher.NewRootEventObject("KeygenRequestAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
-				eh.Logger.ErrorOnError(err, "Got an error during watching KeygenRequestAdded event", []logger.Field{{"error", err}}...)
+				eh.Logger.ErrorOnError(err, "Got an error during watching KeygenRequestAdded event")
 			}
 		}
 	}()
