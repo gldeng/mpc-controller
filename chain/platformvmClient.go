@@ -24,8 +24,15 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 		if err != nil {
 			errMsg := err.Error()
 			switch {
-			case strings.Contains(errMsg, ErrMsgNotFound):
-				return false, errors.WithStack(&ErrTypNotFound{Cause: err})
+			case strings.Contains(errMsg, ErrMsgSharedMemoryNotFound):
+				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
+					txID, err = c.Client.IssueTx(ctx, tx, options...)
+					if err != nil {
+						return true, errors.WithStack(err)
+					}
+					return false, nil
+				})
+				return false, errors.WithStack(&ErrTypSharedMemoryNotFound{Cause: err})
 			default:
 				return true, errors.WithStack(err) // todo: exploring more concrete error types
 			}
