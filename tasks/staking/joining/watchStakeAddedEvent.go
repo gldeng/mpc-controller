@@ -51,7 +51,7 @@ func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatc
 }
 
 func (eh *StakeRequestAddedEventWatcher) doWatchStakeRequestAdded(ctx context.Context) {
-	newSink := make(chan *contract.MpcManagerStakeRequestAdded)
+	newSink := make(chan *contract.MpcManagerStakeRequestAdded, 1024)
 	err := eh.subscribeStakeRequestAdded(ctx, newSink, eh.pubKeyBytes)
 	if err == nil {
 		eh.sink = newSink
@@ -94,8 +94,10 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
+				eh.Logger.Debug("Received new stake request", []logger.Field{{"bufferStakeRequests", len(eh.sink)}}...)
 				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
+				time.Sleep(time.Second * 30) // wait until corresponding stake task done
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event", []logger.Field{{"error", err}}...)
 			}
