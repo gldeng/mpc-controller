@@ -96,7 +96,7 @@ func (eh *StakeRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.
 				return
 			case <-eh.done:
 				return
-			case evt := <-eh.sink: // todo: take measures for event task tracking and restoring
+			case evt := <-eh.sink:
 				evtObj := dispatcher.NewRootEventObject("StakeRequestStartedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 				eh.Logger.Debug("Stake request started", []logger.Field{
