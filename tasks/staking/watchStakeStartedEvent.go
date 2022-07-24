@@ -97,13 +97,10 @@ func (eh *StakeRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.
 			case <-eh.done:
 				return
 			case evt := <-eh.sink: // todo: take measures for event task tracking and restoring
-				eh.Logger.Debug("Receive a StakeRequestStarted event", []logger.Field{
-					{"pendingStakeRequestStartedEvents", len(eh.sink)}}...)
 				evtObj := dispatcher.NewRootEventObject("StakeRequestStartedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 				eh.Logger.Debug("Stake request started", []logger.Field{
 					{"StakeRequestStartedEvent", evt}}...)
-				time.Sleep(10) // initiate too frequent can cause "signature R is 0" and "invalid signature" problems.
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestStarted event", []logger.Field{{"error", err}}...)
 			}
