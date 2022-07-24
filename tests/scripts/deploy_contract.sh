@@ -22,6 +22,7 @@ echo "Start deploying smart contracts"
 cd $HOME/mpctest/contracts/
 
 rm -rf ./out
+rm -rf ./cache
 
 # Deploy MpcManager contract
 MPC_MANAGER=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK MpcManager | grep -i "deployed" | cut -d " " -f 3)
