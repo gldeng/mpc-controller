@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	uberZap "go.uber.org/zap"
 )
 
@@ -33,7 +34,11 @@ func (l *zap) Warn(msg string, fields ...Field) {
 // WarnOnError implements Logger.Warn for go.uber.org/zap logger
 func (l *zap) WarnOnError(err error, msg string, fields ...Field) {
 	if err != nil {
-		l.l.Warn(msg, l.zapFields(fields...)...)
+		var errorFields []Field
+		errorFields = append(errorFields, fields...)
+		errMsg := fmt.Sprintf("%+v", err)
+		errorFields = append(errorFields, Field{"error", errMsg})
+		l.l.Warn(msg, l.zapFields(errorFields...)...)
 	}
 }
 
