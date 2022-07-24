@@ -160,6 +160,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 		eh.Logger.Info("Staking task done", logger.Field{"StakingTaskDoneEvent", newEvt})
+		time.Sleep(time.Millisecond * 100) // sleep to avoid "signature R is 0" and "invalid signature" problems.
 	}
 }
 
