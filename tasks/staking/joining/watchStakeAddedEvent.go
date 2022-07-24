@@ -94,7 +94,7 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				eh.Logger.Debug("A stake request added", []logger.Field{{"bufferStakeRequests", len(eh.sink)}}...)
+				eh.Logger.Debug("Stake request added", []logger.Field{{"bufferedStakeRequests", len(eh.sink)}}...)
 				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 				time.Sleep(time.Second * 30) // wait until corresponding stake task done
