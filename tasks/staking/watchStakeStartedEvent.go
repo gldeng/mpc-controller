@@ -54,7 +54,7 @@ func (eh *StakeRequestStartedEventWatcher) Do(ctx context.Context, evtObj *dispa
 }
 
 func (eh *StakeRequestStartedEventWatcher) doWatchStakeRequestStarted(ctx context.Context) {
-	newSink := make(chan *contract.MpcManagerStakeRequestStarted)
+	newSink := make(chan *contract.MpcManagerStakeRequestStarted, 1024) // todo: config capacity?
 	err := eh.subscribeStakeRequestStarted(ctx, newSink, eh.pubKeyBytes)
 	if err == nil {
 		eh.sink = newSink
@@ -96,10 +96,14 @@ func (eh *StakeRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.
 				return
 			case <-eh.done:
 				return
-			case evt := <-eh.sink:
+			case evt := <-eh.sink: // todo: take measures for event task tracking and restoring
+				eh.Logger.Debug("Receive a StakeRequestStarted event", []logger.Field{
+					{"pendingStakeRequestStartedEvents", len(eh.sink)}}...)
 				evtObj := dispatcher.NewRootEventObject("StakeRequestStartedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
-				eh.Logger.Debug("Stake request started", logger.Field{"MpcManagerStakeRequestStartedEvent", evt})
+				eh.Logger.Debug("Stake request started", []logger.Field{
+					{"StakeRequestStartedEvent", evt}}...)
+				time.Sleep(10) // initiate too frequent can cause "signature R is 0" and "invalid signature" problems.
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestStarted event", []logger.Field{{"error", err}}...)
 			}
