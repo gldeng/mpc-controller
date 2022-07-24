@@ -24,7 +24,7 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 		if err != nil {
 			errMsg := err.Error()
 			switch {
-			case strings.Contains(errMsg, ErrMsgSharedMemoryNotFound):
+			case strings.Contains(errMsg, "shared memory: not found"):
 				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
 					txID, err = c.Client.IssueTx(ctx, tx, options...)
 					if err != nil {
@@ -33,6 +33,15 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 					return false, nil
 				})
 				return false, errors.WithStack(&ErrTypSharedMemoryNotFound{Cause: err})
+			case strings.Contains(errMsg, "consumed UTXO") && strings.Contains(errMsg, "not found"):
+				err = backoff.RetryFnConstant100Times(ctx, time.Second, func() (retry bool, err error) {
+					txID, err = c.Client.IssueTx(ctx, tx, options...)
+					if err != nil {
+						return true, errors.WithStack(err)
+					}
+					return false, nil
+				})
+				return false, errors.WithStack(&ErrTypConsumedUTXONotFound{Cause: err})
 			default:
 				return true, errors.WithStack(err) // todo: exploring more concrete error types
 			}
