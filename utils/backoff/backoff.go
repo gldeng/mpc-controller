@@ -19,6 +19,11 @@ func RetryFnConstant(ctx context.Context, maxRetries int, dur time.Duration, fn 
 	return RetryFn(ctx, policy, fn)
 }
 
+func RetryFnConstant100Times(ctx context.Context, dur time.Duration, fn Fn) error {
+	policy := ConstantPolicy(100, dur)
+	return RetryFn(ctx, policy, fn)
+}
+
 func RetryFnConstant10Times(ctx context.Context, dur time.Duration, fn Fn) error {
 	policy := ConstantPolicy(10, dur)
 	return RetryFn(ctx, policy, fn)
@@ -44,6 +49,11 @@ func ExponentialPolicy(maxRetries int, minInterval, maxInterval time.Duration) b
 
 func RetryFnExponential(ctx context.Context, maxRetries int, minInterval, maxInterval time.Duration, fn Fn) error {
 	policy := ExponentialPolicy(maxRetries, minInterval, maxInterval)
+	return RetryFn(ctx, policy, fn)
+}
+
+func RetryFnExponential100Times(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
+	policy := ExponentialPolicy(100, minInterval, maxInterval)
 	return RetryFn(ctx, policy, fn)
 }
 
