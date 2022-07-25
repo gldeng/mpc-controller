@@ -38,5 +38,15 @@ tasks:
         ignore_error: true
       - bash tests/scripts/start_mpc-server-mock.sh
     silent: false
-
-
+  lnavController:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/mpc-controller/logs
+    silent: false
+  lnavServer:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/mpc-server/log
+    silent: false
+  lnavServerMock:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/mpc-server-mock
+    silent: false
