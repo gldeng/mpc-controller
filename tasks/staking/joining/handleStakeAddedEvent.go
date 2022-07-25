@@ -14,8 +14,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"math/big"
+	"math/rand"
 	"strings"
 	"time"
+)
+
+var (
+	ErrCannotJoin = errors.New("Cannot join anymore")
 )
 
 // Accept event: *contract.MpcManagerStakeRequestAdded
@@ -42,10 +47,18 @@ func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatc
 			break
 		}
 
+		n := rand.Intn(10_000_000_000)
+		time.Sleep(time.Nanosecond * time.Duration(n)) // reduce concurrent conflict
+
 		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
 		if err != nil {
-			eh.Logger.Error("Failed to join request", []logger.Field{
-				{"error", err},
+			if errors.Is(err, ErrCannotJoin) {
+				eh.Logger.DebugOnError(err, "Failed to join request", []logger.Field{
+					{"reqId", evt.RequestId},
+					{"txHash", txHash}}...)
+				break
+			}
+			eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
 				{"reqId", evt.RequestId},
 				{"txHash", txHash}}...)
 			break
@@ -76,20 +89,28 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 		if err != nil {
 			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
 				tx = nil
-				return false, nil
+				return false, errors.WithStack(ErrCannotJoin)
 			}
 			return true, errors.WithStack(err)
 		}
+		return false, nil
+	})
 
-		time.Sleep(time.Second * 5)
+	err = errors.Wrapf(err, "failed to join request")
+	if err != nil {
+		return nil, err
+	}
 
+	time.Sleep(time.Second * 5)
+
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
 
 		if rcpt.Status != 1 {
-			return true, errors.New("tx receipt status != 1")
+			return true, errors.New("join request tx receipt status != 1")
 		}
 
 		return false, nil
