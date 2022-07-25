@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -80,12 +81,13 @@ func Keygen() usecase.IOInteractor {
 		signerKeyBytes := signer.PrivateKey().Bytes()
 		signerKeyHex := common.Bytes2Hex(signerKeyBytes)
 		signerPubHex := common.Bytes2Hex(signer.PublicKey().Bytes())
-		signerAccountAddres := signer.Address().Hex()
-
+		cChainAddr, _ := addrs.PubKeyBytesToAddress(signer.PublicKey().Bytes())
+		pChainAddr := signer.Address()
 		logger.Info("Mpc mock server generated a signer", []logger.Field{
 			{"privateKey", signerKeyHex},
 			{"publicKey", signerPubHex},
-			{"address", signerAccountAddres}}...)
+			{"cChainAddr", cChainAddr},
+			{"pChainAddr", pChainAddr}}...)
 
 		return nil
 	})
