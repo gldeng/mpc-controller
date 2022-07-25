@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	ErrMsgFailedToVerifySig = "failed to verify signature"
+)
+
 type Txs interface {
 	ExportTx
 	ImportTx
@@ -64,7 +68,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	ok, err := p.VerifySig(exportTxHash, exportTxSig)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrap(err, ErrMsgFailedToVerifySig)
 	}
 
 	if !ok {
@@ -90,7 +94,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 
 	ok, err = p.VerifySig(importTxHash, importTxSig)
 	if err != nil {
-		return [2]ids.ID{}, errors.WithStack(err)
+		return [2]ids.ID{}, errors.Wrap(err, ErrMsgFailedToVerifySig)
 	}
 
 	if !ok {
