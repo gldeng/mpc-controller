@@ -53,7 +53,7 @@ func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatc
 		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
 		if err != nil {
 			if errors.Is(err, ErrCannotJoin) {
-				eh.Logger.DebugOnError(err, "Failed to join request", []logger.Field{
+				eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
 					{"reqId", evt.RequestId},
 					{"txHash", txHash}}...)
 				break
