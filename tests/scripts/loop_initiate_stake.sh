@@ -13,5 +13,5 @@ do
     venom run tests/testsuites/initiateStake.yml
     LOOP_INITIATE_STAKE=$((LOOP_INITIATE_STAKE+1))
     echo Looped initiateStake at $(date +%Y-%m-%d/%H:%M:%S), total times: $LOOP_INITIATE_STAKE
-#    sleep 5
+    sleep 15
 done
