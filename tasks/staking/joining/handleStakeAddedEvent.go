@@ -84,37 +84,48 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 
 	var tx *types.Transaction
 	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		var err error
-		tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
-		if err != nil {
-			if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
-				tx = nil
-				return false, errors.WithStack(ErrCannotJoin)
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+			var err error
+			tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
+			if err != nil {
+				if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
+					tx = nil
+					return false, errors.WithStack(ErrCannotJoin)
+				}
+				return true, errors.WithStack(err)
 			}
-			return true, errors.WithStack(err)
+			return false, nil
+		})
+
+		err = errors.Wrapf(err, "failed to join request")
+		if err != nil {
+			if errors.Is(err, ErrCannotJoin) {
+				return false, err
+			}
+			return true, err
 		}
-		return false, nil
-	})
 
-	err = errors.Wrapf(err, "failed to join request")
-	if err != nil {
-		return nil, err
-	}
+		time.Sleep(time.Second * 5)
 
-	time.Sleep(time.Second * 5)
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+			rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
 
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+			if rcpt.Status != 1 {
+				return true, errors.New("join request tx receipt status != 1")
+			}
+
+			return false, nil
+		})
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
 
-		if rcpt.Status != 1 {
-			return true, errors.New("join request tx receipt status != 1")
-		}
-
 		return false, nil
 	})
+
 	err = errors.Wrapf(err, "failed to join request. reqID:%v, partiIndex:%v", req.RequestId, myIndex)
 	if err != nil {
 		return
