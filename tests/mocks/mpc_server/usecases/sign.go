@@ -44,28 +44,36 @@ func Sign() usecase.IOInteractor {
 
 		if in.PublicKey != lastSignReq.input.PublicKey {
 			err := errors.Errorf("Inconsistent public key for sign request %q, expected public key %q , but received %q", in.RequestId, lastSignReq.input.PublicKey, in.PublicKey)
+			err = errors.Wrap(err, ErrMsgSignReqRefused)
 			logger.ErrorOnError(err, ErrMsgSignReqRefused)
-			return errors.Wrap(err, ErrMsgSignReqRefused)
+			lastSignReq.status = RequestStatus(err.Error())
+			return err
 		}
 
 		if len(in.ParticipantKeys) != len(lastSignReq.input.ParticipantKeys) {
 			err := errors.Errorf("Inconsistent participants length for sign request %q, expected participants length %v , but received %v", in.RequestId, len(lastSignReq.input.ParticipantKeys), len(in.ParticipantKeys))
+			err = errors.Wrap(err, ErrMsgSignReqRefused)
 			logger.ErrorOnError(err, ErrMsgSignReqRefused)
-			return errors.Wrap(err, ErrMsgSignReqRefused)
+			lastSignReq.status = RequestStatus(err.Error())
+			return err
 		}
 
 		for i, partiKey := range in.ParticipantKeys {
 			if partiKey != lastSignReq.input.ParticipantKeys[i] {
 				err := errors.Errorf("Inconsistent participant public key at index %v for sign request %q, expected participant key %q , but received %q", i, in.RequestId, lastSignReq.input.ParticipantKeys[i], partiKey)
+				err = errors.Wrap(err, ErrMsgSignReqRefused)
 				logger.ErrorOnError(err, ErrMsgSignReqRefused)
-				return errors.Wrap(err, ErrMsgSignReqRefused)
+				lastSignReq.status = RequestStatus(err.Error())
+				return err
 			}
 		}
 
 		if in.Hash != lastSignReq.input.Hash {
 			err := errors.Errorf("Inconsistent hash for sign request %q, expected hash %q , but received %q", in.RequestId, lastSignReq.input.Hash, in.Hash)
+			err = errors.Wrap(err, ErrMsgSignReqRefused)
 			logger.ErrorOnError(err, ErrMsgSignReqRefused)
-			return errors.Wrap(err, ErrMsgSignReqRefused)
+			lastSignReq.status = RequestStatus(err.Error())
+			return err
 		}
 
 		if lastSignReq.hits == Threshold+1 {
