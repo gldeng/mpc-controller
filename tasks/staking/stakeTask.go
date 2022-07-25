@@ -3,7 +3,6 @@ package staking
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"errors"
 	"github.com/ava-labs/avalanchego/ids"
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/ava-labs/avalanchego/utils/hashing"
@@ -15,8 +14,10 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -129,10 +130,8 @@ func (t *StakeTask) AddDelegatorTxHash() ([]byte, error) {
 }
 
 func (t *StakeTask) SetExportTxSig(sig [sigLength]byte) error {
-	var alreadySetErr = errors.New("exportTxSig already set")
-
 	if t.exportTxCred != nil {
-		return alreadySetErr
+		return errors.New("exportTxSig already set")
 	}
 	hash, err := t.ExportTxHash()
 	if err != nil {
@@ -147,10 +146,8 @@ func (t *StakeTask) SetExportTxSig(sig [sigLength]byte) error {
 }
 
 func (t *StakeTask) SetImportTxSig(sig [sigLength]byte) error {
-	var alreadySetErr = errors.New("importTxSig already set")
-
 	if t.importTxCred != nil {
-		return alreadySetErr
+		return errors.New("importTxSig already set")
 	}
 	hash, err := t.ImportTxHash()
 	if err != nil {
@@ -165,11 +162,8 @@ func (t *StakeTask) SetImportTxSig(sig [sigLength]byte) error {
 }
 
 func (t *StakeTask) SetAddDelegatorTxSig(sig [sigLength]byte) error {
-
-	var alreadySetErr = errors.New("addDelegatorTxSig already set")
-
 	if t.addDelegatorTxCred != nil {
-		return alreadySetErr
+		return errors.New("addDelegatorTxSig already set")
 	}
 
 	hash, err := t.AddDelegatorTxHash()
@@ -185,15 +179,13 @@ func (t *StakeTask) SetAddDelegatorTxSig(sig [sigLength]byte) error {
 }
 
 func (t *StakeTask) GetSignedExportTx() (*evm.Tx, error) {
-	var noTxCredErr = errors.New("missing ExportTx cred")
-
 	unsignedTx, err := t.buildUnsignedExportTx()
 	if err != nil {
-		return nil, err
+		return nil, errors.New("missing ExportTx cred")
 	}
 
 	if t.exportTxCred == nil {
-		return nil, noTxCredErr
+		return nil, errors.New("missing ExportTx cred")
 	}
 
 	tx := evm.Tx{
@@ -429,7 +421,6 @@ func serializeCompresed(pub *ecdsa.PublicKey) []byte {
 }
 
 func (t *StakeTask) validateAndGetCred(hash []byte, sig [sigLength]byte) (*secp256k1fx.Credential, error) {
-	var invalidSigErr = errors.New("invalid signature")
 	sigIndex := 0
 	numSigs := 1
 	cred := &secp256k1fx.Credential{
@@ -439,10 +430,10 @@ func (t *StakeTask) validateAndGetCred(hash []byte, sig [sigLength]byte) (*secp2
 
 	pk, err := t.factory.RecoverHashPublicKey(hash, sig[:])
 	if err != nil {
-		return nil, invalidSigErr
+		return nil, errors.Wrapf(err, "failed to recover public key with hash %q and signature %q", bytes.BytesToHex(hash), bytes.Bytes65ToHex(sig))
 	}
 	if t.PChainAddress != pk.Address() {
-		return nil, invalidSigErr
+		return nil, errors.Errorf("expected P-Chain address is %q, but got %q", t.PChainAddress, pk.Address())
 	}
 	return cred, nil
 }
