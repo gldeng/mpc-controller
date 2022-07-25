@@ -238,15 +238,22 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 		}
 		//time.Sleep(time.Second * 5)
 		var rcpt *types.Receipt
-		rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+			rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+			if err != nil {
+				return true, errors.WithStack(err) // todo: consider reverted case
+			}
+			if rcpt.Status != 1 {
+				return true, errors.Errorf("tx receipt status != 1")
+			}
+			newTxHash := tx.Hash()
+			txHash = &newTxHash
+			return false, nil
+		})
+
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		if rcpt.Status != 1 {
-			return true, errors.Errorf("tx receipt status != 1")
-		}
-		newTxHash := tx.Hash()
-		txHash = &newTxHash
 		return false, nil
 	})
 	err = errors.Wrapf(err, "failed to report UTXO, txID:%v, outputIndex:%v", bytes.Bytes32ToHex(txID), outputIndex)
