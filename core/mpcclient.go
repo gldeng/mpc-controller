@@ -242,6 +242,9 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 		if res.RequestStatus != "DONE" {
 			return true, nil
 		}
+		if res.Result == "" {
+			return false, errors.WithStack(&ErrTypEmptySignResult{ErrMsg: "sign is done but got empty result"})
+		}
 		return false, nil
 	})
 	err = errors.Wrapf(err, "failed to request result or request not done for request id %q", mpcReqId)

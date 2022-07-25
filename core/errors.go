@@ -1,7 +1,8 @@
 package core
 
 const (
-	ErrMsgSignErr = "sign error"
+	ErrMsgSignErr         = "sign error"
+	ErrMsgEmptySignResult = "sign result is empty"
 )
 
 // ----------error types ----------
@@ -23,3 +24,19 @@ func (e *ErrTypSignErr) Unwrap() error {
 }
 
 // ----------
+
+type ErrTypEmptySignResult struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypEmptySignResult) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgEmptySignResult
+	}
+	return e.ErrMsg
+}
+
+func (e *ErrTypEmptySignResult) Unwrap() error {
+	return e.Cause
+}
