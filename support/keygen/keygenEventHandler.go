@@ -165,14 +165,20 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		//time.Sleep(time.Second * 5)
-		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+			rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
+
+			if rcpt.Status != 1 {
+				return true, errors.Errorf("tx receipt stauts != 1")
+			}
+			return false, nil
+		})
+
 		if err != nil {
 			return true, errors.WithStack(err)
-		}
-
-		if rcpt.Status != 1 {
-			return true, errors.Errorf("tx receipt stauts != 1")
 		}
 		return false, nil
 	})
