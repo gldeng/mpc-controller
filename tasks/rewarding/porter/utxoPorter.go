@@ -121,13 +121,17 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 	if err != nil {
 		switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 		case *chain.ErrTypSharedMemoryNotFound:
-			// todo: further handling
+			eh.Logger.ErrorOnError(err, "Failed to export UTXO", []logger.Field{
+				{"txID", exportUTXOReqEvt.TxID},
+				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypConsumedUTXONotFound:
-			// todo: further handling
+			eh.Logger.DebugOnError(err, "UTXO unexported", []logger.Field{
+				{"txID", exportUTXOReqEvt.TxID},
+				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		default:
-			eh.Logger.Error("Failed to export UTXO", []logger.Field{
-				{"error", err},
-				{"exportUTXORequestEvent", exportUTXOReqEvt}}...)
+			eh.Logger.ErrorOnError(err, "Failed to export UTXO", []logger.Field{
+				{"txID", exportUTXOReqEvt.TxID},
+				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		}
 		return
 	}
