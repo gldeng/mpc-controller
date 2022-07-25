@@ -121,19 +121,26 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		if err != nil {
 			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 			case *chain.ErrTypInsufficientFunds:
-				// todo: further handling
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInvalidNonce:
-				// todo: further handling
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypConflictAtomicInputs:
-				// todo: further handling
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypTxHasNoImportedInputs:
-				// todo: further handling
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
+			case *chain.ErrTypConsumedUTXONotFound:
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypNotFound:
-				// todo: further handling
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			default:
-				eh.Logger.Error("Failed to perform stake task", []logger.Field{
-					{"stakeTask", stakeTask},
-					{"error", err}}...)
+				eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			}
 			return
 		}
