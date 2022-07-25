@@ -19,7 +19,12 @@ func AppendErrorFiled(err error, fields ...Field) []Field {
 // Logger declares base logging methods
 type Logger interface {
 	Debug(msg string, fields ...Field)
+	DebugOnError(err error, msg string, fields ...Field)
+	DebugOnTrue(ok bool, msg string, fields ...Field)
+
 	Info(msg string, fields ...Field)
+	InfoOnError(err error, msg string, fields ...Field)
+	InfoOnTrue(ok bool, msg string, fields ...Field)
 
 	Warn(msg string, fields ...Field)
 	WarnOnError(err error, msg string, fields ...Field)
@@ -39,7 +44,12 @@ type Logger interface {
 // StdLogger declares standard logging methods
 type StdLogger interface {
 	Debugf(string, ...interface{})
+	DebugOnErrorf(error, string, ...interface{})
+	DebugOnTruef(bool, string, ...interface{})
+
 	Infof(string, ...interface{})
+	InfoOnErrorf(error, string, ...interface{})
+	InfoOnTruef(bool, string, ...interface{})
 
 	Warnf(string, ...interface{})
 	WarnOnErrorf(error, string, ...interface{})

@@ -17,9 +17,29 @@ func (l *StdLoggerAdapter) Debugf(format string, a ...interface{}) {
 	l.Debug(msg)
 }
 
+func (l *StdLoggerAdapter) DebugOnErrorf(err error, format string, a ...interface{}) {
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.DebugOnError(err, msg)
+}
+
+func (l *StdLoggerAdapter) DebugOnTruef(ok bool, format string, a ...interface{}) {
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.DebugOnTrue(ok, msg)
+}
+
 func (l *StdLoggerAdapter) Infof(format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
 	l.Info(msg)
+}
+
+func (l *StdLoggerAdapter) InfoOnErrorf(err error, format string, a ...interface{}) {
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.InfoOnError(err, msg)
+}
+
+func (l *StdLoggerAdapter) InfoOnTruef(ok bool, format string, a ...interface{}) {
+	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
+	l.InfoOnTrue(ok, msg)
 }
 
 func (l *StdLoggerAdapter) Warnf(format string, a ...interface{}) {

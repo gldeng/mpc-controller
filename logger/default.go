@@ -46,9 +46,29 @@ func Debug(msg string, fields ...Field) {
 	logger.Debug(msg, fields...)
 }
 
+func DebugOnError(err error, msg string, fields ...Field) {
+	logger := Default()
+	logger.DebugOnError(err, msg, fields...)
+}
+
+func DebugOnTrue(ok bool, msg string, fields ...Field) {
+	logger := Default()
+	logger.DebugOnTrue(ok, msg, fields...)
+}
+
 func Info(msg string, fields ...Field) {
 	logger := Default()
 	logger.Info(msg, fields...)
+}
+
+func InfoOnError(err error, msg string, fields ...Field) {
+	logger := Default()
+	logger.InfoOnError(err, msg, fields...)
+}
+
+func InfoOnTrue(ok bool, msg string, fields ...Field) {
+	logger := Default()
+	logger.InfoOnTrue(ok, msg, fields...)
 }
 
 func Warn(msg string, fields ...Field) {
