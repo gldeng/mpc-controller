@@ -82,7 +82,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		signRequester := &SignRequester{
 			SignDoner: eh.SignDoner,
 			SignRequestArgs: SignRequestArgs{
-				TaskID:                 evt.Raw.TxHash.Hex(),
+				TaskID:                 "STAKE-SIGN-TASK-" + evt.Raw.TxHash.Hex(),
 				CompressedPartiPubKeys: partiKeys,
 				CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
 			},
