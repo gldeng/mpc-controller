@@ -236,11 +236,14 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
+		if strings.Contains(res.RequestStatus, "ERROR") {
+			return false, errors.Wrap(&ErrTypSignErr{ErrMsg: res.RequestStatus}, "request not done")
+		}
 		if res.RequestStatus != "DONE" {
 			return true, nil
 		}
 		return false, nil
 	})
-	err = errors.Wrapf(err, "failed to request mpc result or mpc not completed. mpcReqID:%q", mpcReqId)
+	err = errors.Wrapf(err, "failed to request result or request not done for request id %q", mpcReqId)
 	return
 }
