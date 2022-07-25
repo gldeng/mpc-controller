@@ -22,7 +22,7 @@ echo -n "353fb105bbf9c29cbf46d4c93a69587ac478138b7715f0786d7ae1cc05230878" > sec
 echo -n "b17eac91d7aa2bd5fa72916b6c8a35ab06e8f0c325c98067bbc9645b85ce789f" > secret/p6.s
 echo -n "7084300e7059ea4b308ec5b965ef581d3f9c9cd63714082ccf9b9d1fb34d658b" > secret/p7.s
 
-RUST_BACKTRACE=full $MPC_SERVER_REPO/messenger/target/debug/messenger > log/messenger.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/messenger/target/debug/messenger > logs/messenger.log 2>&1 &
 RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p1.s --port 8001 -m http://127.0.0.1:8000  --db-path db/p1.db > logs/p1.log 2>&1 &
 RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p2.s --port 8002 -m http://127.0.0.1:8000  --db-path db/p2.db > logs/p2.log 2>&1 &
 RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p3.s --port 8003 -m http://127.0.0.1:8000  --db-path db/p3.db > logs/p3.log 2>&1 &
