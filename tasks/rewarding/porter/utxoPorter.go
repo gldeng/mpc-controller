@@ -108,7 +108,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 		SignDoner: eh.SignDoner,
 		SignReqArgs: &signer.SignRequestArgs{
-			TaskID:                 "EXPORT-UTXO-" + exportUTXOReqEvt.TxHash.Hex(),
+			TaskID:                 "EXPORT-UTXO-SIGN-TASK" + exportUTXOReqEvt.TxHash.Hex(),
 			CompressedPartiPubKeys: partiKeys,
 			CompressedGenPubKeyHex: *compressedGenPubKey,
 		},
