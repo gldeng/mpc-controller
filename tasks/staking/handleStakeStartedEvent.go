@@ -88,6 +88,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			},
 		}
 
+		eh.Logger.Debug("Got nonce for stake task", []logger.Field{{"taskID", signRequester.SignRequestArgs.TaskID}, {"nonce", nonce}}...)
+
 		taskCreator := StakeTaskCreator{
 			MpcManagerStakeRequestStarted: evt,
 			NetworkContext:                eh.NetworkContext,
