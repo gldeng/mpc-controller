@@ -11,5 +11,5 @@ You can find test suites from `tests/Taskfile.yml`.
   (required on some Ubuntu OS).
 - Install toolchain dependencies:  [Task](https://github.com/go-task/task), [Venom](https://github.com/ovh/venom),  [Foundry](https://github.com/foundry-rs/foundry), [Golang](https://go.dev/), [Rust](https://www.rust-lang.org/)
 - Run tests: `task tests:testSuiteName`, e.g., `task tests:initiateStake`, `task tests:initiateStakeLoop`.
-- Check working directory: `cd $HOME/mpctest`. You can watch and analyze your log files from a terminal with [Inav](https://lnav.org/)
+- Check working directory: `cd $HOME/mpctest`. You can watch and analyze your log files from a terminal with [Inav](https://lnav.org/), shortcuts: `task lnavAvalanche`, `task lnavController`, `task lnavServer`, `task lnavServerMock`.
 - Tear down: `task tests:cleanup`
