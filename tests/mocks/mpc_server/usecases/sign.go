@@ -9,6 +9,10 @@ import (
 	"sync"
 )
 
+const (
+	ErrMsgSignReqRefused = "sign request refused"
+)
+
 var lockSign = &sync.Mutex{}
 
 func Sign() usecase.IOInteractor {
@@ -33,8 +37,35 @@ func Sign() usecase.IOInteractor {
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
+				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
 			return nil
+		}
+
+		if in.PublicKey != lastSignReq.input.PublicKey {
+			err := errors.Errorf("Inconsistent public key for sign request %q, expected public key %q , but received %q", in.RequestId, lastSignReq.input.PublicKey, in.PublicKey)
+			logger.ErrorOnError(err, ErrMsgSignReqRefused)
+			return errors.Wrap(err, ErrMsgSignReqRefused)
+		}
+
+		if len(in.ParticipantKeys) != len(lastSignReq.input.ParticipantKeys) {
+			err := errors.Errorf("Inconsistent participants length for sign request %q, expected participants length %v , but received %v", in.RequestId, len(lastSignReq.input.ParticipantKeys), len(in.ParticipantKeys))
+			logger.ErrorOnError(err, ErrMsgSignReqRefused)
+			return errors.Wrap(err, ErrMsgSignReqRefused)
+		}
+
+		for i, partiKey := range in.ParticipantKeys {
+			if partiKey != lastSignReq.input.ParticipantKeys[i] {
+				err := errors.Errorf("Inconsistent participant public key at index %v for sign request %q, expected participant key %q , but received %q", i, in.RequestId, lastSignReq.input.ParticipantKeys[i], partiKey)
+				logger.ErrorOnError(err, ErrMsgSignReqRefused)
+				return errors.Wrap(err, ErrMsgSignReqRefused)
+			}
+		}
+
+		if in.Hash != lastSignReq.input.Hash {
+			err := errors.Errorf("Inconsistent hash for sign request %q, expected hash %q , but received %q", in.RequestId, lastSignReq.input.Hash, in.Hash)
+			logger.ErrorOnError(err, ErrMsgSignReqRefused)
+			return errors.Wrap(err, ErrMsgSignReqRefused)
 		}
 
 		if lastSignReq.hits == Threshold+1 {
@@ -44,6 +75,7 @@ func Sign() usecase.IOInteractor {
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
+				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
 			return errors.Errorf("Sign for request %q has been done, extra request not allowed", in.RequestId)
 		}
@@ -55,6 +87,7 @@ func Sign() usecase.IOInteractor {
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
+				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
 			return nil
 		}
@@ -88,6 +121,7 @@ func Sign() usecase.IOInteractor {
 			{"reqId", in.RequestId},
 			{"hits", lastSignReq.hits},
 			{"status", lastSignReq.status},
+			{"hash", in.Hash},
 			{"signature", lastSignReq.result}}...)
 		return nil
 	})
