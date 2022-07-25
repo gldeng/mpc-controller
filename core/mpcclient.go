@@ -195,7 +195,7 @@ func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (
 		return nil, errors.WithStack(err)
 	}
 
-	time.Sleep(time.Second * 5)
+	//time.Sleep(time.Second * 5)
 	res, err = c.ResultDone(ctx, request.KeygenReqID)
 	if err != nil {
 		return nil, errors.WithStack(err)

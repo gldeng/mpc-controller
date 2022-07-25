@@ -236,7 +236,7 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		time.Sleep(time.Second * 5)
+		//time.Sleep(time.Second * 5)
 		var rcpt *types.Receipt
 		rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {

@@ -14,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
-	"math/rand"
-	"time"
 )
 
 type Cache interface {
@@ -116,8 +114,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
-		n := rand.Intn(10_000_000_000)
-		time.Sleep(time.Nanosecond * time.Duration(n)) // reduce concurrent conflict
+		//n := rand.Intn(10_000_000_000)
+		//time.Sleep(time.Nanosecond * time.Duration(n)) // reduce concurrent conflict
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {

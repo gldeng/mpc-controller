@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // todo: consider refactoring with Template Method design pattern
@@ -83,7 +82,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	time.Sleep(time.Second * 5) // wait for shared memory get ready
+	//time.Sleep(time.Second * 5) // wait for shared memory get ready
 
 	importTx, err := s.GetSignedImportTx()
 	if err != nil {
@@ -95,7 +94,7 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	time.Sleep(time.Second * 5) // wait for shared memory get ready
+	//time.Sleep(time.Second * 5) // wait for shared memory get ready
 
 	addDelegatorTx, err := s.GetSignedAddDelegatorTx()
 	if err != nil {

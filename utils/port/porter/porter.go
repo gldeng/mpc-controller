@@ -7,8 +7,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/port/issuer"
 	"github.com/pkg/errors"
-	"math/rand"
-	"time"
 )
 
 const (
@@ -107,8 +105,8 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to set importTx signature")
 	}
 
-	n := rand.Intn(10_000_000_000)
-	time.Sleep(time.Nanosecond * time.Duration(n)) // reduce concurrent conflict
+	//n := rand.Intn(10_000_000_000)
+	//time.Sleep(time.Nanosecond * time.Duration(n)) // reduce concurrent conflict
 
 	// Issue ExportTx
 	exportTxBytes, err := p.SignedExportTxBytes()
@@ -121,7 +119,7 @@ func (p *Porter) SignAndIssueTxs(ctx context.Context) ([2]ids.ID, error) {
 		return [2]ids.ID{}, errors.Wrapf(err, "failed to IssueExportTx")
 	}
 
-	time.Sleep(time.Second * 5) // wait for shared memory get ready
+	//time.Sleep(time.Second * 5) // wait for shared memory get ready
 
 	// Issue ImportTx
 	importTxBytes, err := p.SignedImportTxBytes()

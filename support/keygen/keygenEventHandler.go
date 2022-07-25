@@ -165,7 +165,7 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		time.Sleep(time.Second * 5)
+		//time.Sleep(time.Second * 5)
 		rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
 			return true, errors.WithStack(err)
