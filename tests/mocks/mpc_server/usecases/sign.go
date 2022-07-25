@@ -46,7 +46,7 @@ func Sign() usecase.IOInteractor {
 			err := errors.Errorf("Inconsistent public key for sign request %q, expected public key %q , but received %q", in.RequestId, lastSignReq.input.PublicKey, in.PublicKey)
 			err = errors.Wrap(err, ErrMsgSignReqRefused)
 			logger.ErrorOnError(err, ErrMsgSignReqRefused)
-			lastSignReq.status = RequestStatus(err.Error())
+			lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 			return err
 		}
 
@@ -54,7 +54,7 @@ func Sign() usecase.IOInteractor {
 			err := errors.Errorf("Inconsistent participants length for sign request %q, expected participants length %v , but received %v", in.RequestId, len(lastSignReq.input.ParticipantKeys), len(in.ParticipantKeys))
 			err = errors.Wrap(err, ErrMsgSignReqRefused)
 			logger.ErrorOnError(err, ErrMsgSignReqRefused)
-			lastSignReq.status = RequestStatus(err.Error())
+			lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 			return err
 		}
 
@@ -63,7 +63,7 @@ func Sign() usecase.IOInteractor {
 				err := errors.Errorf("Inconsistent participant public key at index %v for sign request %q, expected participant key %q , but received %q", i, in.RequestId, lastSignReq.input.ParticipantKeys[i], partiKey)
 				err = errors.Wrap(err, ErrMsgSignReqRefused)
 				logger.ErrorOnError(err, ErrMsgSignReqRefused)
-				lastSignReq.status = RequestStatus(err.Error())
+				lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 				return err
 			}
 		}
@@ -72,7 +72,7 @@ func Sign() usecase.IOInteractor {
 			err := errors.Errorf("Inconsistent hash for sign request %q, expected hash %q , but received %q", in.RequestId, lastSignReq.input.Hash, in.Hash)
 			err = errors.Wrap(err, ErrMsgSignReqRefused)
 			logger.ErrorOnError(err, ErrMsgSignReqRefused)
-			lastSignReq.status = RequestStatus(err.Error())
+			lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 			return err
 		}
 
