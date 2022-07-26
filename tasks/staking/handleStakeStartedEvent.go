@@ -124,7 +124,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypConflictAtomicInputs:
-				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypTxHasNoImportedInputs:
 				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
