@@ -46,9 +46,6 @@ func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatc
 			break
 		}
 
-		//n := rand.Intn(10_000_000_000)
-		//time.Sleep(time.Nanosecond * time.Duration(n)) // reduce concurrent conflict
-
 		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
 		if err != nil {
 			if errors.Is(err, ErrCannotJoin) {
@@ -103,8 +100,6 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myInde
 			}
 			return true, err
 		}
-
-		//time.Sleep(time.Second * 5)
 
 		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 			rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())

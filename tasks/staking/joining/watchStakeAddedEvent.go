@@ -97,7 +97,6 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 				eh.Logger.Debug("Stake request added", []logger.Field{{"bufferedStakeRequests", len(eh.sink)}}...)
 				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
-				//time.Sleep(time.Second * 15) // wait until corresponding stake task done
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event")
 			}

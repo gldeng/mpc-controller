@@ -236,7 +236,6 @@ func (eh *UTXOTracker) reportUTXO(ctx context.Context, groupId [32]byte, partiIn
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		//time.Sleep(time.Second * 5)
 		var rcpt *types.Receipt
 		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 			rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())

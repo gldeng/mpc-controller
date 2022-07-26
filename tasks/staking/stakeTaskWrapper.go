@@ -82,8 +82,6 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	//time.Sleep(time.Second * 5) // wait for shared memory get ready
-
 	importTx, err := s.GetSignedImportTx()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -93,8 +91,6 @@ func (s *StakeTaskWrapper) IssueTx(ctx context.Context) ([]ids.ID, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-
-	//time.Sleep(time.Second * 5) // wait for shared memory get ready
 
 	addDelegatorTx, err := s.GetSignedAddDelegatorTx()
 	if err != nil {
