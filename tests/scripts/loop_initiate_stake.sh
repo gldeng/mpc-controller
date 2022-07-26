@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 LOOP_INITIATE_STAKE=0
-MAX_LOOPS_ALLOWED=1000 # todo: enable command line config
+MAX_LOOPS_ALLOWED=10000 # todo: enable command line config
 
 echo Starting loop initiateStake request
 
