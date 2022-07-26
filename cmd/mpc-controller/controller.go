@@ -99,7 +99,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
 
 	// Create mpcClient
-	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
+	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl, config.ControllerId)
 
 	// Decrypt private key
 	config.ControllerKey = decryptKey(config.ControllerId, pss, config.ControllerKey)
