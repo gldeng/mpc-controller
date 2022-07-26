@@ -2,8 +2,8 @@ package work
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/misc"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,7 +24,7 @@ type Workshop struct {
 
 func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces uint32, taskChan chan *Task) *Workshop {
 	workshop := &Workshop{
-		Id:            "workshop_" + dispatcher.NewID()[:4],
+		Id:            "workshop_" + misc.NewID(),
 		Logger:        logger,
 		MaxIdleDur:    maxIdleDur,
 		TaskChan:      taskChan,
@@ -73,7 +73,8 @@ func (w *Workshop) LivingWorkspaces() int {
 
 func (w *Workshop) newWorkspace(ctx context.Context) {
 	ws := &Workspace{
-		Id:         "workspace_" + dispatcher.NewID()[:4],
+		Id:         "workspace_" + misc.NewID(),
+		Logger:     w.Logger,
 		MaxIdleDur: w.MaxIdleDur,
 		TaskChan:   w.TaskChan,
 	}
@@ -82,13 +83,13 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 	w.lock.Unlock()
 
 	go func() {
-		w.Logger.Debug("Workspace opened", []logger.Field{{"closedWorkspace", ws.Id}, {"totalWorkspaces", atomic.LoadUint32(&w.livingWorkspaces) + 1}}...)
+		w.Logger.Debug("Workspace opened", []logger.Field{{"openedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces) + 1}}...)
 		atomic.AddUint32(&w.livingWorkspaces, 1)
 		ws.Run(ctx)
 	loop:
 		old := atomic.LoadUint32(&w.livingWorkspaces)
 		if swapped := atomic.CompareAndSwapUint32(&w.livingWorkspaces, old, old-1); swapped {
-			w.Logger.Debug("Workspace closed", []logger.Field{{"closedWorkspace", ws.Id}, {"totalWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)}}...)
+			w.Logger.Debug("Workspace closed", []logger.Field{{"closedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)}}...)
 			w.lock.Lock()
 			delete(w.workspacesMap, ws.Id)
 			w.lock.Unlock()
