@@ -113,13 +113,16 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 		err = stakeTaskWrapper.SignTx(evtObj.Context)
 		if err != nil {
-			eh.Logger.Error("Failed to sign Tx", []logger.Field{{"error", err}}...)
+			eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"stakeTask", stakeTask}}...)
 			return
 		}
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
 		if err != nil {
 			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+			case *chain.ErrTypSharedMemoryNotFound:
+				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{
+					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInsufficientFunds:
 				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
