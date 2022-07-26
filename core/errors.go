@@ -16,9 +16,9 @@ type ErrTypSignErr struct {
 
 func (e *ErrTypSignErr) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgSignErr + fmt.Sprintf(": %+v", e.Cause)
+		return ErrMsgSignErr + fmt.Sprintf(": %v", e.Cause)
 	}
-	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
+	return e.ErrMsg + fmt.Sprintf(": %v", e.Cause)
 }
 
 func (e *ErrTypSignErr) Unwrap() error {
@@ -34,9 +34,9 @@ type ErrTypEmptySignResult struct {
 
 func (e *ErrTypEmptySignResult) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgEmptySignResult + fmt.Sprintf(": %+v", e.Cause)
+		return ErrMsgEmptySignResult + fmt.Sprintf(": %v", e.Cause)
 	}
-	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
+	return e.ErrMsg + fmt.Sprintf(": %v", e.Cause)
 }
 
 func (e *ErrTypEmptySignResult) Unwrap() error {
