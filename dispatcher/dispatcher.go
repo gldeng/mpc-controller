@@ -84,7 +84,6 @@ func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 }
 
 // Publish sends the received event object to underlying channel.
-// All event objects will be serialized in a queue and published later in FIFO order.
 func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	d.eventChan <- evtObj
 }
@@ -95,7 +94,7 @@ func (d *Dispatcher) Channel() chan *EventObject {
 	return d.eventChan
 }
 
-// run is a goroutine for receiving, enqueueing events.
+// run is a goroutine for receiving and publishing events.
 func (d *Dispatcher) run(ctx context.Context) {
 	for {
 		select {
@@ -108,10 +107,7 @@ func (d *Dispatcher) run(ctx context.Context) {
 }
 
 // publish concurrently run event handlers to the same event type.
-// It waits until all the event handlers have returned.
-// Note: event handlers may haven't finished their jobs yet,
-// because they may run concurrently within their own gorutines.
-// But this part is out of the dispatcher's control.
+// Under the hood its use Workshop to do the amazing scheduling.
 func (d *Dispatcher) publish(ctx context.Context, evtObj *EventObject) {
 	et := reflect.TypeOf(evtObj.Event).String()
 	ehs := d.eventMap[et]
