@@ -38,6 +38,11 @@ tasks:
         ignore_error: true
       - bash tests/scripts/start_mpc-server-mock.sh
     silent: false
+  killMpcServerMock:
+    cmds:
+      - cmd: pkill -f mpc-server-mock
+        ignore_error: true
+    silent: false
   lnavAvalanche:
     cmds:
       - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/avalanchego/logs
