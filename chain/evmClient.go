@@ -35,6 +35,8 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 				return false, errors.WithStack(&ErrTypConflictAtomicInputs{Cause: err})
 			case strings.Contains(errMsg, ErrMsgTxHasNoImportedInputs):
 				return false, errors.WithStack(&ErrTypTxHasNoImportedInputs{Cause: err})
+			case strings.Contains(errMsg, "failed to fetch import UTXOs"):
+				return false, errors.WithStack(&ErrTypImportUTXOsNotFound{Cause: err})
 			case strings.Contains(errMsg, ErrMsgNotFound):
 				return false, errors.WithStack(&ErrTypNotFound{Cause: err})
 			default:
