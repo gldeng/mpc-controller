@@ -118,22 +118,22 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		if err != nil {
 			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 			case *chain.ErrTypInsufficientFunds:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInvalidNonce:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypConflictAtomicInputs:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypTxHasNoImportedInputs:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypConsumedUTXONotFound:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypNotFound:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{
+				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{
 					{"stakeTask", stakeTask}}...)
 			default:
 				eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{
