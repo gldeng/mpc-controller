@@ -1,4 +1,4 @@
-package dispatcher
+package misc
 
 import (
 	"crypto/md5"
