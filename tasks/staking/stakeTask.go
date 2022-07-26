@@ -28,6 +28,7 @@ const (
 )
 
 type StakeTask struct {
+	TaskID             string
 	network            chain.NetworkContext
 	Nonce              uint64
 	DelegateAmt        uint64
@@ -47,7 +48,7 @@ type StakeTask struct {
 	factory            avaCrypto.FactorySECP256K1R
 }
 
-func NewStakeTask(networkContext chain.NetworkContext, reqId uint64, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.NodeID, delegateAmt uint64,
+func NewStakeTask(taskID string, networkContext chain.NetworkContext, reqId uint64, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.NodeID, delegateAmt uint64,
 	startTime uint64, endTime uint64,
 	baseFeeGwei uint64) (*StakeTask, error) {
 	addr, err := ids.ToShortID(hashing.PubkeyBytesToAddress(serializeCompresed(&pubkey)))
@@ -55,6 +56,7 @@ func NewStakeTask(networkContext chain.NetworkContext, reqId uint64, pubkey ecds
 		return nil, err
 	}
 	return &StakeTask{
+		TaskID:        taskID,
 		network:       networkContext,
 		Nonce:         nonce,
 		DelegateAmt:   delegateAmt,

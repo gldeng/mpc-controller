@@ -11,6 +11,7 @@ import (
 )
 
 type StakeTaskCreator struct {
+	TaskID string
 	*contract.MpcManagerStakeRequestStarted
 	chain.NetworkContext
 	PubKeyHex string
@@ -34,7 +35,7 @@ func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
 	if !nAVAXAmount.IsUint64() || !s.StartTime.IsUint64() || !s.EndTime.IsUint64() {
 		return nil, errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(s.NetworkContext, requestID, *pubKey, s.Nonce, ids.NodeID(nodeID), nAVAXAmount.Uint64(), s.StartTime.Uint64(), s.EndTime.Uint64(), cchain.BaseFeeGwei)
+	task, err := NewStakeTask(s.TaskID, s.NetworkContext, requestID, *pubKey, s.Nonce, ids.NodeID(nodeID), nAVAXAmount.Uint64(), s.StartTime.Uint64(), s.EndTime.Uint64(), cchain.BaseFeeGwei)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

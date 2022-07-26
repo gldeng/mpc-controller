@@ -77,10 +77,12 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
+		taskID := "STAKE-SIGN-TASK-" + evt.Raw.TxHash.Hex()
+
 		signRequester := &SignRequester{
 			SignDoner: eh.SignDoner,
 			SignRequestArgs: SignRequestArgs{
-				TaskID:                 "STAKE-SIGN-TASK-" + evt.Raw.TxHash.Hex(),
+				TaskID:                 taskID,
 				CompressedPartiPubKeys: partiKeys,
 				CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
 			},
@@ -89,6 +91,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.Logger.Debug("Got nonce for stake task", []logger.Field{{"taskID", signRequester.SignRequestArgs.TaskID}, {"nonce", nonce}}...)
 
 		taskCreator := StakeTaskCreator{
+			TaskID:                        taskID,
 			MpcManagerStakeRequestStarted: evt,
 			NetworkContext:                eh.NetworkContext,
 			PubKeyHex:                     eh.genPubKeyInfo.CompressedGenPubKeyHex,
