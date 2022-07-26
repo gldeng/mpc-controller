@@ -16,7 +16,7 @@ type ErrTypPubKeyRecoveryFailure struct {
 
 func (e *ErrTypPubKeyRecoveryFailure) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgFailedToRecoveryPubKey
+		return ErrMsgFailedToRecoveryPubKey + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -34,7 +34,7 @@ type ErrTypInvalidRecoveredPubKey struct {
 
 func (e *ErrTypInvalidRecoveredPubKey) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgInvalidRecoveredPubKey
+		return ErrMsgInvalidRecoveredPubKey + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }

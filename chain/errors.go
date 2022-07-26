@@ -23,7 +23,7 @@ type ErrTypInsufficientFunds struct {
 
 func (e *ErrTypInsufficientFunds) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgInsufficientFunds
+		return ErrMsgInsufficientFunds + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -41,7 +41,7 @@ type ErrTypInvalidNonce struct {
 
 func (e *ErrTypInvalidNonce) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgInvalidNonce
+		return ErrMsgInvalidNonce + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -59,7 +59,7 @@ type ErrTypConflictAtomicInputs struct {
 
 func (e *ErrTypConflictAtomicInputs) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgConflictAtomicInputs
+		return ErrMsgConflictAtomicInputs + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -77,7 +77,7 @@ type ErrTypTxHasNoImportedInputs struct {
 
 func (e *ErrTypTxHasNoImportedInputs) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgTxHasNoImportedInputs
+		return ErrMsgTxHasNoImportedInputs + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -95,7 +95,7 @@ type ErrTypNotFound struct {
 
 func (e *ErrTypNotFound) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgNotFound
+		return ErrMsgNotFound + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -113,7 +113,7 @@ type ErrTypSharedMemoryNotFound struct {
 
 func (e *ErrTypSharedMemoryNotFound) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgSharedMemoryNotFound
+		return ErrMsgSharedMemoryNotFound + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
@@ -131,7 +131,7 @@ type ErrTypConsumedUTXONotFound struct {
 
 func (e *ErrTypConsumedUTXONotFound) Error() string {
 	if e.ErrMsg == "" {
-		return ErrMsgConsumedUTXONotFound
+		return ErrMsgConsumedUTXONotFound + fmt.Sprintf(": %+v", e.Cause)
 	}
 	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
