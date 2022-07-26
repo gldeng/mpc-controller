@@ -42,3 +42,10 @@ func TestWrapf(t *testing.T) {
 	require.Equal(t, "oops!", outer.Cause.Error())
 	require.Equal(t, "something wrong, status: 1", outer.ErrMsg)
 }
+
+func TestErrorf(t *testing.T) {
+	err := &ErrTyp{}
+	status := 1
+	errCreated := Errorf(err, "something wrong, status: %v", status)
+	require.Equal(t, "something wrong, status: 1", errCreated.Error())
+}

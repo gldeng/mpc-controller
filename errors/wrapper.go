@@ -21,3 +21,8 @@ func Wrapf(cause error, outer error, format string, a ...interface{}) error {
 	}
 	return nil
 }
+
+func Errorf(err error, format string, a ...interface{}) error {
+	reflect.ValueOf(err).Elem().FieldByName("ErrMsg").SetString(fmt.Sprintf(format, a...))
+	return err
+}
