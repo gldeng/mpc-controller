@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/utils/misc"
 	"reflect"
 )
 
@@ -50,7 +51,7 @@ type EventHandler interface {
 func NewRootEventObject(createdBy string, evt Event, ctx context.Context) *EventObject {
 	et := reflect.TypeOf(evt).String()
 
-	rootEvtID := NewID()
+	rootEvtID := misc.NewID()
 	rootEvtNo := AddEventCount()
 
 	evtObj := EventObject{
@@ -59,7 +60,7 @@ func NewRootEventObject(createdBy string, evt Event, ctx context.Context) *Event
 		RootEvtNo:   rootEvtNo,
 
 		EvtStreamNo: AddEventStreamCount(),
-		EvtStreamID: NewID(),
+		EvtStreamID: misc.NewID(),
 
 		ParentEvtNo: uint64(0),
 		ParentEvtID: "",
@@ -69,7 +70,7 @@ func NewRootEventObject(createdBy string, evt Event, ctx context.Context) *Event
 		EventNo:   rootEvtNo,
 		EventID:   rootEvtID,
 		CreatedBy: createdBy,
-		CreatedAt: NewTimestamp(),
+		CreatedAt: misc.NewTimestamp(),
 
 		Event:   evt,
 		Context: ctx,
@@ -93,9 +94,9 @@ func NewEventObjectFromParent(parentEvtObj *EventObject, createdBy string, evt E
 		EventStep: parentEvtObj.EventStep + 1,
 
 		EventNo:   AddEventCount(),
-		EventID:   NewID(),
+		EventID:   misc.NewID(),
 		CreatedBy: createdBy,
-		CreatedAt: NewTimestamp(),
+		CreatedAt: misc.NewTimestamp(),
 
 		Event:   evt,
 		Context: ctx,
@@ -122,9 +123,9 @@ func NewEventObject(rootEvtType string, rootEvtID string, rootEvtNo uint64,
 		EventStep: parentEvtStep + 1,
 
 		EventNo:   AddEventCount(),
-		EventID:   NewID(),
+		EventID:   misc.NewID(),
 		CreatedBy: createdBy,
-		CreatedAt: NewTimestamp(),
+		CreatedAt: misc.NewTimestamp(),
 
 		Event:   evt,
 		Context: ctx,

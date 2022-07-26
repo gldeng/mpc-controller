@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/queue"
+	"github.com/avalido/mpc-controller/utils/misc"
+	"github.com/avalido/mpc-controller/utils/work"
 	"time"
 )
 
@@ -15,7 +16,8 @@ func main() {
 	defer cancel()
 	logger.DevMode = true
 	log := logger.Default()
-	d := dispatcher.NewDispatcher(ctx, log, queue.NewArrayQueue(1024), 1024, time.Second*1)
+	ws := work.NewWorkshop(log, time.Second*300, 1024, make(chan *work.Task, 1024))
+	d := dispatcher.NewDispatcher(ctx, log, 1024, ws)
 
 	// Subscribe events to event handlers
 	d.Subscribe(&MessageEvent{}, &MessageShower{d})
@@ -28,14 +30,14 @@ func main() {
 	go func() {
 		d.Publish(ctx, &dispatcher.EventObject{
 			EvtStreamNo: dispatcher.AddEventStreamCount(),
-			EvtStreamID: dispatcher.NewID(),
+			EvtStreamID: misc.NewID(),
 			ParentEvtNo: uint64(0),
 			ParentEvtID: "",
 			EventStep:   1,
 			EventNo:     dispatcher.AddEventCount(),
-			EventID:     dispatcher.NewID(),
+			EventID:     misc.NewID(),
 			CreatedBy:   "MainFunction",
-			CreatedAt:   dispatcher.NewTimestamp(),
+			CreatedAt:   misc.NewTimestamp(),
 			Event:       &WeatherEvent{Condition: "Cloudy"},
 			Context:     ctx,
 		})
@@ -74,9 +76,9 @@ func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID stri
 		ParentEvtID: parentEvtID,
 		EventStep:   parentEvtStep + 1,
 		EventNo:     dispatcher.AddEventCount(),
-		EventID:     dispatcher.NewID(),
+		EventID:     misc.NewID(),
 		CreatedBy:   "MessageShower",
-		CreatedAt:   dispatcher.NewTimestamp(),
+		CreatedAt:   misc.NewTimestamp(),
 
 		Event: &WeatherEvent{
 			Condition: condition,

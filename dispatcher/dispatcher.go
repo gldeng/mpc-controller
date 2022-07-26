@@ -3,21 +3,15 @@ package dispatcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/pkg/errors"
+	"github.com/avalido/mpc-controller/utils/work"
+
+	//"github.com/avalido/mpc-controller/utils/work"
 	"reflect"
 	"sync"
-	"time"
 )
 
-type Queue interface {
-	Enqueue(e interface{})
-	Dequeue() interface{}
-	List() []interface{}
-	Empty() bool
-	Full() bool
-	Count() int
-	Capacity() int
+type Workshop interface {
+	AddTask(ctx context.Context, t *work.Task)
 }
 
 type Dispatcherrer interface {
@@ -47,37 +41,21 @@ type Channeller interface {
 // dedicated for subscribing, publishing and dispatching events.
 type Dispatcher struct {
 	eventLogger logger.Logger
-
-	eventChan  chan *EventObject
-	eventQueue Queue
-	eventMap   map[string][]EventHandler
-
-	handlingChan chan *EventObject
-
-	enqueueDur time.Duration
-
-	once        *sync.Once
-	queueMu     *sync.Mutex
+	eventChan   chan *EventObject
+	eventMap    map[string][]EventHandler
 	subscribeMu *sync.Mutex
+	workshop    Workshop
 }
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
 // and runs a goroutine for receiving and publishing event objects.
-func NewDispatcher(ctx context.Context, logger logger.Logger, evtQueue Queue, evtChanLen int, enqueueDur time.Duration) *Dispatcher {
+func NewDispatcher(ctx context.Context, logger logger.Logger, evtChanLen int, ws Workshop) *Dispatcher {
 	dispatcher := &Dispatcher{
 		eventLogger: logger,
-
-		eventChan:  make(chan *EventObject, evtChanLen),
-		eventQueue: evtQueue,
-		eventMap:   make(map[string][]EventHandler),
-
-		handlingChan: make(chan *EventObject),
-
-		enqueueDur: enqueueDur,
-
-		once:        new(sync.Once),
-		queueMu:     new(sync.Mutex),
+		eventChan:   make(chan *EventObject, evtChanLen),
+		eventMap:    make(map[string][]EventHandler),
 		subscribeMu: new(sync.Mutex),
+		workshop:    ws,
 	}
 	go dispatcher.run(ctx)
 	return dispatcher
@@ -110,43 +88,7 @@ func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 // Publish sends the received event object to underlying channel.
 // All event objects will be serialized in a queue and published later in FIFO order.
 func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
-	select {
-	case <-ctx.Done():
-		return
-	case d.eventChan <- evtObj:
-		d.eventLogger.Debug("Received an event", []logger.Field{{"bufferedEvents", len(d.eventChan)}}...)
-		if float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8 {
-			d.eventLogger.Warn("Too many events buffered", []logger.Field{
-				{"bufferedEvents", len(d.eventChan)},
-				{"evtChanCapacity", cap(d.eventChan)},
-			}...)
-		}
-
-		//et := reflect.TypeOf(evtObj.Event).String()
-		//d.eventLogger.Info("Received an event", []logger.Field{
-		//	{"eventChanLen", len(d.eventChan)},
-		//	{"eventType", et},
-		//	{"eventNo", evtObj.EventNo},
-		//	{"eventID", evtObj.EventID},
-		//	{"eventValue", evtObj.Event},
-
-		//{"eventStep", evtObj.EventStep},
-
-		//{"parentEvtNo", evtObj.ParentEvtNo},
-		//{"parentEvtID", evtObj.ParentEvtID},
-
-		//{"rootEvtType", evtObj.RootEvtType},
-		//{"rootEvtID", evtObj.RootEvtID},
-		//{"rootEvtNo", evtObj.RootEvtNo},
-		//
-		//{"evtStreamNo", evtObj.EvtStreamNo},
-		//{"evtStreamID", evtObj.EvtStreamID},
-		//
-		//{"eventID", evtObj.EventID},
-		//{"createdBy", evtObj.CreatedBy},
-		//{"createdAt", evtObj.CreatedAt}}...
-		//}...)
-	}
+	d.eventChan <- evtObj
 }
 
 // Channel exposes the underlying channel for users to send event objects externally,
@@ -157,94 +99,13 @@ func (d *Dispatcher) Channel() chan *EventObject {
 
 // run is a goroutine for receiving, enqueueing events.
 func (d *Dispatcher) run(ctx context.Context) {
-	enqueueTicker := time.NewTicker(d.enqueueDur)
-	defer enqueueTicker.Stop()
-	dequeueTicker := time.NewTicker(d.enqueueDur / 10)
-	defer dequeueTicker.Stop()
-
-	wg := new(sync.WaitGroup)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case evtObj := <-d.handlingChan:
-				d.publish(ctx, evtObj)
-			}
-		}
-	}()
-
-loop:
 	for {
 		select {
 		case <-ctx.Done():
-			break loop
-		case <-enqueueTicker.C:
-			select {
-			case evtObj := <-d.eventChan:
-				et := reflect.TypeOf(evtObj.Event).String()
-				if len(d.eventMap[et]) > 0 { // only enqueue when there exist(s) event handler
-					d.enqueue(ctx, evtObj)
-				}
-			default:
-
-			}
-		case <-dequeueTicker.C:
-			if !d.eventQueue.Empty() {
-				if evtObj, ok := d.eventQueue.Dequeue().(*EventObject); ok {
-					select {
-					case <-ctx.Done():
-						break
-					case d.handlingChan <- evtObj:
-					}
-				}
-			}
+			return
+		case evtObj := <-d.eventChan:
+			d.publish(ctx, evtObj)
 		}
-	}
-	wg.Wait()
-}
-
-// enqueue receives and serializes the given event object in queue,
-// which will later be published  in FIFO order.
-func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
-	d.queueMu.Lock()
-	defer d.queueMu.Unlock()
-
-	et := reflect.TypeOf(evtObj.Event).String()
-
-	err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
-		if !d.eventQueue.Full() {
-			d.eventQueue.Enqueue(evtObj)
-			return false, nil
-		}
-		d.eventLogger.Warn("The event queue is full!", []logger.Field{{"length", d.eventQueue.Count()}}...)
-		return true, errors.Errorf("the event queue is full. eventCount:%v!", d.eventQueue.Count())
-	})
-
-	if err != nil {
-		d.eventLogger.Error("Failed to enqueue an event", []logger.Field{
-			{"error", err},
-			{"eventType", et},
-			{"eventValue", evtObj.Event}}...)
-	}
-
-	if float64(d.eventQueue.Count()) > float64(d.eventQueue.Capacity())*0.8 {
-		var evtStatMap = map[string]int{}
-		var ets []string
-		evtObjs := d.eventQueue.List()
-		for _, evtObj := range evtObjs {
-			et := reflect.TypeOf(evtObj.(*EventObject).Event).String()
-			ets = append(ets, et)
-			evtStatMap[et]++
-		}
-		d.eventLogger.Warn("Too many events in event queue", []logger.Field{
-			{"queueCount", d.eventQueue.Count()},
-			{"EventStats", evtStatMap},
-			//{"EventQueue", ets},
-		}...)
 	}
 }
 
@@ -255,15 +116,13 @@ func (d *Dispatcher) enqueue(ctx context.Context, evtObj *EventObject) {
 // But this part is out of the dispatcher's control.
 func (d *Dispatcher) publish(ctx context.Context, evtObj *EventObject) {
 	et := reflect.TypeOf(evtObj.Event).String()
-
-	wg := &sync.WaitGroup{}
-	for _, eH := range d.eventMap[et] {
-		wg.Add(1)
-		eH := eH
-		go func() {
-			defer wg.Done()
-			eH.Do(ctx, evtObj)
-		}()
+	ehs := d.eventMap[et]
+	if len(ehs) > 0 {
+		task := work.Task{
+			Args:    evtObj,
+			Ctx:     ctx,
+			WorkFns: workFnFromEventHandlers(ehs),
+		}
+		d.workshop.AddTask(ctx, &task)
 	}
-	wg.Wait()
 }

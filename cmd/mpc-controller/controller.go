@@ -23,6 +23,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/network"
+	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"golang.org/x/sync/errgroup"
 	"math/big"
@@ -30,7 +31,6 @@ import (
 	"time"
 
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/queue"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/avalido/mpc-controller/storage/badgerDB"
@@ -91,9 +91,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create dispatcher
-	// todo: consider config args, and values need to be tune for best performance and stabability
-	// Issue: when enquenDur is large than 5 minutes, it won't print more log.
-	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, queue.NewArrayQueue(512), 1024, time.Millisecond*100)
+	ws := work.NewWorkshop(myLogger, time.Second*300, 1024, make(chan *work.Task, 1024)) // todo: configurations
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, 1024, ws)
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
