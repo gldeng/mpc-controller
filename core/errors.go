@@ -1,5 +1,7 @@
 package core
 
+import "fmt"
+
 const (
 	ErrMsgSignErr         = "sign error"
 	ErrMsgEmptySignResult = "sign result is empty"
@@ -16,7 +18,7 @@ func (e *ErrTypSignErr) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgSignErr
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypSignErr) Unwrap() error {
@@ -34,7 +36,7 @@ func (e *ErrTypEmptySignResult) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgEmptySignResult
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypEmptySignResult) Unwrap() error {

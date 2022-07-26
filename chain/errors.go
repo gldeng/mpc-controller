@@ -1,5 +1,7 @@
 package chain
 
+import "fmt"
+
 const (
 	ErrMsgInsufficientFunds = "insufficient funds"
 	ErrMsgInvalidNonce      = "invalid nonce"
@@ -23,7 +25,7 @@ func (e *ErrTypInsufficientFunds) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgInsufficientFunds
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypInsufficientFunds) Unwrap() error {
@@ -41,7 +43,7 @@ func (e *ErrTypInvalidNonce) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgInvalidNonce
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypInvalidNonce) Unwrap() error {
@@ -59,7 +61,7 @@ func (e *ErrTypConflictAtomicInputs) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgConflictAtomicInputs
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypConflictAtomicInputs) Unwrap() error {
@@ -77,7 +79,7 @@ func (e *ErrTypTxHasNoImportedInputs) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgTxHasNoImportedInputs
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypTxHasNoImportedInputs) Unwrap() error {
@@ -95,7 +97,7 @@ func (e *ErrTypNotFound) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgNotFound
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypNotFound) Unwrap() error {
@@ -113,7 +115,7 @@ func (e *ErrTypSharedMemoryNotFound) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgSharedMemoryNotFound
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypSharedMemoryNotFound) Unwrap() error {
@@ -131,7 +133,7 @@ func (e *ErrTypConsumedUTXONotFound) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgConsumedUTXONotFound
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypConsumedUTXONotFound) Unwrap() error {

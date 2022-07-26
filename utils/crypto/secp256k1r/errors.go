@@ -1,5 +1,7 @@
 package secp256k1r
 
+import "fmt"
+
 const (
 	ErrMsgFailedToRecoveryPubKey = "failed to recovery public key"
 	ErrMsgInvalidRecoveredPubKey = "invalid recovered public key"
@@ -16,7 +18,7 @@ func (e *ErrTypPubKeyRecoveryFailure) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgFailedToRecoveryPubKey
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypPubKeyRecoveryFailure) Unwrap() error {
@@ -34,7 +36,7 @@ func (e *ErrTypInvalidRecoveredPubKey) Error() string {
 	if e.ErrMsg == "" {
 		return ErrMsgInvalidRecoveredPubKey
 	}
-	return e.ErrMsg
+	return e.ErrMsg + fmt.Sprintf(": %+v", e.Cause)
 }
 
 func (e *ErrTypInvalidRecoveredPubKey) Unwrap() error {
