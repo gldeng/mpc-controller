@@ -11,8 +11,10 @@ type Field struct {
 func AppendErrorFiled(err error, fields ...Field) []Field {
 	var errorFields []Field
 	errorFields = append(errorFields, fields...)
-	errMsg := fmt.Sprintf("%+v", err)
+	errMsg := fmt.Sprintf("%v", err)
 	errorFields = append(errorFields, Field{"error", errMsg})
+	stackTrace := fmt.Sprintf("%+v", err) // work with github.com/pkg/errors
+	errorFields = append(errorFields, Field{"stackTrace", stackTrace})
 	return errorFields
 }
 
