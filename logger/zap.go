@@ -24,6 +24,12 @@ func (l *zap) DebugOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+func (l *zap) DebugNilError(err error, msg string, fields ...Field) {
+	if err == nil {
+		l.l.Debug(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
+	}
+}
+
 func (l *zap) DebugOnTrue(ok bool, msg string, fields ...Field) {
 	if ok {
 		l.l.Debug(msg, l.zapFields(fields...)...)
@@ -40,6 +46,12 @@ func (l *zap) InfoOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+func (l *zap) InfoNilError(err error, msg string, fields ...Field) {
+	if err == nil {
+		l.l.Info(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
+	}
+}
+
 func (l *zap) InfoOnTrue(ok bool, msg string, fields ...Field) {
 	if ok {
 		l.l.Info(msg, l.zapFields(fields...)...)
@@ -52,6 +64,12 @@ func (l *zap) Warn(msg string, fields ...Field) {
 
 func (l *zap) WarnOnError(err error, msg string, fields ...Field) {
 	if err != nil {
+		l.l.Warn(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
+	}
+}
+
+func (l *zap) WarnNilError(err error, msg string, fields ...Field) {
+	if err == nil {
 		l.l.Warn(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
 	}
 }
@@ -73,6 +91,13 @@ func (l *zap) ErrorOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+func (l *zap) ErrorNilError(err error, msg string, fields ...Field) {
+	if err == nil {
+
+		l.l.Error(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
+	}
+}
+
 func (l *zap) ErrorOnTrue(ok bool, msg string, fields ...Field) {
 	if ok {
 		l.l.Error(msg, l.zapFields(fields...)...)
@@ -85,6 +110,12 @@ func (l *zap) Fatal(msg string, fields ...Field) {
 
 func (l *zap) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
+		l.l.Fatal(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
+	}
+}
+
+func (l *zap) FatalNilError(err error, msg string, fields ...Field) {
+	if err == nil {
 		l.l.Fatal(msg, l.zapFields(AppendErrorFiled(err, fields...)...)...)
 	}
 }

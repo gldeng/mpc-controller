@@ -33,6 +33,17 @@ func (l *logrus) DebugOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+func (l *logrus) DebugNilError(err error, msg string, fields ...Field) {
+	if err == nil {
+		fields = AppendErrorFiled(err, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Debug(msg)
+	}
+}
+
 func (l *logrus) DebugOnTrue(ok bool, msg string, fields ...Field) {
 	if ok {
 		fieldsl := sirupsenLogrus.Fields{}
@@ -53,6 +64,17 @@ func (l *logrus) Info(msg string, fields ...Field) {
 
 func (l *logrus) InfoOnError(err error, msg string, fields ...Field) {
 	if err != nil {
+		fields = AppendErrorFiled(err, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Info(msg)
+	}
+}
+
+func (l *logrus) InfoNilError(err error, msg string, fields ...Field) {
+	if err == nil {
 		fields = AppendErrorFiled(err, fields...)
 		fieldsl := sirupsenLogrus.Fields{}
 		for _, f := range fields {
@@ -91,6 +113,17 @@ func (l *logrus) WarnOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+func (l *logrus) WarnNilError(err error, msg string, fields ...Field) {
+	if err == nil {
+		fields = AppendErrorFiled(err, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Warn(msg)
+	}
+}
+
 func (l *logrus) WarnOnTrue(ok bool, msg string, fields ...Field) {
 	if ok {
 		fieldsl := sirupsenLogrus.Fields{}
@@ -120,6 +153,17 @@ func (l *logrus) ErrorOnError(err error, msg string, fields ...Field) {
 	}
 }
 
+func (l *logrus) ErrorNilError(err error, msg string, fields ...Field) {
+	if err == nil {
+		fields = AppendErrorFiled(err, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Error(msg)
+	}
+}
+
 func (l *logrus) ErrorOnTrue(ok bool, msg string, fields ...Field) {
 	if ok {
 		fieldsl := sirupsenLogrus.Fields{}
@@ -140,6 +184,17 @@ func (l *logrus) Fatal(msg string, fields ...Field) {
 
 func (l *logrus) FatalOnError(err error, msg string, fields ...Field) {
 	if err != nil {
+		fields = AppendErrorFiled(err, fields...)
+		fieldsl := sirupsenLogrus.Fields{}
+		for _, f := range fields {
+			fieldsl[f.Key] = f.Value
+		}
+		l.l.WithFields(fieldsl).Fatal(msg)
+	}
+}
+
+func (l *logrus) FatalNilError(err error, msg string, fields ...Field) {
+	if err == nil {
 		fields = AppendErrorFiled(err, fields...)
 		fieldsl := sirupsenLogrus.Fields{}
 		for _, f := range fields {
