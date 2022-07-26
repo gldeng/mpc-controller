@@ -34,9 +34,9 @@ func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID id
 			case strings.Contains(errMsg, ErrMsgConflictAtomicInputs):
 				return false, errors.WithStack(&ErrTypConflictAtomicInputs{Cause: err})
 			case strings.Contains(errMsg, ErrMsgTxHasNoImportedInputs):
-				return true, errors.WithStack(&ErrTypTxHasNoImportedInputs{Cause: err})
+				return false, errors.WithStack(&ErrTypTxHasNoImportedInputs{Cause: err})
 			case strings.Contains(errMsg, ErrMsgNotFound):
-				return true, errors.WithStack(&ErrTypNotFound{Cause: err})
+				return false, errors.WithStack(&ErrTypNotFound{Cause: err})
 			default:
 				return true, errors.WithStack(err) // todo: exploring more concrete error types, including connection failure
 			}
