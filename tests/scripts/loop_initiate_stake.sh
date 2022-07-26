@@ -5,7 +5,7 @@ MAX_LOOPS_ALLOWED=1000 # todo: enable command line config
 
 echo Starting loop initiateStake request
 
-while [ $LOOP_INITIATE_STAKE -le $MAX_LOOPS_ALLOWED ]
+while [ $LOOP_INITIATE_STAKE -lt $MAX_LOOPS_ALLOWED ]
 do
     bash ./tests/scripts/fund_participants.sh
 	  bash ./tests/scripts/fund_initiateStake.sh
