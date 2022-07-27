@@ -28,16 +28,16 @@ const (
 )
 
 type StakeTask struct {
+	RequestID          uint64
+	Nonce              uint64
 	TaskID             string
 	network            chain.NetworkContext
-	Nonce              uint64
 	DelegateAmt        uint64
 	StartTime          uint64
 	EndTime            uint64
 	baseFeeGwei        uint64
 	CChainAddress      common.Address
 	PChainAddress      ids.ShortID
-	RequestID          uint64
 	NodeID             ids.NodeID
 	exportTx           *evm.UnsignedExportTx
 	importTx           *txs.ImportTx
