@@ -2,6 +2,7 @@ package staking
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
@@ -129,11 +130,11 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 
 		if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
-			switch {
-			case errors.Is(err, ErrNonceRegress):
+			switch errors.Cause(err).(type) {
+			case *ErrTypNonceRegress:
 				eh.Logger.WarnOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
 				return
-			case errors.Is(err, ErrNonceJump):
+			case *ErrTypeNonceJump:
 				eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"stakeTask", stakeTask}}...)
 				return
 			default:
@@ -218,7 +219,7 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 
 	issuedNonce := atomic.LoadUint64(&eh.issuedNonce)
 	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce >= evmInput.Nonce {
-		return errors.Wrapf(ErrNonceRegress, "issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
+		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:issuedNonce:%v,givenNonce:%v", ErrMsgNonceRegress, issuedNonce, evmInput.Nonce)})
 	}
 
 	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
@@ -227,11 +228,11 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 	}
 
 	if addressNonce > evmInput.Nonce {
-		return errors.Wrapf(ErrNonceRegress, "addressNonce: %v, givenNonce: %v", addressNonce, evmInput.Nonce)
+		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceRegress, addressNonce, evmInput.Nonce)})
 	}
 
 	if addressNonce < evmInput.Nonce {
-		return errors.Wrapf(ErrNonceJump, "addressNonce: %v, givenNonce: %v", addressNonce, evmInput.Nonce)
+		return errors.WithStack(&ErrTypeNonceJump{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceJump, addressNonce, evmInput.Nonce)})
 	}
 
 	return nil
