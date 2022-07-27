@@ -121,6 +121,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 
 	res, err = c.ResultDone(ctx, request.SignReqID)
 	if err != nil {
+		c.log.ErrorOnError(err, "Sign request got error", []logger.Field{{"result", res}}...)
 		atomic.AddUint32(&c.errorSignReqs, 1)
 		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
 		return res, errors.WithStack(err)
