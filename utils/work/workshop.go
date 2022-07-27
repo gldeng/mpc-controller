@@ -52,17 +52,7 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 		return
 	}
 
-	var isIdle bool
-	w.lock.Lock()
-	for _, workspace := range w.workspacesMap {
-		if workspace.IsIdle() {
-			isIdle = true
-			break
-		}
-	}
-	w.lock.Unlock()
-
-	if isIdle {
+	if w.isIdle() {
 		w.TaskChan <- t
 		return
 	}
@@ -74,6 +64,19 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 
 func (w *Workshop) LivingWorkspaces() int {
 	return int(atomic.LoadUint32(&w.livingWorkspaces))
+}
+
+func (w *Workshop) isIdle() bool {
+	var isIdle bool
+	w.lock.Lock()
+	for _, workspace := range w.workspacesMap {
+		if workspace.IsIdle() {
+			isIdle = true
+			break
+		}
+	}
+	w.lock.Unlock()
+	return isIdle
 }
 
 func (w *Workshop) newWorkspace(ctx context.Context) {
