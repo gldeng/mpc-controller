@@ -123,7 +123,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	if err != nil {
 		atomic.AddUint32(&c.errorSignReqs, 1)
 		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
-		return nil, errors.WithStack(err)
+		return res, errors.WithStack(err)
 	}
 	if res == nil {
 		atomic.AddUint32(&c.errorSignReqs, 1)
@@ -133,7 +133,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	if res.Result == "" {
 		atomic.AddUint32(&c.errorSignReqs, 1)
 		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
-		return nil, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.SignReqID))
+		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.SignReqID))
 	}
 
 	atomic.AddUint32(&c.doneSignReqs, 1)
