@@ -192,7 +192,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		atomic.StoreUint64(&eh.issuedNonce, nonce)
 		atomic.StoreUint32(&eh.hasIssued, 1)
 		if ok := eh.Noncer.ResetBase(evt.RequestId.Uint64(), nonce); ok {
-			eh.Logger.Info("Noncer updated", []logger.Field{{"baseReqID", evt.RequestId.Uint64()},
+			eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", evt.RequestId.Uint64()},
 				{"baseNonce", nonce}, {"gap", evt.RequestId.Uint64() - nonce}}...)
 		}
 	}
