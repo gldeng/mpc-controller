@@ -34,7 +34,6 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 				return
 			case <-ticker.C:
 				client, isUpdated, err := c.Updater.NewEthWsClient(ctx)
-				c.Debug("Eth websocket client created.")
 				if err != nil {
 					c.Error("Failed to check check connectivity of EthWsClient", []logger.Field{{"error", err}}...)
 					break
