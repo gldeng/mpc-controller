@@ -207,11 +207,9 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 	}
 	evmInput := exportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx).Ins[0]
 
-	if atomic.LoadUint32(&eh.hasIssued) == 1 {
-		issuedNonce := atomic.LoadUint64(&eh.issuedNonce)
-		if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce < evmInput.Nonce {
-			return errors.Errorf("regressed nonce not allowed. issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
-		}
+	issuedNonce := atomic.LoadUint64(&eh.issuedNonce)
+	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce >= evmInput.Nonce {
+		return errors.Errorf("regressed nonce not allowed. issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
 	}
 
 	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
