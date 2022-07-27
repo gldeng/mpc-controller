@@ -134,7 +134,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypConsumedUTXONotFound:
-			eh.Logger.WarnOnError(err, "UTXO unexported", []logger.Field{
+			eh.Logger.DebugOnError(err, "UTXO unexported", []logger.Field{
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		default:
