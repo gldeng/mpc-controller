@@ -132,7 +132,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
 			switch errors.Cause(err).(type) {
 			case *ErrTypNonceRegress:
-				eh.Logger.WarnOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
+				eh.Logger.DebugOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
 				return
 			case *ErrTypeNonceJump:
 				eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"stakeTask", stakeTask}}...)
