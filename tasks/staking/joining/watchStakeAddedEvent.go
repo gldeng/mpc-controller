@@ -94,7 +94,6 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				eh.Logger.Debug("Stake request added", []logger.Field{{"bufferedStakeRequests", len(eh.sink)}}...)
 				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
