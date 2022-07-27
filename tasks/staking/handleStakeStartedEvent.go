@@ -96,7 +96,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			},
 		}
 
-		eh.Logger.Debug("Got nonce for stake task", []logger.Field{
+		eh.Logger.Debug("Nonce fetched", []logger.Field{
 			{"nonce", nonce},
 			{"requestID", evt.RequestId.Uint64()},
 			{"taskID", signRequester.SignRequestArgs.TaskID}}...)
