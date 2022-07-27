@@ -17,25 +17,24 @@ tasks:
        - bash ./tests/scripts/deploy_contract.sh
        - bash ./tests/scripts/start_mpc-controller.sh
        - bash ./tests/scripts/fund_participants.sh
-       - sleep 10
 
   createGroup:
     cmds:
       - task: init
       - venom run tests/testsuites/createGroup.yml
-      - sleep 10
+      - sleep 5
 
   requestKeygen:
     cmds:
       - task: createGroup
       - venom run tests/testsuites/requestKeygen.yml
-      - sleep 10
+      - sleep 5
 
   initiateStake:
     cmds:
       - task: requestKeygen
       - bash ./tests/scripts/fund_initiateStake.sh
-      - sleep 10
+      - sleep 5
       - venom run tests/testsuites/initiateStake.yml
       - sleep 30
 
