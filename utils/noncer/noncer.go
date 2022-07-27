@@ -4,22 +4,35 @@ import (
 	"sync"
 )
 
-type Noncer struct {
-	BaseReqID uint64
-	BaseNonce uint64
-	Lock      sync.Mutex
+type Noncer interface {
+	GetNonce(reqID uint64) (nonce uint64)
+	ResetBase(baseReqID, baseNonce uint64)
 }
 
-func (n *Noncer) GetNonce(reqID uint64) (nonce uint64) {
-	n.Lock.Lock()
-	nonce = n.BaseNonce + (reqID - n.BaseReqID)
-	n.Lock.Unlock()
+type noncer struct {
+	baseReqID uint64
+	baseNonce uint64
+	lock      *sync.Mutex
+}
+
+func New(baseReqID, baseNonce uint64) Noncer {
+	return &noncer{
+		baseReqID: baseReqID,
+		baseNonce: baseNonce,
+		lock:      new(sync.Mutex),
+	}
+}
+
+func (n *noncer) GetNonce(reqID uint64) (nonce uint64) {
+	n.lock.Lock()
+	nonce = n.baseNonce + (reqID - n.baseReqID)
+	n.lock.Unlock()
 	return
 }
 
-func (n *Noncer) ResetBase(baseReqID, baseNonce uint64) {
-	n.Lock.Lock()
-	n.BaseReqID = baseReqID
-	n.BaseNonce = baseNonce
-	n.Lock.Unlock()
+func (n *noncer) ResetBase(baseReqID, baseNonce uint64) {
+	n.lock.Lock()
+	n.baseReqID = baseReqID
+	n.baseNonce = baseNonce
+	n.lock.Unlock()
 }
