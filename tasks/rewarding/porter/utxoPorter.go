@@ -155,9 +155,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 	switch utxo.OutputIndex {
 	case 0:
-		eh.Logger.Info("Principal UTXO Exported", logger.Field{"UTXOExportedEvent", newEvt})
+		eh.Logger.Info("Principal UTXO EXPORTED", logger.Field{"UTXOExportedEvent", newEvt})
 	case 1:
-		eh.Logger.Info("Reward UTXO Exported", logger.Field{"UTXOExportedEvent", newEvt})
+		eh.Logger.Info("Reward UTXO EXPORTED", logger.Field{"UTXOExportedEvent", newEvt})
 	}
 }
 
