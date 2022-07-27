@@ -34,13 +34,14 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 				return
 			case <-ticker.C:
 				client, isUpdated, err := c.Updater.NewEthWsClient(ctx)
+				c.Debug("Eth websocket client created.")
 				if err != nil {
 					c.Error("Failed to check check connectivity of EthWsClient", []logger.Field{{"error", err}}...)
 					break
 				}
 
 				if c.createdNo == 0 {
-					time.Sleep(2) // wait for the event subscriber to get ready.
+					time.Sleep(5) // wait for the event subscriber to get ready.
 					c.publishEvent(ctx, client)
 					c.createdNo++
 					break
@@ -64,4 +65,5 @@ func (c *ContractFilterReconnector) publishEvent(ctx context.Context, client *et
 		Filterer: client,
 	}
 	c.Publisher.Publish(ctx, dispatcher.NewRootEventObject("ContractFilterReconnector", &newEvt, ctx))
+	c.Debug("Eth websocket client published.")
 }
