@@ -178,8 +178,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 		eh.Logger.Info("Staking task done", logger.Field{"StakingTaskDoneEvent", newEvt})
-		atomic.StoreUint32(&eh.hasIssued, 1)
 		atomic.StoreUint64(&eh.issuedNonce, nonce)
+		atomic.StoreUint32(&eh.hasIssued, 1)
 	}
 }
 
@@ -207,9 +207,11 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 	}
 	evmInput := exportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx).Ins[0]
 
-	issuedNonce := atomic.LoadUint64(&eh.issuedNonce)
-	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce < evmInput.Nonce {
-		return errors.Errorf("regressed nonce not allowed. issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
+	if atomic.LoadUint32(&eh.hasIssued) == 1 {
+		issuedNonce := atomic.LoadUint64(&eh.issuedNonce)
+		if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce < evmInput.Nonce {
+			return errors.Errorf("regressed nonce not allowed. issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
+		}
 	}
 
 	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
