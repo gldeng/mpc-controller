@@ -23,6 +23,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/network"
+	noncer2 "github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"golang.org/x/sync/errgroup"
@@ -124,10 +125,11 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create eth rpc client
-	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl) // todo: use chain.RpcEthClientWrapper
+	ethRpcClient, err := ethclient.Dial(config.EthRpcUrl)
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth rpc client, url: %q", config.EthRpcUrl))
 	}
+	rpcEthCliWrapper := &chain.RpcEthClientWrapper{myLogger, ethRpcClient}
 
 	// Create eth ws client
 	ethWsClient, err := ethclient.Dial(config.EthWsUrl) // todo: use chain.WsEthClientWrapper
@@ -150,13 +152,16 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Publisher: myDispatcher,
 	}
 
+	// Create nonce manager
+	noncer := noncer2.New(1, 0) // todo: config it
+
 	cacheWrapper := cache.CacheWrapper{
 		Dispatcher: myDispatcher,
 	}
 
 	participantMaster := participant.ParticipantMaster{
 		ContractAddr:    contractAddr,
-		ContractCaller:  ethRpcClient,
+		ContractCaller:  rpcEthCliWrapper,
 		Dispatcher:      myDispatcher,
 		Logger:          myLogger,
 		MyPubKeyBytes:   myPubKeyBytes,
@@ -171,10 +176,10 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		KeygenDoner:     mpcClient,
 		Logger:          myLogger,
 		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Receipter:       ethRpcClient,
+		Receipter:       rpcEthCliWrapper,
 		Signer:          signer,
 		Storer:          myDB,
-		Transactor:      ethRpcClient,
+		Transactor:      rpcEthCliWrapper,
 	}
 
 	joiningMaster := joining.JoiningMaster{
@@ -183,9 +188,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Logger:          myLogger,
 		MyIndexGetter:   &cacheWrapper,
 		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Receipter:       ethRpcClient,
+		Receipter:       rpcEthCliWrapper,
 		Signer:          signer,
-		Transactor:      ethRpcClient,
+		Transactor:      rpcEthCliWrapper,
 	}
 
 	stakingMaster := staking.StakingMaster{
@@ -196,7 +201,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Logger:            myLogger,
 		MyPubKeyHashHex:   myPubKeyHash.Hex(),
 		NetworkContext:    networkCtx(config),
-		Noncer:            ethRpcClient,
+		ChainNoncer:       rpcEthCliWrapper,
+		Noncer:            noncer,
 		PChainIssueClient: platformvmClientWrapper,
 		SignDoner:         mpcClient,
 	}
@@ -210,11 +216,11 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		MyPubKeyHashHex:   myPubKeyHash.Hex(),
 		NetworkContext:    networkCtx(config),
 		PChainClient:      platformvmClientWrapper,
-		Receipter:         ethRpcClient,
+		Receipter:         rpcEthCliWrapper,
 		RewardUTXOGetter:  platformvmClientWrapper,
 		SignDoner:         mpcClient,
 		Signer:            signer,
-		Transactor:        ethRpcClient,
+		Transactor:        rpcEthCliWrapper,
 	}
 
 	controller := MpcController{

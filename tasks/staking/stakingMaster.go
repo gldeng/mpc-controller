@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -18,7 +19,8 @@ type StakingMaster struct {
 	Dispatcher        dispatcher.DispatcherClaasic
 	Logger            logger.Logger
 	MyPubKeyHashHex   string
-	Noncer            chain.Noncer
+	ChainNoncer       chain.Noncer
+	Noncer            noncer.Noncer
 	PChainIssueClient chain.PChainIssuer
 	SignDoner         core.SignDoner
 	chain.NetworkContext
@@ -41,15 +43,16 @@ func (m *StakingMaster) subscribe() {
 	}
 
 	taskStartedDealer := StakeRequestStartedEventHandler{
-		Logger:            m.Logger,
-		NetworkContext:    m.NetworkContext,
-		MyPubKeyHashHex:   m.MyPubKeyHashHex,
-		Cache:             m.Cache,
-		SignDoner:         m.SignDoner,
-		Publisher:         m.Dispatcher,
 		CChainIssueClient: m.CChainIssueClient,
-		PChainIssueClient: m.PChainIssueClient,
+		Cache:             m.Cache,
+		ChainNoncer:       m.ChainNoncer,
+		Logger:            m.Logger,
+		MyPubKeyHashHex:   m.MyPubKeyHashHex,
+		NetworkContext:    m.NetworkContext,
 		Noncer:            m.Noncer,
+		PChainIssueClient: m.PChainIssueClient,
+		Publisher:         m.Dispatcher,
+		SignDoner:         m.SignDoner,
 	}
 
 	m.stakingWatcher = &taskStartedWatcher

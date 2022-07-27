@@ -67,6 +67,7 @@ func (suite *StakeTaskWrapperTestSuite) SetupTest() {
 	)
 
 	taskCreator := &StakeTaskCreator{
+		"task-fake-id",
 		stakeReq,
 		networkCtx,
 		"03c237810788fbdce68a497236b5ded1ee817ac7465ccc133a8cfe7b75b35ed1e3",
