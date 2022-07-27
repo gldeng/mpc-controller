@@ -147,7 +147,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		if err != nil {
 			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 			case *chain.ErrTypSharedMemoryNotFound:
-				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInsufficientFunds:
 				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInvalidNonce:
