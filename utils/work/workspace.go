@@ -3,7 +3,6 @@ package work
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/backoff"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -44,35 +43,19 @@ func (w *Workspace) Run(ctx context.Context) {
 				}
 			}
 		case task := <-w.TaskChan:
-			taskCp := task
-			err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
-				if atomic.LoadUint32(&w.status) == 1 {
-					w.Logger.Debug("Workspace is busy", []logger.Field{{"workspace", w.Id}}...)
-					return true, nil
-				}
-				return false, nil
-			})
-
-			if err != nil {
-				w.Logger.ErrorOnError(err, "Failed to wait for busy workspace for new task", []logger.Field{{"workspace", w.Id}}...)
-				break
+			atomic.StoreUint32(&w.status, 1)
+			wg := new(sync.WaitGroup)
+			for _, workFn := range task.WorkFns {
+				wg.Add(1)
+				workFn := workFn
+				go func() {
+					workFn(task.Ctx, task.Args)
+					wg.Done()
+				}()
 			}
-
-			go func() {
-				atomic.StoreUint32(&w.status, 1)
-				wg := new(sync.WaitGroup)
-				for _, workFn := range taskCp.WorkFns {
-					workFn := workFn
-					go func() {
-						wg.Add(1)
-						workFn(taskCp.Ctx, taskCp.Args)
-						wg.Done()
-					}()
-				}
-				wg.Wait()
-				atomic.StoreUint32(&w.status, 0)
-				w.lastActiveTime = time.Now()
-			}()
+			wg.Wait()
+			atomic.StoreUint32(&w.status, 0)
+			w.lastActiveTime = time.Now()
 		}
 	}
 }
