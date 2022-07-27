@@ -29,11 +29,6 @@ type SignRequest struct {
 	CompressedGenPubKeyHex string   `json:"public_key"`
 	CompressedPartiPubKeys []string `json:"participant_public_keys"`
 	Hash                   string   `json:"message"`
-
-	payloadBytes []byte
-	result       *Result
-	handled      bool
-	err          error
 }
 
 type Result struct {
@@ -121,7 +116,7 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 
 	res, err = c.ResultDone(ctx, request.SignReqID)
 	if err != nil {
-		c.log.ErrorOnError(err, "Sign request got error", []logger.Field{{"result", res}}...)
+		c.log.ErrorOnError(err, "Sign request got error", []logger.Field{{"signRes", res}, {"signReq", request}}...)
 		atomic.AddUint32(&c.errorSignReqs, 1)
 		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
 		return res, errors.WithStack(err)
