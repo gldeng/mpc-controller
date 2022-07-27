@@ -21,6 +21,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"strconv"
 	"sync"
 )
 
@@ -108,7 +109,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 		SignDoner: eh.SignDoner,
 		SignReqArgs: &signer.SignRequestArgs{
-			TaskID:                 "EXPORT-UTXO-SIGN-TASK-" + exportUTXOReqEvt.TxHash.Hex(),
+			TaskID:                 "EXPORT-UTXO-" + strconv.Itoa(int(utxo.OutputIndex)) + "-SIGN-TASK-" + exportUTXOReqEvt.TxHash.Hex(),
 			CompressedPartiPubKeys: partiKeys,
 			CompressedGenPubKeyHex: *compressedGenPubKey,
 		},
