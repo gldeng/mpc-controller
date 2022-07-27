@@ -28,7 +28,7 @@ func New(baseReqID, baseNonce uint64) Noncer {
 func (n *noncer) GetNonce(reqID uint64) (nonce uint64) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
-	nonceInt64 := int64(reqID) - n.gap
+	nonceInt64 := int64(reqID) - n.gap // todo: overflow, handle safe calculation
 	return uint64(nonceInt64)
 }
 
