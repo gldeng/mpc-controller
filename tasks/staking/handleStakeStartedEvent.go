@@ -149,7 +149,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			case *chain.ErrTypSharedMemoryNotFound:
 				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInsufficientFunds:
-				eh.Logger.ErrorOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypInvalidNonce:
 				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 			case *chain.ErrTypConflictAtomicInputs:
