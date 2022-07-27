@@ -216,7 +216,7 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 	if err != nil {
 		return errors.Wrapf(err, "failed to request nonce")
 	}
-	if issuedNonce != evmInput.Nonce {
+	if addressNonce != evmInput.Nonce {
 		return errors.Errorf("given nonce not equal to address nonce. addressNonce: %v, givenNonce: %v", addressNonce, evmInput.Nonce)
 	}
 	return nil
