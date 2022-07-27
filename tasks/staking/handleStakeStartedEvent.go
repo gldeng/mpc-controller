@@ -81,7 +81,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 
 		partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
 		if err != nil {
-			eh.Logger.Error("Failed to get normalized participant keys", []logger.Field{{"error", err}}...)
+			eh.Logger.ErrorOnError(err, "Failed to get normalized participant keys")
 			return
 		}
 
@@ -110,7 +110,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 		stakeTask, err := taskCreator.CreateStakeTask()
 		if err != nil {
-			eh.Logger.Error("Failed to create stake task", []logger.Field{{"error", err}}...)
+			eh.Logger.ErrorOnError(err, "Failed to create stake task")
 			return
 		}
 
@@ -129,8 +129,17 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 
 		if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
-			eh.Logger.ErrorOnError(err, "Stake task not allowed to issue", []logger.Field{{"stakeTask", stakeTask}}...)
-			return
+			switch {
+			case errors.Is(err, ErrNonceRegress):
+				eh.Logger.WarnOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
+				return
+			case errors.Is(err, ErrNonceJump):
+				eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"stakeTask", stakeTask}}...)
+				return
+			default:
+				eh.Logger.ErrorOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
+				return
+			}
 		}
 
 		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
@@ -177,7 +186,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			ParticipantPubKeys: partiKeys,
 		}
 		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
-		eh.Logger.Info("Staking task done", logger.Field{"StakingTaskDoneEvent", newEvt})
+		eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
 		atomic.StoreUint64(&eh.issuedNonce, nonce)
 		atomic.StoreUint32(&eh.hasIssued, 1)
 	}
@@ -209,16 +218,22 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 
 	issuedNonce := atomic.LoadUint64(&eh.issuedNonce)
 	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce >= evmInput.Nonce {
-		return errors.Errorf("regressed nonce not allowed. issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
+		return errors.Wrapf(ErrNonceRegress, "issuedNonce: %v, givenNonce: %v", issuedNonce, evmInput.Nonce)
 	}
 
 	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to request nonce")
 	}
-	if addressNonce != evmInput.Nonce {
-		return errors.Errorf("given nonce not equal to address nonce. addressNonce: %v, givenNonce: %v", addressNonce, evmInput.Nonce)
+
+	if addressNonce > evmInput.Nonce {
+		return errors.Wrapf(ErrNonceRegress, "addressNonce: %v, givenNonce: %v", addressNonce, evmInput.Nonce)
 	}
+
+	if addressNonce < evmInput.Nonce {
+		return errors.Wrapf(ErrNonceJump, "addressNonce: %v, givenNonce: %v", addressNonce, evmInput.Nonce)
+	}
+
 	return nil
 }
 

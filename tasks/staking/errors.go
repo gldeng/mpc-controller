@@ -1,10 +1,18 @@
 package staking
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/pkg/errors"
+)
 
 const (
 	ErrMsgNonceRegress = "nonce regress"
 	ErrMsgNonceJump    = "nonce jump"
+)
+
+var (
+	ErrNonceRegress = errors.New("nonce regress")
+	ErrNonceJump    = errors.New("nonce jump[")
 )
 
 // ----------error types ----------
