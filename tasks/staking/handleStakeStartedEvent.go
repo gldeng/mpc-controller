@@ -188,8 +188,13 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		}
 		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 		eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
+
 		atomic.StoreUint64(&eh.issuedNonce, nonce)
 		atomic.StoreUint32(&eh.hasIssued, 1)
+		if ok := eh.Noncer.ResetBase(evt.RequestId.Uint64(), nonce); ok {
+			eh.Logger.Info("Noncer updated", []logger.Field{{"baseReqID", evt.RequestId.Uint64()},
+				{"baseNonce", nonce}, {"gap", evt.RequestId.Uint64() - nonce}}...)
+		}
 	}
 }
 
