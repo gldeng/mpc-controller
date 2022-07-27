@@ -100,7 +100,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.Logger.Debug("Nonce fetched", []logger.Field{
 			{"requestID", evt.RequestId.Uint64()},
 			{"nonce", nonce},
-			{"taskID", signRequester.SignRequestArgs.TaskID}}...)
+			{"taskID", evt.Raw.TxHash.Hex()}}...)
 
 		taskCreator := StakeTaskCreator{
 			TaskID:                        taskID,
