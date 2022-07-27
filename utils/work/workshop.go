@@ -37,7 +37,7 @@ func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces u
 
 func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
-		"Living workspaces is close to max allowed number",
+		"Too many living workspaces",
 		[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
 			{"maxWorkspaces", w.MaxWorkspaces}}...)
 
