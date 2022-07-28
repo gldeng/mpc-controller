@@ -18,7 +18,7 @@ type UTXOsFetchedEvent struct {
 	GroupIdHex       string         `copier:"must"`
 	PartiIndex       *big.Int       `copier:"must"`
 	GenPubKeyHex     string         `copier:"must"`
-	GenPubKeyHashHex string         `copier:"must"`
+	GenPubKeyHashHex string         `copier:"must"` // key
 	CChainAddress    common.Address `copier:"must"`
 	PChainAddress    ids.ShortID    `copier:"must"`
 }

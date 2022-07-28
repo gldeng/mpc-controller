@@ -14,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/tasks/rewarding/watcher"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"sync"
 )
 
 type Master struct {
@@ -46,14 +47,17 @@ func (m *Master) Start(ctx context.Context) error {
 }
 
 func (m *Master) subscribe() {
+	utxosFetchedEvent := new(sync.Map)
+
 	utxoTracker := tracker.UTXOTracker{
-		ContractAddr: m.ContractAddr,
-		Logger:       m.Logger,
-		PChainClient: m.PChainClient,
-		Publisher:    m.Dispatcher,
-		Receipter:    m.Receipter,
-		Signer:       m.Signer,
-		Transactor:   m.Transactor,
+		ContractAddr:           m.ContractAddr,
+		Logger:                 m.Logger,
+		PChainClient:           m.PChainClient,
+		Publisher:              m.Dispatcher,
+		Receipter:              m.Receipter,
+		Signer:                 m.Signer,
+		Transactor:             m.Transactor,
+		UTXOsFetchedEventCache: utxosFetchedEvent,
 	}
 
 	exportUTXOReqEvtWatcher := watcher.ExportUTXORequestWatcher{
@@ -63,24 +67,24 @@ func (m *Master) subscribe() {
 	}
 
 	utxoPorter := porter.UTXOPorter{
-		CChainIssueClient: m.CChainIssueClient,
-		Cache:             m.Cache,
-		Logger:            m.Logger,
-		MyPubKeyHashHex:   m.MyPubKeyHashHex,
-		NetworkContext:    m.NetworkContext,
-		PChainIssueClient: m.PChainClient,
-		Publisher:         m.Dispatcher,
-		SignDoner:         m.SignDoner,
+		CChainIssueClient:      m.CChainIssueClient,
+		Cache:                  m.Cache,
+		UTXOsFetchedEventCache: utxosFetchedEvent,
+		Logger:                 m.Logger,
+		MyPubKeyHashHex:        m.MyPubKeyHashHex,
+		NetworkContext:         m.NetworkContext,
+		PChainIssueClient:      m.PChainClient,
+		Publisher:              m.Dispatcher,
+		SignDoner:              m.SignDoner,
 	}
 
 	m.utxoTracker = &utxoTracker
 	m.exportUTXOReqEvtWatcher = &exportUTXOReqEvtWatcher
 	m.utxoPorter = &utxoPorter
 
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoTracker) // Emit event: *events.UTXOsFetchedEvent; *events.UTXOReportedEvent
+	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoTracker) // Emit event: *events.UTXOsFetchedEventCache; *events.UTXOReportedEvent
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportUTXOReqEvtWatcher)
 	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.exportUTXOReqEvtWatcher) // Emit event: *contract.ExportUTXORequestEvent
 
-	m.Dispatcher.Subscribe(&events.UTXOsFetchedEvent{}, m.utxoPorter)
 	m.Dispatcher.Subscribe(&events.ExportUTXORequestEvent{}, m.utxoPorter) // Emit event: *events.UTXOExportedEvent
 }

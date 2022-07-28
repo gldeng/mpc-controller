@@ -8,6 +8,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
+	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/dispatcher"
@@ -32,7 +33,7 @@ const (
 
 // Accept event: *events.ReportedGenPubKeyEvent
 
-// Emit event: *events.UTXOsFetchedEvent
+// Emit event: *events.UTXOsFetchedEventCache
 // Emit event: *events.UTXOReportedEvent
 
 type UTXOTracker struct {
@@ -43,6 +44,8 @@ type UTXOTracker struct {
 	Receipter    chain.Receipter
 	Signer       *bind.TransactOpts
 	Transactor   bind.ContractTransactor
+
+	UTXOsFetchedEventCache cache.SyncMapCache
 
 	once               sync.Once
 	lock               sync.Mutex
@@ -103,6 +106,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 
 				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
 				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
+				eh.UTXOsFetchedEventCache.Store(reportedGenPubKey.GenPubKeyHashHex, utxoFetchedEvtObj)
 
 				eh.reportUTXOs(ctx, utxoFetchedEvtObj, filterUtxos, groupIdBytes, partiIndex, genPubKeyBytes)
 			}

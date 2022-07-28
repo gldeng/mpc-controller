@@ -2,6 +2,7 @@ package porter
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -19,6 +20,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"sync"
@@ -30,7 +32,6 @@ const (
 	exportRewardTaskIDPrefix    = "REWARD-"
 )
 
-// Accept event: *events.UTXOsFetchedEvent
 // Accept event: *events.ExportUTXORequestEvent
 
 // Emit event: *events.UTXOExportedEvent
@@ -45,21 +46,15 @@ type UTXOPorter struct {
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
+	UTXOsFetchedEventCache cache.SyncMapCache
+
 	once                   sync.Once
 	exportedRewardUTXOs    uint64
 	exportedPrincipalUTXOs uint64
-
-	// todo: consider include this field in Cache or dispatcher
-	utxoFetchedEvtObjMap map[string]*dispatcher.EventObject // todo: persistence and restore
 }
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.UTXOsFetchedEvent:
-		eh.once.Do(func() {
-			eh.utxoFetchedEvtObjMap = make(map[string]*dispatcher.EventObject)
-		})
-		eh.utxoFetchedEvtObjMap[evt.GenPubKeyHashHex] = evtObj
 	case *events.ExportUTXORequestEvent:
 		ok := eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.Hex(), evt.ParticipantIndices)
 		if !ok {
@@ -81,18 +76,27 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		return
 	}
 
-	utxoFectchedEvtObj := eh.utxoFetchedEvtObjMap[exportUTXOReqEvt.GenPubKeyHash.Hex()]
+	genPubKey := exportUTXOReqEvt.GenPubKeyHash.Hex()
+	val, ok := eh.UTXOsFetchedEventCache.Load(genPubKey)
+	if !ok {
+		eh.Logger.Warn("UTXOsFetchedEventCache not cached", []logger.Field{{"genPubKey", genPubKey}}...)
+		return
+	}
+	utxoFectchedEvtObj := val.(*dispatcher.EventObject)
 	utxoFetchedEvt := utxoFectchedEvtObj.Event.(*events.UTXOsFetchedEvent)
 
 	var utxo *avax.UTXO
-	for _, utxo = range utxoFetchedEvt.NativeUTXOs {
-		if utxo.TxID == exportUTXOReqEvt.TxID && utxo.OutputIndex == exportUTXOReqEvt.OutputIndex {
+	txID := exportUTXOReqEvt.TxID
+	outputIndex := exportUTXOReqEvt.OutputIndex
+	for _, utxoFetched := range utxoFetchedEvt.NativeUTXOs {
+		if utxoFetched.TxID == txID && utxoFetched.OutputIndex == outputIndex {
+			utxo = utxoFetched
 			break
 		}
 	}
 
 	if utxo == nil {
-		eh.Logger.Warn("Found no UTXO to export", []logger.Field{{"exportUTXORequestEvent", exportUTXOReqEvt}}...)
+		eh.Logger.Warn("UTXO not cached", []logger.Field{{"txID", txID}, {"outputIndex", outputIndex}}...)
 		return
 	}
 
@@ -230,6 +234,14 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 
 	txIds, err := myPorter.SignAndIssueTxs(ctx)
 	if err != nil {
+		fmt.Println(err)
+		fmt.Println("------taskid------:", args.SignReqArgs.TaskID)
+		fmt.Println("----mpcutxo-----")
+		mpcUTXO := myAvax.MpcUTXOFromUTXO(myExportTxArgs.UTXOs[0])
+		spew.Dump(mpcUTXO)
+		fmt.Println("------exportTxArgs-----")
+		spew.Dump(myExportTxArgs)
+
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
 
