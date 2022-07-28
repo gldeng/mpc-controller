@@ -129,7 +129,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypConflictAtomicInputs:
-			eh.Logger.WarnOnError(err, "UTXO UNEXPORTED", []logger.Field{
+			eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypImportUTXOsNotFound:
