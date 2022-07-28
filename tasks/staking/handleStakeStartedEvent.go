@@ -139,23 +139,23 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
-		if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
-			switch errors.Cause(err).(type) {
-			case *ErrTypNonceRegress:
-				eh.Logger.DebugOnError(err, "Stake task CANCELED", []logger.Field{{"stakeTask", stakeTask}}...)
-				return
-			case *ErrTypeNonceJump:
-				eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
-				eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
-				atomic.StoreUint32(&eh.pendingIssueTasks, 1)
-				eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
-					{"stakeTask", stakeTask}}...)
-				return
-			default:
-				eh.Logger.ErrorOnError(err, "Stake task TERMINATED", []logger.Field{{"stakeTask", stakeTask}}...)
-				return
-			}
-		}
+		//if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
+		//	switch errors.Cause(err).(type) {
+		//	case *ErrTypNonceRegress:
+		//		eh.Logger.DebugOnError(err, "Stake task CANCELED", []logger.Field{{"stakeTask", stakeTask}}...)
+		//		return
+		//	case *ErrTypeNonceJump:
+		//		eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
+		//		eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
+		//		atomic.StoreUint32(&eh.pendingIssueTasks, 1)
+		//		eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
+		//			{"stakeTask", stakeTask}}...)
+		//		return
+		//	default:
+		//		eh.Logger.ErrorOnError(err, "Stake task TERMINATED", []logger.Field{{"stakeTask", stakeTask}}...)
+		//		return
+		//	}
+		//}
 		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
 
 		//ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
@@ -222,10 +222,10 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		evtObjVal, _ := eh.pendingIssueTasksEvtOjbs.LoadAndDelete(nextNonce)
 		evtObj := evtObjVal.(*dispatcher.EventObject)
 
-		if err := eh.checkNonceContinuity(ctx, stakeTaskWrapper.StakeTask); err != nil {
-			eh.Logger.ErrorOnError(err, "Stake task DROPPED for fatal nonce incontinuity", []logger.Field{{"stakeTask", stakeTask}}...) // todo:
-			return
-		}
+		//if err := eh.checkNonceContinuity(ctx, stakeTaskWrapper.StakeTask); err != nil {
+		//	eh.Logger.ErrorOnError(err, "Stake task DROPPED for fatal nonce incontinuity", []logger.Field{{"stakeTask", stakeTask}}...) // todo:
+		//	return
+		//}
 
 		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
 		goto loop
@@ -278,10 +278,29 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 }
 
 func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
-	ids, err := stw.IssueTx(ctx)
 	stakeTask := stw.StakeTask
+	if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
+		switch errors.Cause(err).(type) {
+		case *ErrTypNonceRegress:
+			eh.Logger.DebugOnError(err, "Stake task CANCELED", []logger.Field{{"stakeTask", stakeTask}}...)
+			return
+		case *ErrTypeNonceJump:
+			eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
+			eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
+			atomic.StoreUint32(&eh.pendingIssueTasks, 1)
+			eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
+				{"stakeTask", stakeTask}}...)
+			return
+		default:
+			eh.Logger.ErrorOnError(err, "Stake task TERMINATED", []logger.Field{{"stakeTask", stakeTask}}...)
+			return
+		}
+	}
+
+	ids, err := stw.IssueTx(ctx)
 	signRequester := stw.SignRequester
-	if err != nil {
+
+	if err != nil { // todo: simplification error handling
 		switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 		case *chain.ErrTypSharedMemoryNotFound:
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
