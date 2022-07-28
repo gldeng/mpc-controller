@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 // Accept event: *events.UTXOsFetchedEvent
@@ -40,7 +41,9 @@ type UTXOPorter struct {
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
-	once sync.Once
+	once                   sync.Once
+	exportedRewardUTXOs    uint64
+	exportedPrincipalUTXOs uint64
 
 	// todo: consider include this field in Cache or dispatcher
 	utxoFetchedEvtObjMap map[string]*dispatcher.EventObject // todo: persistence and restore
@@ -156,10 +159,15 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 	switch utxo.OutputIndex {
 	case 0:
-		eh.Logger.Info("Principal UTXO EXPORTED", logger.Field{"UTXOExportedEvent", newEvt})
+		atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
+		eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
 	case 1:
-		eh.Logger.Info("Reward UTXO EXPORTED", logger.Field{"UTXOExportedEvent", newEvt})
+		atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
+		eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
 	}
+	totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
+	totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
+	eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals}, {"exportedRewardUTXOs", totalRewards}}...)
 }
 
 type Args struct {
