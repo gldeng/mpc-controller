@@ -80,4 +80,5 @@ func main() {
 //- take measures to deal with failed tasks
 //- take measures to avoid double-spend, maybe introduce SPE(single-participant-execution) strategy or consensus
 //- take measures to deal with package lost and disorder arrival
+//- store and cache further improved
 //- ...
