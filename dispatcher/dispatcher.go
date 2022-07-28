@@ -113,9 +113,10 @@ func (d *Dispatcher) publish(ctx context.Context, evtObj *EventObject) {
 	ehs := d.eventMap[et]
 	if len(ehs) > 0 {
 		task := work.Task{
-			Args:    evtObj,
-			Ctx:     ctx,
-			WorkFns: workFnFromEventHandlers(ehs),
+			Args:     evtObj,
+			Ctx:      ctx,
+			WorkFns:  workFnFromEventHandlers(ehs),
+			Priority: evtObj.Priority,
 		}
 		d.workshop.AddTask(ctx, &task)
 	}

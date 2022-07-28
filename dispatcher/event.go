@@ -33,6 +33,8 @@ type EventObject struct {
 	CreatedBy string
 	CreatedAt string // timestamp
 
+	Priority int // from low to high: 0->1->2->3->4->5
+
 	Event   Event
 	Context context.Context
 	// todo: consider including stretchr/objx from https://github.com/stretchr/objx
