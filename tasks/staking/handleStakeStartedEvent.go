@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	stakeTaskIDPrefix = "STAKE-SIGN-TASK-"
+	stakeTaskIDPrefix = "STAKE-"
 )
 
 type Cache interface {
