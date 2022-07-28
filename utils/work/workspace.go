@@ -51,9 +51,7 @@ func (w *Workspace) Run(ctx context.Context) {
 			wg.Wait()
 			atomic.StoreUint32(&w.status, 0)
 			w.lastActiveTime = time.Now()
-			go func() {
-				w.IdleChan <- struct{}{}
-			}()
+			w.IdleChan <- struct{}{}
 		}
 	}
 }

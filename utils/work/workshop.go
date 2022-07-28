@@ -117,7 +117,7 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 		Logger:     w.Logger,
 		MaxIdleDur: w.MaxIdleDur,
 		TaskChan:   w.taskChan,
-		IdleChan:   make(chan struct{}, 32),
+		IdleChan:   w.idleChan,
 	}
 	w.lock.Lock()
 	w.workspacesMap[ws.Id] = ws

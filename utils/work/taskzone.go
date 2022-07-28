@@ -52,7 +52,10 @@ func (z *TaskZone) EnZone(t *Task) error {
 
 func (z *TaskZone) deZone() (t *Task) {
 	for priority := 5; priority >= 0; priority-- {
-		q := z.taskPriorityQueues[priority]
+		q, ok := z.taskPriorityQueues[priority]
+		if !ok {
+			continue
+		}
 		if q.Empty() {
 			continue
 		}
