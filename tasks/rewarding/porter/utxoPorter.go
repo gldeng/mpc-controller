@@ -21,9 +21,13 @@ import (
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"strconv"
 	"sync"
 	"sync/atomic"
+)
+
+const (
+	exportPrincipalTaskIDPrefix = "PRINCIPAL-"
+	exportRewardTaskIDPrefix    = "REWARD-"
 )
 
 // Accept event: *events.UTXOsFetchedEvent
@@ -100,6 +104,11 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 		return
 	}
 
+	taskID := exportPrincipalTaskIDPrefix
+	if utxo.OutputIndex == 1 {
+		taskID = exportRewardTaskIDPrefix
+	}
+
 	args := Args{
 		Logger:     eh.Logger,
 		NetworkID:  eh.NetworkID(),
@@ -112,7 +121,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 
 		SignDoner: eh.SignDoner,
 		SignReqArgs: &signer.SignRequestArgs{
-			TaskID:                 "EXPORT-UTXO-" + strconv.Itoa(int(utxo.OutputIndex)) + "-SIGN-TASK-" + exportUTXOReqEvt.TxHash.Hex(),
+			TaskID:                 taskID + exportUTXOReqEvt.TxHash.Hex(),
 			CompressedPartiPubKeys: partiKeys,
 			CompressedGenPubKeyHex: *compressedGenPubKey,
 		},
