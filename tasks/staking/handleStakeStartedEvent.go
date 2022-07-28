@@ -56,6 +56,8 @@ type StakeRequestStartedEventHandler struct {
 
 	hasIssued   uint32 // 0: no 1: yes
 	issuedNonce uint64
+
+	doneStakeTasks uint64
 }
 
 func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -265,7 +267,7 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 		ParticipantPubKeys: signRequester.CompressedPartiPubKeys,
 	}
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
-	eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
+	eh.Logger.Info("Stake task DONE", []logger.Field{{"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}, {"StakingTaskDoneEvent", newEvt}}...)
 
 	atomic.StoreUint64(&eh.issuedNonce, nonce)
 	atomic.StoreUint32(&eh.hasIssued, 1)
