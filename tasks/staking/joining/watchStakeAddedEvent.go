@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,6 +31,8 @@ type StakeRequestAddedEventWatcher struct {
 	sub  event.Subscription
 	sink chan *contract.MpcManagerStakeRequestAdded
 	done chan struct{}
+
+	addedStakeRequests uint64
 }
 
 func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -96,7 +99,8 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case evt := <-eh.sink:
 				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
 				eh.Publisher.Publish(ctx, evtObj)
-				eh.Logger.Debug("Stake request added", []logger.Field{{"requestID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
+				eh.Logger.Debug("Stake request added", []logger.Field{{"addedStakeRequests", atomic.LoadUint64(&eh.addedStakeRequests)},
+					{"requestID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event")
 			}
