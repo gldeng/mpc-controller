@@ -1,8 +1,12 @@
 package queue
 
 import (
+	"fmt"
+	"github.com/pkg/errors"
 	"sync"
 )
+
+var _ Queue = (*ArrayQueue)(nil)
 
 const (
 	defaultMinLen = 64
@@ -32,14 +36,15 @@ func NewArrayQueue(maxLen int) *ArrayQueue {
 	}
 }
 
-func (q *ArrayQueue) Enqueue(e interface{}) {
+func (q *ArrayQueue) Enqueue(e interface{}) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	if len(q.q) >= q.maxLen {
-		panic("The queue is full") // todo: deal with panic more elegantly
+		return errors.WithStack(&ErrTypQueueIsFull{ErrMsg: fmt.Sprintf("%v. maxLen:%v", ErrMsgQueueIsFull, q.maxLen)})
 	}
 	q.q = append(q.q, e)
+	return nil
 }
 
 func (q *ArrayQueue) Dequeue() interface{} {

@@ -1,7 +1,7 @@
 package queue
 
 type Queue interface {
-	Enqueue(e interface{})
+	Enqueue(e interface{}) error
 	Dequeue() interface{}
 
 	Peek() interface{}
