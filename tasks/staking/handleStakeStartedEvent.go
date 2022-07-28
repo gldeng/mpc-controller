@@ -231,15 +231,15 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 		case *chain.ErrTypInsufficientFunds:
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypInvalidNonce:
-			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypConflictAtomicInputs:
-			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypTxHasNoImportedInputs:
-			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypConsumedUTXONotFound:
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypNotFound:
-			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		default:
 			eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{{"stakeTask", stakeTask}}...)
 		}
