@@ -98,6 +98,7 @@ func (eh *StakeRequestStartedEventWatcher) watchStakeRequestStarted(ctx context.
 				return
 			case evt := <-eh.sink:
 				evtObj := dispatcher.NewRootEventObject("StakeRequestStartedEventWatcher", evt, ctx)
+				evtObj.Priority = 5
 				eh.Publisher.Publish(ctx, evtObj)
 				eh.Logger.Debug("Stake request started", []logger.Field{
 					{"StakeRequestStartedEvent", evt}}...)
