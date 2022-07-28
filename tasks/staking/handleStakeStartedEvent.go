@@ -246,6 +246,8 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 		return
 	}
 
+	atomic.AddUint64(&eh.doneStakeTasks, 1)
+
 	newEvt := events.StakingTaskDoneEvent{
 		TaskID: common.HexToHash(strings.TrimPrefix(stakeTask.TaskID, stakeTaskIDPrefix)),
 
