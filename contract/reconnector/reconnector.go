@@ -63,6 +63,8 @@ func (c *ContractFilterReconnector) publishEvent(ctx context.Context, client *et
 	newEvt := events.ContractFiltererCreatedEvent{
 		Filterer: client,
 	}
-	c.Publisher.Publish(ctx, dispatcher.NewRootEventObject("ContractFilterReconnector", &newEvt, ctx))
+	evtObj := dispatcher.NewRootEventObject("ContractFilterReconnector", &newEvt, ctx)
+	evtObj.Priority = 5
+	c.Publisher.Publish(ctx, evtObj)
 	c.Debug("Eth websocket client published.")
 }
