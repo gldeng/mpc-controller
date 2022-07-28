@@ -16,7 +16,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
+	"strings"
+	"sync"
 	"sync/atomic"
+)
+
+const (
+	stakeTaskIDPrefix = "STAKE-SIGN-TASK-"
 )
 
 type Cache interface {
@@ -43,6 +49,10 @@ type StakeRequestStartedEventHandler struct {
 
 	genPubKeyInfo *events.GeneratedPubKeyInfo // todo: value may vary for future key-rotation
 	myIndex       *big.Int
+
+	pendingIssueTasksEvtOjbs sync.Map
+	pendingIssueTasksCache   sync.Map
+	pendingIssueTasks        uint32
 
 	hasIssued   uint32 // 0: no 1: yes
 	issuedNonce uint64
@@ -86,7 +96,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
-		taskID := "STAKE-SIGN-TASK-" + evt.Raw.TxHash.Hex()
+		taskID := stakeTaskIDPrefix + evt.Raw.TxHash.Hex()
 
 		signRequester := &SignRequester{
 			SignDoner: eh.SignDoner,
@@ -132,69 +142,93 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
 			switch errors.Cause(err).(type) {
 			case *ErrTypNonceRegress:
-				eh.Logger.DebugOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
+				eh.Logger.DebugOnError(err, "Stake task CANCELED", []logger.Field{{"stakeTask", stakeTask}}...)
 				return
 			case *ErrTypeNonceJump:
-				eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"stakeTask", stakeTask}}...)
+				eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
+				eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
+				atomic.StoreUint32(&eh.pendingIssueTasks, 1)
+				eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
+					{"stakeTask", stakeTask}}...)
 				return
 			default:
-				eh.Logger.ErrorOnError(err, "Stake task DROPPED", []logger.Field{{"stakeTask", stakeTask}}...)
+				eh.Logger.ErrorOnError(err, "Stake task TERMINATED", []logger.Field{{"stakeTask", stakeTask}}...)
 				return
 			}
 		}
+		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
 
-		ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
-		if err != nil {
-			switch errors.Cause(err).(type) { // todo: exploring more concrete error types
-			case *chain.ErrTypSharedMemoryNotFound:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			case *chain.ErrTypInsufficientFunds:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			case *chain.ErrTypInvalidNonce:
-				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			case *chain.ErrTypConflictAtomicInputs:
-				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			case *chain.ErrTypTxHasNoImportedInputs:
-				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			case *chain.ErrTypConsumedUTXONotFound:
-				eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			case *chain.ErrTypNotFound:
-				eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			default:
-				eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{{"stakeTask", stakeTask}}...)
-			}
+		//ids, err := stakeTaskWrapper.IssueTx(evtObj.Context)
+		//if err != nil {
+		//	switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+		//	case *chain.ErrTypSharedMemoryNotFound:
+		//		eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	case *chain.ErrTypInsufficientFunds:
+		//		eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	case *chain.ErrTypInvalidNonce:
+		//		eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	case *chain.ErrTypConflictAtomicInputs:
+		//		eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	case *chain.ErrTypTxHasNoImportedInputs:
+		//		eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	case *chain.ErrTypConsumedUTXONotFound:
+		//		eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	case *chain.ErrTypNotFound:
+		//		eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	default:
+		//		eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{{"stakeTask", stakeTask}}...)
+		//	}
+		//	return
+		//}
+		//
+		//newEvt := events.StakingTaskDoneEvent{
+		//	TaskID: evt.Raw.TxHash,
+		//
+		//	ExportTxID:       ids[0],
+		//	ImportTxID:       ids[1],
+		//	AddDelegatorTxID: ids[2],
+		//
+		//	RequestID:   stakeTask.RequestID,
+		//	DelegateAmt: stakeTask.DelegateAmt,
+		//	StartTime:   stakeTask.StartTime,
+		//	EndTime:     stakeTask.EndTime,
+		//	NodeID:      stakeTask.NodeID,
+		//
+		//	PubKeyHex:     eh.genPubKeyInfo.CompressedGenPubKeyHex,
+		//	CChainAddress: stakeTask.CChainAddress,
+		//	PChainAddress: stakeTask.PChainAddress,
+		//	Nonce:         stakeTask.Nonce,
+		//
+		//	ParticipantPubKeys: partiKeys,
+		//}
+		//eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
+		//eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
+		//
+		//atomic.StoreUint64(&eh.issuedNonce, nonce)
+		//atomic.StoreUint32(&eh.hasIssued, 1)
+		//if ok := eh.Noncer.ResetBase(evt.RequestId.Uint64(), nonce); ok {
+		//	eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", evt.RequestId.Uint64()},
+		//		{"baseNonce", nonce}, {"gap", evt.RequestId.Uint64() - nonce}}...)
+		//}
+
+	loop:
+		nextNonce := atomic.LoadUint64(&eh.issuedNonce) + 1
+		stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.LoadAndDelete(nextNonce)
+		if !ok {
+			return
+		}
+		stakeTaskWrapper = stakeTaskWrapperVal.(*StakeTaskWrapper)
+
+		evtObjVal, _ := eh.pendingIssueTasksEvtOjbs.LoadAndDelete(nextNonce)
+		evtObj := evtObjVal.(*dispatcher.EventObject)
+
+		if err := eh.checkNonceContinuity(ctx, stakeTaskWrapper.StakeTask); err != nil {
+			eh.Logger.ErrorOnError(err, "Stake task DROPPED for fatal nonce incontinuity", []logger.Field{{"stakeTask", stakeTask}}...) // todo:
 			return
 		}
 
-		newEvt := events.StakingTaskDoneEvent{
-			TaskID: evt.Raw.TxHash,
-
-			ExportTxID:       ids[0],
-			ImportTxID:       ids[1],
-			AddDelegatorTxID: ids[2],
-
-			RequestID:   stakeTask.RequestID,
-			DelegateAmt: stakeTask.DelegateAmt,
-			StartTime:   stakeTask.StartTime,
-			EndTime:     stakeTask.EndTime,
-			NodeID:      stakeTask.NodeID,
-
-			PubKeyHex:     eh.genPubKeyInfo.CompressedGenPubKeyHex,
-			CChainAddress: stakeTask.CChainAddress,
-			PChainAddress: stakeTask.PChainAddress,
-			Nonce:         stakeTask.Nonce,
-
-			ParticipantPubKeys: partiKeys,
-		}
-		eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
-		eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
-
-		atomic.StoreUint64(&eh.issuedNonce, nonce)
-		atomic.StoreUint32(&eh.hasIssued, 1)
-		if ok := eh.Noncer.ResetBase(evt.RequestId.Uint64(), nonce); ok {
-			eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", evt.RequestId.Uint64()},
-				{"baseNonce", nonce}, {"gap", evt.RequestId.Uint64() - nonce}}...)
-		}
+		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
+		goto loop
 	}
 }
 
@@ -241,6 +275,65 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 	}
 
 	return nil
+}
+
+func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
+	ids, err := stw.IssueTx(ctx)
+	stakeTask := stw.StakeTask
+	signRequester := stw.SignRequester
+	if err != nil {
+		switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+		case *chain.ErrTypSharedMemoryNotFound:
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypInsufficientFunds:
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypInvalidNonce:
+			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypConflictAtomicInputs:
+			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypTxHasNoImportedInputs:
+			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypConsumedUTXONotFound:
+			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypNotFound:
+			eh.Logger.WarnOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		default:
+			eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{{"stakeTask", stakeTask}}...)
+		}
+		return
+	}
+
+	newEvt := events.StakingTaskDoneEvent{
+		TaskID: common.HexToHash(strings.TrimPrefix(stakeTask.TaskID, stakeTaskIDPrefix)),
+
+		ExportTxID:       ids[0],
+		ImportTxID:       ids[1],
+		AddDelegatorTxID: ids[2],
+
+		RequestID:   stakeTask.RequestID,
+		DelegateAmt: stakeTask.DelegateAmt,
+		StartTime:   stakeTask.StartTime,
+		EndTime:     stakeTask.EndTime,
+		NodeID:      stakeTask.NodeID,
+
+		PubKeyHex:     signRequester.CompressedGenPubKeyHex,
+		CChainAddress: stakeTask.CChainAddress,
+		PChainAddress: stakeTask.PChainAddress,
+		Nonce:         stakeTask.Nonce,
+
+		ParticipantPubKeys: signRequester.CompressedPartiPubKeys,
+	}
+	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
+	eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
+
+	nonce := stakeTask.Nonce
+	reqID := stakeTask.RequestID
+	atomic.StoreUint64(&eh.issuedNonce, nonce)
+	atomic.StoreUint32(&eh.hasIssued, 1)
+	if ok := eh.Noncer.ResetBase(reqID, nonce); ok {
+		eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", reqID},
+			{"baseNonce", nonce}, {"gap", nonce - nonce}}...)
+	}
 }
 
 //func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
