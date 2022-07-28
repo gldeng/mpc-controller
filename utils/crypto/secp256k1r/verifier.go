@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/crypto"
-	mpcErrors "github.com/avalido/mpc-controller/errors"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	mpcErrors "github.com/avalido/mpc-controller/utils/errors"
 	"github.com/pkg/errors"
 )
 
