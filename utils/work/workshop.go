@@ -15,8 +15,9 @@ type Workshop struct {
 	Id         string
 	Logger     logger.Logger
 	MaxIdleDur time.Duration // 0 means forever
-	TaskChan   chan *Task
-	idleChan   chan struct{}
+
+	taskChan chan *Task
+	idleChan chan struct{}
 
 	TaskZone *TaskZone
 	once     sync.Once
@@ -28,20 +29,21 @@ type Workshop struct {
 	lock          sync.Mutex
 }
 
-func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces uint32, taskChan chan *Task) *Workshop {
+func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces uint32) *Workshop {
+	taskChan := make(chan *Task, 256)
 	idleChan := make(chan struct{})
 	taskZone := &TaskZone{
 		Logger:           logger,
 		TaskChan:         taskChan,
 		IdleChan:         idleChan,
-		PerTaskQueueSize: 128,
+		PerTaskQueueSize: 256,
 	}
 
 	workshop := &Workshop{
 		Id:            "workshop_" + misc.NewID(),
 		Logger:        logger,
 		MaxIdleDur:    maxIdleDur,
-		TaskChan:      taskChan,
+		taskChan:      taskChan,
 		idleChan:      idleChan,
 		TaskZone:      taskZone,
 		MaxWorkspaces: maxWorkspaces,
@@ -62,7 +64,7 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 
 	if atomic.LoadUint32(&w.livingWorkspaces) == 0 {
 		w.newWorkspace(ctx)
-		w.TaskChan <- t
+		w.taskChan <- t
 		return
 	}
 
@@ -78,17 +80,17 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 			w.Logger.ErrorOnError(err, "Failed to en-zone task.", []logger.Field{{"task", t}}...)
 			return
 		}
-		w.TaskChan <- t
+		w.taskChan <- t
 		return
 	}
 
 	if w.isIdle() {
-		w.TaskChan <- t
+		w.taskChan <- t
 		return
 	}
 
 	w.newWorkspace(ctx)
-	w.TaskChan <- t
+	w.taskChan <- t
 	return
 }
 
@@ -114,7 +116,7 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 		Id:         "workspace_" + misc.NewID(),
 		Logger:     w.Logger,
 		MaxIdleDur: w.MaxIdleDur,
-		TaskChan:   w.TaskChan,
+		TaskChan:   w.taskChan,
 		IdleChan:   make(chan struct{}, 32),
 	}
 	w.lock.Lock()

@@ -92,7 +92,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create dispatcher
-	ws := work.NewWorkshop(myLogger, time.Second*300, 1024, make(chan *work.Task, 1024)) // todo: configurations
+	ws := work.NewWorkshop(myLogger, time.Second*300, 1024) // todo: maybe configurations
 	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, 1024, ws)
 
 	// Get MpcManager contract address
