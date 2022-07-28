@@ -10,7 +10,7 @@ import (
 
 type WorkFn func(ctx context.Context, args interface{})
 
-type Task struct {
+type Task struct { // todo: consider priority
 	Args    interface{}
 	Ctx     context.Context
 	WorkFns []WorkFn
