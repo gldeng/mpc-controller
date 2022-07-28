@@ -36,6 +36,13 @@ func (z *TaskZone) Run(ctx context.Context) {
 			if t := z.deZone(); t != nil {
 				z.TaskChan <- t
 				z.Logger.Debug("Task de-zoned")
+				z.Logger.Debug("En-zoned tasks stats in priority", []logger.Field{
+					{"p5", z.tasksInQueue(5)},
+					{"p4", z.tasksInQueue(4)},
+					{"p3", z.tasksInQueue(3)},
+					{"p2", z.tasksInQueue(2)},
+					{"p1", z.tasksInQueue(1)},
+					{"p0", z.tasksInQueue(0)}}...)
 			}
 		}
 	}
@@ -63,4 +70,12 @@ func (z *TaskZone) deZone() (t *Task) {
 		break
 	}
 	return
+}
+
+func (z *TaskZone) tasksInQueue(priority int) int {
+	q, ok := z.taskPriorityQueues[priority]
+	if !ok {
+		return 0
+	}
+	return q.Count()
 }
