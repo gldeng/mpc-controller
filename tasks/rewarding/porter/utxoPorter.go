@@ -122,19 +122,19 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context, evtObj *dispatcher.EventOb
 	if err != nil {
 		switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 		case *chain.ErrTypSharedMemoryNotFound:
-			eh.Logger.ErrorOnError(err, "Failed to export UTXO", []logger.Field{
+			eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypConflictAtomicInputs:
-			eh.Logger.WarnOnError(err, "UTXO unexported", []logger.Field{
+			eh.Logger.WarnOnError(err, "UTXO UNEXPORTED", []logger.Field{
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypImportUTXOsNotFound:
-			eh.Logger.WarnOnError(err, "UTXO unexported", []logger.Field{
+			eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		case *chain.ErrTypConsumedUTXONotFound:
-			eh.Logger.DebugOnError(err, "UTXO unexported", []logger.Field{
+			eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
 				{"txID", exportUTXOReqEvt.TxID},
 				{"outputIndex", exportUTXOReqEvt.OutputIndex}}...)
 		default:
