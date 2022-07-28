@@ -279,13 +279,16 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 
 func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
 	stakeTask := stw.StakeTask
+	nonce := stakeTask.Nonce
+	reqID := stakeTask.RequestID
+
 	if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
 		switch errors.Cause(err).(type) {
 		case *ErrTypNonceRegress:
 			eh.Logger.DebugOnError(err, "Stake task CANCELED", []logger.Field{{"stakeTask", stakeTask}}...)
 			return
 		case *ErrTypeNonceJump:
-			eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
+			eh.pendingIssueTasksCache.Store(nonce, stw)
 			eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
 			atomic.StoreUint32(&eh.pendingIssueTasks, 1)
 			eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
@@ -345,8 +348,6 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 	eh.Logger.Info("Stake task DONE", []logger.Field{{"StakingTaskDoneEvent", newEvt}}...)
 
-	nonce := stakeTask.Nonce
-	reqID := stakeTask.RequestID
 	atomic.StoreUint64(&eh.issuedNonce, nonce)
 	atomic.StoreUint32(&eh.hasIssued, 1)
 	if ok := eh.Noncer.ResetBase(reqID, nonce); ok {
