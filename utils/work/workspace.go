@@ -10,17 +10,12 @@ import (
 
 type WorkFn func(ctx context.Context, args interface{})
 
-type Task struct { // todo: consider priority
-	Args    interface{}
-	Ctx     context.Context
-	WorkFns []WorkFn
-}
-
 type Workspace struct {
 	Id         string
 	Logger     logger.Logger
 	MaxIdleDur time.Duration // 0 means forever
 	TaskChan   chan *Task
+	IdleChan   chan struct{}
 
 	lastActiveTime time.Time
 	status         uint32 // 0: idle, 1: busy
@@ -56,6 +51,9 @@ func (w *Workspace) Run(ctx context.Context) {
 			wg.Wait()
 			atomic.StoreUint32(&w.status, 0)
 			w.lastActiveTime = time.Now()
+			go func() {
+				w.IdleChan <- struct{}{}
+			}()
 		}
 	}
 }

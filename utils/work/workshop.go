@@ -3,7 +3,9 @@ package work
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/misc"
+	"github.com/pkg/errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,28 +16,45 @@ type Workshop struct {
 	Logger     logger.Logger
 	MaxIdleDur time.Duration // 0 means forever
 	TaskChan   chan *Task
+	idleChan   chan struct{}
+
+	TaskZone *TaskZone
+	once     sync.Once
 
 	MaxWorkspaces    uint32
 	livingWorkspaces uint32
 
 	workspacesMap map[string]*Workspace
-	lock          *sync.Mutex
+	lock          sync.Mutex
 }
 
 func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces uint32, taskChan chan *Task) *Workshop {
+	idleChan := make(chan struct{})
+	taskZone := &TaskZone{
+		Logger:           logger,
+		TaskChan:         taskChan,
+		IdleChan:         idleChan,
+		PerTaskQueueSize: 128,
+	}
+
 	workshop := &Workshop{
 		Id:            "workshop_" + misc.NewID(),
 		Logger:        logger,
 		MaxIdleDur:    maxIdleDur,
 		TaskChan:      taskChan,
+		idleChan:      idleChan,
+		TaskZone:      taskZone,
 		MaxWorkspaces: maxWorkspaces,
 		workspacesMap: make(map[string]*Workspace),
-		lock:          new(sync.Mutex),
 	}
 	return workshop
 }
 
 func (w *Workshop) AddTask(ctx context.Context, t *Task) {
+	w.once.Do(func() {
+		go w.TaskZone.Run(ctx)
+	})
+
 	w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
 		"Too many living workspaces",
 		[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
@@ -48,6 +67,17 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	}
 
 	if atomic.LoadUint32(&w.livingWorkspaces) == w.MaxWorkspaces {
+		if !w.isIdle() {
+			w.Logger.Warn("No idle workspace, task en-zoned", []logger.Field{{"task", t}}...)
+			err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+				if err := w.TaskZone.EnZone(t); err != nil {
+					return true, errors.WithStack(err)
+				}
+				return false, nil
+			})
+			w.Logger.ErrorOnError(err, "Failed to en-zone task.", []logger.Field{{"task", t}}...)
+			return
+		}
 		w.TaskChan <- t
 		return
 	}
@@ -85,6 +115,7 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 		Logger:     w.Logger,
 		MaxIdleDur: w.MaxIdleDur,
 		TaskChan:   w.TaskChan,
+		IdleChan:   make(chan struct{}, 32),
 	}
 	w.lock.Lock()
 	w.workspacesMap[ws.Id] = ws
