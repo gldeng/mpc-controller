@@ -96,6 +96,7 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 				}
 				copier.Copy(&transformedEvt, evt)
 				evtObj := dispatcher.NewRootEventObject("ExportUTXORequestWatcher", &transformedEvt, ctx)
+				evtObj.Priority = 4
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching ExportRewardRequest event for ExportUTXORequestWatcher")
