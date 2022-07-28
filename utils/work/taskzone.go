@@ -35,7 +35,7 @@ func (z *TaskZone) Run(ctx context.Context) {
 		case <-z.IdleChan:
 			if t := z.deZone(); t != nil {
 				z.TaskChan <- t
-				z.Logger.Debug("En-zoned task sent", []logger.Field{{"task", t}}...)
+				z.Logger.Debug("Task de-zoned")
 			}
 		}
 	}

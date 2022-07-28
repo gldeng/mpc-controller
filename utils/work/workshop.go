@@ -70,14 +70,14 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 
 	if atomic.LoadUint32(&w.livingWorkspaces) == w.MaxWorkspaces {
 		if !w.isIdle() {
-			w.Logger.Warn("No idle workspace, task en-zoned", []logger.Field{{"task", t}}...)
+			w.Logger.Warn("No idle workspace, task en-zoned")
 			err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 				if err := w.TaskZone.EnZone(t); err != nil {
 					return true, errors.WithStack(err)
 				}
 				return false, nil
 			})
-			w.Logger.ErrorOnError(err, "Failed to en-zone task.", []logger.Field{{"task", t}}...)
+			w.Logger.ErrorOnError(err, "Failed to en-zone task.")
 			return
 		}
 		w.taskChan <- t
