@@ -33,3 +33,16 @@ type NormalizedParticipantKeysGetter interface {
 type IsParticipantChecker interface {
 	IsParticipant(myPubKeyHash string, genPubKeyHash string, participantIndices []*big.Int) bool
 }
+
+// ---------
+
+// implemented by *standard sync.Map, which support concurrent manipulation.
+
+type SyncMapCache interface {
+	Delete(key any)
+	Load(key any) (value any, ok bool)
+	LoadAndDelete(key any) (value any, loaded bool)
+	LoadOrStore(key, value any) (actual any, loaded bool)
+	Range(f func(key, value any) bool)
+	Store(key, value any)
+}
