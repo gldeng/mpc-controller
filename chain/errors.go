@@ -13,6 +13,8 @@ const (
 	ErrMsgSharedMemoryNotFound  = "shared memory not found"
 	ErrMsgConsumedUTXOsNotFound = "consumed UTXOs not found"
 	ErrMsgImportUTXOsNotFound   = "import UTXOs not found"
+
+	ErrMsgStakeStartTimeExpired = "stake start time expired"
 )
 
 // ----------error types ----------
@@ -156,5 +158,23 @@ func (e *ErrTypImportUTXOsNotFound) Error() string {
 }
 
 func (e *ErrTypImportUTXOsNotFound) Unwrap() error {
+	return e.Cause
+}
+
+// ----------
+
+type ErrTypStakeStartTimeExpired struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypStakeStartTimeExpired) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgStakeStartTimeExpired + fmt.Sprintf(":%v", e.Cause)
+	}
+	return e.ErrMsg + fmt.Sprintf(":%v", e.Cause)
+}
+
+func (e *ErrTypStakeStartTimeExpired) Unwrap() error {
 	return e.Cause
 }

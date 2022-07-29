@@ -243,8 +243,10 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypNotFound:
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
+		case *chain.ErrTypStakeStartTimeExpired: // todo: more measures for this kind of error?
+			eh.Logger.ErrorOnError(err, "Failed to stake for start time expiration", []logger.Field{{"stakeTask", stakeTask}}...)
 		default:
-			eh.Logger.ErrorOnError(err, "Failed to perform stake task", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.ErrorOnError(err, "Failed to stake", []logger.Field{{"stakeTask", stakeTask}}...)
 		}
 		return
 	}
