@@ -96,7 +96,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Settings to control external stake request rate and mpc-controller concurrent behaviors // todo: config it, tune it
 	stakeReqPublishDur := time.Second * 20
-	stakeReqCacheCap := uint32(180)
+	stakeReqCacheCap := uint32(90)
 	workspaceMaxIdleDur := time.Second * 60
 	maxWorkspaces := uint32(32)
 
