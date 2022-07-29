@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -153,51 +154,6 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 	}
 }
 
-// todo: use cache.IsParticipantChecker
-func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
-	var participating bool
-	for _, index := range req.ParticipantIndices {
-		if index.Cmp(eh.myIndex) == 0 {
-			participating = true
-			break
-		}
-	}
-
-	if !participating {
-		return false
-	}
-
-	return true
-}
-
-func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Context, task *StakeTask) error {
-	exportTx, err := task.GetSignedExportTx()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get signed export tx")
-	}
-	evmInput := exportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx).Ins[0]
-
-	issuedNonce := atomic.LoadUint64(&eh.lastIssuedNonce)
-	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce >= evmInput.Nonce {
-		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:lastIssuedNonce:%v,givenNonce:%v", ErrMsgNonceRegress, issuedNonce, evmInput.Nonce)})
-	}
-
-	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to request nonce")
-	}
-
-	if addressNonce > evmInput.Nonce {
-		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceRegress, addressNonce, evmInput.Nonce)})
-	}
-
-	if addressNonce < evmInput.Nonce {
-		return errors.WithStack(&ErrTypeNonceJump{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceJump, addressNonce, evmInput.Nonce)})
-	}
-
-	return nil
-}
-
 func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
 	defer func() {
 		eh.Logger.Debug("Stake tasks stats", []logger.Field{{"pendedStakeTasks", atomic.LoadUint64(&eh.pendedStakeTasks)}, {"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}}...)
@@ -220,6 +176,14 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 			return
 		default:
 			eh.Logger.ErrorOnError(err, "Stake task TERMINATED for nonce un-continuity", []logger.Field{{"stakeTask", stakeTask}}...)
+			return
+		}
+	}
+
+	if err := eh.checkStarTime(int64(stakeTask.StartTime)); err != nil {
+		switch errors.Cause(err).(type) {
+		case *chain.ErrTypStakeStartTimeExpired: // todo: more measures for this kind of error?
+			eh.Logger.ErrorOnError(err, "stake task DROPPED for start time expiration", []logger.Field{{"stakeTask", stakeTask}}...)
 			return
 		}
 	}
@@ -282,6 +246,71 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 		eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", reqID},
 			{"baseNonce", nonce}, {"gap", nonce - nonce}}...)
 	}
+}
+
+// todo: use cache.IsParticipantChecker
+func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
+	var participating bool
+	for _, index := range req.ParticipantIndices {
+		if index.Cmp(eh.myIndex) == 0 {
+			participating = true
+			break
+		}
+	}
+
+	if !participating {
+		return false
+	}
+
+	return true
+}
+
+func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Context, task *StakeTask) error {
+	exportTx, err := task.GetSignedExportTx()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get signed export tx")
+	}
+	evmInput := exportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx).Ins[0]
+
+	issuedNonce := atomic.LoadUint64(&eh.lastIssuedNonce)
+	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce >= evmInput.Nonce {
+		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:lastIssuedNonce:%v,givenNonce:%v", ErrMsgNonceRegress, issuedNonce, evmInput.Nonce)})
+	}
+
+	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to request nonce")
+	}
+
+	if addressNonce > evmInput.Nonce {
+		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceRegress, addressNonce, evmInput.Nonce)})
+	}
+
+	if addressNonce < evmInput.Nonce {
+		return errors.WithStack(&ErrTypeNonceJump{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceJump, addressNonce, evmInput.Nonce)})
+	}
+
+	return nil
+}
+
+func (eh *StakeRequestStartedEventHandler) checkStarTime(startTime int64) error {
+	startTime_ := time.Unix(startTime, 0)
+	now := time.Now()
+	switch {
+	case startTime_.Before(now):
+		return errors.WithStack(&chain.ErrTypStakeStartTimeExpired{})
+		//case startTime_.Add(time.Second * 5).Before(now):
+		//	return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn5Seconds{})
+		//case startTime_.Add(time.Second * 10).Before(now):
+		//	return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn10Seconds{})
+		//case startTime_.Add(time.Second * 20).Before(now):
+		//	return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn20Seconds{})
+		//case startTime_.Add(time.Second * 40).Before(now):
+		//	return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn40Seconds{})
+		//case startTime_.Add(time.Second * 60).Before(now):
+		//	return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn60Seconds{})
+	}
+	return nil
 }
 
 //func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
