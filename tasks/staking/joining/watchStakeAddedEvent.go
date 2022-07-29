@@ -8,11 +8,12 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/queue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
-	"sync/atomic"
+	"sync"
 	"time"
 )
 
@@ -32,10 +33,16 @@ type StakeRequestAddedEventWatcher struct {
 	sink chan *contract.MpcManagerStakeRequestAdded
 	done chan struct{}
 
-	addedStakeRequests uint64
+	StakeReqPublishDur time.Duration // server as rate limit
+	StakeReqCacheCap   uint32
+	stakeReqCacheQueue queue.Queue
+	once               sync.Once
 }
 
 func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+	eh.once.Do(func() {
+		eh.stakeReqCacheQueue = queue.NewArrayQueue(int(eh.StakeReqCacheCap))
+	})
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
@@ -89,6 +96,7 @@ func (eh *StakeRequestAddedEventWatcher) subscribeStakeRequestAdded(ctx context.
 }
 
 func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Context) {
+	t := time.NewTicker(eh.StakeReqPublishDur)
 	go func() {
 		for {
 			select {
@@ -97,10 +105,27 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
-				eh.Publisher.Publish(ctx, evtObj)
-				eh.Logger.Debug("Stake request added", []logger.Field{{"addedStakeRequests", atomic.LoadUint64(&eh.addedStakeRequests)},
-					{"requestID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
+				err := backoff.RetryFnConstantForever(ctx, time.Second, func() (retry bool, err error) {
+					if err := eh.stakeReqCacheQueue.Enqueue(evt); err != nil {
+						return true, errors.WithStack(err)
+					}
+					return false, nil
+				})
+				eh.Logger.ErrorOnError(err, "Failed to enqueue StakeRequestAdded event", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
+
+				enqueued := eh.stakeReqCacheQueue.Count()
+				capacity := eh.stakeReqCacheQueue.Capacity()
+				eh.Logger.WarnOnTrue(float64(enqueued) > float64(capacity)*0.8,
+					"Too many QUEUED StakeRequestAdded events",
+					[]logger.Field{{"eventsQueued", enqueued}, {"queueCapacity", capacity}}...)
+				eh.Logger.Debug("StakeRequestAdded event enqueued", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}, {"eventsEnqueued", enqueued}, {"queueCapacity", capacity}}...)
+			case <-t.C:
+				if !eh.stakeReqCacheQueue.Empty() {
+					evt := eh.stakeReqCacheQueue.Dequeue().(*contract.MpcManagerStakeRequestAdded)
+					evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
+					eh.Publisher.Publish(ctx, evtObj)
+					eh.Logger.Debug("StakeRequestAdded event published", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
+				}
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event")
 			}

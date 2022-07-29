@@ -10,17 +10,20 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"time"
 )
 
 type JoiningMaster struct {
-	ContractAddr    common.Address
-	Dispatcher      dispatcher.DispatcherClaasic
-	Logger          logger.Logger
-	MyIndexGetter   cache.MyIndexGetter
-	MyPubKeyHashHex string
-	Receipter       chain.Receipter
-	Signer          *bind.TransactOpts
-	Transactor      bind.ContractTransactor
+	ContractAddr       common.Address
+	Dispatcher         dispatcher.DispatcherClaasic
+	Logger             logger.Logger
+	MyIndexGetter      cache.MyIndexGetter
+	MyPubKeyHashHex    string
+	Receipter          chain.Receipter
+	Signer             *bind.TransactOpts
+	StakeReqCacheCap   uint32
+	StakeReqPublishDur time.Duration
+	Transactor         bind.ContractTransactor
 
 	joiningWatcher *StakeRequestAddedEventWatcher
 	joiningDealer  *StakeRequestAddedEventHandler
@@ -34,9 +37,11 @@ func (m *JoiningMaster) Start(ctx context.Context) error {
 
 func (m *JoiningMaster) subscribe() {
 	stakeAddedWatcher := StakeRequestAddedEventWatcher{
-		Logger:       m.Logger,
-		ContractAddr: m.ContractAddr,
-		Publisher:    m.Dispatcher,
+		Logger:             m.Logger,
+		ContractAddr:       m.ContractAddr,
+		Publisher:          m.Dispatcher,
+		StakeReqPublishDur: m.StakeReqPublishDur,
+		StakeReqCacheCap:   m.StakeReqCacheCap,
 	}
 
 	stakeAddedHandler := StakeRequestAddedEventHandler{

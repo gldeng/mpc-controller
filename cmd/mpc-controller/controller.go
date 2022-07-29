@@ -23,7 +23,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/network"
-	noncer2 "github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"golang.org/x/sync/errgroup"
@@ -84,6 +84,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	logger.DevMode = config.EnableDevMode
 	myLogger := logger.Default()
 
+	// Create nonce manager
+	noncer := noncer.New(1, 0) // todo: config it
+
 	// Create database
 	badgerDBLogger := &adapter.BadgerDBLoggerAdapter{Logger: logger.DefaultWithCallerSkip(3)}
 	myDB := &badgerDB.BadgerDB{
@@ -91,8 +94,14 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, badgerDBLogger),
 	}
 
+	// Settings to control external stake request rate and mpc-controller concurrent behaviors // todo: config it, tune it
+	stakeReqPublishDur := time.Second * 10
+	stakeReqCacheCap := uint32(180)
+	workspaceMaxIdleDur := time.Second * 60
+	maxWorkspaces := uint32(32)
+
 	// Create dispatcher
-	ws := work.NewWorkshop(myLogger, time.Second*60, 32) // todo: maybe configurations and more tune
+	ws := work.NewWorkshop(myLogger, workspaceMaxIdleDur, maxWorkspaces)
 	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, 1024, ws)
 
 	// Get MpcManager contract address
@@ -152,9 +161,6 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Publisher: myDispatcher,
 	}
 
-	// Create nonce manager
-	noncer := noncer2.New(1, 0) // todo: config it
-
 	cacheWrapper := cache.CacheWrapper{
 		Dispatcher: myDispatcher,
 	}
@@ -183,14 +189,16 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	joiningMaster := joining.JoiningMaster{
-		ContractAddr:    contractAddr,
-		Dispatcher:      myDispatcher,
-		Logger:          myLogger,
-		MyIndexGetter:   &cacheWrapper,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Receipter:       rpcEthCliWrapper,
-		Signer:          signer,
-		Transactor:      rpcEthCliWrapper,
+		ContractAddr:       contractAddr,
+		Dispatcher:         myDispatcher,
+		Logger:             myLogger,
+		MyIndexGetter:      &cacheWrapper,
+		MyPubKeyHashHex:    myPubKeyHash.Hex(),
+		Receipter:          rpcEthCliWrapper,
+		Signer:             signer,
+		StakeReqCacheCap:   stakeReqCacheCap,
+		StakeReqPublishDur: stakeReqPublishDur,
+		Transactor:         rpcEthCliWrapper,
 	}
 
 	stakingMaster := staking.StakingMaster{

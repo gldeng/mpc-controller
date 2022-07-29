@@ -15,11 +15,11 @@ import (
 type StakingMaster struct {
 	CChainIssueClient chain.CChainIssuer
 	Cache             Cache
+	ChainNoncer       chain.Noncer
 	ContractAddr      common.Address
 	Dispatcher        dispatcher.DispatcherClaasic
 	Logger            logger.Logger
 	MyPubKeyHashHex   string
-	ChainNoncer       chain.Noncer
 	Noncer            noncer.Noncer
 	PChainIssueClient chain.PChainIssuer
 	SignDoner         core.SignDoner
