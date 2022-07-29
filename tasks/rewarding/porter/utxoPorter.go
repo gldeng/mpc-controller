@@ -2,7 +2,6 @@ package porter
 
 import (
 	"context"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -20,7 +19,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"sync"
@@ -234,16 +232,7 @@ func doExportUTXO(ctx context.Context, args *Args) ([2]ids.ID, error) {
 
 	txIds, err := myPorter.SignAndIssueTxs(ctx)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("------taskid------:", args.SignReqArgs.TaskID)
-		fmt.Println("----mpcutxo-----")
-		mpcUTXO := myAvax.MpcUTXOFromUTXO(myExportTxArgs.UTXOs[0])
-		spew.Dump(mpcUTXO)
-		fmt.Println("------exportTxArgs-----")
-		spew.Dump(myExportTxArgs)
-
 		return [2]ids.ID{}, errors.WithStack(err)
 	}
-
 	return txIds, nil
 }
