@@ -173,9 +173,17 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 			return
 		case <-t.C:
 			nextNonce := atomic.LoadUint64(&eh.nextNonce)
-			for i := 0; i < int(nextNonce); i++ {
-				eh.pendingIssueTasksCache.Delete(nextNonce)
-				eh.pendingIssueTasksEvtOjbs.Load(nextNonce)
+			for i := nextNonce - 1; i >= 0; i-- {
+				stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.LoadAndDelete(i)
+				eh.pendingIssueTasksEvtOjbs.LoadAndDelete(i)
+				if ok {
+					stakeTaskWrapper := stakeTaskWrapperVal.(*StakeTaskWrapper)
+					reqID := stakeTaskWrapper.RequestID
+					taskID := stakeTaskWrapper.TaskID
+
+					eh.Logger.Debug("Deleted stake tasks cached with expired nonce", []logger.Field{
+						{"nonce", i}, {"requestID", reqID}, {"taskID", taskID}}...)
+				}
 			}
 		default:
 			nextNonce := atomic.LoadUint64(&eh.nextNonce)
