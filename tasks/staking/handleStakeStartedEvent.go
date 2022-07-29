@@ -69,6 +69,13 @@ type StakeRequestStartedEventHandler struct {
 	doneStakeTasks   uint64
 }
 
+func (eh *StakeRequestStartedEventHandler) Init(ctx context.Context) {
+	eh.once.Do(func() {
+		go eh.syncNonce(ctx)
+		go eh.issueTx(ctx)
+	})
+}
+
 func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerStakeRequestStarted:
@@ -89,10 +96,6 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.lock.Lock()
 		eh.cChainAddress = addrs.PubkeyToAddresse(pubkey)
 		eh.lock.Unlock()
-		eh.once.Do(func() {
-			go eh.syncNonce(ctx)
-			go eh.issueTx(ctx)
-		})
 
 		index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
 		if index == nil {
@@ -320,16 +323,17 @@ func (eh *StakeRequestStartedEventHandler) syncNonce(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			var addr *common.Address
 			eh.lock.Lock()
-			addr = eh.cChainAddress
+			addr := eh.cChainAddress
 			eh.lock.Unlock()
-			addressNonce, err := eh.ChainNoncer.NonceAt(ctx, *addr, nil)
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to request nonce")
-				break
+			if addr != nil {
+				addressNonce, err := eh.ChainNoncer.NonceAt(ctx, *addr, nil)
+				if err != nil {
+					eh.Logger.ErrorOnError(err, "Failed to request nonce")
+					break
+				}
+				atomic.StoreUint64(&eh.nextNonce, addressNonce)
 			}
-			atomic.StoreUint64(&eh.nextNonce, addressNonce)
 		}
 	}
 }

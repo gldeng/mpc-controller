@@ -31,6 +31,7 @@ type StakingMaster struct {
 
 func (m *StakingMaster) Start(ctx context.Context) error {
 	m.subscribe()
+	m.stakingDealer.Init(ctx)
 	<-ctx.Done()
 	return nil
 }
