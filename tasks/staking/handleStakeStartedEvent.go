@@ -206,17 +206,17 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 	if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
 		switch errors.Cause(err).(type) {
 		case *ErrTypNonceRegress:
-			eh.Logger.DebugOnError(err, "Stake task CANCELED", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.DebugOnError(err, "Stake task CANCELED for nonce regress", []logger.Field{{"stakeTask", stakeTask}}...)
 			return
 		case *ErrTypeNonceJump:
 			eh.pendingIssueTasksCache.Store(nonce, stw)
 			eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
 			atomic.StoreUint32(&eh.pendingIssueTasks, 1)
-			eh.Logger.WarnOnError(err, "Stake task PENDED", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
+			eh.Logger.WarnOnError(err, "Stake task PENDED for nonce jump", []logger.Field{{"pendingIssueStakeTask", atomic.LoadUint32(&eh.pendingIssueTasks)},
 				{"stakeTask", stakeTask}}...)
 			return
 		default:
-			eh.Logger.ErrorOnError(err, "Stake task TERMINATED", []logger.Field{{"stakeTask", stakeTask}}...)
+			eh.Logger.ErrorOnError(err, "Stake task TERMINATED for nonce un-continuity", []logger.Field{{"stakeTask", stakeTask}}...)
 			return
 		}
 	}
