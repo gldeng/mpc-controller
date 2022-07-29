@@ -104,36 +104,39 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err 
 }
 
 func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
+	defer func() {
+		c.log.Debug("Sign request stats", []logger.Field{
+			{"controllerID", c.controllerID},
+			{"sentSignReqs", atomic.LoadUint32(&c.sentSignReqs)},
+			{"doneSignReqs", atomic.LoadUint32(&c.doneSignReqs)},
+			{"unsentSignReqs", atomic.LoadUint32(&c.unsentSignReqs)},
+			{"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
+	}()
+
 	err = c.Sign(ctx, request)
 	if err != nil {
 		atomic.AddUint32(&c.unsentSignReqs, 1)
-		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"unsentSignReqs", atomic.LoadUint32(&c.unsentSignReqs)}}...)
 		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.SignReqID))
 		return
 	}
 	atomic.AddUint32(&c.sentSignReqs, 1)
-	c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"sentSignReqs", atomic.LoadUint32(&c.sentSignReqs)}}...)
 
 	res, err = c.ResultDone(ctx, request.SignReqID)
 	if err != nil {
 		c.log.ErrorOnError(err, "Sign request got error", []logger.Field{{"signRes", res}, {"signReq", request}}...)
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
 		return res, errors.WithStack(err)
 	}
 	if res == nil {
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
 		return nil, errors.Errorf("Got nil result for sign request %v", request.SignReqID)
 	}
 	if res.Result == "" {
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
 		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.SignReqID))
 	}
 
 	atomic.AddUint32(&c.doneSignReqs, 1)
-	c.log.Debug("Sign request stats", []logger.Field{{"controllerID", c.controllerID}, {"doneSignReqs", atomic.LoadUint32(&c.doneSignReqs)}}...)
 	return
 }
 
