@@ -58,6 +58,7 @@ type StakeRequestStartedEventHandler struct {
 
 	pendingIssueTasksEvtOjbs sync.Map
 	pendingIssueTasksCache   sync.Map
+	lockCache                sync.Mutex
 
 	//nonceSynch uint32 // 0: no 1: yes
 
@@ -159,8 +160,10 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
+		eh.lockCache.Lock()
 		eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
 		eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
+		eh.lockCache.Unlock()
 		atomic.AddUint64(&eh.pendedStakeTasks, 1)
 	}
 }
@@ -173,6 +176,7 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 			return
 		case <-t.C:
 			nextNonce := atomic.LoadUint64(&eh.nextNonce)
+			eh.lockCache.Lock()
 			for i := nextNonce - 1; i >= 0; i-- {
 				stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.LoadAndDelete(i)
 				eh.pendingIssueTasksEvtOjbs.LoadAndDelete(i)
@@ -185,14 +189,18 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 						{"nonce", i}, {"requestID", reqID}, {"taskID", taskID}}...)
 				}
 			}
+			eh.lockCache.Unlock()
 		default:
 			nextNonce := atomic.LoadUint64(&eh.nextNonce)
+			eh.lockCache.Lock()
 			stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.Load(nextNonce)
 			if !ok {
 				break
 			}
 			stakeTaskWrapper := stakeTaskWrapperVal.(*StakeTaskWrapper)
 			evtObjVal, _ := eh.pendingIssueTasksEvtOjbs.Load(nextNonce)
+			eh.lockCache.Unlock()
+
 			evtObj := evtObjVal.(*dispatcher.EventObject)
 			eh.doIssueTx(ctx, evtObj, stakeTaskWrapper)
 			pended := atomic.LoadUint64(&eh.pendedStakeTasks)
