@@ -36,19 +36,22 @@ func (z *TaskZone) Run(ctx context.Context) {
 			if t := z.deZone(); t != nil {
 				z.TaskChan <- t
 				z.Logger.Debug("Task de-zoned")
-				z.Logger.Debug("En-zoned tasks stats in priority", []logger.Field{
-					{"p5", z.tasksInQueue(5)},
-					{"p4", z.tasksInQueue(4)},
-					{"p3", z.tasksInQueue(3)},
-					{"p2", z.tasksInQueue(2)},
-					{"p1", z.tasksInQueue(1)},
-					{"p0", z.tasksInQueue(0)}}...)
 			}
 		}
 	}
 }
 
 func (z *TaskZone) EnZone(t *Task) error {
+	defer func() {
+		z.Logger.Debug("En-zoned tasks stats in priority", []logger.Field{
+			{"p5", z.tasksInQueue(5)},
+			{"p4", z.tasksInQueue(4)},
+			{"p3", z.tasksInQueue(3)},
+			{"p2", z.tasksInQueue(2)},
+			{"p1", z.tasksInQueue(1)},
+			{"p0", z.tasksInQueue(0)}}...)
+	}()
+
 	_, ok := z.taskPriorityQueues[t.Priority]
 	if !ok {
 		z.taskPriorityQueues[t.Priority] = queue.NewArrayQueue(z.PerTaskQueueSize)
