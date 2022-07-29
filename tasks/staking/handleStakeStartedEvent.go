@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/common"
@@ -51,10 +52,16 @@ type StakeRequestStartedEventHandler struct {
 	genPubKeyInfo *events.GeneratedPubKeyInfo // todo: value may vary for future key-rotation
 	myIndex       *big.Int
 
+	cChainAddress *common.Address // todo: value may vary for future key-rotation
+	lock          sync.Mutex
+	once          sync.Once
+
 	pendingIssueTasksEvtOjbs sync.Map
 	pendingIssueTasksCache   sync.Map
 
-	hasIssued uint32 // 0: no 1: yes
+	//nonceSynch uint32 // 0: no 1: yes
+
+	//hasIssued uint32 // 0: no 1: yes
 	nextNonce uint64
 
 	pendedStakeTasks uint64
@@ -70,6 +77,22 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 		eh.genPubKeyInfo = pubKeyInfo // todo: data race protect
+
+		pubKeyHex := eh.genPubKeyInfo.CompressedGenPubKeyHex
+		pubkey, err := crypto.UnmarshalPubKeyHex(pubKeyHex)
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to unmarshal public key", []logger.Field{{"publicKey", pubkey}}...)
+			return
+		}
+
+		eh.lock.Lock()
+		eh.cChainAddress = addrs.PubkeyToAddresse(pubkey)
+		eh.lock.Unlock()
+		eh.once.Do(func() {
+			go eh.syncNonce(ctx)
+			go eh.issueTx(ctx)
+		})
+
 		index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
 		if index == nil {
 			eh.Logger.Error("Not found my index.")
@@ -136,49 +159,65 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 			return
 		}
 
-		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
-
-	loop:
-		nextNonce := atomic.LoadUint64(&eh.nextNonce)
-		stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.LoadAndDelete(nextNonce)
-		if !ok {
-			return
-		}
-		stakeTaskWrapper = stakeTaskWrapperVal.(*StakeTaskWrapper)
-
-		evtObjVal, _ := eh.pendingIssueTasksEvtOjbs.LoadAndDelete(nextNonce)
-		evtObj := evtObjVal.(*dispatcher.EventObject)
-
-		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
-		goto loop
+		eh.pendingIssueTasksCache.Store(nonce, stakeTaskWrapper)
+		eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
+		atomic.AddUint64(&eh.pendedStakeTasks, 1)
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
+func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
+	t := time.NewTicker(time.Second * 60)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			nextNonce := atomic.LoadUint64(&eh.nextNonce)
+			for i := 0; i < int(nextNonce); i++ {
+				eh.pendingIssueTasksCache.Delete(nextNonce)
+				eh.pendingIssueTasksEvtOjbs.Load(nextNonce)
+			}
+		default:
+			nextNonce := atomic.LoadUint64(&eh.nextNonce)
+			stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.Load(nextNonce)
+			if !ok {
+				break
+			}
+			stakeTaskWrapper := stakeTaskWrapperVal.(*StakeTaskWrapper)
+			evtObjVal, _ := eh.pendingIssueTasksEvtOjbs.Load(nextNonce)
+			evtObj := evtObjVal.(*dispatcher.EventObject)
+			eh.doIssueTx(ctx, evtObj, stakeTaskWrapper)
+			pended := atomic.LoadUint64(&eh.pendedStakeTasks)
+			atomic.StoreUint64(&eh.pendedStakeTasks, pended-1)
+		}
+	}
+}
+
+func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
 	defer func() {
 		eh.Logger.Debug("Stake tasks stats", []logger.Field{{"pendedStakeTasks", atomic.LoadUint64(&eh.pendedStakeTasks)}, {"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}}...)
 	}()
 
 	stakeTask := stw.StakeTask
-	nonce := stakeTask.Nonce
-	reqID := stakeTask.RequestID
+	//nonce := stakeTask.Nonce
+	//reqID := stakeTask.RequestID
 
-	if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
-		switch errors.Cause(err).(type) {
-		case *ErrTypNonceRegress:
-			eh.Logger.DebugOnError(err, "Stake task CANCELED for nonce regress", []logger.Field{{"stakeTask", stakeTask}}...)
-			return
-		case *ErrTypeNonceJump:
-			eh.pendingIssueTasksCache.Store(nonce, stw)
-			eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
-			atomic.AddUint64(&eh.pendedStakeTasks, 1)
-			eh.Logger.WarnOnError(err, "Stake task PENDED for nonce jump", []logger.Field{{"stakeTask", stakeTask}}...)
-			return
-		default:
-			eh.Logger.ErrorOnError(err, "Stake task TERMINATED for nonce un-continuity", []logger.Field{{"stakeTask", stakeTask}}...)
-			return
-		}
-	}
+	//if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
+	//	switch errors.Cause(err).(type) {
+	//	case *ErrTypNonceRegress:
+	//		eh.Logger.DebugOnError(err, "Stake task CANCELED for nonce regress", []logger.Field{{"stakeTask", stakeTask}}...)
+	//		return
+	//	case *ErrTypeNonceJump:
+	//		eh.pendingIssueTasksCache.Store(nonce, stw)
+	//		eh.pendingIssueTasksEvtOjbs.Store(nonce, evtObj)
+	//		atomic.AddUint64(&eh.pendedStakeTasks, 1)
+	//		eh.Logger.WarnOnError(err, "Stake task PENDED for nonce jump", []logger.Field{{"stakeTask", stakeTask}}...)
+	//		return
+	//	default:
+	//		eh.Logger.ErrorOnError(err, "Stake task TERMINATED for nonce un-continuity", []logger.Field{{"stakeTask", stakeTask}}...)
+	//		return
+	//	}
+	//}
 
 	if err := eh.checkStarTime(int64(stakeTask.StartTime)); err != nil {
 		switch errors.Cause(err).(type) {
@@ -199,13 +238,6 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypInvalidNonce:
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
-			addressNonce, err := eh.ChainNoncer.NonceAt(ctx, stakeTask.CChainAddress, nil)
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to request nonce")
-				break
-			}
-			atomic.StoreUint64(&eh.nextNonce, addressNonce)
-			eh.Logger.Warn("Reset next nonce", []logger.Field{{"nextNonce", atomic.LoadUint64(&eh.nextNonce)}}...)
 		case *chain.ErrTypConflictAtomicInputs:
 			eh.Logger.DebugOnError(err, "Stake task not done", []logger.Field{{"stakeTask", stakeTask}}...)
 		case *chain.ErrTypTxHasNoImportedInputs:
@@ -246,13 +278,6 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 	}
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 	eh.Logger.Info("Stake task DONE", []logger.Field{{"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}, {"StakingTaskDoneEvent", newEvt}}...)
-
-	atomic.StoreUint64(&eh.nextNonce, nonce+1)
-	atomic.StoreUint32(&eh.hasIssued, 1)
-	if ok := eh.Noncer.ResetBase(reqID, nonce); ok {
-		eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", reqID},
-			{"baseNonce", nonce}, {"gap", nonce - nonce}}...)
-	}
 }
 
 // todo: use cache.IsParticipantChecker
@@ -270,6 +295,27 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManage
 	}
 
 	return true
+}
+
+func (eh *StakeRequestStartedEventHandler) syncNonce(ctx context.Context) {
+	t := time.NewTicker(time.Millisecond * 100)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			var addr *common.Address
+			eh.lock.Lock()
+			addr = eh.cChainAddress
+			eh.lock.Unlock()
+			addressNonce, err := eh.ChainNoncer.NonceAt(ctx, *addr, nil)
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to request nonce")
+				break
+			}
+			atomic.StoreUint64(&eh.nextNonce, addressNonce)
+		}
+	}
 }
 
 func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Context, task *StakeTask) error {
@@ -319,21 +365,6 @@ func (eh *StakeRequestStartedEventHandler) checkStarTime(startTime int64) error 
 	}
 	return nil
 }
-
-//func (eh *StakeRequestStartedEventHandler) getNonce(ctx context.Context) (uint64, error) {
-//	pubkey, err := crypto.UnmarshalPubKeyHex(eh.genPubKeyInfo.CompressedGenPubKeyHex)
-//	if err != nil {
-//		return 0, errors.WithStack(err)
-//	}
-//
-//	address := addrs.PubkeyToAddresse(pubkey)
-//
-//	nonce, err := eh.ChainNoncer.NonceAt(ctx, *address, nil)
-//	if err != nil {
-//		return 0, errors.WithStack(err)
-//	}
-//	return nonce, nil
-//}
 
 // todo: use cache.NormalizedParticipantKeysGetter instead
 func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
