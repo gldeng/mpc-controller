@@ -54,8 +54,8 @@ type StakeRequestStartedEventHandler struct {
 	pendingIssueTasksEvtOjbs sync.Map
 	pendingIssueTasksCache   sync.Map
 
-	hasIssued       uint32 // 0: no 1: yes
-	lastIssuedNonce uint64
+	hasIssued uint32 // 0: no 1: yes
+	lastNonce uint64
 
 	pendedStakeTasks uint64
 	doneStakeTasks   uint64
@@ -139,7 +139,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.issueStakeTask(ctx, evtObj, stakeTaskWrapper)
 
 	loop:
-		nextNonce := atomic.LoadUint64(&eh.lastIssuedNonce) + 1
+		nextNonce := atomic.LoadUint64(&eh.lastNonce) + 1
 		stakeTaskWrapperVal, ok := eh.pendingIssueTasksCache.LoadAndDelete(nextNonce)
 		if !ok {
 			return
@@ -155,13 +155,19 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 }
 
 func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) {
-	defer func() {
-		eh.Logger.Debug("Stake tasks stats", []logger.Field{{"pendedStakeTasks", atomic.LoadUint64(&eh.pendedStakeTasks)}, {"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}}...)
-	}()
-
 	stakeTask := stw.StakeTask
 	nonce := stakeTask.Nonce
 	reqID := stakeTask.RequestID
+
+	defer func() {
+		// Assume that there must at least one participant successful to issue and consume the nonce,
+		// so issueStakeTask can move safely onto handling next requestID and nonce.
+		// todo: If all participant failed and nonce not consumed,  `atomic.StoreUint64(&eh.lastNonce, nonce)` can cause nonce jump error.
+		// This abnormal happen rarely but extra measures (e.g. extra sync logic) are required.
+		atomic.StoreUint64(&eh.lastNonce, nonce)
+		eh.Logger.Info("Stake task should succeed and nonce should be consumed among participants", []logger.Field{{"reqID", reqID}, {"nonce", nonce}}...)
+		eh.Logger.Debug("Stake tasks stats", []logger.Field{{"pendedStakeTasks", atomic.LoadUint64(&eh.pendedStakeTasks)}, {"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}}...)
+	}()
 
 	if err := eh.checkNonceContinuity(ctx, stakeTask); err != nil {
 		switch errors.Cause(err).(type) {
@@ -240,7 +246,6 @@ func (eh *StakeRequestStartedEventHandler) issueStakeTask(ctx context.Context, e
 	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
 	eh.Logger.Info("Stake task DONE", []logger.Field{{"doneStakeTasks", atomic.LoadUint64(&eh.doneStakeTasks)}, {"StakingTaskDoneEvent", newEvt}}...)
 
-	atomic.StoreUint64(&eh.lastIssuedNonce, nonce)
 	atomic.StoreUint32(&eh.hasIssued, 1)
 	if ok := eh.Noncer.ResetBase(reqID, nonce); ok {
 		eh.Logger.Info("Noncer base reset", []logger.Field{{"baseReqID", reqID},
@@ -272,9 +277,9 @@ func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Cont
 	}
 	evmInput := exportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx).Ins[0]
 
-	issuedNonce := atomic.LoadUint64(&eh.lastIssuedNonce)
+	issuedNonce := atomic.LoadUint64(&eh.lastNonce)
 	if atomic.LoadUint32(&eh.hasIssued) == 1 && issuedNonce >= evmInput.Nonce {
-		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:lastIssuedNonce:%v,givenNonce:%v", ErrMsgNonceRegress, issuedNonce, evmInput.Nonce)})
+		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:lastNonce:%v,givenNonce:%v", ErrMsgNonceRegress, issuedNonce, evmInput.Nonce)})
 	}
 
 	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
