@@ -29,10 +29,11 @@ type Workshop struct {
 	lock          sync.Mutex
 }
 
-func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces uint32) *Workshop {
+func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, maxWorkspaces uint32) *Workshop {
 	taskChan := make(chan *Task, 256)
 	idleChan := make(chan struct{})
 	taskZone := &TaskZone{
+		Id:               name + "_workshop_" + "_taskZone_" + misc.NewID()[:4],
 		Logger:           logger,
 		TaskChan:         taskChan,
 		IdleChan:         idleChan,
@@ -40,7 +41,7 @@ func NewWorkshop(logger logger.Logger, maxIdleDur time.Duration, maxWorkspaces u
 	}
 
 	workshop := &Workshop{
-		Id:            "workshop_" + misc.NewID(),
+		Id:            name + "_workshop_" + misc.NewID()[:4],
 		Logger:        logger,
 		MaxIdleDur:    maxIdleDur,
 		taskChan:      taskChan,
@@ -58,7 +59,7 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	})
 
 	w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
-		"Too many living workspaces",
+		w.Id+" too many living workspaces",
 		[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
 			{"maxWorkspaces", w.MaxWorkspaces}}...)
 
@@ -70,14 +71,14 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 
 	if atomic.LoadUint32(&w.livingWorkspaces) == w.MaxWorkspaces {
 		if !w.isIdle() {
-			w.Logger.Warn("No idle workspace, task en-zoned")
+			w.Logger.Warn(w.Id + " no idle workspace, task en-zoned")
 			err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 				if err := w.TaskZone.EnZone(t); err != nil {
 					return true, errors.WithStack(err)
 				}
 				return false, nil
 			})
-			w.Logger.ErrorOnError(err, "Failed to en-zone task.")
+			w.Logger.ErrorOnError(err, w.Id+" failed to en-zone task.")
 			return
 		}
 		w.taskChan <- t
@@ -113,7 +114,7 @@ func (w *Workshop) isIdle() bool {
 
 func (w *Workshop) newWorkspace(ctx context.Context) {
 	ws := &Workspace{
-		Id:         "workspace_" + misc.NewID(),
+		Id:         w.Id + "_workspace_" + misc.NewID()[:4],
 		Logger:     w.Logger,
 		MaxIdleDur: w.MaxIdleDur,
 		TaskChan:   w.taskChan,
@@ -124,13 +125,13 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 	w.lock.Unlock()
 
 	go func() {
-		w.Logger.Debug("Workspace opened", []logger.Field{{"openedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces) + 1}}...)
+		w.Logger.Debug(ws.Id+" workspace opened", []logger.Field{{"openedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces) + 1}}...)
 		atomic.AddUint32(&w.livingWorkspaces, 1)
 		ws.Run(ctx)
 	loop:
 		old := atomic.LoadUint32(&w.livingWorkspaces)
 		if swapped := atomic.CompareAndSwapUint32(&w.livingWorkspaces, old, old-1); swapped {
-			w.Logger.Debug("Workspace closed", []logger.Field{{"closedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)}}...)
+			w.Logger.Debug(ws.Id+" workspace closed", []logger.Field{{"closedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)}}...)
 			w.lock.Lock()
 			delete(w.workspacesMap, ws.Id)
 			w.lock.Unlock()

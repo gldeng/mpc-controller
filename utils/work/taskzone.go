@@ -15,6 +15,7 @@ type Task struct {
 }
 
 type TaskZone struct {
+	Id               string
 	Logger           logger.Logger
 	TaskChan         chan *Task
 	IdleChan         chan struct{}
@@ -35,7 +36,7 @@ func (z *TaskZone) Run(ctx context.Context) {
 		case <-z.IdleChan:
 			if t := z.deZone(); t != nil {
 				z.TaskChan <- t
-				z.Logger.Debug("Task de-zoned")
+				z.Logger.Debug(z.Id + "task de-zoned")
 			}
 		}
 	}
@@ -43,7 +44,7 @@ func (z *TaskZone) Run(ctx context.Context) {
 
 func (z *TaskZone) EnZone(t *Task) error {
 	defer func() {
-		z.Logger.Debug("En-zoned tasks stats in priority", []logger.Field{
+		z.Logger.Debug(z.Id+" en-zoned tasks stats in priority", []logger.Field{
 			{"p5", z.tasksInQueue(5)},
 			{"p4", z.tasksInQueue(4)},
 			{"p3", z.tasksInQueue(3)},
