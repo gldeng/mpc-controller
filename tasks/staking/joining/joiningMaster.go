@@ -15,7 +15,7 @@ import (
 
 type JoiningMaster struct {
 	ContractAddr       common.Address
-	Dispatcher         dispatcher.DispatcherClaasic
+	Dispatcher         dispatcher.Dispatcher
 	Logger             logger.Logger
 	MyIndexGetter      cache.MyIndexGetter
 	MyPubKeyHashHex    string

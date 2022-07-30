@@ -8,7 +8,7 @@ import (
 )
 
 type CacheWrapper struct {
-	Dispatcher dispatcher.DispatcherClaasic
+	Dispatcher dispatcher.Dispatcher
 	*Cache
 }
 

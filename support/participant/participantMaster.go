@@ -14,7 +14,7 @@ import (
 type ParticipantMaster struct {
 	ContractAddr    common.Address
 	ContractCaller  bind.ContractCaller
-	Dispatcher      dispatcher.DispatcherClaasic
+	Dispatcher      dispatcher.Dispatcher
 	Logger          logger.Logger
 	MyPubKeyBytes   []byte
 	MyPubKeyHashHex string

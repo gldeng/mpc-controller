@@ -21,7 +21,7 @@ type Master struct {
 	CChainIssueClient chain.CChainIssuer
 	Cache             cache.ICache
 	ContractAddr      common.Address
-	Dispatcher        dispatcher.DispatcherClaasic
+	Dispatcher        dispatcher.Dispatcher
 	Logger            logger.Logger
 	MyPubKeyHashHex   string
 	PChainClient      platformvm.Client

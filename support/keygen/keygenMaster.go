@@ -15,7 +15,7 @@ import (
 
 type KeygenMaster struct {
 	ContractAddr    common.Address
-	Dispatcher      dispatcher.DispatcherClaasic
+	Dispatcher      dispatcher.Dispatcher
 	KeygenDoner     core.KeygenDoner
 	Logger          logger.Logger
 	MyPubKeyHashHex string

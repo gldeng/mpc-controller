@@ -18,7 +18,7 @@ type StakingMaster struct {
 	Cache             Cache
 	ChainNoncer       chain.Noncer
 	ContractAddr      common.Address
-	Dispatcher        dispatcher.DispatcherClaasic
+	Dispatcher        dispatcher.Dispatcher
 	Logger            logger.Logger
 	MyPubKeyHashHex   string
 	Noncer            noncer.Noncer
