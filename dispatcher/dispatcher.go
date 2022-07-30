@@ -74,6 +74,12 @@ func (d *dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 
 // Publish sends the received event object to underlying channel.
 func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
+	et := reflect.TypeOf(evtObj.Event).String()
+	ehs := d.eventMap[et]
+	if len(ehs) == 0 {
+		d.eventLogger.Warn("No subscriber", []logger.Field{{"eventType", et}}...)
+		return
+	}
 	d.eventChan <- evtObj
 }
 
