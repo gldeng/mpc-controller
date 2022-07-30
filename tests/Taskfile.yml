@@ -32,7 +32,7 @@ tasks:
   initiateStake:
     cmds:
       - task: requestKeygen
-      - sleep 90
+      - sleep 120
       - bash ./tests/scripts/fund_initiateStake.sh
       - sleep 5
       - venom run tests/testsuites/initiateStake.yml
