@@ -97,7 +97,7 @@ func (eh *StakeRequestAddedEventHandler) doJoinRequest(ctx context.Context, myIn
 			var err error
 			tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
 			if err != nil {
-				if strings.Contains(err.Error(), "execution reverted: Cannot join anymore") {
+				if strings.Contains(err.Error(), "Cannot join anymore") {
 					tx = nil
 					return false, errors.WithStack(ErrCannotJoin)
 				}
