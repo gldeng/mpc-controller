@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
@@ -76,7 +77,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					myIndex := args.([]interface{})[0].(*big.Int)
 					evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestAdded)
-					err := eh.doJoinRequest(ctx, myIndex, evt)
+					_, err := eh.doJoinRequest(ctx, myIndex, evt)
 					if err != nil {
 						if errors.Is(err, ErrCannotJoin) {
 							eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
@@ -95,22 +96,63 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 	}
 }
 
-func (eh *StakeRequestAddedEventHandler) doJoinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (err error) {
+func (eh *StakeRequestAddedEventHandler) doJoinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (txHash *common.Hash, err error) {
 	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
 	if err != nil {
-		return errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
 
+	var tx *types.Transaction
 	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		var err error
-		_, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
-		if err != nil {
-			if strings.Contains(err.Error(), "Cannot join anymore") {
-				return false, errors.WithStack(ErrCannotJoin)
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+			var err error
+			tx, err = transactor.JoinRequest(eh.Signer, req.RequestId, myIndex)
+			if err != nil {
+				if strings.Contains(err.Error(), "Cannot join anymore") {
+					tx = nil
+					return false, errors.WithStack(ErrCannotJoin)
+				}
+				return true, errors.WithStack(err)
 			}
+			return false, nil
+		})
+
+		err = errors.Wrapf(err, "failed to join request")
+		if err != nil {
+			if errors.Is(err, ErrCannotJoin) {
+				return false, err
+			}
+			return true, err
+		}
+
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+			rcpt, err := eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
+
+			if rcpt.Status != 1 {
+				return true, errors.New("join request tx receipt status != 1")
+			}
+
+			return false, nil
+		})
+		if err != nil {
 			return true, errors.WithStack(err)
 		}
+
 		return false, nil
 	})
-	return errors.WithStack(err)
+
+	err = errors.Wrapf(err, "failed to join request. reqID:%v, partiIndex:%v", req.RequestId, myIndex)
+	if err != nil {
+		return
+	}
+	if tx != nil {
+		txHash_ := tx.Hash()
+		txHash = &txHash_
+		return
+
+	}
+	return
 }
