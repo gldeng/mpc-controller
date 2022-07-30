@@ -104,7 +104,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 
 				copier.Copy(&utxoFetchedEvt, reportedGenPubKey)
 
-				utxoFetchedEvtObj := dispatcher.NewRootEventObject("UTXOTracker", utxoFetchedEvt, ctx)
+				utxoFetchedEvtObj := dispatcher.NewEvtObj(utxoFetchedEvt, nil)
 				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
 				eh.UTXOsFetchedEventCache.Store(reportedGenPubKey.GenPubKeyHashHex, utxoFetchedEvtObj)
 
@@ -135,7 +135,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context, utxoFetchedEvtObj *dispa
 			GroupIDBytes:   groupId,
 			PartiIndex:     partiIndex,
 		}
-		eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(utxoFetchedEvtObj, "UTXOTracker", utxoReportedEvt, ctx))
+		eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(utxoReportedEvt, nil))
 		switch utxo.OutputIndex {
 		case 0:
 			eh.Logger.Debug("Principal UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})

@@ -39,12 +39,12 @@ func (g *GroupInfoStorer) Do(ctx context.Context, evtObj *dispatcher.EventObject
 			Threshold:      t,
 		}
 
-		key, err := g.storeGroupInfo(evtObj.Context, &groupInfo)
+		key, err := g.storeGroupInfo(ctx, &groupInfo)
 		if err != nil {
 			g.Logger.Error("Fail to store groupInfo", []logger.Field{{"error", err}, {"groupInfo", &groupInfo}}...)
 			break
 		}
-		g.publishStoredEvent(evtObj.Context, key, &groupInfo, evtObj)
+		g.publishStoredEvent(ctx, key, &groupInfo, evtObj)
 	}
 }
 
@@ -84,6 +84,6 @@ func (g *GroupInfoStorer) publishStoredEvent(ctx context.Context, key string, gr
 		Val: val,
 	}
 
-	g.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "GroupInfoStorer", &newEvt, parentEvtObj.Context))
+	g.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 	g.Logger.Info("Group created.", logger.Field{"GroupInfoStoredEvent", newEvt})
 }

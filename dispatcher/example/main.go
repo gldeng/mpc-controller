@@ -24,17 +24,9 @@ func main() {
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
 		d.Publish(ctx, &dispatcher.EventObject{
-			EvtStreamNo: dispatcher.AddEventStreamCount(),
-			EvtStreamID: misc.NewID(),
-			ParentEvtNo: uint64(0),
-			ParentEvtID: "",
-			EventStep:   1,
-			EventNo:     dispatcher.AddEventCount(),
-			EventID:     misc.NewID(),
-			CreatedBy:   "MainFunction",
-			CreatedAt:   misc.NewTimestamp(),
-			Event:       &WeatherEvent{Condition: "Cloudy"},
-			Context:     ctx,
+			EventNo: dispatcher.AddEventCount(),
+			EventID: misc.NewID(),
+			Event:   &WeatherEvent{Condition: "Cloudy"},
 		})
 	}()
 
@@ -54,7 +46,7 @@ func (m *MessageShower) Do(ctx context.Context, evtObj *dispatcher.EventObject) 
 	if evt, ok := evtObj.Event.(*MessageEvent); ok {
 		m.showMessage(evt)
 
-		m.publishWeatherEvent(evtObj.EvtStreamNo, evtObj.EvtStreamID, evtObj.EventNo, evtObj.EventID, evtObj.EventStep, evtObj.Context, "Sunny")
+		m.publishWeatherEvent(ctx, "Sunny")
 	}
 }
 
@@ -63,22 +55,14 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 }
 
 // Event handler can also publish event within its scope.
-func (m *MessageShower) publishWeatherEvent(evtStreamNo uint64, evtStreamID string, parentEvtNo uint64, parentEvtID string, parentEvtStep int, ctx context.Context, condition string) {
+func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition string) {
 	weatherEvtObj := &dispatcher.EventObject{
-		EvtStreamNo: evtStreamNo,
-		EvtStreamID: evtStreamID,
-		ParentEvtNo: parentEvtNo,
-		ParentEvtID: parentEvtID,
-		EventStep:   parentEvtStep + 1,
-		EventNo:     dispatcher.AddEventCount(),
-		EventID:     misc.NewID(),
-		CreatedBy:   "MessageShower",
-		CreatedAt:   misc.NewTimestamp(),
+		EventNo: dispatcher.AddEventCount(),
+		EventID: misc.NewID(),
 
 		Event: &WeatherEvent{
 			Condition: condition,
 		},
-		Context: context.Background(),
 	}
 
 	m.Publish(ctx, weatherEvtObj)

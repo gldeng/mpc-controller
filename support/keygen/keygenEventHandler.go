@@ -60,7 +60,7 @@ func (eh *KeygenRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispat
 		}
 		eh.participantInfoMap[evt.Key] = evt.Val
 	case *contract.MpcManagerKeygenRequestAdded:
-		err := eh.do(evtObj.Context, evt, evtObj)
+		err := eh.do(ctx, evt, evtObj)
 		eh.Logger.ErrorOnError(err, "Failed to deal with MpcManagerKeygenRequestAdded event.")
 	}
 }
@@ -98,7 +98,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	}
 	myIndex := eh.participantInfoMap[events.PrefixParticipantInfo+"-"+eh.MyPubKeyHashHex+"-"+groupIdHex].Index
 
-	err = eh.reportGeneratedKey(evtObj.Context, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
+	err = eh.reportGeneratedKey(ctx, req.GroupId, big.NewInt(int64(myIndex)), dnmGenPubKeyBytes)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -193,9 +193,9 @@ func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context
 		Val: val,
 	}
 
-	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "KeygenRequestAddedEventHandler", &newEvt, parentEvtObj.Context))
+	eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 }
 
 func (eh *KeygenRequestAddedEventHandler) publishReportedEvent(ctx context.Context, evt *events.ReportedGenPubKeyEvent, parentEvtObj *dispatcher.EventObject) {
-	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "KeygenRequestAddedEventHandler", evt, parentEvtObj.Context))
+	eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(evt, nil))
 }

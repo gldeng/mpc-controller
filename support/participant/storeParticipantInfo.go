@@ -25,12 +25,12 @@ type ParticipantInfoStorer struct {
 func (p *ParticipantInfoStorer) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *contract.MpcManagerParticipantAdded:
-		key, pt, err := p.storeParticipantInfo(evtObj.Context, evt)
+		key, pt, err := p.storeParticipantInfo(ctx, evt)
 		if err != nil {
 			p.Logger.Error("Fail to store participantInfo", []logger.Field{{"error", err}, {"participantInfo", &pt}}...)
 			break
 		}
-		p.publishStoredEvent(evtObj.Context, key, pt, evtObj)
+		p.publishStoredEvent(ctx, key, pt, evtObj)
 	}
 }
 
@@ -58,5 +58,5 @@ func (p *ParticipantInfoStorer) publishStoredEvent(ctx context.Context, key stri
 		Val: val,
 	}
 
-	p.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(parentEvtObj, "ParticipantInfoStorer", &newEvt, parentEvtObj.Context))
+	p.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 }

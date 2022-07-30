@@ -46,7 +46,7 @@ func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatc
 		eh.pubKeyBytes = append(eh.pubKeyBytes, dnmPubKeyBtes)
 	}
 	if len(eh.pubKeyBytes) > 0 {
-		eh.doWatchStakeRequestAdded(evtObj.Context)
+		eh.doWatchStakeRequestAdded(ctx)
 	}
 }
 
@@ -94,7 +94,7 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				evtObj := dispatcher.NewRootEventObject("StakeRequestAddedEventWatcher", evt, ctx)
+				evtObj := dispatcher.NewEvtObj(evt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
 				eh.Logger.Debug("StakeRequestAdded event published", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
 			case err := <-eh.sub.Err():

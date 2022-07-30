@@ -69,7 +69,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 				break
 			}
 
-			txHash, err := eh.doJoinRequest(evtObj.Context, myIndex, evt)
+			txHash, err := eh.doJoinRequest(ctx, myIndex, evt)
 			if err != nil {
 				if errors.Is(err, ErrCannotJoin) {
 					eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
@@ -90,7 +90,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 					PartiIndex: myIndex,
 				}
 
-				eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", &newEvt, evtObj.Context))
+				eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 			}
 		}
 	}

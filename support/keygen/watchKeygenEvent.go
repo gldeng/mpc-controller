@@ -41,7 +41,7 @@ func (eh *KeygenRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispat
 		eh.groupIdBytes = append(eh.groupIdBytes, bytes.HexTo32Bytes(evt.Val.GroupIdHex))
 	}
 	if len(eh.groupIdBytes) > 0 {
-		eh.doWatchKeygenRequestAdded(evtObj.Context)
+		eh.doWatchKeygenRequestAdded(ctx)
 	}
 }
 
@@ -89,7 +89,7 @@ func (eh *KeygenRequestAddedEventWatcher) watchKeygenRequestAdded(ctx context.Co
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				evtObj := dispatcher.NewRootEventObject("KeygenRequestAddedEventWatcher", evt, ctx)
+				evtObj := dispatcher.NewEvtObj(evt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching KeygenRequestAdded event")

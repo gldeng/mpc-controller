@@ -177,7 +177,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					ExportedTxID: ids[0],
 					ImportedTxID: ids[1],
 				}
-				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "ExportUTXORequestWatcher", newEvt, evtObj.Context))
+				eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
 
 				switch utxo.OutputIndex {
 				case 0:

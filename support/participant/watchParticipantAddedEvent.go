@@ -35,7 +35,7 @@ func (eh *ParticipantAddedEventWatcher) Do(ctx context.Context, evtObj *dispatch
 	switch evt := evtObj.Event.(type) {
 	case *events.ContractFiltererCreatedEvent:
 		eh.filterer = evt.Filterer
-		eh.doWatchParticipantAdded(evtObj.Context)
+		eh.doWatchParticipantAdded(ctx)
 	}
 }
 
@@ -83,7 +83,7 @@ func (eh *ParticipantAddedEventWatcher) watchParticipantAdded(ctx context.Contex
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				evtObj := dispatcher.NewRootEventObject("ParticipantAddedEventWatcher", evt, ctx)
+				evtObj := dispatcher.NewEvtObj(evt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching ParticipantAdded event")
