@@ -10,6 +10,7 @@ import (
 type Dispatcher interface {
 	Subscriber
 	Publisher
+	Channeller
 }
 
 type Subscriber interface {
@@ -24,9 +25,9 @@ type Channeller interface {
 	Channel() chan *EventObject
 }
 
-// DispatcherImpl is a lightweight in-memory event-driven framework,
+// dispatcher is a lightweight in-memory event-driven framework,
 // dedicated for subscribing, publishing and dispatching events.
-type DispatcherImpl struct {
+type dispatcher struct {
 	eventLogger logger.Logger
 	eventChan   chan *EventObject
 	eventMap    map[string][]EventHandler
@@ -35,8 +36,8 @@ type DispatcherImpl struct {
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
 // and runs a goroutine for receiving and publishing event objects.
-func NewDispatcher(ctx context.Context, logger logger.Logger, evtChanLen int) *DispatcherImpl {
-	dispatcher := &DispatcherImpl{
+func NewDispatcher(ctx context.Context, logger logger.Logger, evtChanLen int) Dispatcher {
+	dispatcher := &dispatcher{
 		eventLogger: logger,
 		eventChan:   make(chan *EventObject, evtChanLen),
 		eventMap:    make(map[string][]EventHandler),
@@ -52,7 +53,7 @@ func NewDispatcher(ctx context.Context, logger logger.Logger, evtChanLen int) *D
 // In this way users do not need to define extra event type using enum data type,
 // but must keep event type definition, or event schema as stable as possible,
 // or any change to event schema could cause damage to data consistency.
-func (d *DispatcherImpl) Subscribe(eT Event, eHs ...EventHandler) {
+func (d *dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 	d.subscribeMu.Lock()
 	defer d.subscribeMu.Unlock()
 
@@ -71,19 +72,18 @@ func (d *DispatcherImpl) Subscribe(eT Event, eHs ...EventHandler) {
 }
 
 // Publish sends the received event object to underlying channel.
-func (d *DispatcherImpl) Publish(ctx context.Context, evtObj *EventObject) {
-	//d.publish(ctx, evtObj)
+func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	d.eventChan <- evtObj
 }
 
 // Channel exposes the underlying channel for users to send event objects externally,
-// e.g. DispatcherImpl.Channel <- &myEventObject
-func (d *DispatcherImpl) Channel() chan *EventObject {
+// e.g. dispatcher.Channel <- &myEventObject
+func (d *dispatcher) Channel() chan *EventObject {
 	return d.eventChan
 }
 
 // run is a goroutine for receiving and publishing events.
-func (d *DispatcherImpl) run(ctx context.Context) {
+func (d *dispatcher) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -96,12 +96,12 @@ func (d *DispatcherImpl) run(ctx context.Context) {
 
 // publish concurrently run event handlers to the same event type.
 // Under the hood its use Workshop to do the amazing scheduling.
-func (d *DispatcherImpl) publish(ctx context.Context, evtObj *EventObject) {
+func (d *dispatcher) publish(ctx context.Context, evtObj *EventObject) {
 	et := reflect.TypeOf(evtObj.Event).String()
 	ehs := d.eventMap[et]
 	if len(ehs) > 0 {
 		for _, eh := range ehs {
-			go eh.Do(ctx, evtObj)
+			eh.Do(ctx, evtObj)
 		}
 	}
 }
