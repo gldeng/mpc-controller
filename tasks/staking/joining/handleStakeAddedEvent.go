@@ -5,7 +5,6 @@ import (
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
-	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
@@ -25,7 +24,7 @@ var (
 
 // Accept event: *contract.MpcManagerStakeRequestAdded
 
-// Emit event: *events.JoinedRequestEvent
+// Emit event:
 
 type StakeRequestAddedEventHandler struct {
 	ContractAddr    common.Address
@@ -81,16 +80,6 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 					{"reqId", evt.RequestId},
 					{"txHash", txHash}}...)
 				break
-			}
-
-			if txHash != nil {
-				newEvt := events.JoinedRequestEvent{
-					TxHashHex:  txHash.Hex(),
-					RequestId:  evt.RequestId,
-					PartiIndex: myIndex,
-				}
-
-				eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 			}
 		}
 	}
