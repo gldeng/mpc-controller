@@ -9,7 +9,7 @@ import (
 
 var eventNo uint64
 
-func newEvtNo() uint64 {
+func NewEvtNo() uint64 {
 	return atomic.AddUint64(&eventNo, 1)
 }
 
@@ -28,7 +28,7 @@ type EventHandler interface {
 
 func NewEvtObj(evt Event, mp objx.Map) *EventObject {
 	evtObj := EventObject{
-		EventNo: newEvtNo(),
+		EventNo: NewEvtNo(),
 		EventID: misc.NewID(),
 
 		Event: evt,

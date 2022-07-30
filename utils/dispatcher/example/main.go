@@ -15,7 +15,7 @@ func main() {
 	defer cancel()
 	logger.DevMode = true
 	log := logger.Default()
-	d := dispatcher.NewDispatcher(ctx, log, 1024)
+	d := dispatcher.NewDispatcher(ctx, log, "global", 1024)
 
 	// Subscribe events to event handlers
 	d.Subscribe(&MessageEvent{}, &MessageShower{d})
@@ -24,7 +24,7 @@ func main() {
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
 		d.Publish(ctx, &dispatcher.EventObject{
-			EventNo: dispatcher.newNo(),
+			EventNo: dispatcher.NewEvtNo(),
 			EventID: misc.NewID(),
 			Event:   &WeatherEvent{Condition: "Cloudy"},
 		})
@@ -57,7 +57,7 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 // Event handler can also publish event within its scope.
 func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition string) {
 	weatherEvtObj := &dispatcher.EventObject{
-		EventNo: dispatcher.newNo(),
+		EventNo: dispatcher.NewEvtNo(),
 		EventID: misc.NewID(),
 
 		Event: &WeatherEvent{

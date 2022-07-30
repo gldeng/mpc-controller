@@ -92,7 +92,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	// Create dispatcher
-	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, 1024)
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, config.ControllerId, 1024)
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
