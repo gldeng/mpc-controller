@@ -24,7 +24,7 @@ func main() {
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
 		d.Publish(ctx, &dispatcher.EventObject{
-			EventNo: dispatcher.AddEventCount(),
+			EventNo: dispatcher.newNo(),
 			EventID: misc.NewID(),
 			Event:   &WeatherEvent{Condition: "Cloudy"},
 		})
@@ -57,7 +57,7 @@ func (m *MessageShower) showMessage(evt *MessageEvent) {
 // Event handler can also publish event within its scope.
 func (m *MessageShower) publishWeatherEvent(ctx context.Context, condition string) {
 	weatherEvtObj := &dispatcher.EventObject{
-		EventNo: dispatcher.AddEventCount(),
+		EventNo: dispatcher.newNo(),
 		EventID: misc.NewID(),
 
 		Event: &WeatherEvent{
