@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -35,44 +36,67 @@ type StakeRequestAddedEventHandler struct {
 	Receipter       chain.Receipter
 	Signer          *bind.TransactOpts
 	Transactor      bind.ContractTransactor
+	evtObjChan      chan *dispatcher.EventObject
+	once            sync.Once
 }
 
 func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
-	switch evt := evtObj.Event.(type) {
-	case *contract.MpcManagerStakeRequestAdded:
-		genPubKeyHashHex := evt.PublicKey.Hex()
-		myIndex := eh.MyIndexGetter.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHashHex)
-		if myIndex == nil {
-			break
-		}
+	eh.once.Do(func() {
+		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
+		go eh.joinRequest(ctx)
+	})
 
-		txHash, err := eh.joinRequest(evtObj.Context, myIndex, evt)
-		if err != nil {
-			if errors.Is(err, ErrCannotJoin) {
-				eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
+	select {
+	case <-ctx.Done():
+		return
+	case eh.evtObjChan <- evtObj:
+	}
+}
+
+func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case evtObj := <-eh.evtObjChan:
+			evt, ok := evtObj.Event.(*contract.MpcManagerStakeRequestAdded)
+			if !ok {
+				break
+			}
+			genPubKeyHashHex := evt.PublicKey.Hex()
+			myIndex := eh.MyIndexGetter.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHashHex)
+			if myIndex == nil {
+				break
+			}
+
+			txHash, err := eh.doJoinRequest(evtObj.Context, myIndex, evt)
+			if err != nil {
+				if errors.Is(err, ErrCannotJoin) {
+					eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
+						{"reqId", evt.RequestId},
+						{"txHash", txHash}}...)
+					break
+				}
+				eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
 					{"reqId", evt.RequestId},
 					{"txHash", txHash}}...)
 				break
 			}
-			eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
-				{"reqId", evt.RequestId},
-				{"txHash", txHash}}...)
-			break
-		}
 
-		if txHash != nil {
-			newEvt := events.JoinedRequestEvent{
-				TxHashHex:  txHash.Hex(),
-				RequestId:  evt.RequestId,
-				PartiIndex: myIndex,
+			if txHash != nil {
+				newEvt := events.JoinedRequestEvent{
+					TxHashHex:  txHash.Hex(),
+					RequestId:  evt.RequestId,
+					PartiIndex: myIndex,
+				}
+
+				eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", &newEvt, evtObj.Context))
 			}
-
-			eh.Publisher.Publish(evtObj.Context, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestAddedEventHandler", &newEvt, evtObj.Context))
 		}
 	}
 }
 
-func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (txHash *common.Hash, err error) {
+func (eh *StakeRequestAddedEventHandler) doJoinRequest(ctx context.Context, myIndex *big.Int, req *contract.MpcManagerStakeRequestAdded) (txHash *common.Hash, err error) {
 	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor)
 	if err != nil {
 		return nil, errors.WithStack(err)
