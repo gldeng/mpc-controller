@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/misc"
-	"github.com/avalido/mpc-controller/utils/work"
 	"time"
 )
 
@@ -16,8 +15,7 @@ func main() {
 	defer cancel()
 	logger.DevMode = true
 	log := logger.Default()
-	ws := work.NewWorkshop(log, time.Second*300, 1024, make(chan *work.Task, 1024))
-	d := dispatcher.NewDispatcher(ctx, log, 1024, ws)
+	d := dispatcher.NewDispatcher(ctx, log, 1024)
 
 	// Subscribe events to event handlers
 	d.Subscribe(&MessageEvent{}, &MessageShower{d})

@@ -47,13 +47,12 @@ type Dispatcher struct {
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
 // and runs a goroutine for receiving and publishing event objects.
-func NewDispatcher(ctx context.Context, logger logger.Logger, evtChanLen int, ws Workshop) *Dispatcher {
+func NewDispatcher(ctx context.Context, logger logger.Logger, evtChanLen int) *Dispatcher {
 	dispatcher := &Dispatcher{
 		eventLogger: logger,
 		eventChan:   make(chan *EventObject, evtChanLen),
 		eventMap:    make(map[string][]EventHandler),
 		subscribeMu: new(sync.Mutex),
-		workshop:    ws,
 	}
 	go dispatcher.run(ctx)
 	return dispatcher
@@ -85,6 +84,7 @@ func (d *Dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 
 // Publish sends the received event object to underlying channel.
 func (d *Dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
+	//d.publish(ctx, evtObj)
 	d.eventChan <- evtObj
 }
 
@@ -112,12 +112,8 @@ func (d *Dispatcher) publish(ctx context.Context, evtObj *EventObject) {
 	et := reflect.TypeOf(evtObj.Event).String()
 	ehs := d.eventMap[et]
 	if len(ehs) > 0 {
-		task := work.Task{
-			Args:     evtObj,
-			Ctx:      ctx,
-			WorkFns:  workFnFromEventHandlers(ehs),
-			Priority: evtObj.Priority,
+		for _, eh := range ehs {
+			go eh.Do(ctx, evtObj)
 		}
-		d.workshop.AddTask(ctx, &task)
 	}
 }
