@@ -30,14 +30,14 @@ type Workshop struct {
 }
 
 func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, maxWorkspaces uint32) *Workshop {
-	taskChan := make(chan *Task, 256)
+	taskChan := make(chan *Task, 1024)
 	idleChan := make(chan struct{})
 	taskZone := &TaskZone{
 		Id:               name + "_workshop_" + "_taskZone_" + misc.NewID()[:4],
 		Logger:           logger,
 		TaskChan:         taskChan,
 		IdleChan:         idleChan,
-		PerTaskQueueSize: 256,
+		PerTaskQueueSize: 1024,
 	}
 
 	workshop := &Workshop{
