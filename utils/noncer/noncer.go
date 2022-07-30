@@ -32,6 +32,12 @@ func (n *noncer) GetNonce(reqID uint64) (nonce uint64) {
 	return uint64(nonceInt64)
 }
 
+func (n *noncer) GetBase() (baseReqID, baseNonce uint64) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	return n.baseReqID, n.baseNonce
+}
+
 func (n *noncer) ResetBase(baseReqID, baseNonce uint64) bool {
 	n.lock.Lock()
 	defer n.lock.Unlock()
