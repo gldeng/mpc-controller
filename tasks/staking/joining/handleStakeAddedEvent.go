@@ -87,6 +87,8 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 							{"reqId", evt.RequestId}}...)
 						return
 					}
+					eh.Logger.Debug("Joined request", []logger.Field{
+						{"reqId", evt.RequestId}}...)
 				}},
 			})
 		}
