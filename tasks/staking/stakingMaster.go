@@ -13,6 +13,7 @@ import (
 )
 
 type StakingMaster struct {
+	Balancer          chain.Balancer
 	CChainIssueClient chain.CChainIssuer
 	Cache             Cache
 	ChainNoncer       chain.Noncer
@@ -31,7 +32,6 @@ type StakingMaster struct {
 
 func (m *StakingMaster) Start(ctx context.Context) error {
 	m.subscribe()
-	m.stakingDealer.Init(ctx)
 	<-ctx.Done()
 	return nil
 }
@@ -44,6 +44,7 @@ func (m *StakingMaster) subscribe() {
 	}
 
 	taskStartedDealer := StakeRequestStartedEventHandler{
+		Balancer:          m.Balancer,
 		CChainIssueClient: m.CChainIssueClient,
 		Cache:             m.Cache,
 		ChainNoncer:       m.ChainNoncer,
