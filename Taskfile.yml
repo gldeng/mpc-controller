@@ -20,6 +20,10 @@ tasks:
     cmds:
       - cast balance {{.CLI_ARGS}}  --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc
     silent: false
+  nonce:
+    cmds:
+      - cast nonce {{.CLI_ARGS}}  --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc
+    silent: false
   strlen:
     cmds:
       - string={{.CLI_ARGS}}; echo ${#string}
