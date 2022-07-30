@@ -43,4 +43,7 @@ mkdir -p addresses
 echo -n $MPC_MANAGER > addresses/MPC_MANAGER_ADDRESS
 echo -n $AVALIDO > addresses/AVALIDO_ADDRESS
 
+echo "MpcManager address: $MPC_MANAGER"
+echo "AvaLido address: $AVALIDO"
+
 cd $LAST_WD
