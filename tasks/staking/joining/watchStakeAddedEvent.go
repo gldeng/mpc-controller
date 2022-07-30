@@ -3,11 +3,11 @@ package joining
 import (
 	"context"
 	"github.com/avalido/mpc-controller/contract"
-	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"

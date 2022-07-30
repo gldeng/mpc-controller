@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	dispatcher "github.com/avalido/mpc-controller/dispatcher"
+	dispatcher "github.com/avalido/mpc-controller/utils/dispatcher"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -3,8 +3,8 @@ package tracker
 //
 //import (
 //	"context"
-//	"github.com/avalido/mpc-controller/dispatcher"
-//	dispatcherMocks "github.com/avalido/mpc-controller/dispatcher/mocks"
+//	"github.com/avalido/mpc-controller/utils/dispatcher"
+//	dispatcherMocks "github.com/avalido/mpc-controller/utils/dispatcher/mocks"
 //	"github.com/avalido/mpc-controller/events"
 //	"github.com/stretchr/testify/mock"
 //	"github.com/stretchr/testify/suite"

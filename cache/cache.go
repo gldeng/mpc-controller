@@ -3,9 +3,9 @@ package cache
 import "C"
 import (
 	"context"
-	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"

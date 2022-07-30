@@ -2,8 +2,8 @@ package cache
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
+	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"sync"
 )
 
