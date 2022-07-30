@@ -3,14 +3,9 @@ package dispatcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/work"
 	"reflect"
 	"sync"
 )
-
-type Workshop interface {
-	AddTask(ctx context.Context, t *work.Task)
-}
 
 type Dispatcherrer interface {
 	Subscriber
@@ -42,7 +37,6 @@ type Dispatcher struct {
 	eventChan   chan *EventObject
 	eventMap    map[string][]EventHandler
 	subscribeMu *sync.Mutex
-	workshop    Workshop
 }
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
