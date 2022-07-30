@@ -13,7 +13,7 @@ MPC_MANAGER_ADDRESS=$(cat $HOME/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS)
 LAST_GEN_ADDRESS=$(cast call --rpc-url $C_CHAIN_RPC_URL $MPC_MANAGER_ADDRESS "lastGenAddress()")
 LAST_GEN_ADDRESS=0x${LAST_GEN_ADDRESS: -40}
 
-echo -n addr > $HOME/mpctest/contracts/addresses/LAST_GEN_ADDRESS
+echo -n $LAST_GEN_ADDRESS > $HOME/mpctest/contracts/addresses/LAST_GEN_ADDRESS
 
 # Fund the LAST_GEN_ADDRESS so that they can afford gas fee
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --value 1000ether $LAST_GEN_ADDRESS > /dev/null
