@@ -60,7 +60,8 @@ type StakeRequestStartedEventHandler struct {
 	cChainAddress *common.Address // todo: value may vary for future key-rotation
 	addrLock      sync.Mutex
 
-	issueTxCache map[uint64]*issueTx
+	issueTxCache     map[uint64]*issueTx
+	issueTxCacheLock sync.RWMutex
 
 	nextNonce uint64
 
@@ -201,7 +202,9 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context, evtObj *d
 
 func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context, issueTx *issueTx) {
 	// Cache tx for later issue
+	eh.issueTxCacheLock.Lock()
 	eh.issueTxCache[issueTx.Nonce] = issueTx
+	eh.issueTxCacheLock.Unlock()
 
 	// Sync nonce
 	if err := eh.syncNonce(ctx); err != nil {
@@ -211,23 +214,30 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context, issueTx 
 
 	// Continuous issue tx
 	for i := int(eh.nextNonce); i < int(eh.nextNonce)+len(eh.issueTxCache); i++ {
+		eh.issueTxCacheLock.RLock()
 		issueTx, ok := eh.issueTxCache[uint64(i)]
+		eh.issueTxCacheLock.RUnlock()
 		if !ok {
 			break
 		}
 		eh.doIssueTx(ctx, issueTx.EventObject, issueTx.StakeTaskWrapper)
 		eh.nextNonce++
 	}
+
+	eh.issueTxCacheLock.Lock()
 	for nonce, _ := range eh.issueTxCache {
 		if nonce < eh.nextNonce {
 			delete(eh.issueTxCache, nonce)
 		}
 	}
+	eh.issueTxCacheLock.Unlock()
 
 	var nonces []int
+	eh.issueTxCacheLock.RLock()
 	for nonce, _ := range eh.issueTxCache {
 		nonces = append(nonces, int(nonce))
 	}
+	eh.issueTxCacheLock.RUnlock()
 	sort.Ints(nonces)
 
 	eh.Logger.Debug("Stake tasks stats", []logger.Field{
