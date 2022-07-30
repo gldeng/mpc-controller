@@ -14,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
@@ -51,7 +52,8 @@ type StakeRequestStartedEventHandler struct {
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
-	evtObjChan chan *dispatcher.EventObject
+	evtObjChan    chan *dispatcher.EventObject
+	signStakeTxWs *work.Workshop
 
 	issueTxChan chan *issueTx
 	once        sync.Once
@@ -78,6 +80,7 @@ type issueTx struct {
 
 func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
+		eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
 		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
 		eh.issueTxChan = make(chan *issueTx)
 		eh.issueTxCache = make(map[uint64]*issueTx)
@@ -192,30 +195,33 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				StakeTask:         stakeTask,
 			}
 
-			go func() { // todo: improve signing strategy to avoid too many gorutines
-				stw := stakeTaskWrapper
-				evtObj := evtObj
-				evt := evtObj.Event.(*contract.MpcManagerStakeRequestStarted)
-				if err := stw.SignTx(ctx); err != nil {
-					eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
-					return
-				}
-				// params validation after tx signed, check this because signing consume gas and time
-				if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
-					eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed")
-					return
-				}
-				if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
-					eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed")
-					return
-				}
-				issueTx := &issueTx{stw, evtObj}
-				select {
-				case <-ctx.Done():
-					return
-				case eh.issueTxChan <- issueTx:
-				}
-			}()
+			eh.signStakeTxWs.AddTask(ctx, &work.Task{
+				Args: []interface{}{stakeTaskWrapper, evtObj},
+				Ctx:  ctx,
+				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
+					stw := args.([]interface{})[0].(*StakeTaskWrapper)
+					evtObj := args.([]interface{})[1].(*dispatcher.EventObject)
+					if err := stw.SignTx(ctx); err != nil {
+						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
+						return
+					}
+					// params validation after tx signed, check this because signing consume gas and time
+					if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
+						eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed")
+						return
+					}
+					if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
+						eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed")
+						return
+					}
+					issueTx := &issueTx{stw, evtObj}
+					select {
+					case <-ctx.Done():
+						return
+					case eh.issueTxChan <- issueTx:
+					}
+				}},
+			})
 		}
 	}
 }
