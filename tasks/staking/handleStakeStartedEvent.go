@@ -200,6 +200,11 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 					eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
 					return
 				}
+				// params validation after tx signed, check this because signing consume gas and time
+				if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
+					eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed")
+					return
+				}
 				if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
 					eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed")
 					return
