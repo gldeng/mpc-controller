@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -36,11 +37,13 @@ type StakeRequestAddedEventHandler struct {
 	Transactor      bind.ContractTransactor
 	evtObjChan      chan *dispatcher.EventObject
 	once            sync.Once
+	ws              *work.Workshop
 }
 
 func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
+		eh.ws = work.NewWorkshop(eh.Logger, time.Second*10, 5)
 		go eh.joinRequest(ctx)
 	})
 
@@ -67,17 +70,25 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 				break
 			}
 
-			err := eh.doJoinRequest(ctx, myIndex, evt)
-			if err != nil {
-				if errors.Is(err, ErrCannotJoin) {
-					eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
-						{"reqId", evt.RequestId}}...)
-					break
-				}
-				eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
-					{"reqId", evt.RequestId}}...)
-				break
-			}
+			eh.ws.AddTask(ctx, &work.Task{
+				Args: []interface{}{myIndex, evt},
+				Ctx:  ctx,
+				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
+					myIndex := args.([]interface{})[0].(*big.Int)
+					evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestAdded)
+					err := eh.doJoinRequest(ctx, myIndex, evt)
+					if err != nil {
+						if errors.Is(err, ErrCannotJoin) {
+							eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
+								{"reqId", evt.RequestId}}...)
+							return
+						}
+						eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
+							{"reqId", evt.RequestId}}...)
+						return
+					}
+				}},
+			})
 		}
 	}
 }
