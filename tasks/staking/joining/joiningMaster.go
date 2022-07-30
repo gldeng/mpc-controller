@@ -37,11 +37,9 @@ func (m *JoiningMaster) Start(ctx context.Context) error {
 
 func (m *JoiningMaster) subscribe() {
 	stakeAddedWatcher := StakeRequestAddedEventWatcher{
-		Logger:             m.Logger,
-		ContractAddr:       m.ContractAddr,
-		Publisher:          m.Dispatcher,
-		StakeReqPublishDur: m.StakeReqPublishDur,
-		StakeReqCacheCap:   m.StakeReqCacheCap,
+		Logger:       m.Logger,
+		ContractAddr: m.ContractAddr,
+		Publisher:    m.Dispatcher,
 	}
 
 	stakeAddedHandler := StakeRequestAddedEventHandler{
