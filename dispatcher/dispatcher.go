@@ -5,6 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"reflect"
 	"sync"
+	"time"
 )
 
 type Dispatcher interface {
@@ -84,10 +85,19 @@ func (d *dispatcher) Channel() chan *EventObject {
 
 // run is a goroutine for receiving and publishing events.
 func (d *dispatcher) run(ctx context.Context) {
+	t := time.NewTicker(time.Second * 60)
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-t.C:
+			d.eventLogger.Debug("Dispatcher health stats",
+				[]logger.Field{{"cachedEvents", len(d.eventChan)}}...)
+			if float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8 {
+				d.eventLogger.Warn("Dispatcher cached too many events",
+					[]logger.Field{{"cachedEvents", len(d.eventChan)},
+						{"cacheCapacity", cap(d.eventChan)}}...)
+			}
 		case evtObj := <-d.eventChan:
 			d.publish(ctx, evtObj)
 		}
