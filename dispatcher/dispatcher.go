@@ -11,7 +11,6 @@ import (
 type Dispatcher interface {
 	Subscriber
 	Publisher
-	Channeller
 }
 
 type Subscriber interface {
@@ -20,10 +19,6 @@ type Subscriber interface {
 
 type Publisher interface {
 	Publish(ctx context.Context, evtObj *EventObject)
-}
-
-type Channeller interface {
-	Channel() chan *EventObject
 }
 
 // dispatcher is a lightweight in-memory event-driven framework,
@@ -83,12 +78,6 @@ func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	d.eventChan <- evtObj
 }
 
-// Channel exposes the underlying channel for users to send event objects externally,
-// e.g. dispatcher.Channel <- &myEventObject
-func (d *dispatcher) Channel() chan *EventObject {
-	return d.eventChan
-}
-
 // run is a goroutine for receiving and publishing events.
 func (d *dispatcher) run(ctx context.Context) {
 	t := time.NewTicker(time.Second * 60)
@@ -105,19 +94,13 @@ func (d *dispatcher) run(ctx context.Context) {
 						{"cacheCapacity", cap(d.eventChan)}}...)
 			}
 		case evtObj := <-d.eventChan:
-			d.publish(ctx, evtObj)
-		}
-	}
-}
-
-// publish concurrently run event handlers to the same event type.
-// Under the hood its use Workshop to do the amazing scheduling.
-func (d *dispatcher) publish(ctx context.Context, evtObj *EventObject) {
-	et := reflect.TypeOf(evtObj.Event).String()
-	ehs := d.eventMap[et]
-	if len(ehs) > 0 {
-		for _, eh := range ehs {
-			eh.Do(ctx, evtObj)
+			et := reflect.TypeOf(evtObj.Event).String()
+			ehs := d.eventMap[et]
+			if len(ehs) > 0 {
+				for _, eh := range ehs {
+					eh.Do(ctx, evtObj)
+				}
+			}
 		}
 	}
 }

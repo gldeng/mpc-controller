@@ -21,9 +21,6 @@ func main() {
 	d.Subscribe(&MessageEvent{}, &MessageShower{d})
 	d.Subscribe(&WeatherEvent{}, &WeatherShower{})
 
-	// Publish events by Dispatcher channel.
-	d.Channel() <- dispatcher.NewRootEventObject("MainFunction", &MessageEvent{Message: "Hello World"}, ctx)
-
 	// Publish events by Dispatcher.Publish() method, in another gorutine
 	go func() {
 		d.Publish(ctx, &dispatcher.EventObject{
