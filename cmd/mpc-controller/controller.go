@@ -13,6 +13,7 @@ import (
 	"github.com/avalido/mpc-controller/contract/reconnector"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/dispatcher"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/tasks/rewarding"
@@ -24,15 +25,11 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/network"
 	"github.com/avalido/mpc-controller/utils/noncer"
-	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"golang.org/x/sync/errgroup"
 	"math/big"
 	"reflect"
-	"time"
-
-	"github.com/avalido/mpc-controller/logger"
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/avalido/mpc-controller/storage/badgerDB"
 	"github.com/avalido/mpc-controller/support/participant"
@@ -94,15 +91,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, badgerDBLogger),
 	}
 
-	// Settings to control external stake request rate and mpc-controller concurrent behaviors // todo: config it, tune it
-	stakeReqPublishDur := time.Second * 20
-	stakeReqCacheCap := uint32(90)
-	workspaceMaxIdleDur := time.Second * 60
-	maxWorkspaces := uint32(32)
-
 	// Create dispatcher
-	ws := work.NewWorkshop(myLogger, workspaceMaxIdleDur, maxWorkspaces)
-	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, 1024, ws)
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, 1024)
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
@@ -189,27 +179,26 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	joiningMaster := joining.JoiningMaster{
-		ContractAddr:       contractAddr,
-		Dispatcher:         myDispatcher,
-		Logger:             myLogger,
-		MyIndexGetter:      &cacheWrapper,
-		MyPubKeyHashHex:    myPubKeyHash.Hex(),
-		Receipter:          rpcEthCliWrapper,
-		Signer:             signer,
-		StakeReqCacheCap:   stakeReqCacheCap,
-		StakeReqPublishDur: stakeReqPublishDur,
-		Transactor:         rpcEthCliWrapper,
+		ContractAddr:    contractAddr,
+		Dispatcher:      myDispatcher,
+		Logger:          myLogger,
+		MyIndexGetter:   &cacheWrapper,
+		MyPubKeyHashHex: myPubKeyHash.Hex(),
+		Receipter:       rpcEthCliWrapper,
+		Signer:          signer,
+		Transactor:      rpcEthCliWrapper,
 	}
 
 	stakingMaster := staking.StakingMaster{
+		Balancer:          ethRpcClient,
 		CChainIssueClient: evmClientWrapper,
 		Cache:             &cacheWrapper,
+		ChainNoncer:       rpcEthCliWrapper,
 		ContractAddr:      contractAddr,
 		Dispatcher:        myDispatcher,
 		Logger:            myLogger,
 		MyPubKeyHashHex:   myPubKeyHash.Hex(),
 		NetworkContext:    networkCtx(config),
-		ChainNoncer:       rpcEthCliWrapper,
 		Noncer:            noncer,
 		PChainIssueClient: platformvmClientWrapper,
 		SignDoner:         mpcClient,
