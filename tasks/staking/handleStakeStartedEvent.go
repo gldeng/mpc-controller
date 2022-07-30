@@ -79,17 +79,8 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.issueTxChan = make(chan *issueTx)
 		eh.issueTxCache = make(map[uint64]*issueTx)
 
+		go eh.issueTx(ctx)
 		go eh.checkIssueTxCache(ctx)
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case issueTx := <-eh.issueTxChan:
-					eh.issueTx(ctx, issueTx) // sequentially issue tx
-				}
-			}
-		}()
 	})
 
 	switch evtObj.Event.(type) {
@@ -201,51 +192,58 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context, evtObj *d
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context, issueTx *issueTx) {
-	// Cache tx for later issue
-	eh.issueTxCacheLock.Lock()
-	eh.issueTxCache[issueTx.Nonce] = issueTx
-	eh.issueTxCacheLock.Unlock()
+func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case issueTx := <-eh.issueTxChan:
+			// Cache tx for later issue
+			eh.issueTxCacheLock.Lock()
+			eh.issueTxCache[issueTx.Nonce] = issueTx
+			eh.issueTxCacheLock.Unlock()
 
-	// Sync nonce
-	if err := eh.syncNonce(ctx); err != nil {
-		eh.Logger.ErrorOnError(err, "Failed to sync nonce")
-		return
-	}
+			// Sync nonce
+			if err := eh.syncNonce(ctx); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to sync nonce")
+				return
+			}
 
-	// Continuous issue tx
-	for i := int(eh.nextNonce); i < int(eh.nextNonce)+len(eh.issueTxCache); i++ {
-		eh.issueTxCacheLock.RLock()
-		issueTx, ok := eh.issueTxCache[uint64(i)]
-		eh.issueTxCacheLock.RUnlock()
-		if !ok {
-			break
+			// Continuous issue tx
+			for i := int(eh.nextNonce); i < int(eh.nextNonce)+len(eh.issueTxCache); i++ {
+				eh.issueTxCacheLock.RLock()
+				issueTx, ok := eh.issueTxCache[uint64(i)]
+				eh.issueTxCacheLock.RUnlock()
+				if !ok {
+					break
+				}
+				eh.doIssueTx(ctx, issueTx.EventObject, issueTx.StakeTaskWrapper)
+				eh.nextNonce++
+			}
+
+			eh.issueTxCacheLock.Lock()
+			for nonce, _ := range eh.issueTxCache {
+				if nonce < eh.nextNonce {
+					delete(eh.issueTxCache, nonce)
+				}
+			}
+			eh.issueTxCacheLock.Unlock()
+
+			var nonces []int
+			eh.issueTxCacheLock.RLock()
+			for nonce, _ := range eh.issueTxCache {
+				nonces = append(nonces, int(nonce))
+			}
+			eh.issueTxCacheLock.RUnlock()
+			sort.Ints(nonces)
+
+			eh.Logger.Debug("Stake tasks stats", []logger.Field{
+				{"cachedStakeTasks", len(eh.issueTxCache)},
+				{"doneStakeTasks", eh.doneStakeTasks},
+				{"errIssueStakeTasks", eh.errIssueStakeTasks},
+				{"cachedNonces", nonces}}...)
 		}
-		eh.doIssueTx(ctx, issueTx.EventObject, issueTx.StakeTaskWrapper)
-		eh.nextNonce++
 	}
-
-	eh.issueTxCacheLock.Lock()
-	for nonce, _ := range eh.issueTxCache {
-		if nonce < eh.nextNonce {
-			delete(eh.issueTxCache, nonce)
-		}
-	}
-	eh.issueTxCacheLock.Unlock()
-
-	var nonces []int
-	eh.issueTxCacheLock.RLock()
-	for nonce, _ := range eh.issueTxCache {
-		nonces = append(nonces, int(nonce))
-	}
-	eh.issueTxCacheLock.RUnlock()
-	sort.Ints(nonces)
-
-	eh.Logger.Debug("Stake tasks stats", []logger.Field{
-		{"cachedStakeTasks", len(eh.issueTxCache)},
-		{"doneStakeTasks", eh.doneStakeTasks},
-		{"errIssueStakeTasks", eh.errIssueStakeTasks},
-		{"cachedNonces", nonces}}...)
 }
 
 func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) error {
