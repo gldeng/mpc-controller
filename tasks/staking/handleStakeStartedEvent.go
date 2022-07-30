@@ -324,7 +324,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj
 
 		ParticipantPubKeys: signRequester.CompressedPartiPubKeys,
 	}
-	eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "StakeRequestStartedEventHandler", &newEvt, evtObj.Context))
+	eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 
 	eh.doneStakeTasks++
 
