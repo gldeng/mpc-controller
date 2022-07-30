@@ -79,6 +79,7 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		eh.issueTxChan = make(chan *issueTx)
 		eh.issueTxCache = make(map[uint64]*issueTx)
 
+		go eh.checkIssueTxCache(ctx)
 		go func() {
 			for {
 				select {
@@ -303,6 +304,33 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj
 
 	eh.Logger.Info("Stake task DONE", []logger.Field{{"stakingTaskDoneEvent", newEvt}}...)
 	return nil
+}
+
+func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context) {
+	t := time.NewTicker(time.Second * 60)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			if len(eh.issueTxCache) == 0 {
+				break
+			}
+			var issueTxs []*issueTx
+			eh.issueTxCacheLock.RLock()
+			for _, issueTx := range eh.issueTxCache {
+				issueTxs = append(issueTxs, issueTx)
+			}
+			eh.issueTxCacheLock.RUnlock()
+			for _, issueTx := range issueTxs {
+				select {
+				case <-ctx.Done():
+					return
+				case eh.issueTxChan <- issueTx:
+				}
+			}
+		}
+	}
 }
 
 // todo: use cache.IsParticipantChecker
