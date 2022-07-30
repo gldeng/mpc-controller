@@ -43,7 +43,7 @@ type StakeRequestAddedEventHandler struct {
 func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
-		eh.ws = work.NewWorkshop(eh.Logger, time.Second*10, 5)
+		eh.ws = work.NewWorkshop(eh.Logger, "joinRequest", time.Second*10, 5)
 		go eh.joinRequest(ctx)
 	})
 
