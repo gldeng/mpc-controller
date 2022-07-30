@@ -28,11 +28,11 @@ tasks:
     cmds:
       - task: createGroup
       - venom run tests/testsuites/requestKeygen.yml
-      - sleep 5
 
   initiateStake:
     cmds:
       - task: requestKeygen
+      - sleep 90
       - bash ./tests/scripts/fund_initiateStake.sh
       - sleep 5
       - venom run tests/testsuites/initiateStake.yml
