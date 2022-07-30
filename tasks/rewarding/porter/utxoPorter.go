@@ -142,54 +142,55 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				PChainIssueClient: eh.PChainIssueClient,
 			}
 
-			ids, err := doExportUTXO(ctx, &args)
-			if err != nil {
-				switch errors.Cause(err).(type) { // todo: exploring more concrete error types
-				case *chain.ErrTypSharedMemoryNotFound:
-					eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-						{"txID", evt.TxID},
-						{"outputIndex", evt.OutputIndex}}...)
-				case *chain.ErrTypConflictAtomicInputs:
-					eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-						{"txID", evt.TxID},
-						{"outputIndex", evt.OutputIndex}}...)
-				case *chain.ErrTypImportUTXOsNotFound:
-					eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-						{"txID", evt.TxID},
-						{"outputIndex", evt.OutputIndex}}...)
-				case *chain.ErrTypConsumedUTXONotFound:
-					eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-						{"txID", evt.TxID},
-						{"outputIndex", evt.OutputIndex}}...)
-				default:
-					eh.Logger.ErrorOnError(err, "Failed to export UTXO", []logger.Field{
-						{"txID", evt.TxID},
-						{"outputIndex", evt.OutputIndex}}...)
+			go func() {
+				ids, err := doExportUTXO(ctx, &args)
+				if err != nil {
+					switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+					case *chain.ErrTypSharedMemoryNotFound:
+						eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
+							{"txID", evt.TxID},
+							{"outputIndex", evt.OutputIndex}}...)
+					case *chain.ErrTypConflictAtomicInputs:
+						eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
+							{"txID", evt.TxID},
+							{"outputIndex", evt.OutputIndex}}...)
+					case *chain.ErrTypImportUTXOsNotFound:
+						eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
+							{"txID", evt.TxID},
+							{"outputIndex", evt.OutputIndex}}...)
+					case *chain.ErrTypConsumedUTXONotFound:
+						eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
+							{"txID", evt.TxID},
+							{"outputIndex", evt.OutputIndex}}...)
+					default:
+						eh.Logger.ErrorOnError(err, "Failed to export UTXO", []logger.Field{
+							{"txID", evt.TxID},
+							{"outputIndex", evt.OutputIndex}}...)
+					}
+					return
 				}
-				return
-			}
 
-			mpcUTXO := myAvax.MpcUTXOFromUTXO(utxo)
-			newEvt := &events.UTXOExportedEvent{
-				NativeUTXO:   utxo,
-				MpcUTXO:      mpcUTXO,
-				ExportedTxID: ids[0],
-				ImportedTxID: ids[1],
-			}
-			eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "ExportUTXORequestWatcher", newEvt, evtObj.Context))
+				mpcUTXO := myAvax.MpcUTXOFromUTXO(utxo)
+				newEvt := &events.UTXOExportedEvent{
+					NativeUTXO:   utxo,
+					MpcUTXO:      mpcUTXO,
+					ExportedTxID: ids[0],
+					ImportedTxID: ids[1],
+				}
+				eh.Publisher.Publish(ctx, dispatcher.NewEventObjectFromParent(evtObj, "ExportUTXORequestWatcher", newEvt, evtObj.Context))
 
-			switch utxo.OutputIndex {
-			case 0:
-				atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
-				eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
-			case 1:
-				atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
-				eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
-			}
-			totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
-			totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
-			eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals}, {"exportedRewardUTXOs", totalRewards}}...)
-
+				switch utxo.OutputIndex {
+				case 0:
+					atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
+					eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
+				case 1:
+					atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
+					eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
+				}
+				totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
+				totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
+				eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals}, {"exportedRewardUTXOs", totalRewards}}...)
+			}()
 		}
 	}
 }
