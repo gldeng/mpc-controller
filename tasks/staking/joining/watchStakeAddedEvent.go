@@ -30,6 +30,9 @@ type StakeRequestAddedEventWatcher struct {
 	sub  event.Subscription
 	sink chan *contract.MpcManagerStakeRequestAdded
 	done chan struct{}
+
+	hasPublishedReq bool
+	lastReqID       uint64
 }
 
 func (eh *StakeRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -94,12 +97,33 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
+				eh.Logger.WarnOnTrue(eh.hasPublishedReq && evt.RequestId.Uint64() != eh.lastReqID+1,
+					"Received un-continuous emitted stake request",
+					[]logger.Field{{"expectedReqID", eh.lastReqID + 1},
+						{"receivedReqID", evt.RequestId.Uint64()}}...)
+
 				evtObj := dispatcher.NewEvtObj(evt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
 				eh.Logger.Debug("StakeRequestAddedEvent emitted", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
+				eh.hasPublishedReq = true
+				eh.lastReqID = evt.RequestId.Uint64()
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event")
 			}
 		}
 	}()
+}
+
+type stakeReqsAddedArr []*contract.MpcManagerStakeRequestAdded
+
+func (s stakeReqsAddedArr) Len() int {
+	return len(s)
+}
+
+func (s stakeReqsAddedArr) Less(i, j int) bool {
+	return s[i].RequestId.Uint64() < s[j].RequestId.Uint64()
+}
+
+func (s stakeReqsAddedArr) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
