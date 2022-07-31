@@ -32,8 +32,9 @@ const (
 	exportRewardTaskIDPrefix    = "REWARD-"
 )
 
-// Subscribe event: *events.ExportUTXORequestEvent
 // Subscribe event: *events.ReportedGenPubKeyEvent
+// Subscribe event: *events.UTXOReportedEvent
+// Subscribe event: *events.ExportUTXORequestEvent
 
 // Publish event: *events.UTXOExportedEvent
 
@@ -49,8 +50,11 @@ type UTXOPorter struct {
 
 	ws *work.Workshop
 
-	evtObjChan             chan *dispatcher.EventObject
-	UTXOsFetchedEventCache cache.SyncMapCache
+	ReportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
+	ReportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
+
+	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
+	UTXOsFetchedEventCache     cache.SyncMapCache
 
 	once                   sync.Once
 	exportedRewardUTXOs    uint64
@@ -59,7 +63,10 @@ type UTXOPorter struct {
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
+		eh.ReportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKeyEvent, 1024)
+		eh.ReportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKeyEvent)
+
+		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
 
 		go eh.exportUTXO(ctx)
@@ -68,7 +75,18 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	select {
 	case <-ctx.Done():
 		return
-	case eh.evtObjChan <- evtObj:
+	default:
+		switch evt := evtObj.Event.(type) {
+		case *events.ReportedGenPubKeyEvent:
+			eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
+		case *events.UTXOReportedEvent:
+			// todo:
+		case *events.ExportUTXORequestEvent:
+			select {
+			case <-ctx.Done():
+				eh.ExportUTXORequestEventChan <- evt
+			}
+		}
 	}
 }
 
@@ -77,12 +95,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evtObj := <-eh.evtObjChan:
-			evt, ok := evtObj.Event.(*events.ExportUTXORequestEvent)
-			if !ok {
-				break
-			}
-
+		case evt := <-eh.ExportUTXORequestEventChan:
 			partiKeys, err := eh.Cache.GetNormalizedParticipantKeys(evt.GenPubKeyHash, evt.ParticipantIndices)
 			if err != nil { // todo: deal with err case
 				eh.Logger.Error("UTXOPorter failed to export reward", []logger.Field{
