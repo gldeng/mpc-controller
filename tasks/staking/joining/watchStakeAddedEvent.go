@@ -96,7 +96,7 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case evt := <-eh.sink:
 				evtObj := dispatcher.NewEvtObj(evt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
-				eh.Logger.Debug("StakeRequestAdded event published", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
+				eh.Logger.Debug("StakeRequestAdded event emitted", []logger.Field{{"reqID", evt.RequestId}, {"txHash", evt.Raw.TxHash}}...)
 			case err := <-eh.sub.Err():
 				eh.Logger.ErrorOnError(err, "Got an error during watching StakeRequestAdded event")
 			}
