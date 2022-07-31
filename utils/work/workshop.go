@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/misc"
 	"github.com/pkg/errors"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -56,7 +57,7 @@ func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, ma
 func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	w.once.Do(func() {
 		go w.TaskZone.Run(ctx)
-		go w.run(ctx)
+		go w.checkState(ctx)
 	})
 
 	if atomic.LoadUint32(&w.livingWorkspaces) == 0 {
@@ -91,7 +92,7 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	return
 }
 
-func (w *Workshop) run(ctx context.Context) {
+func (w *Workshop) checkState(ctx context.Context) {
 	t := time.NewTicker(time.Minute * 5)
 	defer t.Stop()
 	for {
@@ -103,6 +104,32 @@ func (w *Workshop) run(ctx context.Context) {
 				w.Id+" too many living workspaces",
 				[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
 					{"maxWorkspaces", w.MaxWorkspaces}}...)
+
+			z := w.TaskZone
+			var totalTasks int
+			var totalCap int
+			for priority, q := range z.taskPriorityQueues {
+				totalTasks = totalTasks + q.Count()
+				totalCap = totalCap + q.Capacity()
+
+				isTooMany := float64(q.Count()) > float64(q.Capacity())*0.8
+				z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks of priority "+strconv.Itoa(priority),
+					[]logger.Field{{"totalTasks", q.Count()}, {"maxTasks", q.Capacity()}}...)
+			}
+
+			isTooMany := float64(totalTasks) > float64(totalCap)*0.8
+
+			z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks",
+				[]logger.Field{{"totalTasks", totalTasks},
+					{"maxTasks", totalCap}}...)
+
+			z.Logger.DebugOnTrue(isTooMany, z.Id+" en-zoned tasks stats in priority", []logger.Field{
+				{"p5", z.tasksInQueue(5)},
+				{"p4", z.tasksInQueue(4)},
+				{"p3", z.tasksInQueue(3)},
+				{"p2", z.tasksInQueue(2)},
+				{"p1", z.tasksInQueue(1)},
+				{"p0", z.tasksInQueue(0)}}...)
 		}
 	}
 }
