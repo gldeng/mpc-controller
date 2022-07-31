@@ -97,7 +97,7 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 				copier.Copy(&transformedEvt, evt)
 				evtObj := dispatcher.NewEvtObj(&transformedEvt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
-				eh.Logger.Debug("Export UTXO request received.", []logger.Field{
+				eh.Logger.Debug("Export UTXO request emitted.", []logger.Field{
 					{"txID", transformedEvt.TxID},
 					{"outputIndex", transformedEvt.OutputIndex},
 					{"to", transformedEvt.To}}...)
