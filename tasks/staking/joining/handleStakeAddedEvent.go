@@ -27,31 +27,34 @@ var (
 // Publish event:
 
 type StakeRequestAddedEventHandler struct {
-	ContractAddr    common.Address
-	Logger          logger.Logger
-	MyIndexGetter   cache.MyIndexGetter
-	MyPubKeyHashHex string
-	Publisher       dispatcher.Publisher
-	Receipter       chain.Receipter
-	Signer          *bind.TransactOpts
-	Transactor      bind.ContractTransactor
-	evtObjChan      chan *dispatcher.EventObject
-	once            sync.Once
+	ContractAddr                    common.Address
+	Logger                          logger.Logger
+	MyIndexGetter                   cache.MyIndexGetter
+	MyPubKeyHashHex                 string
+	Publisher                       dispatcher.Publisher
+	Receipter                       chain.Receipter
+	Signer                          *bind.TransactOpts
+	Transactor                      bind.ContractTransactor
+	mpcManagerStakeRequestAddedChan chan *contract.MpcManagerStakeRequestAdded
+	once                            sync.Once
 	//ws                 *work.Workshop
 	lastJoinStakeReqID uint64
 }
 
 func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
+		eh.mpcManagerStakeRequestAddedChan = make(chan *contract.MpcManagerStakeRequestAdded, 1024)
 		//eh.ws = work.NewWorkshop(eh.Logger, "joinRequest", time.Minute*10, 10)
 		go eh.joinRequest(ctx)
 	})
 
-	select {
-	case <-ctx.Done():
-		return
-	case eh.evtObjChan <- evtObj:
+	switch evt := evtObj.Event.(type) {
+	case *contract.MpcManagerStakeRequestAdded:
+		select {
+		case <-ctx.Done():
+			return
+		case eh.mpcManagerStakeRequestAddedChan <- evt:
+		}
 	}
 }
 
@@ -60,11 +63,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evtObj := <-eh.evtObjChan: // continuous join corresponding nonce increase
-			evt, ok := evtObj.Event.(*contract.MpcManagerStakeRequestAdded)
-			if !ok {
-				break
-			}
+		case evt := <-eh.mpcManagerStakeRequestAddedChan: // continuous join corresponding nonce increase
 			genPubKeyHashHex := evt.PublicKey.Hex()
 			myIndex := eh.MyIndexGetter.GetMyIndex(eh.MyPubKeyHashHex, genPubKeyHashHex)
 			if myIndex == nil {
@@ -94,8 +93,8 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 
 			eh.lastJoinStakeReqID = evt.RequestId.Uint64()
 
-			eh.Logger.WarnOnTrue(float64(len(eh.evtObjChan)) > float64(cap(eh.evtObjChan))*0.8, "Too may stake request PENDED to join",
-				[]logger.Field{{"pendedStakeReqs", len(eh.evtObjChan)}}...)
+			eh.Logger.WarnOnTrue(float64(len(eh.mpcManagerStakeRequestAddedChan)) > float64(cap(eh.mpcManagerStakeRequestAddedChan))*0.8, "Too may stake request PENDED to join",
+				[]logger.Field{{"pendedStakeReqs", len(eh.mpcManagerStakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined request", []logger.Field{
 				{"reqId", evt.RequestId}}...)
 			//}},
