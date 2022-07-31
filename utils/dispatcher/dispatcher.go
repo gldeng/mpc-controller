@@ -70,6 +70,7 @@ func (d *dispatcher) Subscribe(eT Event, eHs ...EventHandler) {
 func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	et := reflect.TypeOf(evtObj.Event).String()
 	ehs := d.eventMap[et]
+
 	if len(ehs) == 0 {
 		d.eventLogger.Warn(d.id+" no subscriber", []logger.Field{{"eventType", et}}...)
 		return
@@ -87,11 +88,8 @@ func (d *dispatcher) run(ctx context.Context) {
 		case <-t.C:
 			d.eventLogger.Debug(d.id+" dispatcher health stats",
 				[]logger.Field{{"cachedEvents", len(d.eventChan)}}...)
-			if float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8 {
-				d.eventLogger.Warn(d.id+" dispatcher cached too many events",
-					[]logger.Field{{"cachedEvents", len(d.eventChan)},
-						{"cacheCapacity", cap(d.eventChan)}}...)
-			}
+			d.eventLogger.WarnOnTrue(float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8, d.id+" dispatcher cached too many events",
+				[]logger.Field{{"cachedEvents", len(d.eventChan)}, {"cacheCapacity", cap(d.eventChan)}}...)
 		case evtObj := <-d.eventChan:
 			et := reflect.TypeOf(evtObj.Event).String()
 			ehs := d.eventMap[et]
