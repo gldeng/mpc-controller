@@ -325,12 +325,13 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj
 }
 
 func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context) {
-	t := time.NewTicker(time.Second * 60)
+	issueT := time.NewTicker(time.Second * 60)
+	statsT := time.NewTicker(time.Minute * 5)
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-t.C:
+		case <-issueT.C:
 			if len(eh.issueTxCache) != 0 {
 				var issueTxs []*issueTx
 				eh.issueTxCacheLock.RLock()
@@ -346,7 +347,7 @@ func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context
 					}
 				}
 			}
-
+		case <-statsT.C:
 			var nonces []int
 			eh.issueTxCacheLock.RLock()
 			for nonce, _ := range eh.issueTxCache {
