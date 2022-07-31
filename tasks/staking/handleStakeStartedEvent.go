@@ -37,7 +37,7 @@ type Cache interface {
 
 // Accept event: *contract.MpcManagerStakeRequestStarted
 
-// Emit event: *events.StakingTaskDoneEvent
+// Emit event:
 
 type StakeRequestStartedEventHandler struct {
 	Balancer          chain.Balancer
@@ -330,7 +330,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj
 
 		ParticipantPubKeys: signRequester.CompressedPartiPubKeys,
 	}
-	eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
+	//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 
 	eh.doneStakeTasks++
 
