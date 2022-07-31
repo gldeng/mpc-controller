@@ -356,6 +356,9 @@ func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context
 			eh.issueTxCacheLock.RUnlock()
 			sort.Ints(nonces)
 
+			if len(nonces) == 0 {
+				break
+			}
 			eh.Logger.Debug("Stake tasks stats", []logger.Field{
 				{"cachedStakeTasks", len(eh.issueTxCache)},
 				{"doneStakeTasks", eh.doneStakeTasks},
