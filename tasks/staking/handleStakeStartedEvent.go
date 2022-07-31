@@ -262,20 +262,6 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 				}
 			}
 			eh.issueTxCacheLock.Unlock()
-
-			var nonces []int
-			eh.issueTxCacheLock.RLock()
-			for nonce, _ := range eh.issueTxCache {
-				nonces = append(nonces, int(nonce))
-			}
-			eh.issueTxCacheLock.RUnlock()
-			sort.Ints(nonces)
-
-			eh.Logger.Debug("Stake tasks stats", []logger.Field{
-				{"cachedStakeTasks", len(eh.issueTxCache)},
-				{"doneStakeTasks", eh.doneStakeTasks},
-				{"errIssueStakeTasks", eh.errIssueStakeTasks},
-				{"cachedNonces", nonces}}...)
 		}
 	}
 }
@@ -345,22 +331,35 @@ func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if len(eh.issueTxCache) == 0 {
-				break
-			}
-			var issueTxs []*issueTx
-			eh.issueTxCacheLock.RLock()
-			for _, issueTx := range eh.issueTxCache {
-				issueTxs = append(issueTxs, issueTx)
-			}
-			eh.issueTxCacheLock.RUnlock()
-			for _, issueTx := range issueTxs {
-				select {
-				case <-ctx.Done():
-					return
-				case eh.issueTxChan <- issueTx:
+			if len(eh.issueTxCache) != 0 {
+				var issueTxs []*issueTx
+				eh.issueTxCacheLock.RLock()
+				for _, issueTx := range eh.issueTxCache {
+					issueTxs = append(issueTxs, issueTx)
+				}
+				eh.issueTxCacheLock.RUnlock()
+				for _, issueTx := range issueTxs {
+					select {
+					case <-ctx.Done():
+						return
+					case eh.issueTxChan <- issueTx:
+					}
 				}
 			}
+
+			var nonces []int
+			eh.issueTxCacheLock.RLock()
+			for nonce, _ := range eh.issueTxCache {
+				nonces = append(nonces, int(nonce))
+			}
+			eh.issueTxCacheLock.RUnlock()
+			sort.Ints(nonces)
+
+			eh.Logger.Debug("Stake tasks stats", []logger.Field{
+				{"cachedStakeTasks", len(eh.issueTxCache)},
+				{"doneStakeTasks", eh.doneStakeTasks},
+				{"errIssueStakeTasks", eh.errIssueStakeTasks},
+				{"cachedNonces", nonces}}...)
 		}
 	}
 }
