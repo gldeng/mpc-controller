@@ -3,7 +3,6 @@ package work
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -40,16 +39,9 @@ func (w *Workspace) Run(ctx context.Context) {
 			}
 		case task := <-w.TaskChan:
 			atomic.StoreUint32(&w.status, 1)
-			wg := new(sync.WaitGroup)
 			for _, workFn := range task.WorkFns {
-				wg.Add(1)
-				workFn := workFn
-				go func() {
-					workFn(task.Ctx, task.Args)
-					wg.Done()
-				}()
+				workFn(task.Ctx, task.Args)
 			}
-			wg.Wait()
 			atomic.StoreUint32(&w.status, 0)
 			w.lastActiveTime = time.Now()
 			w.IdleChan <- struct{}{}
