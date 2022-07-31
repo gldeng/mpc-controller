@@ -172,6 +172,12 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 					WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 						reportUtxo := args.(*reportUTXO)
 						utxo := reportUtxo.utxo
+
+						utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
+						_, ok := eh.UTXOReportedEventCache.Get(utxoID)
+						if ok {
+							return
+						}
 						txHash, err := eh.doReportUTXO(ctx, reportUtxo)
 						if err != nil {
 							eh.Logger.ErrorOnError(err, "Failed to reportEvt UTXO", []logger.Field{{"utxoID", utxo}}...)
