@@ -165,8 +165,8 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 						eh.utxoReportedCache[utxo.TxID] = utxo.OutputIndex // todo: clear
 
 						reportEvt := &events.UTXOReportedEvent{
-							TxID:           utxo.TxID,
-							OutputIndex:    utxo.OutputIndex,
+							NativeUTXO:     utxo,
+							MpcUTXO:        myAvax.MpcUTXOFromUTXO(utxo),
 							TxHash:         txHash,
 							GenPubKeyBytes: reportUtxo.genPubKey,
 							GroupIDBytes:   reportUtxo.groupID,

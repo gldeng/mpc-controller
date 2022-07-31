@@ -24,8 +24,8 @@ type UTXOsFetchedEvent struct {
 }
 
 type UTXOReportedEvent struct {
-	TxID           ids.ID
-	OutputIndex    uint32
+	NativeUTXO     *avax.UTXO `json:"-"`
+	MpcUTXO        *myAvax.MpcUTXO
 	TxHash         *common.Hash
 	GenPubKeyBytes []byte
 	GroupIDBytes   [32]byte
