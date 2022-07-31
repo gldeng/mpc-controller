@@ -52,7 +52,7 @@ type UTXOPorter struct {
 	ws *work.Workshop
 
 	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKeyEvent
-	UTXOReportedEventCache      *ristretto.Cache
+	UTXOsFetchedEventCache      *ristretto.Cache
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
 	exportUTXOTaskAddedCache   *ristretto.Cache
@@ -111,7 +111,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			if ok {
 				break
 			}
-			val, ok := eh.UTXOReportedEventCache.Get(utxoID)
+			val, ok := eh.UTXOsFetchedEventCache.Get(utxoID)
 			if !ok {
 				eh.Logger.Warn("No local reported UTXO found", []logger.Field{
 					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)

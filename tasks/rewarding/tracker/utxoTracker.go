@@ -50,7 +50,8 @@ type UTXOTracker struct {
 	reportUTXOsChan          chan *reportUTXOs
 	reportUTXOTaskAddedCache *ristretto.Cache
 
-	UTXOReportedEventCache *ristretto.Cache
+	UTXOsFetchedEventCache *ristretto.Cache
+	utxoReportedEventCache *ristretto.Cache
 	UTXOExportedEventCache *ristretto.Cache
 
 	reportUTXOWs *work.Workshop
@@ -87,6 +88,13 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 			BufferItems: 64,      // number of keys per Get buffer.
 		})
 		eh.reportUTXOTaskAddedCache = reportUTXOTaskAddedCache
+
+		utxoReportedEventCache, _ := ristretto.NewCache(&ristretto.Config{
+			NumCounters: 1e7,     // number of keys to track frequency of (10M).
+			MaxCost:     1 << 30, // maximum cost of cache (1GB).
+			BufferItems: 64,      // number of keys per Get buffer.
+		})
+		eh.utxoReportedEventCache = utxoReportedEventCache
 
 		go eh.fetchUTXOs(ctx)
 		go eh.reportUTXOs(ctx)
@@ -126,7 +134,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					if ok {
 						continue
 					}
-					_, ok = eh.UTXOReportedEventCache.Get(utxoID)
+					_, ok = eh.utxoReportedEventCache.Get(utxoID)
 					if ok {
 						continue
 					}
@@ -172,19 +180,18 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 					genPubKey:  reportUTXOs.genPubKey,
 				}
 
-				//reportEvt := &events.UTXOReportedEvent{ // to be shared with utxoPorter timely.
-				//	NativeUTXO:     utxo,
-				//	MpcUTXO:        myAvax.MpcUTXOFromUTXO(utxo),
-				//	TxHash:         nil,
-				//	GenPubKeyBytes: reportUtxo.genPubKey,
-				//	GroupIDBytes:   reportUtxo.groupID,
-				//	PartiIndex:     reportUtxo.partiIndex,
-				//}
-				//utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-				//eh.UTXOReportedEventCache.SetWithTTL(utxoID, reportEvt, 1, time.Hour)
-				//eh.UTXOReportedEventCache.Wait()
-
+				reportEvt := &events.UTXOReportedEvent{ // to be shared with utxoPorter timely.
+					NativeUTXO:     utxo,
+					MpcUTXO:        myAvax.MpcUTXOFromUTXO(utxo),
+					TxHash:         nil,
+					GenPubKeyBytes: reportUtxo.genPubKey,
+					GroupIDBytes:   reportUtxo.groupID,
+					PartiIndex:     reportUtxo.partiIndex,
+				}
 				utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
+				eh.UTXOsFetchedEventCache.SetWithTTL(utxoID, reportEvt, 1, time.Hour)
+				eh.UTXOsFetchedEventCache.Wait()
+
 				eh.reportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 				eh.reportUTXOTaskAddedCache.Wait()
 
@@ -196,7 +203,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 						utxo := reportUtxo.utxo
 
 						utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-						_, ok := eh.UTXOReportedEventCache.Get(utxoID)
+						_, ok := eh.utxoReportedEventCache.Get(utxoID)
 						if ok {
 							return
 						}
@@ -219,10 +226,10 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 							PartiIndex:     reportUtxo.partiIndex,
 						}
 
-						eh.UTXOReportedEventCache.SetWithTTL(utxoID, reportEvt, 1, time.Hour)
-						eh.UTXOReportedEventCache.Wait()
+						eh.utxoReportedEventCache.SetWithTTL(utxoID, reportEvt, 1, time.Hour)
+						eh.utxoReportedEventCache.Wait()
 
-						eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(reportEvt, nil))
+						//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(reportEvt, nil))
 						switch utxo.OutputIndex {
 						case 0:
 							eh.Logger.Debug("Principal UTXO REPORTED", []logger.Field{{"utxoID", utxo.UTXOID}}...)
