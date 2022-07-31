@@ -153,6 +153,8 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 					genPubKey:  reportUTXOs.genPubKey,
 				}
 
+				eh.utxoReportedCache[utxo.TxID] = utxo.OutputIndex // todo: timeout cache
+
 				eh.reportUTXOWs.AddTask(ctx, &work.Task{
 					Args: reportUtxo,
 					Ctx:  ctx,
@@ -164,8 +166,6 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 							eh.Logger.ErrorOnError(err, "Failed to reportEvt UTXO", []logger.Field{{"utxoID", utxo}}...)
 							return
 						}
-
-						eh.utxoReportedCache[utxo.TxID] = utxo.OutputIndex // todo: clear; data race
 
 						reportEvt := &events.UTXOReportedEvent{
 							NativeUTXO:     utxo,
