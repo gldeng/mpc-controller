@@ -98,7 +98,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				eh.Logger.Error("UTXOPorter failed to export reward", []logger.Field{
 					{"error", err},
 					{"exportUTXORequestEvent", evt}}...)
-				return
+				break
 			}
 
 			utxoID := evt.TxID.String() + strconv.Itoa(int(evt.OutputIndex))
@@ -106,7 +106,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			if !ok || utxoRepEvt == nil {
 				eh.Logger.Warn("No local reported UTXO found", []logger.Field{
 					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
-				return
+				break
 			}
 
 			genPubKeyHex := bytes.BytesToHex(utxoRepEvt.GenPubKeyBytes)
@@ -115,7 +115,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				eh.Logger.Error("Failed to normalize generated public key", []logger.Field{
 					{"error", err},
 					{"genPubKey", genPubKeyHex}}...)
-				return
+				break
 			}
 
 			genPubKeyEvt := eh.reportedGenPubKeyEventCache[evt.GenPubKeyHash.String()]
@@ -151,10 +151,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					argsVal := args.(*Args)
-					ids, err := doExportUTXO(ctx, argsVal)
 					eh.Logger.Debug("Starting exporting UTXO task...", []logger.Field{
 						{"taskID", argsVal.SignReqArgs.TaskID},
 						{"utxoID", argsVal.UTXO.UTXOID}}...)
+					ids, err := doExportUTXO(ctx, argsVal)
 					if err != nil {
 						switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 						case *chain.ErrTypSharedMemoryNotFound:
