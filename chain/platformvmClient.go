@@ -26,7 +26,7 @@ func (c *PlatformvmClientWrapper) IssueTx(ctx context.Context, tx []byte, option
 			errMsg := err.Error()
 			switch {
 			case strings.Contains(errMsg, "shared memory: not found"):
-				return true, errors.WithStack(mpcErrors.Wrap(err, &ErrTypSharedMemoryNotFound{}))
+				return false, errors.WithStack(mpcErrors.Wrap(err, &ErrTypSharedMemoryNotFound{}))
 			case strings.Contains(errMsg, "consumed UTXO not found") || strings.Contains(errMsg, "failed to read consumed UTXO"):
 				return false, errors.WithStack(mpcErrors.Wrap(err, &ErrTypConsumedUTXONotFound{}))
 			case strings.Contains(errMsg, "not before validator's start time") || strings.Contains(errMsg, "later than staker start time"):
