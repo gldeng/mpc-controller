@@ -97,7 +97,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 			return
 		case <-t.C:
 			for addr, pubKeyEvt := range eh.reportedGenPubKeyEventCache {
-				filterUtxos, err := eh.getAndFilterUTXOs(ctx, addr)
+				utxosFromStake, err := eh.requestUTXOsFromStake(ctx, addr)
 				if err != nil {
 					eh.Logger.DebugOnError(err, "Failed to fetch UTXOs",
 						[]logger.Field{{"pChainAddr", addr}}...)
@@ -108,12 +108,22 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 				partiIndex := pubKeyEvt.MyPartiIndex
 				genPubKeyBytes := bytes.HexToBytes(pubKeyEvt.GenPubKeyHex)
 
-				if len(filterUtxos) == 0 {
+				var unreportedUTXOsFromStake []*avax.UTXO
+				for _, utxo := range utxosFromStake {
+					if outputIndex, ok := eh.utxoReportedCache[utxo.TxID]; ok {
+						if outputIndex == utxo.OutputIndex {
+							continue
+						}
+					}
+					unreportedUTXOsFromStake = append(unreportedUTXOsFromStake, utxo)
+				}
+
+				if len(unreportedUTXOsFromStake) == 0 {
 					continue
 				}
 
 				reportUTXOs := &reportUTXOs{
-					utxos:      filterUtxos,
+					utxos:      unreportedUTXOsFromStake,
 					groupID:    groupIdBytes,
 					partiIndex: partiIndex,
 					genPubKey:  genPubKeyBytes,
@@ -136,12 +146,6 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 			return
 		case reportUTXOs := <-eh.reportUTXosChan:
 			for _, utxo := range reportUTXOs.utxos {
-				if outputIndex, ok := eh.utxoReportedCache[utxo.TxID]; ok {
-					if outputIndex == utxo.OutputIndex {
-						continue
-					}
-				}
-
 				reportUtxo := &reportUTXO{
 					utxo:       utxo,
 					groupID:    reportUTXOs.groupID,
@@ -161,7 +165,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 							return
 						}
 
-						eh.utxoReportedCache[utxo.TxID] = utxo.OutputIndex // todo: clear
+						eh.utxoReportedCache[utxo.TxID] = utxo.OutputIndex // todo: clear; data race
 
 						reportEvt := &events.UTXOReportedEvent{
 							NativeUTXO:     utxo,
@@ -185,7 +189,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 	}
 }
 
-func (eh *UTXOTracker) getAndFilterUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
+func (eh *UTXOTracker) requestUTXOsFromStake(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
 	rawUtxos, err := eh.getUTXOs(ctx, addr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get native UTXOs")
@@ -202,9 +206,9 @@ func (eh *UTXOTracker) getAndFilterUTXOs(ctx context.Context, addr ids.ShortID) 
 			continue
 		}
 
-		ok, err := eh.checkImportTx(ctx, utxo.TxID)
+		ok, err := eh.isFromImportTx(ctx, utxo.TxID)
 		if err != nil {
-			eh.Logger.Debug("Failed to checkImportTx", []logger.Field{
+			eh.Logger.Debug("Failed to check whether UTXO is from importTX", []logger.Field{
 				{"txID", utxo.TxID},
 				{"error", err}}...)
 			continue
@@ -315,7 +319,7 @@ func (eh *UTXOTracker) checkRewardUTXO(ctx context.Context, txID ids.ID) (bool, 
 	return true, nil
 }
 
-func (eh *UTXOTracker) checkImportTx(ctx context.Context, txID ids.ID) (bool, error) {
+func (eh *UTXOTracker) isFromImportTx(ctx context.Context, txID ids.ID) (bool, error) {
 	txBytes, err := eh.PChainClient.GetTx(ctx, txID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to GetTx")
