@@ -52,8 +52,8 @@ type StakeRequestStartedEventHandler struct {
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
-	evtObjChan    chan *dispatcher.EventObject
-	signStakeTxWs *work.Workshop
+	mpcManagerStakeRequestStartedChan chan *contract.MpcManagerStakeRequestStarted
+	signStakeTxWs                     *work.Workshop
 
 	issueTxChan chan *issueTx
 	once        sync.Once
@@ -81,7 +81,9 @@ type issueTx struct {
 func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
-		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
+
+		eh.mpcManagerStakeRequestStartedChan = make(chan *contract.MpcManagerStakeRequestStarted, 1024)
+
 		eh.issueTxChan = make(chan *issueTx)
 		eh.issueTxCache = make(map[uint64]*issueTx)
 
@@ -90,10 +92,13 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 		go eh.checkIssueTxCache(ctx)
 	})
 
-	select {
-	case <-ctx.Done():
-		return
-	case eh.evtObjChan <- evtObj:
+	switch evt := evtObj.Event.(type) {
+	case *contract.MpcManagerStakeRequestStarted:
+		select {
+		case <-ctx.Done():
+			return
+		case eh.mpcManagerStakeRequestStartedChan <- evt:
+		}
 	}
 }
 
@@ -102,12 +107,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evtObj := <-eh.evtObjChan:
-			evt, ok := evtObj.Event.(*contract.MpcManagerStakeRequestStarted)
-			if !ok {
-				break
-			}
-
+		case evt := <-eh.mpcManagerStakeRequestStartedChan:
 			pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
 			if pubKeyInfo == nil {
 				eh.Logger.Error("No GeneratedPubKeyInfo found")
@@ -134,7 +134,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			}
 			eh.myIndex = index // todo: data race protect
 
-			ok = eh.isParticipant(evt)
+			ok := eh.isParticipant(evt)
 			if !ok {
 				eh.Logger.Debug("Not participant in *contract.MpcManagerStakeRequestStarted event", []logger.Field{
 					{"requestId", evt.RequestId},
@@ -196,7 +196,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			}
 
 			eh.signStakeTxWs.AddTask(ctx, &work.Task{
-				Args: []interface{}{stakeTaskWrapper, evtObj},
+				Args: []interface{}{stakeTaskWrapper, evt},
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					stw := args.([]interface{})[0].(*StakeTaskWrapper)
