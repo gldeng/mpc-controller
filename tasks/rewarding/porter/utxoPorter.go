@@ -50,8 +50,8 @@ type UTXOPorter struct {
 
 	ws *work.Workshop
 
-	ReportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
-	ReportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
+	reportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
+	reportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
 	UTXOsFetchedEventCache     cache.SyncMapCache
@@ -63,8 +63,8 @@ type UTXOPorter struct {
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.ReportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKeyEvent, 1024)
-		eh.ReportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKeyEvent)
+		eh.reportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKeyEvent, 1024)
+		eh.reportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKeyEvent)
 
 		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
@@ -74,7 +74,7 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 	switch evt := evtObj.Event.(type) {
 	case *events.ReportedGenPubKeyEvent:
-		eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
+		eh.reportedGenPubKeyEventCache[evt.PChainAddress] = evt
 	case *events.UTXOReportedEvent:
 		// todo:
 	case *events.ExportUTXORequestEvent:

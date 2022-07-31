@@ -43,8 +43,8 @@ type UTXOTracker struct {
 	Signer       *bind.TransactOpts
 	Transactor   bind.ContractTransactor
 
-	ReportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
-	ReportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
+	reportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
+	reportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
 
 	reportUTXosChan   chan *reportUTXOs
 	utxoReportedCache map[ids.ID]uint32
@@ -72,8 +72,8 @@ type reportUTXO struct {
 
 func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.ReportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKeyEvent, 1024)
-		eh.ReportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKeyEvent)
+		eh.reportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKeyEvent, 1024)
+		eh.reportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKeyEvent)
 
 		eh.reportUTXOWs = work.NewWorkshop(eh.Logger, "reportUTXOs", time.Minute*10, 10)
 		eh.reportUTXosChan = make(chan *reportUTXOs, 256)
@@ -85,7 +85,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 	switch evt := evtObj.Event.(type) {
 	case *events.ReportedGenPubKeyEvent:
-		eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
+		eh.reportedGenPubKeyEventCache[evt.PChainAddress] = evt
 	}
 }
 
@@ -97,7 +97,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			for addr, pubKeyEvt := range eh.ReportedGenPubKeyEventCache {
+			for addr, pubKeyEvt := range eh.reportedGenPubKeyEventCache {
 				filterUtxos, err := eh.getAndFilterUTXOs(ctx, addr)
 				if err != nil {
 					eh.Logger.DebugOnError(err, "Failed to fetch UTXOs",
