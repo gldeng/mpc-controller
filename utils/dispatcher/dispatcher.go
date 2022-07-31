@@ -80,14 +80,12 @@ func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 
 // run is a goroutine for receiving and publishing events.
 func (d *dispatcher) run(ctx context.Context) {
-	t := time.NewTicker(time.Second * 60)
+	t := time.NewTicker(time.Minute * 1)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			d.eventLogger.Debug(d.id+" dispatcher health stats",
-				[]logger.Field{{"cachedEvents", len(d.eventChan)}}...)
 			d.eventLogger.WarnOnTrue(float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8, d.id+" dispatcher cached too many events",
 				[]logger.Field{{"cachedEvents", len(d.eventChan)}, {"cacheCapacity", cap(d.eventChan)}}...)
 		case evtObj := <-d.eventChan:
