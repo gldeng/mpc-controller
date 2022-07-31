@@ -94,6 +94,8 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 
 			eh.lastJoinStakeReqID = evt.RequestId.Uint64()
 
+			eh.Logger.WarnOnTrue(float64(len(eh.evtObjChan)) > float64(cap(eh.evtObjChan))*0.8, "Too may stake request PENDED to join",
+				[]logger.Field{{"pendedStakeReqs", len(eh.evtObjChan)}}...)
 			eh.Logger.Debug("Joined request", []logger.Field{
 				{"reqId", evt.RequestId}}...)
 			//}},
