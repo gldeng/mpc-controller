@@ -53,8 +53,15 @@ func (m *Master) subscribe() {
 		BufferItems: 64,      // number of keys per Get buffer.
 	})
 
+	utxoExportedEventCache, _ := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		MaxCost:     1 << 30, // maximum cost of cache (1GB).
+		BufferItems: 64,      // number of keys per Get buffer.
+	})
+
 	utxoTracker := tracker.UTXOTracker{
 		UTXOReportedEventCache: utxoReportedEventCache,
+		UTXOExportedEventCache: utxoExportedEventCache,
 		ContractAddr:           m.ContractAddr,
 		Logger:                 m.Logger,
 		PChainClient:           m.PChainClient,
@@ -72,6 +79,7 @@ func (m *Master) subscribe() {
 
 	utxoPorter := porter.UTXOPorter{
 		UTXOReportedEventCache: utxoReportedEventCache,
+		UTXOExportedEventCache: utxoExportedEventCache,
 		CChainIssueClient:      m.CChainIssueClient,
 		Cache:                  m.Cache,
 		Logger:                 m.Logger,

@@ -55,6 +55,7 @@ type UTXOPorter struct {
 	UTXOReportedEventCache      *ristretto.Cache
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
+	UTXOExportedEventCache     *ristretto.Cache
 
 	once                   sync.Once
 	exportedRewardUTXOs    uint64
@@ -143,11 +144,21 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				PChainIssueClient: eh.PChainIssueClient,
 			}
 
+			eh.UTXOExportedEventCache.SetWithTTL(utxoID, " ", 1, time.Hour)
+			eh.UTXOExportedEventCache.Wait()
+
 			eh.ws.AddTask(ctx, &work.Task{
 				Args: args,
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					argsVal := args.(*Args)
+					utxo := argsVal.UTXO
+					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
+					_, ok := eh.UTXOExportedEventCache.Get(utxoID)
+					if ok {
+						return
+					}
+
 					eh.Logger.Debug("Starting exporting UTXO task...", []logger.Field{
 						{"taskID", argsVal.SignReqArgs.TaskID},
 						{"utxoID", argsVal.UTXO.UTXOID}}...)
@@ -199,9 +210,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals},
 						{"exportedRewardUTXOs", totalRewards}}...)
 
-					utxo := argsVal.UTXO
-					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
 					eh.UTXOReportedEventCache.Del(utxoID)
+					eh.UTXOExportedEventCache.Del(utxoID)
 				}},
 			})
 		}

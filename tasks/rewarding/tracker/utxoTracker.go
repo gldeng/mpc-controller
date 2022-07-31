@@ -49,6 +49,7 @@ type UTXOTracker struct {
 
 	reportUTXosChan        chan *reportUTXOs
 	UTXOReportedEventCache *ristretto.Cache
+	UTXOExportedEventCache *ristretto.Cache
 
 	reportUTXOWs *work.Workshop
 
@@ -116,6 +117,10 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					if ok {
 						continue
 					}
+					_, ok = eh.UTXOExportedEventCache.Get(utxoID)
+					if ok {
+						continue
+					}
 					unreportedUTXOsFromStake = append(unreportedUTXOsFromStake, utxo)
 				}
 
@@ -175,6 +180,10 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 
 						utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
 						_, ok := eh.UTXOReportedEventCache.Get(utxoID)
+						if ok {
+							return
+						}
+						_, ok = eh.UTXOExportedEventCache.Get(utxoID)
 						if ok {
 							return
 						}
