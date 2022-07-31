@@ -72,20 +72,16 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 		go eh.exportUTXO(ctx)
 	})
 
-	select {
-	case <-ctx.Done():
-		return
-	default:
-		switch evt := evtObj.Event.(type) {
-		case *events.ReportedGenPubKeyEvent:
-			eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
-		case *events.UTXOReportedEvent:
-			// todo:
-		case *events.ExportUTXORequestEvent:
-			select {
-			case <-ctx.Done():
-				eh.ExportUTXORequestEventChan <- evt
-			}
+	switch evt := evtObj.Event.(type) {
+	case *events.ReportedGenPubKeyEvent:
+		eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
+	case *events.UTXOReportedEvent:
+		// todo:
+	case *events.ExportUTXORequestEvent:
+		select {
+		case <-ctx.Done():
+			return
+		case eh.ExportUTXORequestEventChan <- evt:
 		}
 	}
 }
