@@ -55,6 +55,7 @@ type UTXOPorter struct {
 	UTXOReportedEventCache      *ristretto.Cache
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
+	exportUTXOTaskAddedCache   *ristretto.Cache
 	UTXOExportedEventCache     *ristretto.Cache
 
 	once                   sync.Once
@@ -68,6 +69,13 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
+
+		exportUTXOTaskAddedCache, _ := ristretto.NewCache(&ristretto.Config{
+			NumCounters: 1e7,     // number of keys to track frequency of (10M).
+			MaxCost:     1 << 30, // maximum cost of cache (1GB).
+			BufferItems: 64,      // number of keys per Get buffer.
+		})
+		eh.exportUTXOTaskAddedCache = exportUTXOTaskAddedCache
 
 		go eh.exportUTXO(ctx)
 	})
@@ -99,6 +107,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			}
 
 			utxoID := evt.TxID.String() + strconv.Itoa(int(evt.OutputIndex))
+			_, ok := eh.exportUTXOTaskAddedCache.Get(utxoID)
+			if ok {
+				break
+			}
 			val, ok := eh.UTXOReportedEventCache.Get(utxoID)
 			if !ok {
 				eh.Logger.Warn("No local reported UTXO found", []logger.Field{
@@ -144,8 +156,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				PChainIssueClient: eh.PChainIssueClient,
 			}
 
-			eh.UTXOExportedEventCache.SetWithTTL(utxoID, " ", 1, time.Hour)
-			eh.UTXOExportedEventCache.Wait()
+			eh.exportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
+			eh.exportUTXOTaskAddedCache.Wait()
 
 			eh.ws.AddTask(ctx, &work.Task{
 				Args: args,
@@ -195,6 +207,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						ExportedTxID: ids[0],
 						ImportedTxID: ids[1],
 					}
+
+					eh.UTXOExportedEventCache.SetWithTTL(utxoID, " ", 1, time.Hour)
+					eh.UTXOExportedEventCache.Wait()
+
 					//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
 
 					switch utxoRepEvt.NativeUTXO.OutputIndex {
@@ -209,9 +225,6 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
 					eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals},
 						{"exportedRewardUTXOs", totalRewards}}...)
-
-					//eh.UTXOReportedEventCache.Del(utxoID)
-					//eh.UTXOExportedEventCache.Del(utxoID)
 				}},
 			})
 		}
