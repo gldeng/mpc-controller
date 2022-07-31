@@ -12,9 +12,9 @@ import (
 	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
 	"github.com/avalido/mpc-controller/tasks/rewarding/watcher"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"sync"
 )
 
 type Master struct {
@@ -47,7 +47,12 @@ func (m *Master) Start(ctx context.Context) error {
 }
 
 func (m *Master) subscribe() {
-	utxoReportedEventCache := new(sync.Map)
+	utxoReportedEventCache, _ := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		MaxCost:     1 << 30, // maximum cost of cache (1GB).
+		BufferItems: 64,      // number of keys per Get buffer.
+	})
+
 	utxoTracker := tracker.UTXOTracker{
 		UTXOReportedEventCache: utxoReportedEventCache,
 		ContractAddr:           m.ContractAddr,

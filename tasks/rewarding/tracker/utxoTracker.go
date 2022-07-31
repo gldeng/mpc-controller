@@ -16,6 +16,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/avalido/mpc-controller/utils/work"
+	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -48,7 +49,7 @@ type UTXOTracker struct {
 
 	reportUTXosChan        chan *reportUTXOs
 	utxoReportedMark       map[ids.ID]uint32
-	UTXOReportedEventCache *sync.Map
+	UTXOReportedEventCache *ristretto.Cache
 
 	reportUTXOWs *work.Workshop
 
@@ -179,7 +180,8 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 						}
 
 						utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-						eh.UTXOReportedEventCache.Store(utxoID, reportEvt) // use cache so utxoPorter can get value timely // todo: timeout?
+						eh.UTXOReportedEventCache.SetWithTTL(utxoID, reportEvt, 1, time.Hour)
+						eh.UTXOReportedEventCache.Wait()
 						eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(reportEvt, nil))
 						switch utxo.OutputIndex {
 						case 0:

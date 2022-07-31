@@ -20,6 +20,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/avalido/mpc-controller/utils/port/txs/pchain"
 	"github.com/avalido/mpc-controller/utils/work"
+	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"strconv"
@@ -52,8 +53,8 @@ type UTXOPorter struct {
 	ws *work.Workshop
 
 	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKeyEvent
-	utxoReportedEventCache      map[string]*events.UTXOReportedEvent // todo: obsolete, use UTXOReportedEventCache instead?
-	UTXOReportedEventCache      *sync.Map
+	//utxoReportedEventCache      map[string]*events.UTXOReportedEvent
+	UTXOReportedEventCache *ristretto.Cache
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
 
@@ -65,7 +66,7 @@ type UTXOPorter struct {
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.reportedGenPubKeyEventCache = make(map[string]*events.ReportedGenPubKeyEvent)
-		eh.utxoReportedEventCache = make(map[string]*events.UTXOReportedEvent)
+		//eh.utxoReportedEventCache = make(map[string]*events.UTXOReportedEvent)
 
 		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
@@ -77,8 +78,8 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	case *events.ReportedGenPubKeyEvent:
 		eh.reportedGenPubKeyEventCache[evt.GenPubKeyHashHex] = evt
 	case *events.UTXOReportedEvent:
-		utxoID := evt.NativeUTXO.TxID.String() + strconv.Itoa(int(evt.NativeUTXO.OutputIndex))
-		eh.utxoReportedEventCache[utxoID] = evt
+		//utxoID := evt.NativeUTXO.TxID.String() + strconv.Itoa(int(evt.NativeUTXO.OutputIndex))
+		//eh.utxoReportedEventCache[utxoID] = evt
 	case *events.ExportUTXORequestEvent:
 		select {
 		case <-ctx.Done():
@@ -103,7 +104,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			}
 
 			utxoID := evt.TxID.String() + strconv.Itoa(int(evt.OutputIndex))
-			val, ok := eh.UTXOReportedEventCache.Load(utxoID)
+			val, ok := eh.UTXOReportedEventCache.Get(utxoID)
 			if !ok {
 				eh.Logger.Warn("No local reported UTXO found", []logger.Field{
 					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
@@ -210,6 +211,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
 					eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals},
 						{"exportedRewardUTXOs", totalRewards}}...)
+
+					utxo := argsVal.UTXO
+					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
+					eh.UTXOReportedEventCache.Del(utxoID)
 				}},
 			})
 		}
