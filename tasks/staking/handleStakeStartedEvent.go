@@ -327,6 +327,9 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context) {
 	issueT := time.NewTicker(time.Second * 60)
 	statsT := time.NewTicker(time.Minute * 5)
+	defer issueT.Stop()
+	defer statsT.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():

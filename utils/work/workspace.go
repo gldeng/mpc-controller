@@ -24,6 +24,7 @@ type Workspace struct {
 func (w *Workspace) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():

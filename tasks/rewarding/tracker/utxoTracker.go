@@ -90,6 +90,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 	t := time.NewTicker(checkUTXOInterval)
 	defer t.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():

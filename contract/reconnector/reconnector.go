@@ -27,6 +27,8 @@ type ContractFilterReconnector struct {
 func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():

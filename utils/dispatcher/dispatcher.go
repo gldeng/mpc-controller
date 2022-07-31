@@ -81,6 +81,8 @@ func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 // run is a goroutine for receiving and publishing events.
 func (d *dispatcher) run(ctx context.Context) {
 	t := time.NewTicker(time.Minute * 1)
+	defer t.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
