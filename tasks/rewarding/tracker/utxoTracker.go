@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	checkUTXOInterval = time.Second * 60
+	checkUTXOInterval = time.Second * 1
 )
 
 // Subscribe event: *events.ReportedGenPubKeyEvent
