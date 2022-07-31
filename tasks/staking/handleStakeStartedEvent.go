@@ -75,7 +75,7 @@ type StakeRequestStartedEventHandler struct {
 
 type issueTx struct {
 	*StakeTaskWrapper
-	*dispatcher.EventObject
+	*contract.MpcManagerStakeRequestStarted
 }
 
 func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -200,7 +200,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					stw := args.([]interface{})[0].(*StakeTaskWrapper)
-					evtObj := args.([]interface{})[1].(*dispatcher.EventObject)
+					evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestStarted)
 					if err := stw.SignTx(ctx); err != nil {
 						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
 						return
@@ -214,7 +214,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 						eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed")
 						return
 					}
-					issueTx := &issueTx{stw, evtObj}
+					issueTx := &issueTx{stw, evt}
 					select {
 					case <-ctx.Done():
 						return
@@ -251,7 +251,7 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 				if !ok {
 					break
 				}
-				eh.doIssueTx(ctx, issueTx.EventObject, issueTx.StakeTaskWrapper)
+				eh.doIssueTx(ctx, issueTx.StakeTaskWrapper)
 				eh.nextNonce++
 			}
 
@@ -266,7 +266,7 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, evtObj *dispatcher.EventObject, stw *StakeTaskWrapper) error {
+func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *StakeTaskWrapper) error {
 	stakeTask := stw.StakeTask
 	ids, err := stw.IssueTx(ctx)
 	signRequester := stw.SignRequester
