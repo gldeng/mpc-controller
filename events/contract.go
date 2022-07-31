@@ -13,7 +13,7 @@ import (
 
 type ReportedGenPubKeyEvent struct {
 	GroupIdHex       string
-	PartiIndex       *big.Int
+	MyPartiIndex     *big.Int
 	GenPubKeyHex     string
 	GenPubKeyHashHex string
 	CChainAddress    common.Address

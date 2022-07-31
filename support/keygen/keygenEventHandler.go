@@ -107,7 +107,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 
 	reportedEvt := events.ReportedGenPubKeyEvent{
 		GroupIdHex:       groupIdHex,
-		PartiIndex:       big.NewInt(int64(myIndex)),
+		MyPartiIndex:     big.NewInt(int64(myIndex)),
 		GenPubKeyHex:     bytes.BytesToHex(dnmGenPubKeyBytes),
 		GenPubKeyHashHex: dnmGenPubKeyHash.Hex(),
 		CChainAddress:    *cchainAddr,
