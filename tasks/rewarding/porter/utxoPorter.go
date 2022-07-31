@@ -110,7 +110,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			}
 
 			if utxo == nil {
-				eh.Logger.Warn("UTXO not cached", []logger.Field{{"txID", txID}, {"outputIndex", outputIndex}}...)
+				eh.Logger.Warn("UTXO not cached", []logger.Field{
+					{"txID", txID}, {"outputIndex", outputIndex}}...)
 				return
 			}
 
@@ -152,29 +153,33 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				Args: args,
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
-					ids, err := doExportUTXO(ctx, args.(*Args))
+					argsVal := args.(*Args)
+					ids, err := doExportUTXO(ctx, argsVal)
+					eh.Logger.Debug("Starting exporting UTXO task...", []logger.Field{
+						{"taskID", argsVal.SignReqArgs.TaskID},
+						{"utxoID", argsVal.UTXO.UTXOID}}...)
 					if err != nil {
 						switch errors.Cause(err).(type) { // todo: exploring more concrete error types
 						case *chain.ErrTypSharedMemoryNotFound:
 							eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-								{"txID", evt.TxID},
-								{"outputIndex", evt.OutputIndex}}...)
+								{"taskID", argsVal.SignReqArgs.TaskID},
+								{"utxoID", argsVal.UTXO.UTXOID}}...)
 						case *chain.ErrTypConflictAtomicInputs:
 							eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-								{"txID", evt.TxID},
-								{"outputIndex", evt.OutputIndex}}...)
+								{"taskID", argsVal.SignReqArgs.TaskID},
+								{"utxoID", argsVal.UTXO.UTXOID}}...)
 						case *chain.ErrTypImportUTXOsNotFound:
 							eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-								{"txID", evt.TxID},
-								{"outputIndex", evt.OutputIndex}}...)
+								{"taskID", argsVal.SignReqArgs.TaskID},
+								{"utxoID", argsVal.UTXO.UTXOID}}...)
 						case *chain.ErrTypConsumedUTXONotFound:
 							eh.Logger.DebugOnError(err, "UTXO UNEXPORTED", []logger.Field{
-								{"txID", evt.TxID},
-								{"outputIndex", evt.OutputIndex}}...)
+								{"taskID", argsVal.SignReqArgs.TaskID},
+								{"utxoID", argsVal.UTXO.UTXOID}}...)
 						default:
 							eh.Logger.ErrorOnError(err, "Failed to export UTXO", []logger.Field{
-								{"txID", evt.TxID},
-								{"outputIndex", evt.OutputIndex}}...)
+								{"taskID", argsVal.SignReqArgs.TaskID},
+								{"utxoID", argsVal.UTXO.UTXOID}}...)
 						}
 						return
 					}
@@ -198,7 +203,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					}
 					totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
 					totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
-					eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals}, {"exportedRewardUTXOs", totalRewards}}...)
+					eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals},
+						{"exportedRewardUTXOs", totalRewards}}...)
 				}},
 			})
 		}
