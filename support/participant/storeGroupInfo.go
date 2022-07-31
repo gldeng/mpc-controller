@@ -14,7 +14,7 @@ import (
 )
 
 // Trigger event: *contract.MpcManagerParticipantAdded
-// Emit event: *events.GroupInfoStoredEvent
+// Publish event: *events.GroupInfoStoredEvent
 
 type GroupInfoStorer struct {
 	Caller       bind.ContractCaller

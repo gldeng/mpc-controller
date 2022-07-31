@@ -30,9 +30,9 @@ const (
 	exportRewardTaskIDPrefix    = "REWARD-"
 )
 
-// Accept event: *events.ExportUTXORequestEvent
+// Subscribe event: *events.ExportUTXORequestEvent
 
-// Emit event: *events.UTXOExportedEvent
+// Publish event: *events.UTXOExportedEvent
 
 type UTXOPorter struct {
 	CChainIssueClient chain.CChainIssuer

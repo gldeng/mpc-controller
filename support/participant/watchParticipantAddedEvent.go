@@ -14,9 +14,9 @@ import (
 	"time"
 )
 
-// Accept event: *events.ContractFiltererCreatedEvent
+// Subscribe event: *events.ContractFiltererCreatedEvent
 
-// Emit event: *contract.MpcManagerParticipantAdded
+// Publish event: *contract.MpcManagerParticipantAdded
 
 type ParticipantAddedEventWatcher struct {
 	ContractAddr  common.Address

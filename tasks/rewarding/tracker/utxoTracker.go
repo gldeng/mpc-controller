@@ -31,10 +31,10 @@ const (
 	checkUTXOInterval = time.Second * 1
 )
 
-// Accept event: *events.ReportedGenPubKeyEvent
+// Subscribe event: *events.ReportedGenPubKeyEvent
 
-// Emit event:
-// Emit event:
+// Publish event:
+// Publish event:
 
 type UTXOTracker struct {
 	ContractAddr common.Address

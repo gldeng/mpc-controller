@@ -22,9 +22,9 @@ var (
 	ErrCannotJoin = errors.New("Cannot join anymore")
 )
 
-// Accept event: *contract.MpcManagerStakeRequestAdded
+// Subscribe event: *contract.MpcManagerStakeRequestAdded
 
-// Emit event:
+// Publish event:
 
 type StakeRequestAddedEventHandler struct {
 	ContractAddr    common.Address

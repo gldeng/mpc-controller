@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// Accept event: *events.ContractFiltererCreatedEvent
-// Accept event:  *events.GeneratedPubKeyInfoStoredEvent
+// Subscribe event: *events.ContractFiltererCreatedEvent
+// Subscribe event:  *events.GeneratedPubKeyInfoStoredEvent
 
-// Emit event:  *contract.MpcManagerStakeRequestAdded
+// Publish event:  *contract.MpcManagerStakeRequestAdded
 
 type StakeRequestAddedEventWatcher struct {
 	Logger       logger.Logger

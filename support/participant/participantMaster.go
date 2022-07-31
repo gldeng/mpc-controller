@@ -60,8 +60,8 @@ func (m *ParticipantMaster) subscribe() {
 	m.partiInfoStorer = &partiInfoStorer
 	m.groupInfoStorer = &groupInfoStorer
 
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.partiEvtWatcher) // Emit event: *contract.MpcManagerParticipantAdded
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.partiEvtWatcher) // Publish event: *contract.MpcManagerParticipantAdded
 
-	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.partiInfoStorer) // Emit event: *events.ParticipantInfoStoredEvent
-	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.groupInfoStorer) // Emit event: *events.GroupInfoStoredEvent
+	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.partiInfoStorer) // Publish event: *events.ParticipantInfoStoredEvent
+	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.groupInfoStorer) // Publish event: *events.GroupInfoStoredEvent
 }

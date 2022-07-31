@@ -16,10 +16,10 @@ import (
 	"time"
 )
 
-// Accept event: *events.ContractFiltererCreatedEvent
-// Accept event: *events.ReportedGenPubKeyEvent
+// Subscribe event: *events.ContractFiltererCreatedEvent
+// Subscribe event: *events.ReportedGenPubKeyEvent
 
-// Emit event: *contract.ExportUTXORequestEvent
+// Publish event: *contract.ExportUTXORequestEvent
 
 type ExportUTXORequestWatcher struct {
 	ContractAddr common.Address

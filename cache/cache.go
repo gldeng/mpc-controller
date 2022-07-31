@@ -14,9 +14,9 @@ import (
 
 var _ ICache = (*Cache)(nil)
 
-// Accept event: *events.GroupInfoStoredEvent
-// Accept event: *events.ParticipantInfoStoredEvent
-// Accept event: *events.GeneratedPubKeyInfoStoredEvent
+// Subscribe event: *events.GroupInfoStoredEvent
+// Subscribe event: *events.ParticipantInfoStoredEvent
+// Subscribe event: *events.GeneratedPubKeyInfoStoredEvent
 
 type Cache struct {
 	*sync.RWMutex

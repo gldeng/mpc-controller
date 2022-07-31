@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// Accept event: *events.ContractFiltererCreatedEvent
-// Accept event: *events.GroupInfoStoredEvent
+// Subscribe event: *events.ContractFiltererCreatedEvent
+// Subscribe event: *events.GroupInfoStoredEvent
 
-// Emit event: *contract.MpcManagerKeygenRequestAdded
+// Publish event: *contract.MpcManagerKeygenRequestAdded
 
 type KeygenRequestAddedEventWatcher struct {
 	ContractAddr common.Address

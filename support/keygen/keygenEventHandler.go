@@ -23,12 +23,12 @@ import (
 	"time"
 )
 
-// Accept event: *events.GroupInfoStoredEvent
-// Accept event: *events.ParticipantInfoStoredEvent
-// Accept event: *contract.MpcManagerKeygenRequestAdded
+// Subscribe event: *events.GroupInfoStoredEvent
+// Subscribe event: *events.ParticipantInfoStoredEvent
+// Subscribe event: *contract.MpcManagerKeygenRequestAdded
 
-// Emit event: *events.GeneratedPubKeyInfoStoredEvent
-// Emit event: *events.ReportedGenPubKeyEvent
+// Publish event: *events.GeneratedPubKeyInfoStoredEvent
+// Publish event: *events.ReportedGenPubKeyEvent
 
 type KeygenRequestAddedEventHandler struct {
 	ContractAddr    common.Address

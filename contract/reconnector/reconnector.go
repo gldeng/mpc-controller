@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// Accept event:
+// Subscribe event:
 
-// Emit event: *events.ContractFiltererCreatedEvent
+// Publish event: *events.ContractFiltererCreatedEvent
 
 type ContractFilterReconnector struct {
 	logger.Logger

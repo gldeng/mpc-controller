@@ -12,7 +12,7 @@ import (
 )
 
 // Trigger event: *contract.MpcManagerParticipantAdded
-// Emit event: *events.ParticipantInfoStoredEvent
+// Publish event: *events.ParticipantInfoStoredEvent
 
 type ParticipantInfoStorer struct {
 	Logger          logger.Logger

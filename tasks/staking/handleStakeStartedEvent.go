@@ -35,9 +35,9 @@ type Cache interface {
 	cache.ParticipantKeysGetter
 }
 
-// Accept event: *contract.MpcManagerStakeRequestStarted
+// Subscribe event: *contract.MpcManagerStakeRequestStarted
 
-// Emit event:
+// Publish event:
 
 type StakeRequestStartedEventHandler struct {
 	Balancer          chain.Balancer
