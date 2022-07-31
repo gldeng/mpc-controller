@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/queue"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -54,9 +55,13 @@ func (z *TaskZone) run(ctx context.Context) {
 		case <-t.C:
 			var totalTasks int
 			var totalCap int
-			for _, q := range z.taskPriorityQueues {
+			for priority, q := range z.taskPriorityQueues {
 				totalTasks = totalTasks + q.Count()
 				totalCap = totalCap + q.Capacity()
+
+				isTooMany := float64(q.Count()) > float64(q.Capacity())*0.8
+				z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks of priority "+strconv.Itoa(priority),
+					[]logger.Field{{"totalTasks", q.Count()}, {"maxTasks", q.Capacity()}}...)
 			}
 
 			isTooMany := float64(totalTasks) > float64(totalCap)*0.8
