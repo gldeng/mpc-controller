@@ -7,7 +7,6 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/events"
@@ -48,7 +47,6 @@ type UTXOTracker struct {
 
 	reportUTXosChan   chan *reportUTXOs
 	utxoReportedCache map[ids.ID]uint32
-	UTXOsFetchedCache cache.SyncMapCache
 
 	reportUTXOWs *work.Workshop
 
