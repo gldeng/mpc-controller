@@ -21,7 +21,7 @@ type Workspace struct {
 }
 
 func (w *Workspace) Run(ctx context.Context) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Minute * 5)
 	defer ticker.Stop()
 
 	for {
@@ -42,9 +42,9 @@ func (w *Workspace) Run(ctx context.Context) {
 			for _, workFn := range task.WorkFns {
 				workFn(task.Ctx, task.Args)
 			}
+			w.IdleChan <- struct{}{}
 			atomic.StoreUint32(&w.status, 0)
 			w.lastActiveTime = time.Now()
-			w.IdleChan <- struct{}{}
 		}
 	}
 }
