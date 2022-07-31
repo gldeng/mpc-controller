@@ -14,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"sync"
 )
 
 type Master struct {
@@ -46,14 +47,16 @@ func (m *Master) Start(ctx context.Context) error {
 }
 
 func (m *Master) subscribe() {
+	utxoReportedEventCache := new(sync.Map)
 	utxoTracker := tracker.UTXOTracker{
-		ContractAddr: m.ContractAddr,
-		Logger:       m.Logger,
-		PChainClient: m.PChainClient,
-		Publisher:    m.Dispatcher,
-		Receipter:    m.Receipter,
-		Signer:       m.Signer,
-		Transactor:   m.Transactor,
+		UTXOReportedEventCache: utxoReportedEventCache,
+		ContractAddr:           m.ContractAddr,
+		Logger:                 m.Logger,
+		PChainClient:           m.PChainClient,
+		Publisher:              m.Dispatcher,
+		Receipter:              m.Receipter,
+		Signer:                 m.Signer,
+		Transactor:             m.Transactor,
 	}
 
 	exportUTXOReqEvtWatcher := watcher.ExportUTXORequestWatcher{
@@ -63,14 +66,15 @@ func (m *Master) subscribe() {
 	}
 
 	utxoPorter := porter.UTXOPorter{
-		CChainIssueClient: m.CChainIssueClient,
-		Cache:             m.Cache,
-		Logger:            m.Logger,
-		MyPubKeyHashHex:   m.MyPubKeyHashHex,
-		NetworkContext:    m.NetworkContext,
-		PChainIssueClient: m.PChainClient,
-		Publisher:         m.Dispatcher,
-		SignDoner:         m.SignDoner,
+		UTXOReportedEventCache: utxoReportedEventCache,
+		CChainIssueClient:      m.CChainIssueClient,
+		Cache:                  m.Cache,
+		Logger:                 m.Logger,
+		MyPubKeyHashHex:        m.MyPubKeyHashHex,
+		NetworkContext:         m.NetworkContext,
+		PChainIssueClient:      m.PChainClient,
+		Publisher:              m.Dispatcher,
+		SignDoner:              m.SignDoner,
 	}
 
 	m.utxoTracker = &utxoTracker

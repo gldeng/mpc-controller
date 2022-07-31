@@ -52,7 +52,8 @@ type UTXOPorter struct {
 	ws *work.Workshop
 
 	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKeyEvent
-	utxoReportedEventCache      map[string]*events.UTXOReportedEvent
+	utxoReportedEventCache      map[string]*events.UTXOReportedEvent // todo: obsolete, use UTXOReportedEventCache instead?
+	UTXOReportedEventCache      *sync.Map
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
 
@@ -102,12 +103,20 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			}
 
 			utxoID := evt.TxID.String() + strconv.Itoa(int(evt.OutputIndex))
-			utxoRepEvt, ok := eh.utxoReportedEventCache[utxoID]
-			if !ok || utxoRepEvt == nil {
+			val, ok := eh.UTXOReportedEventCache.Load(utxoID)
+			if !ok {
 				eh.Logger.Warn("No local reported UTXO found", []logger.Field{
 					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
 				break
 			}
+			utxoRepEvt := val.(*events.UTXOReportedEvent)
+
+			//utxoRepEvt, ok := eh.utxoReportedEventCache[utxoID]
+			//if !ok || utxoRepEvt == nil {
+			//	eh.Logger.Warn("No local reported UTXO found", []logger.Field{
+			//		{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
+			//	break
+			//}
 
 			genPubKeyHex := bytes.BytesToHex(utxoRepEvt.GenPubKeyBytes)
 			compressedGenPubKey, err := crypto.NormalizePubKey(genPubKeyHex)

@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"math/big"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -45,8 +46,9 @@ type UTXOTracker struct {
 	reportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
 	reportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
 
-	reportUTXosChan   chan *reportUTXOs
-	utxoReportedCache map[ids.ID]uint32
+	reportUTXosChan        chan *reportUTXOs
+	utxoReportedMark       map[ids.ID]uint32
+	UTXOReportedEventCache *sync.Map
 
 	reportUTXOWs *work.Workshop
 
@@ -75,7 +77,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 		eh.reportUTXOWs = work.NewWorkshop(eh.Logger, "reportUTXOs", time.Minute*10, 10)
 		eh.reportUTXosChan = make(chan *reportUTXOs, 256)
-		eh.utxoReportedCache = make(map[ids.ID]uint32)
+		eh.utxoReportedMark = make(map[ids.ID]uint32)
 
 		go eh.fetchUTXOs(ctx)
 		go eh.reportUTXOs(ctx)
@@ -110,7 +112,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 
 				var unreportedUTXOsFromStake []*avax.UTXO
 				for _, utxo := range utxosFromStake {
-					if outputIndex, ok := eh.utxoReportedCache[utxo.TxID]; ok {
+					if outputIndex, ok := eh.utxoReportedMark[utxo.TxID]; ok {
 						if outputIndex == utxo.OutputIndex {
 							continue
 						}
@@ -153,7 +155,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 					genPubKey:  reportUTXOs.genPubKey,
 				}
 
-				eh.utxoReportedCache[utxo.TxID] = utxo.OutputIndex // todo: timeout cache
+				eh.utxoReportedMark[utxo.TxID] = utxo.OutputIndex // todo: timeout, or delete it when export done?
 
 				eh.reportUTXOWs.AddTask(ctx, &work.Task{
 					Args: reportUtxo,
@@ -175,6 +177,9 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 							GroupIDBytes:   reportUtxo.groupID,
 							PartiIndex:     reportUtxo.partiIndex,
 						}
+
+						utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
+						eh.UTXOReportedEventCache.Store(utxoID, reportEvt) // use cache so utxoPorter can get value timely // todo: timeout?
 						eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(reportEvt, nil))
 						switch utxo.OutputIndex {
 						case 0:
@@ -202,7 +207,7 @@ func (eh *UTXOTracker) requestUTXOsFromStake(ctx context.Context, addr ids.Short
 	var filterUtxos []*avax.UTXO
 
 	for _, utxo := range rawUtxos {
-		if _, ok := eh.utxoReportedCache[utxo.TxID]; ok {
+		if _, ok := eh.utxoReportedMark[utxo.TxID]; ok {
 			continue
 		}
 
