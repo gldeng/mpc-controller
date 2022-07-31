@@ -56,12 +56,8 @@ func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, ma
 func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	w.once.Do(func() {
 		go w.TaskZone.Run(ctx)
+		go w.run(ctx)
 	})
-
-	w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
-		w.Id+" too many living workspaces",
-		[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
-			{"maxWorkspaces", w.MaxWorkspaces}}...)
 
 	if atomic.LoadUint32(&w.livingWorkspaces) == 0 {
 		w.newWorkspace(ctx)
@@ -93,6 +89,22 @@ func (w *Workshop) AddTask(ctx context.Context, t *Task) {
 	w.newWorkspace(ctx)
 	w.taskChan <- t
 	return
+}
+
+func (w *Workshop) run(ctx context.Context) {
+	t := time.NewTicker(time.Minute * 5)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
+				w.Id+" too many living workspaces",
+				[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
+					{"maxWorkspaces", w.MaxWorkspaces}}...)
+		}
+	}
 }
 
 func (w *Workshop) LivingWorkspaces() int {
