@@ -84,11 +84,11 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 				if errors.Is(err, ErrCannotJoin) {
 					eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
 						{"reqId", evt.RequestId}}...)
-					return
+					break
 				}
 				eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
 					{"reqId", evt.RequestId}}...)
-				return
+				break
 			}
 
 			eh.lastJoinStakeReqID = evt.RequestId.Uint64()

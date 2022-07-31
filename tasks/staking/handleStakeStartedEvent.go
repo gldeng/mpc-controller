@@ -111,7 +111,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
 			if pubKeyInfo == nil {
 				eh.Logger.Error("No GeneratedPubKeyInfo found")
-				return
+				break
 			}
 			eh.genPubKeyInfo = pubKeyInfo // todo: data race protect
 
@@ -119,7 +119,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			pubkey, err := crypto.UnmarshalPubKeyHex(pubKeyHex)
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to unmarshal public key", []logger.Field{{"publicKey", pubkey}}...)
-				return
+				break
 			}
 
 			eh.addrLock.Lock()
@@ -130,7 +130,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
 			if index == nil {
 				eh.Logger.Error("Not found my index.")
-				return
+				break
 			}
 			eh.myIndex = index // todo: data race protect
 
@@ -139,13 +139,13 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				eh.Logger.Debug("Not participant in StakeRequestStarted event", []logger.Field{
 					{"requestId", evt.RequestId},
 					{"TxHash", evt.Raw.TxHash}}...)
-				return
+				break
 			}
 
 			// params validation before retrieve nonce
 			if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to check balance before tx signed")
-				return
+				break
 			}
 			if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to check stake start time before tx signed")
@@ -154,7 +154,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to get normalized participant keys")
-				return
+				break
 			}
 
 			nonce := eh.Noncer.GetNonce(evt.RequestId.Uint64()) // todo: how should nonce base adjust in case of validation errors among all participants?
@@ -184,7 +184,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 			stakeTask, err := taskCreator.CreateStakeTask()
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to create stake task")
-				return
+				break
 			}
 
 			stakeTaskWrapper := &StakeTaskWrapper{
@@ -240,7 +240,7 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 			// Sync nonce
 			if err := eh.syncNonce(ctx); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to sync nonce")
-				return
+				break
 			}
 
 			// Continuous issue tx
