@@ -8,7 +8,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
-	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -38,13 +37,14 @@ type StakeRequestAddedEventHandler struct {
 	Transactor      bind.ContractTransactor
 	evtObjChan      chan *dispatcher.EventObject
 	once            sync.Once
-	ws              *work.Workshop
+	//ws                 *work.Workshop
+	lastJoinStakeReqID uint64
 }
 
 func (eh *StakeRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.evtObjChan = make(chan *dispatcher.EventObject, 1024)
-		eh.ws = work.NewWorkshop(eh.Logger, "joinRequest", time.Minute*10, 10)
+		//eh.ws = work.NewWorkshop(eh.Logger, "joinRequest", time.Minute*10, 10)
 		go eh.joinRequest(ctx)
 	})
 
@@ -60,7 +60,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evtObj := <-eh.evtObjChan:
+		case evtObj := <-eh.evtObjChan: // continuous join corresponding nonce increase
 			evt, ok := evtObj.Event.(*contract.MpcManagerStakeRequestAdded)
 			if !ok {
 				break
@@ -71,27 +71,33 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 				break
 			}
 
-			eh.ws.AddTask(ctx, &work.Task{
-				Args: []interface{}{myIndex, evt},
-				Ctx:  ctx,
-				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
-					myIndex := args.([]interface{})[0].(*big.Int)
-					evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestAdded)
-					_, err := eh.doJoinRequest(ctx, myIndex, evt)
-					if err != nil {
-						if errors.Is(err, ErrCannotJoin) {
-							eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
-								{"reqId", evt.RequestId}}...)
-							return
-						}
-						eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
-							{"reqId", evt.RequestId}}...)
-						return
-					}
-					eh.Logger.Debug("Joined request", []logger.Field{
+			//eh.ws.AddTask(ctx, &work.Task{
+			//	Args: []interface{}{myIndex, evt},
+			//	Ctx:  ctx,
+			//	WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
+			//		myIndex := args.([]interface{})[0].(*big.Int)
+			//		evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestAdded)
+			eh.Logger.WarnOnTrue(evt.RequestId.Uint64() != eh.lastJoinStakeReqID+1, "Stake request ID to join not continuous",
+				[]logger.Field{{"lastJoinStakeReqID", eh.lastJoinStakeReqID},
+					{"nextJoinStakeReqID", evt.RequestId.Uint64()}}...)
+			_, err := eh.doJoinRequest(ctx, myIndex, evt)
+			if err != nil {
+				if errors.Is(err, ErrCannotJoin) {
+					eh.Logger.DebugOnError(err, "Join request unaccepted", []logger.Field{
 						{"reqId", evt.RequestId}}...)
-				}},
-			})
+					return
+				}
+				eh.Logger.ErrorOnError(err, "Failed to join request", []logger.Field{
+					{"reqId", evt.RequestId}}...)
+				return
+			}
+
+			eh.lastJoinStakeReqID = evt.RequestId.Uint64()
+
+			eh.Logger.Debug("Joined request", []logger.Field{
+				{"reqId", evt.RequestId}}...)
+			//}},
+			//})
 		}
 	}
 }
