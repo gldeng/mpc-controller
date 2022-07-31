@@ -83,14 +83,9 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 		go eh.reportUTXOs(ctx)
 	})
 
-	select {
-	case <-ctx.Done():
-		return
-	default:
-		switch evt := evtObj.Event.(type) {
-		case *events.ReportedGenPubKeyEvent:
-			eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
-		}
+	switch evt := evtObj.Event.(type) {
+	case *events.ReportedGenPubKeyEvent:
+		eh.ReportedGenPubKeyEventCache[evt.PChainAddress] = evt
 	}
 }
 
