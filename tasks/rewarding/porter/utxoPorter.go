@@ -33,6 +33,7 @@ const (
 )
 
 // Subscribe event: *events.ExportUTXORequestEvent
+// Subscribe event: *events.ReportedGenPubKeyEvent
 
 // Publish event: *events.UTXOExportedEvent
 
@@ -93,7 +94,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			genPubKey := evt.GenPubKeyHash.Hex()
 			val, ok := eh.UTXOsFetchedEventCache.Load(genPubKey)
 			if !ok {
-				eh.Logger.Warn("UTXOsFetchedEventCache not cached", []logger.Field{{"genPubKey", genPubKey}}...)
+				eh.Logger.Warn("UTXOsFetchedCache not cached", []logger.Field{{"genPubKey", genPubKey}}...)
 				return
 			}
 			utxoFectchedEvtObj := val.(*dispatcher.EventObject)

@@ -50,14 +50,14 @@ func (m *Master) subscribe() {
 	utxosFetchedEvent := new(sync.Map)
 
 	utxoTracker := tracker.UTXOTracker{
-		ContractAddr:           m.ContractAddr,
-		Logger:                 m.Logger,
-		PChainClient:           m.PChainClient,
-		Publisher:              m.Dispatcher,
-		Receipter:              m.Receipter,
-		Signer:                 m.Signer,
-		Transactor:             m.Transactor,
-		UTXOsFetchedEventCache: utxosFetchedEvent,
+		ContractAddr:      m.ContractAddr,
+		Logger:            m.Logger,
+		PChainClient:      m.PChainClient,
+		Publisher:         m.Dispatcher,
+		Receipter:         m.Receipter,
+		Signer:            m.Signer,
+		Transactor:        m.Transactor,
+		UTXOsFetchedCache: utxosFetchedEvent,
 	}
 
 	exportUTXOReqEvtWatcher := watcher.ExportUTXORequestWatcher{
@@ -83,8 +83,10 @@ func (m *Master) subscribe() {
 	m.utxoPorter = &utxoPorter
 
 	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoTracker)
+
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportUTXOReqEvtWatcher)
 	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.exportUTXOReqEvtWatcher)
 
 	m.Dispatcher.Subscribe(&events.ExportUTXORequestEvent{}, m.utxoPorter)
+	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoPorter)
 }
