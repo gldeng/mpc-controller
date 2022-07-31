@@ -82,9 +82,9 @@ func (m *Master) subscribe() {
 	m.exportUTXOReqEvtWatcher = &exportUTXOReqEvtWatcher
 	m.utxoPorter = &utxoPorter
 
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoTracker) // Emit event: *events.UTXOsFetchedEventCache; *events.UTXOReportedEvent
+	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoTracker)
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportUTXOReqEvtWatcher)
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.exportUTXOReqEvtWatcher) // Emit event: *contract.ExportUTXORequestEvent
+	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.exportUTXOReqEvtWatcher)
 
-	m.Dispatcher.Subscribe(&events.ExportUTXORequestEvent{}, m.utxoPorter) // Emit event: *events.UTXOExportedEvent
+	m.Dispatcher.Subscribe(&events.ExportUTXORequestEvent{}, m.utxoPorter)
 }

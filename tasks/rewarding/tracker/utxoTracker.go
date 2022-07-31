@@ -33,8 +33,8 @@ const (
 
 // Accept event: *events.ReportedGenPubKeyEvent
 
-// Emit event: *events.UTXOsFetchedEventCache
-// Emit event: *events.UTXOReportedEvent
+// Emit event:
+// Emit event:
 
 type UTXOTracker struct {
 	ContractAddr common.Address
@@ -105,7 +105,7 @@ func (eh *UTXOTracker) getAndReportUTXOs(ctx context.Context) {
 				copier.Copy(&utxoFetchedEvt, reportedGenPubKey)
 
 				utxoFetchedEvtObj := dispatcher.NewEvtObj(utxoFetchedEvt, nil)
-				eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
+				//eh.Publisher.Publish(ctx, utxoFetchedEvtObj)
 				eh.UTXOsFetchedEventCache.Store(reportedGenPubKey.GenPubKeyHashHex, utxoFetchedEvtObj)
 
 				eh.reportUTXOs(ctx, utxoFetchedEvtObj, filterUtxos, groupIdBytes, partiIndex, genPubKeyBytes)
@@ -135,7 +135,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context, utxoFetchedEvtObj *dispa
 			GroupIDBytes:   groupId,
 			PartiIndex:     partiIndex,
 		}
-		eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(utxoReportedEvt, nil))
+		//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(utxoReportedEvt, nil))
 		switch utxo.OutputIndex {
 		case 0:
 			eh.Logger.Debug("Principal UTXO reported", logger.Field{"UTXOReportedEvent", utxoReportedEvt})
