@@ -35,7 +35,6 @@ const (
 )
 
 // Subscribe event: *events.ReportedGenPubKeyEvent
-// Subscribe event: *events.UTXOReportedEvent
 // Subscribe event: *events.ExportUTXORequestEvent
 
 // Publish event: *events.UTXOExportedEvent
@@ -53,8 +52,7 @@ type UTXOPorter struct {
 	ws *work.Workshop
 
 	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKeyEvent
-	//utxoReportedEventCache      map[string]*events.UTXOReportedEvent
-	UTXOReportedEventCache *ristretto.Cache
+	UTXOReportedEventCache      *ristretto.Cache
 
 	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
 
@@ -66,7 +64,6 @@ type UTXOPorter struct {
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.reportedGenPubKeyEventCache = make(map[string]*events.ReportedGenPubKeyEvent)
-		//eh.utxoReportedEventCache = make(map[string]*events.UTXOReportedEvent)
 
 		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
@@ -77,9 +74,6 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.ReportedGenPubKeyEvent:
 		eh.reportedGenPubKeyEventCache[evt.GenPubKeyHashHex] = evt
-	case *events.UTXOReportedEvent:
-		//utxoID := evt.NativeUTXO.TxID.String() + strconv.Itoa(int(evt.NativeUTXO.OutputIndex))
-		//eh.utxoReportedEventCache[utxoID] = evt
 	case *events.ExportUTXORequestEvent:
 		select {
 		case <-ctx.Done():
@@ -111,13 +105,6 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				break
 			}
 			utxoRepEvt := val.(*events.UTXOReportedEvent)
-
-			//utxoRepEvt, ok := eh.utxoReportedEventCache[utxoID]
-			//if !ok || utxoRepEvt == nil {
-			//	eh.Logger.Warn("No local reported UTXO found", []logger.Field{
-			//		{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
-			//	break
-			//}
 
 			genPubKeyHex := bytes.BytesToHex(utxoRepEvt.GenPubKeyBytes)
 			compressedGenPubKey, err := crypto.NormalizePubKey(genPubKeyHex)
@@ -197,7 +184,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						ExportedTxID: ids[0],
 						ImportedTxID: ids[1],
 					}
-					eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
+					//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
 
 					switch utxoRepEvt.NativeUTXO.OutputIndex {
 					case 0:
