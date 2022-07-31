@@ -210,8 +210,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					eh.Logger.Info("Exported UTXO stats", []logger.Field{{"exportedPrincipalUTXOs", totalPrincipals},
 						{"exportedRewardUTXOs", totalRewards}}...)
 
-					eh.UTXOReportedEventCache.Del(utxoID)
-					eh.UTXOExportedEventCache.Del(utxoID)
+					//eh.UTXOReportedEventCache.Del(utxoID)
+					//eh.UTXOExportedEventCache.Del(utxoID)
 				}},
 			})
 		}
