@@ -32,7 +32,7 @@ type Workshop struct {
 
 func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, maxWorkspaces uint32) *Workshop {
 	taskChan := make(chan *Task, 1024)
-	idleChan := make(chan struct{})
+	idleChan := make(chan struct{}, 1024)
 	taskZone := &TaskZone{
 		Id:               name + "_workshop_" + "_taskZone_" + misc.NewID()[:4],
 		Logger:           logger,
