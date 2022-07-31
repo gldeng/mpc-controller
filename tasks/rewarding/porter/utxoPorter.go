@@ -98,6 +98,11 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.ExportUTXORequestEventChan:
+			if !eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.String(), evt.ParticipantIndices) {
+				eh.Logger.Debug("Not participant in ExportUTXORequest event", []logger.Field{
+					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}, {"txHash", evt.TxHash}}...)
+				break
+			}
 			partiKeys, err := eh.Cache.GetNormalizedParticipantKeys(evt.GenPubKeyHash, evt.ParticipantIndices)
 			if err != nil { // todo: deal with err case
 				eh.Logger.Error("UTXOPorter failed to export reward", []logger.Field{

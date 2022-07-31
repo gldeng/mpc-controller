@@ -136,7 +136,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 
 			ok := eh.isParticipant(evt)
 			if !ok {
-				eh.Logger.Debug("Not participant in *contract.MpcManagerStakeRequestStarted event", []logger.Field{
+				eh.Logger.Debug("Not participant in StakeRequestStarted event", []logger.Field{
 					{"requestId", evt.RequestId},
 					{"TxHash", evt.Raw.TxHash}}...)
 				return
