@@ -98,7 +98,7 @@ func (eh *StakeRequestAddedEventWatcher) watchStakeRequestAdded(ctx context.Cont
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				eh.Logger.WarnOnTrue(eh.hasPublishedReq && evt.RequestId.Uint64() != eh.lastReqID+1,
+				eh.Logger.DebugOnTrue(eh.hasPublishedReq && evt.RequestId.Uint64() != eh.lastReqID+1,
 					"Received un-continuous emitted stake request",
 					[]logger.Field{{"expectedReqID", eh.lastReqID + 1},
 						{"receivedReqID", evt.RequestId.Uint64()}}...)
