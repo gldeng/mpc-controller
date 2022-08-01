@@ -76,7 +76,7 @@ func (eh *StakeRequestAddedEventHandler) joinRequest(ctx context.Context) {
 			//	WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 			//		myIndex := args.([]interface{})[0].(*big.Int)
 			//		evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestAdded)
-			eh.Logger.WarnOnTrue(evt.RequestId.Uint64() != eh.lastJoinStakeReqID+1, "Stake request to join not continuous",
+			eh.Logger.DebugOnTrue(evt.RequestId.Uint64() != eh.lastJoinStakeReqID+1, "Stake request to join not continuous",
 				[]logger.Field{{"lastJoinStakeReqID", eh.lastJoinStakeReqID},
 					{"nextJoinStakeReqID", evt.RequestId.Uint64()}}...)
 			_, err := eh.doJoinRequest(ctx, myIndex, evt)
