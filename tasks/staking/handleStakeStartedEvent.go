@@ -210,7 +210,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 
 					// params validation after tx signed, check this because signing consume gas and time
 					if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
-						eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
+						eh.Logger.DebugOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
 						return
 					}
 					if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
