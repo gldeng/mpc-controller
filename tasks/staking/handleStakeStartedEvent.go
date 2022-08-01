@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
@@ -320,6 +321,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 	//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 
 	eh.doneStakeTasks++
+	prom.StakeTaskDone.Inc()
 
 	eh.Logger.Info("Stake task DONE", []logger.Field{{"stakingTaskDoneEvent", newEvt}}...)
 	return nil
