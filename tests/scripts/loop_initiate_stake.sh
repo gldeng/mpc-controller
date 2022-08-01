@@ -11,4 +11,6 @@ do
     LOOP_INITIATE_STAKE=$((LOOP_INITIATE_STAKE+1))
 
     echo Looped initiateStake at $(date +%Y-%m-%d/%H:%M:%S), total times: $LOOP_INITIATE_STAKE
+
+    sleep 8
 done
