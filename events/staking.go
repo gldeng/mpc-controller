@@ -8,7 +8,7 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning staking
 
-type StakingTaskDoneEvent struct {
+type StakeTaskDoneEvent struct {
 	RequestID uint64
 	Nonce     uint64
 	TaskID    common.Hash // TxHash

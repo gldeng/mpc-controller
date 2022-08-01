@@ -297,7 +297,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 		return err
 	}
 
-	newEvt := events.StakingTaskDoneEvent{
+	newEvt := events.StakeTaskDoneEvent{
 		TaskID: common.HexToHash(strings.TrimPrefix(stakeTask.TaskID, stakeTaskIDPrefix)),
 
 		ExportTxID:       ids[0],
