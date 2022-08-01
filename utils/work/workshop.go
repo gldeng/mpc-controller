@@ -3,6 +3,7 @@ package work
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/misc"
 	"github.com/pkg/errors"
@@ -163,6 +164,8 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 	w.workspacesMap[ws.Id] = ws
 	w.lock.Unlock()
 
+	prom.WorkshopWorkspaces.Inc()
+
 	go func() {
 		w.Logger.Debug(ws.Id+" workspace opened", []logger.Field{{"openedWorkspace", ws.Id}, {"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces) + 1}}...)
 		atomic.AddUint32(&w.livingWorkspaces, 1)
@@ -177,5 +180,6 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 			return
 		}
 		goto loop
+		prom.WorkshopWorkspaces.Dec()
 	}()
 }

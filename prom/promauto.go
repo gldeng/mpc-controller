@@ -72,4 +72,9 @@ var (
 		Name: prefix + "dispatcher_published_events_total",
 		Help: "The total number of dispatcher published events",
 	})
+
+	WorkshopWorkspaces = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: prefix + "workshop_workspaces_total",
+		Help: "The total number of workshop workspaces",
+	})
 )
