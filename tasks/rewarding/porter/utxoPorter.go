@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/core/signer"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/secp256k1r"
@@ -221,9 +222,11 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					switch utxoRepEvt.NativeUTXO.OutputIndex {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
+						prom.PrincipalUTXOExported.Inc()
 						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
 					case uint32(events.OutputIndexReward):
 						atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
+						prom.RewardUTXOExported.Inc()
 						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
 					}
 					totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
