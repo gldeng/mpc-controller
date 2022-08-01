@@ -165,6 +165,13 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			eh.exportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 			eh.exportUTXOTaskAddedCache.Wait()
 
+			switch utxoRepEvt.NativeUTXO.OutputIndex {
+			case uint32(events.OutputIndexPrincipal):
+				prom.PrincipalUTXOSignTaskAdded.Inc()
+			case uint32(events.OutputIndexReward):
+				prom.RewardUTXOSignTaskAdded.Inc()
+			}
+
 			eh.ws.AddTask(ctx, &work.Task{
 				Args: args,
 				Ctx:  ctx,
@@ -174,6 +181,12 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
 					_, ok := eh.UTXOExportedEventCache.Get(utxoID)
 					if ok {
+						switch utxoRepEvt.NativeUTXO.OutputIndex {
+						case uint32(events.OutputIndexPrincipal):
+							prom.PrincipalUTXOSignTaskAdded.Dec()
+						case uint32(events.OutputIndexReward):
+							prom.RewardUTXOSignTaskAdded.Dec()
+						}
 						return
 					}
 
