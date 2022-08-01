@@ -28,7 +28,12 @@ var (
 		Help: "The total number of RewardUTXOExportedEvent",
 	})
 
-	// sign
+	// sign task added
+
+	StakeSignTaskAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "stake_sign_task_added_total",
+		Help: "The total number of stake sign task added",
+	})
 
 	PrincipalUTXOSignTaskAdded = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "principal_utxo_sign_task_added_total",
@@ -38,6 +43,13 @@ var (
 	RewardUTXOSignTaskAdded = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "reward_utxo_sign_task_added_total",
 		Help: "The total number of reward UTXO sign task added",
+	})
+
+	// sign task done
+
+	StakeSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "stake_sign_task_done_total",
+		Help: "The total number of of stake sign task done",
 	})
 
 	PrincipalUTXOSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
