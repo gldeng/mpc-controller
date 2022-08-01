@@ -8,14 +8,13 @@ import (
 	"github.com/swaggest/usecase"
 	"strings"
 	"sync"
-	"sync/atomic"
 )
 
 const (
 	ErrMsgSignReqRefused = "sign request refused"
 )
 
-var signedReqsCache = make([]*signedReq, 0)
+var signedReqsCache = make([]signedReq, 0)
 var lockSign = &sync.Mutex{}
 
 var signedStake uint64
@@ -144,21 +143,17 @@ func Sign() usecase.IOInteractor {
 			{"status", lastSignReq.status},
 			{"hash", in.Hash},
 			{"signature", lastSignReq.result}}...)
-		signed := &signedReq{in.RequestId, lastSignReq.input.Hash, sigHex}
+
+		signed := signedReq{in.RequestId, lastSignReq.input.Hash, sigHex}
 		signedReqsCache = append(signedReqsCache, signed)
 
-		var (
-			signedStake     uint64
-			signedPrincipal uint64
-			signedReward    uint64
-		)
 		switch {
 		case strings.Contains(in.RequestId, "STAKE"):
-			signedStake = atomic.AddUint64(&signedStake, 1)
+			signedStake++
 		case strings.Contains(in.RequestId, "PRINCIPAL"):
-			signedPrincipal = atomic.AddUint64(&signedPrincipal, 1)
+			signedPrincipal++
 		case strings.Contains(in.RequestId, "REWARD"):
-			signedReward = atomic.AddUint64(&signedReward, 1)
+			signedPrincipal++
 		}
 
 		logger.Debug("Signed requests stats", []logger.Field{
