@@ -19,6 +19,8 @@ type Config struct {
 
 	NetworkConfig  `yaml:"networkConfig"`
 	DatabaseConfig `yaml:"databaseConfig"`
+
+	MonitorConfig `yaml:"monitorConfig"`
 }
 
 // todo: check fee digital places and simplify fee config
@@ -38,6 +40,10 @@ type NetworkConfig struct {
 
 type DatabaseConfig struct {
 	BadgerDbPath string `yaml:"badgerDbPath"`
+}
+
+type MonitorConfig struct {
+	MetricsServeAddr string `yaml:"metricsServeAddr"`
 }
 
 func ParseFile(filename string) *Config {
