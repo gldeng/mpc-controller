@@ -41,7 +41,7 @@ tasks:
   initiateStakeLoop:
     cmds:
       - task: initiateStake
-      - bash ./tests/scripts/loop_initiate_stake.sh
+      - bash ./tests/scripts/loop_initiate_stake.sh {{.CLI_ARGS}}
 
   cleanup: # todo: add more cleanup operation, such as rm -rf $HOME/mpctest if needed
     cmds:
