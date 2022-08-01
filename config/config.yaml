@@ -19,3 +19,5 @@ networkConfig:
   gasFixed: 10000
 databaseConfig:
   badgerDbPath: "./db/mpc_controller_db1"
+monitorConfig:
+  metricsServeAddr: ":7001"

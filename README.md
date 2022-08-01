@@ -13,3 +13,11 @@ You can find test suites from `tests/Taskfile.yml`.
 - Run tests: `task tests:testSuiteName`, e.g., `task tests:initiateStake`, `task tests:initiateStakeLoop`.
 - Check working directory: `cd $HOME/mpctest`. You can watch and analyze your log files from a terminal with [Inav](https://lnav.org/), shortcuts: `task lnavAvalanche`, `task lnavController`, `task lnavServer`, `task lnavServerMock`.
 - Tear down: `task tests:cleanup`
+## Monitoring
+We have started using [Prometheus](https://prometheus.io/) for monitoring.
+- From `prom` directory you can see what extra metrics supported.
+- From `tests/configs/prom` you can see the Prometheus config for testings.
+- Run `task prom` command to start Prometheus container for testings.
+- Check [Prometheus Targets](http://localhost:9090/targets) 
+- Check [Promethus Metrics](http://localhost:9090/metrics)
+- Check [Promethus Graph](http://localhost:9090/graph) 

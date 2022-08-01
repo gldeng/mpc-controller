@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
@@ -206,6 +207,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
 						return
 					}
+
 					// params validation after tx signed, check this because signing consume gas and time
 					if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
 						eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
@@ -297,7 +299,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 		return err
 	}
 
-	newEvt := events.StakingTaskDoneEvent{
+	newEvt := events.StakeTaskDoneEvent{
 		TaskID: common.HexToHash(strings.TrimPrefix(stakeTask.TaskID, stakeTaskIDPrefix)),
 
 		ExportTxID:       ids[0],
@@ -320,6 +322,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 	//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 
 	eh.doneStakeTasks++
+	prom.StakeTaskDone.Inc()
 
 	eh.Logger.Info("Stake task DONE", []logger.Field{{"stakingTaskDoneEvent", newEvt}}...)
 	return nil

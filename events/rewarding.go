@@ -8,6 +8,13 @@ import (
 	"math/big"
 )
 
+type OutputIndex uint32
+
+const (
+	OutputIndexPrincipal OutputIndex = iota
+	OutputIndexReward
+)
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning rewarding
 
