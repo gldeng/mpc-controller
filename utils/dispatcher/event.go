@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/utils/misc"
 	"github.com/stretchr/objx"
-	"sort"
 	"sync/atomic"
 )
 
@@ -36,22 +35,4 @@ func NewEvtObj(evt Event, mp objx.Map) *EventObject {
 		Map:   mp,
 	}
 	return &evtObj
-}
-
-type EventObjects []*EventObject
-
-func (s EventObjects) Len() int {
-	return len(s)
-}
-
-func (s EventObjects) Less(i, j int) bool {
-	return s[i].EventNo < s[j].EventNo
-}
-
-func (s EventObjects) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s EventObjects) Sort() {
-	sort.Sort(s)
 }

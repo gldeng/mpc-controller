@@ -26,14 +26,11 @@ type Publisher interface {
 // dispatcher is a lightweight in-memory event-driven framework,
 // dedicated for subscribing, publishing and dispatching events.
 type dispatcher struct {
-	id                 string
-	eventLogger        logger.Logger
-	eventChan          chan *EventObject
-	eventMap           map[string][]EventHandler
-	subscribeMu        *sync.Mutex
-	hasPublished       bool
-	lastPublishedEvtNo uint64
-	pendingEvtObjs     EventObjects
+	id          string
+	eventLogger logger.Logger
+	eventChan   chan *EventObject
+	eventMap    map[string][]EventHandler
+	subscribeMu *sync.Mutex
 }
 
 // NewDispatcher makes a new dispatcher for users to subscribe events,
@@ -82,8 +79,7 @@ func (d *dispatcher) Publish(ctx context.Context, evtObj *EventObject) {
 	d.eventChan <- evtObj
 }
 
-// run is a goroutine for receiving and publishing events.
-// It publishes events in continuous increasing order according to EventNo.
+// run is a goroutine for receiving and publishing events, in random order.
 func (d *dispatcher) run(ctx context.Context) {
 	t := time.NewTicker(time.Minute * 1)
 	defer t.Stop()
@@ -96,25 +92,12 @@ func (d *dispatcher) run(ctx context.Context) {
 			d.eventLogger.WarnOnTrue(float64(len(d.eventChan)) > float64(cap(d.eventChan))*0.8, d.id+" dispatcher cached too many events",
 				[]logger.Field{{"cachedEvents", len(d.eventChan)}, {"cacheCapacity", cap(d.eventChan)}}...)
 		case evtObj := <-d.eventChan:
-			if evtObj.EventNo <= d.lastPublishedEvtNo {
-				break
-			}
-
-			d.pendingEvtObjs = append(d.pendingEvtObjs, evtObj)
-			d.pendingEvtObjs.Sort()
-
-			for _, evt := range d.pendingEvtObjs {
-				if evt.EventNo != d.lastPublishedEvtNo+1 {
-					break
+			et := reflect.TypeOf(evtObj.Event).String()
+			ehs := d.eventMap[et]
+			if len(ehs) > 0 {
+				for _, eh := range ehs {
+					eh.Do(ctx, evtObj)
 				}
-				et := reflect.TypeOf(evtObj.Event).String()
-				ehs := d.eventMap[et]
-				if len(ehs) > 0 {
-					for _, eh := range ehs {
-						eh.Do(ctx, evtObj)
-					}
-				}
-				d.lastPublishedEvtNo = evt.EventNo
 				prom.DispatcherPublishedEvents.Inc()
 			}
 		}
