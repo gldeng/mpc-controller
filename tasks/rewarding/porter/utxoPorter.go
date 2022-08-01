@@ -219,10 +219,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
 
 					switch utxoRepEvt.NativeUTXO.OutputIndex {
-					case 0:
+					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
 						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
-					case 1:
+					case uint32(events.OutputIndexReward):
 						atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
 						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
 					}
