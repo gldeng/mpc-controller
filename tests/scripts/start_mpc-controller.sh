@@ -16,11 +16,14 @@ sks=("3db317d8f1ff081a32038c339901f8a6a15f53122dde3b99fa8017a2d0952f5ae5cdf5d0df
 MPC_SERVER_URLS=("http://localhost:8001" "http://localhost:8002" "http://localhost:8003" "http://localhost:8004" "http://localhost:8005" "http://localhost:8006" "http://localhost:8007")
 #MPC_SERVER_URLS=("http://localhost:9000" "http://localhost:9000" "http://localhost:9000" "http://localhost:9000" "http://localhost:9000" "http://localhost:9000" "http://localhost:9000")
 
+METRICS_SERVE_ADDRS=(":7001" ":7002" ":7003" ":7004" ":7005" ":7006" ":7007")
+
 MPC_MANAGER_ADDRESS=$(cat $HOME/mpctest/contracts/addresses/MPC_MANAGER_ADDRESS)
 function create_config(){
     id=$1
     sk=${sks[$(expr ${id} - 1)]}
     mpcServerUrl=${MPC_SERVER_URLS[$(expr ${id} - 1)]}
+    metricsServeAddr=${METRICS_SERVE_ADDRS[$(expr ${id} - 1)]}
     read -r -d '' CFG <<- EOM
 enableDevMode: true
 controllerId: "mpc-controller-0${id}"
@@ -43,6 +46,8 @@ networkConfig:
   gasFixed: 10000
 databaseConfig:
   badgerDbPath: "./dbs/mpc_controller_db${id}"
+monitorConfig:
+  metricsServeAddr: "${metricsServeAddr}"
 EOM
 
 echo -e "$CFG" > ./configs/config${id}.yaml
