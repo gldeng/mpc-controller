@@ -144,7 +144,7 @@ func Sign() usecase.IOInteractor {
 			{"hash", in.Hash},
 			{"signature", lastSignReq.result}}...)
 
-		signed := signedReq{in.RequestId, lastSignReq.input.Hash, sigHex}
+		signed := signedReq{in.RequestId, lastSignReq.input.Hash, sigHex} // todo: empty result?
 		signedReqsCache = append(signedReqsCache, signed)
 
 		switch {
@@ -160,8 +160,7 @@ func Sign() usecase.IOInteractor {
 			{"signedReqs", signedStake + signedPrincipal + signedReward},
 			{"signedStakeReqs", signedStake},
 			{"signedPrincipalReqs", signedPrincipal},
-			{"signedRewardReqs", signedReward},
-			{"signedDetails", signedReqsCache}}...)
+			{"signedRewardReqs", signedReward}}...)
 		return nil
 	})
 
