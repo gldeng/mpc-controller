@@ -66,3 +66,10 @@ var (
 		Help: "The total number of reward UTXO sign task done",
 	})
 )
+
+var (
+	DispatcherPublishedEvents = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "dispatcher_published_events_total",
+		Help: "The total number of dispatcher published events",
+	})
+)

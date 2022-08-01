@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/misc"
 	"reflect"
 	"sync"
@@ -114,6 +115,7 @@ func (d *dispatcher) run(ctx context.Context) {
 					}
 				}
 				d.lastPublishedEvtNo = evt.EventNo
+				prom.DispatcherPublishedEvents.Inc()
 			}
 		}
 	}
