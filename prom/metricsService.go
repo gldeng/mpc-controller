@@ -1,4 +1,4 @@
-package promth
+package prom
 
 import (
 	"context"

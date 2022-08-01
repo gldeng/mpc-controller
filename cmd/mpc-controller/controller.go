@@ -14,7 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/logger/adapter"
-	"github.com/avalido/mpc-controller/promth"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
@@ -221,7 +221,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Transactor:        rpcEthCliWrapper,
 	}
 
-	metricsService := promth.MetricsService{
+	metricsService := prom.MetricsService{
 		ServeAddr: config.MetricsServeAddr,
 	}
 
