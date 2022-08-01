@@ -197,6 +197,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				break
 			}
 
+			prom.StakeSignTaskAdded.Inc()
 			eh.signStakeTxWs.AddTask(ctx, &work.Task{
 				Args: []interface{}{stw, evt},
 				Ctx:  ctx,
@@ -207,6 +208,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
 						return
 					}
+					prom.StakeSignTaskDone.Inc()
 					// params validation after tx signed, check this because signing consume gas and time
 					if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
 						eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
