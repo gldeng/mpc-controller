@@ -13,7 +13,14 @@ const (
 	ErrMsgSignReqRefused = "sign request refused"
 )
 
+var signedReqsCache = make([]*signedReq, 0)
 var lockSign = &sync.Mutex{}
+
+type signedReq struct {
+	reqID string
+	hash  string
+	sig   string
+}
 
 func Sign() usecase.IOInteractor {
 	u := usecase.NewIOI(new(SignInput), nil, func(ctx context.Context, input, output interface{}) error {
@@ -131,6 +138,11 @@ func Sign() usecase.IOInteractor {
 			{"status", lastSignReq.status},
 			{"hash", in.Hash},
 			{"signature", lastSignReq.result}}...)
+		signed := &signedReq{in.RequestId, lastSignReq.input.Hash, sigHex}
+		signedReqsCache = append(signedReqsCache, signed)
+		logger.Debug("Signed requests stats", []logger.Field{
+			{"signedReqs", len(signedReqsCache)},
+			{"sigDetails", signedReqsCache}}...)
 		return nil
 	})
 
