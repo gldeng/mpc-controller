@@ -47,17 +47,17 @@ var (
 
 	// sign task done
 
-	StakeSignTaskDone = promauto.NewGauge(prometheus.GaugeOpts{
+	StakeSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "stake_sign_task_done_total",
 		Help: "The total number of of stake sign task done",
 	})
 
-	PrincipalUTXOSignTaskDone = promauto.NewGauge(prometheus.GaugeOpts{
+	PrincipalUTXOSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "principal_utxo_sign_task_done_total",
 		Help: "The total number of of principal UTXO sign task done",
 	})
 
-	RewardUTXOSignTaskDone = promauto.NewGauge(prometheus.GaugeOpts{
+	RewardUTXOSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "reward_utxo_sign_task_done_total",
 		Help: "The total number of reward UTXO sign task done",
 	})
