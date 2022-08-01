@@ -142,15 +142,6 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				break
 			}
 
-			// params validation before retrieve nonce
-			if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to check balance before tx signed")
-				break
-			}
-			if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to check stake start time before tx signed")
-			}
-
 			partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to get normalized participant keys")
@@ -187,7 +178,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				break
 			}
 
-			stakeTaskWrapper := &StakeTaskWrapper{
+			stw := &StakeTaskWrapper{
 				CChainIssueClient: eh.CChainIssueClient,
 				Logger:            eh.Logger,
 				PChainIssueClient: eh.PChainIssueClient,
@@ -195,8 +186,18 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				StakeTask:         stakeTask,
 			}
 
+			// params validation before request tx sign
+			if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to check balance before request tx sign", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
+				break
+			}
+			if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to check stake start time before request tx sign", []logger.Field{{"startTimeExpiredStakeTask", stw.StakeTask}}...)
+				break
+			}
+
 			eh.signStakeTxWs.AddTask(ctx, &work.Task{
-				Args: []interface{}{stakeTaskWrapper, evt},
+				Args: []interface{}{stw, evt},
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					stw := args.([]interface{})[0].(*StakeTaskWrapper)
@@ -207,11 +208,11 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 					}
 					// params validation after tx signed, check this because signing consume gas and time
 					if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
-						eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed")
+						eh.Logger.ErrorOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
 						return
 					}
 					if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
-						eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed")
+						eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed", []logger.Field{{"startTimeExpiredStakeTask", stw.StakeTask}}...)
 						return
 					}
 					issueTx := &issueTx{stw, evt}
