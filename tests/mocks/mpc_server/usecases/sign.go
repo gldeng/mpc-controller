@@ -153,7 +153,7 @@ func Sign() usecase.IOInteractor {
 		case strings.Contains(in.RequestId, "PRINCIPAL"):
 			signedPrincipal++
 		case strings.Contains(in.RequestId, "REWARD"):
-			signedPrincipal++
+			signedReward++
 		}
 
 		logger.Debug("Signed requests stats", []logger.Field{
