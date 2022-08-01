@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	mpcErrors "github.com/avalido/mpc-controller/utils/errors"
@@ -151,6 +152,14 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err erro
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
+		switch {
+		case strings.Contains(request.SignReqID, "STAKE"):
+			prom.StakeSignTaskAdded.Inc()
+		case strings.Contains(request.SignReqID, "PRINCIPAL"):
+			prom.PrincipalUTXOSignTaskAdded.Inc()
+		case strings.Contains(request.SignReqID, "REWARD"):
+			prom.RewardUTXOSignTaskAdded.Inc()
+		}
 		return false, nil
 	})
 
@@ -168,6 +177,14 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 			return false, errors.Wrap(&ErrTypSignErr{ErrMsg: res.RequestStatus}, "error result")
 		}
 		if res.RequestStatus == "DONE" && res.Result != "" {
+			switch {
+			case strings.Contains(mpcReqId, "STAKE"):
+				prom.StakeSignTaskDone.Inc()
+			case strings.Contains(mpcReqId, "PRINCIPAL"):
+				prom.PrincipalUTXOSignTaskDone.Inc()
+			case strings.Contains(mpcReqId, "REWARD"):
+				prom.RewardUTXOSignTaskDone.Inc()
+			}
 			return false, nil
 		}
 		return true, errors.New(res.RequestStatus)
