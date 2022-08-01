@@ -324,7 +324,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 	eh.doneStakeTasks++
 	prom.StakeTaskDone.Inc()
 
-	eh.Logger.Info("Stake task DONE", []logger.Field{{"stakingTaskDoneEvent", newEvt}}...)
+	eh.Logger.Info("Stake task DONE", []logger.Field{{"stakeTaskDoneEvent", newEvt}}...)
 	return nil
 }
 
