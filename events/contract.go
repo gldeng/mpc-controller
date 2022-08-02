@@ -63,7 +63,7 @@ type StakeRequestAddedEvent struct { // event StakeRequestAdded(uint256 requestN
 }
 
 type RequestStartedEvent struct { // event RequestStarted(bytes32 requestHash, uint256 participantIndices)
-	RequestHash        [32]byte // indexed
+	RequestHash        [32]byte
 	ParticipantIndices *big.Int
 	Raw                *types.Log
 }
