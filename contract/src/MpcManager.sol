@@ -47,7 +47,7 @@ contract MpcManager is AccessControlEnumerable, IMpcManager, Initializable {
         uint256 endTime
     );
 
-    event RequestStarted(bytes32 indexed requestHash, uint256 participantIndices);
+    event RequestStarted(bytes32 requestHash, uint256 participantIndices);
 
     // Types
     struct ParticipantInfo {
