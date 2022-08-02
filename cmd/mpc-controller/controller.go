@@ -276,11 +276,20 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 	return networkCtx
 }
 
-func decryptKey(id, pss, keyHex string) string {
-	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(keyHex))
+func decryptKey(id, pss, cipherKey string) string {
+	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(cipherKey))
 	if err != nil {
-		err = errors.Wrapf(err, "failed to decrypt keyHex for %v", id)
+		err = errors.Wrapf(err, "%q failed to decrypt  key %q", id, cipherKey)
 		panic(fmt.Sprintf("%+v", err))
 	}
-	return string(keyBytes)
+
+	var privKey string
+	switch len(cipherKey) {
+	case 192:
+		privKey = string(keyBytes)
+	case 128:
+		privKey = bytes.BytesToHex(keyBytes)
+	}
+
+	return privKey
 }
