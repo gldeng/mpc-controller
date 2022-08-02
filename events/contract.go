@@ -12,7 +12,7 @@ import (
 
 // MpcManager transactor
 
-type ReportedGenPubKeyEvent struct {
+type ReportedGenPubKeyEvent struct { //    function reportGeneratedKey(bytes32 participantId, bytes calldata generatedPublicKey)
 	GroupIdHex       string
 	MyPartiIndex     *big.Int
 	GenPubKeyHex     string
@@ -26,7 +26,7 @@ type JoinRequestEvent struct {
 	PartiIndex *big.Int
 }
 
-type JoinedRequestEvent struct {
+type JoinedRequestEvent struct { //    function joinRequest(bytes32 participantId, bytes32 requestHash) external onlyGroupMember(participantId) {
 	TxHashHex  string
 	RequestId  *big.Int
 	PartiIndex *big.Int
@@ -62,7 +62,7 @@ type StakeRequestAddedEvent struct { // event StakeRequestAdded(uint256 requestN
 	Raw           *types.Log
 }
 
-type RequestStartedEvent struct { // event RequestStarted(bytes32 indexed requestHash, uint256 participantIndices)
+type RequestStartedEvent struct { // event RequestStarted(bytes32 requestHash, uint256 participantIndices)
 	RequestHash        [32]byte // indexed
 	ParticipantIndices *big.Int
 	Raw                *types.Log
