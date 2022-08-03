@@ -7,21 +7,15 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/lestrrat-go/backoff/v2"
 	"github.com/pkg/errors"
-	"time"
 )
-
-type IEthClientReDialer interface {
-	GetClient(ctx context.Context) (client *ethclient.Client, ReDialedClientCh chan *ethclient.Client, err error)
-}
 
 type EthClientReDialer struct {
 	Logger        logger.Logger
 	EthURL        string
 	BackOffPolicy backoff.Policy
-	reDialer      redialer.IReDialer
 }
 
-func (d *EthClientReDialer) GetClient(ctx context.Context) (client *ethclient.Client, reDialedClientCh chan *ethclient.Client, err error) {
+func (d *EthClientReDialer) GetClient(ctx context.Context) (client redialer.Client, ReDialedClientCh chan redialer.Client, err error) {
 	dial := func(ctx context.Context) (client redialer.Client, err error) {
 		client, err = ethclient.Dial(d.EthURL)
 		if err != nil {
@@ -45,29 +39,10 @@ func (d *EthClientReDialer) GetClient(ctx context.Context) (client *ethclient.Cl
 		IsConnected:   isConnected,
 		BackOffPolicy: d.BackOffPolicy,
 	}
-	cli, cliCh, err := reDialer.GetClient(context.Background())
+	client, ReDialedClientCh, err = reDialer.GetClient(context.Background())
 	if err != nil {
 		return nil, nil, errors.WithStack(err)
 	}
-	d.reDialer = reDialer
-	client = cli.(*ethclient.Client)
-	reDialedClientCh = make(chan *ethclient.Client)
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case cli := <-cliCh:
-				select {
-				case <-ctx.Done():
-					return
-				case <-time.After(time.Second * 60):
-					return
-				case reDialedClientCh <- cli.(*ethclient.Client):
-				}
-			}
-		}
-	}()
 	return
 }
