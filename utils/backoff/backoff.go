@@ -71,6 +71,16 @@ func RetryFnExponentialForever(ctx context.Context, minInterval, maxInterval tim
 
 type Fn func() (retry bool, err error)
 
+func RetryRetryFn(ctx context.Context, policyOuter backoff.Policy, policyInner backoff.Policy, fn Fn) error {
+	err := RetryFn(ctx, policyOuter, func() (retry bool, err error) {
+		if err := RetryFn(ctx, policyInner, fn); err != nil {
+			return true, errors.Wrapf(err, "inner retry error")
+		}
+		return false, nil
+	})
+	return errors.Wrapf(err, "outter retry error")
+}
+
 func RetryFn(ctx context.Context, policy backoff.Policy, fn Fn) error {
 	b := policy.Start(ctx)
 	var errStack error
