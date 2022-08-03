@@ -38,18 +38,18 @@ type ParticipantAddedEvent struct { // event ParticipantAdded(bytes indexed publ
 	PublicKey common.Hash // indexed
 	GroupId   [32]byte
 	Index     *big.Int
-	Raw       *types.Log
+	Raw       types.Log
 }
 
 type KeygenRequestAdded struct { // event KeyGenerated(bytes32 indexed groupId, bytes publicKey)
 	GroupId [32]byte // indexed
-	Raw     *types.Log
+	Raw     types.Log
 }
 
 type KeyGeneratedEvent struct { // event KeygenRequestAdded(bytes32 indexed groupId)
 	GroupId   [32]byte // indexed
 	PublicKey []byte
-	Raw       *types.Log
+	Raw       types.Log
 }
 
 type StakeRequestAddedEvent struct { // event StakeRequestAdded(uint256 requestNumber, bytes indexed publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
@@ -59,11 +59,11 @@ type StakeRequestAddedEvent struct { // event StakeRequestAdded(uint256 requestN
 	Amount        *big.Int
 	StartTime     *big.Int
 	EndTime       *big.Int
-	Raw           *types.Log
+	Raw           types.Log
 }
 
 type RequestStartedEvent struct { // event RequestStarted(bytes32 requestHash, uint256 participantIndices)
 	RequestHash        [32]byte
 	ParticipantIndices *big.Int
-	Raw                *types.Log
+	Raw                types.Log
 }
