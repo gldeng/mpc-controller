@@ -27,7 +27,7 @@ type Watcher struct {
 func (w *Watcher) Watch(ctx context.Context) error {
 	w.closeCh = make(chan struct{})
 
-	sink, sub, err := w.Subscribe(ctx, w.closeCh, w.Filterer)
+	sink, sub, err := w.Subscribe(w.Logger, ctx, w.closeCh, w.Filterer)
 	if err != nil {
 		return errors.Wrapf(err, "failed to watch")
 	}
@@ -44,7 +44,7 @@ func (w *Watcher) Watch(ctx context.Context) error {
 				sub.Unsubscribe()
 				return
 			case evt := <-sink:
-				w.Publish(ctx, w.Publisher, evt)
+				w.Publish(w.Logger, ctx, w.Publisher, evt)
 			case err := <-sub.Err():
 				w.Logger.ErrorOnError(err, "Got an watching error")
 			}
