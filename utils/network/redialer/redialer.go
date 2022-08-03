@@ -30,7 +30,7 @@ type ReDialer struct {
 	once             sync.Once
 }
 
-func (d *ReDialer) GetClient(ctx context.Context) (client interface{}, clientCh chan Client, err error) {
+func (d *ReDialer) GetClient(ctx context.Context) (client Client, clientCh chan Client, err error) {
 	d.once.Do(func() {
 		client, err = d.dial(ctx)
 		if err != nil {
