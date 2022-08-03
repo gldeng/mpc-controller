@@ -7,6 +7,6 @@ import (
 )
 
 type Subscriber interface {
-	Subscribe(ctx context.Context) (sink chan types.Log, evt event.Subscription, err error)
+	Subscribe(ctx context.Context) (logs chan types.Log, sub event.Subscription, err error)
 	Process(ctx context.Context, log types.Log) error
 }
