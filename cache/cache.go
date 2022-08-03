@@ -14,9 +14,9 @@ import (
 
 var _ ICache = (*Cache)(nil)
 
-// Subscribe event: *events.GroupInfoStoredEvent
-// Subscribe event: *events.ParticipantInfoStoredEvent
-// Subscribe event: *events.GeneratedPubKeyInfoStoredEvent
+// Subscribe event: *events.GroupInfoStored
+// Subscribe event: *events.ParticipantInfoStored
+// Subscribe event: *events.GeneratedPubKeyInfoStored
 
 type Cache struct {
 	*sync.RWMutex
@@ -27,15 +27,15 @@ type Cache struct {
 
 func (c *Cache) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.GroupInfoStoredEvent:
+	case *events.GroupInfoStored:
 		c.Lock()
 		c.GroupInfoMap[evt.Key] = evt.Val
 		c.Unlock()
-	case *events.ParticipantInfoStoredEvent:
+	case *events.ParticipantInfoStored:
 		c.Lock()
 		c.ParticipantInfoMap[evt.Key] = evt.Val
 		c.Unlock()
-	case *events.GeneratedPubKeyInfoStoredEvent:
+	case *events.GeneratedPubKeyInfoStored:
 		c.Lock()
 		c.GeneratedPubKeyInfoMap[evt.Key] = evt.Val
 		c.Unlock()

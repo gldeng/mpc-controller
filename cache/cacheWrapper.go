@@ -27,7 +27,7 @@ func (c *CacheWrapper) subscribe() {
 	}
 	c.Cache = &cache
 
-	c.Dispatcher.Subscribe(&events.GroupInfoStoredEvent{}, c.Cache)
-	c.Dispatcher.Subscribe(&events.ParticipantInfoStoredEvent{}, c.Cache)
-	c.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, c.Cache)
+	c.Dispatcher.Subscribe(&events.GroupInfoStored{}, c.Cache)
+	c.Dispatcher.Subscribe(&events.ParticipantInfoStored{}, c.Cache)
+	c.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStored{}, c.Cache)
 }

@@ -18,7 +18,7 @@ const (
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning rewarding
 
-type UTXOsFetchedEvent struct {
+type UTXOsFetched struct {
 	NativeUTXOs []*avax.UTXO `json:"-"`
 	MpcUTXOs    []*myAvax.MpcUTXO
 
@@ -30,7 +30,7 @@ type UTXOsFetchedEvent struct {
 	PChainAddress    ids.ShortID    `copier:"must"`
 }
 
-type UTXOReportedEvent struct {
+type UTXOReported struct {
 	NativeUTXO     *avax.UTXO `json:"-"`
 	MpcUTXO        *myAvax.MpcUTXO
 	TxHash         *common.Hash
@@ -39,7 +39,7 @@ type UTXOReportedEvent struct {
 	PartiIndex     *big.Int
 }
 
-type ExportUTXORequestEvent struct {
+type ExportUTXORequest struct {
 	TxID               ids.ID
 	OutputIndex        uint32         `copier:"must"`
 	To                 common.Address `copier:"must"`
@@ -48,7 +48,7 @@ type ExportUTXORequestEvent struct {
 	TxHash             common.Hash
 }
 
-type UTXOExportedEvent struct {
+type UTXOExported struct {
 	NativeUTXO   *avax.UTXO `json:"-"`
 	MpcUTXO      *myAvax.MpcUTXO
 	ExportedTxID ids.ID

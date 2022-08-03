@@ -35,10 +35,10 @@ const (
 	exportRewardTaskIDPrefix    = "REWARD-"
 )
 
-// Subscribe event: *events.ReportedGenPubKeyEvent
-// Subscribe event: *events.ExportUTXORequestEvent
+// Subscribe event: *events.ReportedGenPubKey
+// Subscribe event: *events.ExportUTXORequest
 
-// Publish event: *events.UTXOExportedEvent
+// Publish event: *events.UTXOExported
 
 type UTXOPorter struct {
 	CChainIssueClient chain.CChainIssuer
@@ -52,10 +52,10 @@ type UTXOPorter struct {
 
 	ws *work.Workshop
 
-	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKeyEvent
+	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKey
 	UTXOsFetchedEventCache      *ristretto.Cache
 
-	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
+	ExportUTXORequestEventChan chan *events.ExportUTXORequest
 	exportUTXOTaskAddedCache   *ristretto.Cache
 	UTXOExportedEventCache     *ristretto.Cache
 
@@ -66,9 +66,9 @@ type UTXOPorter struct {
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.reportedGenPubKeyEventCache = make(map[string]*events.ReportedGenPubKeyEvent)
+		eh.reportedGenPubKeyEventCache = make(map[string]*events.ReportedGenPubKey)
 
-		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
+		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequest, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
 
 		exportUTXOTaskAddedCache, _ := ristretto.NewCache(&ristretto.Config{
@@ -82,9 +82,9 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	})
 
 	switch evt := evtObj.Event.(type) {
-	case *events.ReportedGenPubKeyEvent:
+	case *events.ReportedGenPubKey:
 		eh.reportedGenPubKeyEventCache[evt.GenPubKeyHashHex] = evt
-	case *events.ExportUTXORequestEvent:
+	case *events.ExportUTXORequest:
 		select {
 		case <-ctx.Done():
 			return
@@ -123,7 +123,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
 				break
 			}
-			utxoRepEvt := val.(*events.UTXOReportedEvent)
+			utxoRepEvt := val.(*events.UTXOReported)
 
 			genPubKeyHex := bytes.BytesToHex(utxoRepEvt.GenPubKeyBytes)
 			compressedGenPubKey, err := crypto.NormalizePubKey(genPubKeyHex)
@@ -207,7 +207,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						return
 					}
 
-					newEvt := &events.UTXOExportedEvent{
+					newEvt := &events.UTXOExported{
 						NativeUTXO:   utxoRepEvt.NativeUTXO,
 						MpcUTXO:      utxoRepEvt.MpcUTXO,
 						ExportedTxID: ids[0],
@@ -223,11 +223,11 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
 						prom.PrincipalUTXOExported.Inc()
-						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
+						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExported", newEvt}}...)
 					case uint32(events.OutputIndexReward):
 						atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
 						prom.RewardUTXOExported.Inc()
-						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
+						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExported", newEvt}}...)
 					}
 					totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
 					totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)

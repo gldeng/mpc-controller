@@ -16,10 +16,10 @@ import (
 	"time"
 )
 
-// Subscribe event: *events.ContractFiltererCreatedEvent
-// Subscribe event: *events.ReportedGenPubKeyEvent
+// Subscribe event: *events.ContractFiltererCreated
+// Subscribe event: *events.ReportedGenPubKey
 
-// Publish event: *contract.ExportUTXORequestEvent
+// Publish event: *contract.ExportUTXORequest
 
 type ExportUTXORequestWatcher struct {
 	ContractAddr common.Address
@@ -36,9 +36,9 @@ type ExportUTXORequestWatcher struct {
 
 func (eh *ExportUTXORequestWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.ContractFiltererCreatedEvent:
+	case *events.ContractFiltererCreated:
 		eh.filterer = evt.Filterer
-	case *events.ReportedGenPubKeyEvent:
+	case *events.ReportedGenPubKey:
 		eh.pubKeyBytes = append(eh.pubKeyBytes, bytes.HexToBytes(evt.GenPubKeyHex))
 	}
 	if len(eh.pubKeyBytes) > 0 {
@@ -89,7 +89,7 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 			case <-eh.done:
 				return
 			case evt := <-eh.sink:
-				transformedEvt := events.ExportUTXORequestEvent{
+				transformedEvt := events.ExportUTXORequest{
 					TxID:          evt.TxId,
 					GenPubKeyHash: evt.GenPubKey,
 					TxHash:        evt.Raw.TxHash,
@@ -97,7 +97,7 @@ func (eh *ExportUTXORequestWatcher) receiveExportUTXORequestEvent(ctx context.Co
 				copier.Copy(&transformedEvt, evt)
 				evtObj := dispatcher.NewEvtObj(&transformedEvt, nil)
 				eh.Publisher.Publish(ctx, evtObj)
-				eh.Logger.Debug("ExportUTXORequestEvent emitted.", []logger.Field{
+				eh.Logger.Debug("ExportUTXORequest emitted.", []logger.Field{
 					{"txID", transformedEvt.TxID},
 					{"outputIndex", transformedEvt.OutputIndex},
 					{"to", transformedEvt.To}}...)

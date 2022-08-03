@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-// Subscribe event: *events.ContractFiltererCreatedEvent
-// Subscribe event: *events.GeneratedPubKeyInfoStoredEvent
+// Subscribe event: *events.ContractFiltererCreated
+// Subscribe event: *events.GeneratedPubKeyInfoStored
 
 // Publish event: *contract.MpcManagerStakeRequestStarted
 
@@ -37,9 +37,9 @@ type StakeRequestStartedEventWatcher struct {
 
 func (eh *StakeRequestStartedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.ContractFiltererCreatedEvent:
+	case *events.ContractFiltererCreated:
 		eh.filterer = evt.Filterer
-	case *events.GeneratedPubKeyInfoStoredEvent:
+	case *events.GeneratedPubKeyInfoStored:
 		dnmPubKeyBtes, err := crypto.DenormalizePubKeyFromHex(evt.Val.CompressedGenPubKeyHex)
 		if err != nil {
 			eh.Logger.Error("Failed to denormalized generated public key", []logger.Field{{"error", err}}...)

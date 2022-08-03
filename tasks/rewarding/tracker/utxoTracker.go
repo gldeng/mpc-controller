@@ -31,9 +31,9 @@ const (
 	checkUTXOInterval = time.Second * 1
 )
 
-// Subscribe event: *events.ReportedGenPubKeyEvent
+// Subscribe event: *events.ReportedGenPubKey
 
-// Publish event: *events.UTXOReportedEvent
+// Publish event: *events.UTXOReported
 
 type UTXOTracker struct {
 	ContractAddr common.Address
@@ -44,8 +44,8 @@ type UTXOTracker struct {
 	Signer       *bind.TransactOpts
 	Transactor   bind.ContractTransactor
 
-	reportedGenPubKeyEventChan  chan *events.ReportedGenPubKeyEvent
-	reportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKeyEvent
+	reportedGenPubKeyEventChan  chan *events.ReportedGenPubKey
+	reportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKey
 
 	reportUTXOsChan          chan *reportUTXOs
 	reportUTXOTaskAddedCache *ristretto.Cache
@@ -76,8 +76,8 @@ type reportUTXO struct {
 
 func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.reportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKeyEvent, 1024)
-		eh.reportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKeyEvent)
+		eh.reportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKey, 1024)
+		eh.reportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKey)
 
 		eh.reportUTXOWs = work.NewWorkshop(eh.Logger, "reportUTXOs", time.Minute*10, 10)
 		eh.reportUTXOsChan = make(chan *reportUTXOs, 256)
@@ -101,7 +101,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	})
 
 	switch evt := evtObj.Event.(type) {
-	case *events.ReportedGenPubKeyEvent:
+	case *events.ReportedGenPubKey:
 		eh.reportedGenPubKeyEventCache[evt.PChainAddress] = evt
 	}
 }
@@ -180,7 +180,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 					genPubKey:  reportUTXOs.genPubKey,
 				}
 
-				reportEvt := &events.UTXOReportedEvent{ // to be shared with utxoPorter timely.
+				reportEvt := &events.UTXOReported{ // to be shared with utxoPorter timely.
 					NativeUTXO:     utxo,
 					MpcUTXO:        myAvax.MpcUTXOFromUTXO(utxo),
 					TxHash:         nil,
@@ -217,7 +217,7 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 							return
 						}
 
-						reportEvt := &events.UTXOReportedEvent{
+						reportEvt := &events.UTXOReported{
 							NativeUTXO:     utxo,
 							MpcUTXO:        myAvax.MpcUTXOFromUTXO(utxo),
 							TxHash:         txHash,

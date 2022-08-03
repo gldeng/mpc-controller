@@ -12,7 +12,7 @@ import (
 )
 
 // Trigger event: *contract.MpcManagerParticipantAdded
-// Publish event: *events.ParticipantInfoStoredEvent
+// Publish event: *events.ParticipantInfoStored
 
 type ParticipantInfoStorer struct {
 	Logger          logger.Logger
@@ -53,7 +53,7 @@ func (p *ParticipantInfoStorer) storeParticipantInfo(ctx context.Context, evt *c
 
 func (p *ParticipantInfoStorer) publishStoredEvent(ctx context.Context, key string, pt *ParticipantInfo, parentEvtObj *dispatcher.EventObject) {
 	val := events.ParticipantInfo(*pt)
-	newEvt := events.ParticipantInfoStoredEvent{
+	newEvt := events.ParticipantInfoStored{
 		Key: key,
 		Val: val,
 	}

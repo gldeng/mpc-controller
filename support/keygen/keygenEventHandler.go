@@ -23,12 +23,12 @@ import (
 	"time"
 )
 
-// Subscribe event: *events.GroupInfoStoredEvent
-// Subscribe event: *events.ParticipantInfoStoredEvent
+// Subscribe event: *events.GroupInfoStored
+// Subscribe event: *events.ParticipantInfoStored
 // Subscribe event: *contract.MpcManagerKeygenRequestAdded
 
-// Publish event: *events.GeneratedPubKeyInfoStoredEvent
-// Publish event: *events.ReportedGenPubKeyEvent
+// Publish event: *events.GeneratedPubKeyInfoStored
+// Publish event: *events.ReportedGenPubKey
 
 type KeygenRequestAddedEventHandler struct {
 	ContractAddr    common.Address
@@ -45,16 +45,16 @@ type KeygenRequestAddedEventHandler struct {
 	participantInfoMap map[string]events.ParticipantInfo
 }
 
-// Pre-condition: *contract.MpcManagerKeygenRequestAdded must happen after *event.GroupInfoStoredEvent
+// Pre-condition: *contract.MpcManagerKeygenRequestAdded must happen after *event.GroupInfoStored
 
 func (eh *KeygenRequestAddedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.GroupInfoStoredEvent:
+	case *events.GroupInfoStored:
 		if len(eh.groupInfoMap) == 0 {
 			eh.groupInfoMap = make(map[string]events.GroupInfo)
 		}
 		eh.groupInfoMap[evt.Key] = evt.Val
-	case *events.ParticipantInfoStoredEvent:
+	case *events.ParticipantInfoStored:
 		if len(eh.participantInfoMap) == 0 {
 			eh.participantInfoMap = make(map[string]events.ParticipantInfo)
 		}
@@ -105,7 +105,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 
 	dnmGenPubKeyHash := hash256.FromHex(bytes.BytesToHex(dnmGenPubKeyBytes))
 
-	reportedEvt := events.ReportedGenPubKeyEvent{
+	reportedEvt := events.ReportedGenPubKey{
 		GroupIdHex:       groupIdHex,
 		MyPartiIndex:     big.NewInt(int64(myIndex)),
 		GenPubKeyHex:     bytes.BytesToHex(dnmGenPubKeyBytes),
@@ -115,7 +115,7 @@ func (eh *KeygenRequestAddedEventHandler) do(ctx context.Context, req *contract.
 	}
 
 	eh.publishReportedEvent(ctx, &reportedEvt, evtObj)
-	eh.Logger.Info("Public key generated", logger.Field{"ReportedGenPubKeyEvent", reportedEvt})
+	eh.Logger.Info("Public key generated", logger.Field{"ReportedGenPubKey", reportedEvt})
 
 	genPubKeyInfo := GeneratedPubKeyInfo{
 		GenPubKeyHashHex:       dnmGenPubKeyHash.Hex(),
@@ -188,7 +188,7 @@ func (eh *KeygenRequestAddedEventHandler) reportGeneratedKey(ctx context.Context
 
 func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context, key string, genPubKeyInfo *GeneratedPubKeyInfo, parentEvtObj *dispatcher.EventObject) {
 	val := events.GeneratedPubKeyInfo(*genPubKeyInfo)
-	newEvt := events.GeneratedPubKeyInfoStoredEvent{
+	newEvt := events.GeneratedPubKeyInfoStored{
 		Key: key,
 		Val: val,
 	}
@@ -196,6 +196,6 @@ func (eh *KeygenRequestAddedEventHandler) publishStoredEvent(ctx context.Context
 	eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 }
 
-func (eh *KeygenRequestAddedEventHandler) publishReportedEvent(ctx context.Context, evt *events.ReportedGenPubKeyEvent, parentEvtObj *dispatcher.EventObject) {
+func (eh *KeygenRequestAddedEventHandler) publishReportedEvent(ctx context.Context, evt *events.ReportedGenPubKey, parentEvtObj *dispatcher.EventObject) {
 	eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(evt, nil))
 }

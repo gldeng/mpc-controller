@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-// Subscribe event: *events.ContractFiltererCreatedEvent
-// Subscribe event: *events.GroupInfoStoredEvent
+// Subscribe event: *events.ContractFiltererCreated
+// Subscribe event: *events.GroupInfoStored
 
 // Publish event: *contract.MpcManagerKeygenRequestAdded
 
@@ -35,9 +35,9 @@ type KeygenRequestAddedEventWatcher struct {
 
 func (eh *KeygenRequestAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.ContractFiltererCreatedEvent:
+	case *events.ContractFiltererCreated:
 		eh.filterer = evt.Filterer
-	case *events.GroupInfoStoredEvent:
+	case *events.GroupInfoStored:
 		eh.groupIdBytes = append(eh.groupIdBytes, bytes.HexTo32Bytes(evt.Val.GroupIdHex))
 	}
 	if len(eh.groupIdBytes) > 0 {

@@ -3,17 +3,17 @@ package events
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning local storage
 
-type GroupInfoStoredEvent struct {
+type GroupInfoStored struct {
 	Key string
 	Val GroupInfo
 }
 
-type ParticipantInfoStoredEvent struct {
+type ParticipantInfoStored struct {
 	Key string
 	Val ParticipantInfo
 }
 
-type GeneratedPubKeyInfoStoredEvent struct {
+type GeneratedPubKeyInfoStored struct {
 	Key string
 	Val GeneratedPubKeyInfo
 }

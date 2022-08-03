@@ -56,7 +56,7 @@ func (m *JoiningMaster) subscribe() {
 	m.joiningWatcher = &stakeAddedWatcher
 	m.joiningDealer = &stakeAddedHandler
 
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.joiningWatcher)
-	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStoredEvent{}, m.joiningWatcher) // Publish event:  *contract.MpcManagerStakeRequestAdded
+	m.Dispatcher.Subscribe(&events.ContractFiltererCreated{}, m.joiningWatcher)
+	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStored{}, m.joiningWatcher) // Publish event:  *contract.MpcManagerStakeRequestAdded
 	m.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, m.joiningDealer)
 }

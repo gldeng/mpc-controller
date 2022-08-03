@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// Subscribe event: *events.ContractFiltererCreatedEvent
+// Subscribe event: *events.ContractFiltererCreated
 
 // Publish event: *contract.MpcManagerParticipantAdded
 
@@ -33,7 +33,7 @@ type ParticipantAddedEventWatcher struct {
 
 func (eh *ParticipantAddedEventWatcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.ContractFiltererCreatedEvent:
+	case *events.ContractFiltererCreated:
 		eh.filterer = evt.Filterer
 		eh.doWatchParticipantAdded(ctx)
 	}

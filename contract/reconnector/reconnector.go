@@ -12,7 +12,7 @@ import (
 
 // Subscribe event:
 
-// Publish event: *events.ContractFiltererCreatedEvent
+// Publish event: *events.ContractFiltererCreated
 
 type ContractFilterReconnector struct {
 	logger.Logger
@@ -62,7 +62,7 @@ func (c *ContractFilterReconnector) Start(ctx context.Context) error {
 }
 
 func (c *ContractFilterReconnector) publishEvent(ctx context.Context, client *ethclient.Client) {
-	newEvt := events.ContractFiltererCreatedEvent{
+	newEvt := events.ContractFiltererCreated{
 		Filterer: client,
 	}
 	evtObj := dispatcher.NewEvtObj(&newEvt, nil)

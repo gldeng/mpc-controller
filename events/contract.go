@@ -12,7 +12,7 @@ import (
 
 // MpcManager transactor
 
-type ReportedGenPubKeyEvent struct { //    function reportGeneratedKey(bytes32 participantId, bytes calldata generatedPublicKey)
+type ReportedGenPubKey struct { //    function reportGeneratedKey(bytes32 participantId, bytes calldata generatedPublicKey)
 	GroupIdHex       string
 	MyPartiIndex     *big.Int
 	GenPubKeyHex     string
@@ -21,12 +21,12 @@ type ReportedGenPubKeyEvent struct { //    function reportGeneratedKey(bytes32 p
 	PChainAddress    ids.ShortID
 }
 
-type JoinRequestEvent struct {
+type JoinRequest struct {
 	RequestId  *big.Int
 	PartiIndex *big.Int
 }
 
-type JoinedRequestEvent struct { //    function joinRequest(bytes32 participantId, bytes32 requestHash) external onlyGroupMember(participantId) {
+type JoinedRequest struct { //    function joinRequest(bytes32 participantId, bytes32 requestHash) external onlyGroupMember(participantId) {
 	TxHashHex  string
 	RequestId  *big.Int
 	PartiIndex *big.Int
@@ -34,7 +34,7 @@ type JoinedRequestEvent struct { //    function joinRequest(bytes32 participantI
 
 // MpcManager emitted events
 
-type ParticipantAddedEvent struct { // event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index)
+type ParticipantAdded struct { // event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index)
 	PublicKey common.Hash // indexed
 	GroupId   [32]byte
 	Index     *big.Int
@@ -46,13 +46,13 @@ type KeygenRequestAdded struct { // event KeyGenerated(bytes32 indexed groupId, 
 	Raw     types.Log
 }
 
-type KeyGeneratedEvent struct { // event KeygenRequestAdded(bytes32 indexed groupId)
+type KeyGenerated struct { // event KeygenRequestAdded(bytes32 indexed groupId)
 	GroupId   [32]byte // indexed
 	PublicKey []byte
 	Raw       types.Log
 }
 
-type StakeRequestAddedEvent struct { // event StakeRequestAdded(uint256 requestNumber, bytes indexed publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
+type StakeRequestAdded struct { // event StakeRequestAdded(uint256 requestNumber, bytes indexed publicKey, string nodeID, uint256 amount, uint256 startTime, uint256 endTime)
 	RequestNumber *big.Int
 	PublicKey     common.Hash // indexed
 	NodeID        string
@@ -62,7 +62,7 @@ type StakeRequestAddedEvent struct { // event StakeRequestAdded(uint256 requestN
 	Raw           types.Log
 }
 
-type RequestStartedEvent struct { // event RequestStarted(bytes32 requestHash, uint256 participantIndices)
+type RequestStarted struct { // event RequestStarted(bytes32 requestHash, uint256 participantIndices)
 	RequestHash        [32]byte
 	ParticipantIndices *big.Int
 	Raw                types.Log

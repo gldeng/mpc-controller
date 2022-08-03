@@ -14,7 +14,7 @@ import (
 )
 
 // Trigger event: *contract.MpcManagerParticipantAdded
-// Publish event: *events.GroupInfoStoredEvent
+// Publish event: *events.GroupInfoStored
 
 type GroupInfoStorer struct {
 	Caller       bind.ContractCaller
@@ -79,11 +79,11 @@ func (g *GroupInfoStorer) storeGroupInfo(ctx context.Context, groupInfo *GroupIn
 
 func (g *GroupInfoStorer) publishStoredEvent(ctx context.Context, key string, groupInfo *GroupInfo, parentEvtObj *dispatcher.EventObject) {
 	val := events.GroupInfo(*groupInfo)
-	newEvt := events.GroupInfoStoredEvent{
+	newEvt := events.GroupInfoStored{
 		Key: key,
 		Val: val,
 	}
 
 	g.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
-	g.Logger.Info("Group created.", logger.Field{"GroupInfoStoredEvent", newEvt})
+	g.Logger.Info("Group created.", logger.Field{"GroupInfoStored", newEvt})
 }
