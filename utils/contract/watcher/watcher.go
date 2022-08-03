@@ -9,10 +9,6 @@ import (
 	"sync"
 )
 
-// Subscribe event:
-
-// Publish event: *events.ParticipantAdded
-
 type Watcher struct {
 	Logger    logger.Logger
 	Subscribe Subscribe
