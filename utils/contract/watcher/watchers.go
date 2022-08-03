@@ -3,25 +3,19 @@ package watcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/dispatcher"
 )
 
 type Watchers struct {
-	Logger    logger.Logger
-	SubPubS   []SubPub
-	Filterer  interface{}
-	Publisher dispatcher.Publisher
-	watchers  []*Watcher
+	Logger      logger.Logger
+	Subscribers []Subscriber
+	watchers    []*Watcher
 }
 
 func (ws *Watchers) Watch(ctx context.Context) error {
-	for _, subPub := range ws.SubPubS {
+	for _, subscriber := range ws.Subscribers {
 		w := &Watcher{
-			Logger:    ws.Logger,
-			Subscribe: subPub.Subscribe,
-			Publish:   subPub.Publish,
-			Filterer:  ws.Filterer,
-			Publisher: ws.Publisher,
+			Logger:     ws.Logger,
+			Subscriber: subscriber,
 		}
 		ws.watchers = append(ws.watchers, w)
 	}

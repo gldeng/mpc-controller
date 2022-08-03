@@ -3,27 +3,23 @@ package watcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
 	"sync"
 )
 
 type Watcher struct {
-	Logger    logger.Logger
-	Subscribe Subscribe
-	Publish   Publish
-	Filterer  interface{}
-	Publisher dispatcher.Publisher
-	sub       event.Subscription
-	closeCh   chan struct{}
-	wg        sync.WaitGroup
+	Logger     logger.Logger
+	Subscriber Subscriber
+	sub        event.Subscription
+	closeCh    chan struct{}
+	wg         sync.WaitGroup
 }
 
 func (w *Watcher) Watch(ctx context.Context) error {
 	w.closeCh = make(chan struct{})
 
-	sink, sub, err := w.Subscribe(w.Logger, ctx, w.closeCh, w.Filterer)
+	logs, sub, err := w.Subscriber.Subscribe(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to watch")
 	}
@@ -39,8 +35,10 @@ func (w *Watcher) Watch(ctx context.Context) error {
 			case <-w.closeCh:
 				sub.Unsubscribe()
 				return
-			case evt := <-sink:
-				w.Publish(w.Logger, ctx, w.Publisher, evt)
+			case log := <-logs:
+				if err := w.Subscriber.Process(ctx, log); err != nil {
+					w.Logger.ErrorOnError(err, "Failed to process log", []logger.Field{{"log", log}}...)
+				}
 			case err := <-sub.Err():
 				w.Logger.ErrorOnError(err, "Got an watching error")
 			}
