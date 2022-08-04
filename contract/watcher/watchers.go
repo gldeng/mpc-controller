@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
-	"sync"
 	"time"
 )
 
@@ -27,8 +26,6 @@ type MpcManagerWatchers struct {
 
 	contractFilterer bind.ContractFilterer
 	ethClientCh      chan redialer.Client
-
-	once sync.Once
 
 	watcherFactory *MpcManagerWatcherFactory
 
