@@ -6,16 +6,16 @@ import (
 )
 
 type Watchers struct {
-	Logger      logger.Logger
-	Subscribers []Subscriber
-	watchers    []*Watcher
+	Logger   logger.Logger
+	Args     []Arg
+	watchers []*Watcher
 }
 
 func (ws *Watchers) Watch(ctx context.Context) error {
-	for _, subscriber := range ws.Subscribers {
+	for _, arg := range ws.Args {
 		w := &Watcher{
-			Logger:     ws.Logger,
-			Subscriber: subscriber,
+			Logger: ws.Logger,
+			Arg:    arg,
 		}
 		ws.watchers = append(ws.watchers, w)
 	}
