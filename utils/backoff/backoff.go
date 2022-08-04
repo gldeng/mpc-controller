@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+func ConstantPolicy100Times(dur time.Duration) backoff.Policy {
+	return ConstantPolicy(100, dur)
+}
+
+func ConstantPolicy10Times(dur time.Duration) backoff.Policy {
+	return ConstantPolicy(10, dur)
+}
+
+func ConstantPolicyForever(dur time.Duration) backoff.Policy {
+	return ConstantPolicy(0, dur)
+}
+
 func ConstantPolicy(maxRetries int, dur time.Duration) backoff.Policy {
 	p := backoff.Constant(
 		backoff.WithMaxRetries(maxRetries), // 0 for forever retry
@@ -35,6 +47,18 @@ func RetryFnConstantForever(ctx context.Context, dur time.Duration, fn Fn) error
 }
 
 // ----------
+
+func ExponentialPolicy100Times(minInterval, maxInterval time.Duration) backoff.Policy {
+	return ExponentialPolicy(100, minInterval, maxInterval)
+}
+
+func ExponentialPolicy10Times(minInterval, maxInterval time.Duration) backoff.Policy {
+	return ExponentialPolicy(10, minInterval, maxInterval)
+}
+
+func ExponentialPolicyForever(minInterval, maxInterval time.Duration) backoff.Policy {
+	return ExponentialPolicy(0, minInterval, maxInterval)
+}
 
 func ExponentialPolicy(maxRetries int, minInterval, maxInterval time.Duration) backoff.Policy {
 	p := backoff.Exponential(
