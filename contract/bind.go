@@ -30,7 +30,7 @@ func BindMpcManagerCaller(address common.Address, Caller bind.ContractCaller) (*
 		ABI:        func() string { return ABI },
 	}
 	bound, err := myBind.Bind(&arg)
-	return bound, errors.Wrapf(err, "failed to bind MpcManager")
+	return bound, errors.Wrapf(err, "failed to bind MpcManagerCaller")
 }
 
 func BindMpcManagerTransactor(address common.Address, transactor bind.ContractTransactor) (*bind.BoundContract, error) {
@@ -42,7 +42,7 @@ func BindMpcManagerTransactor(address common.Address, transactor bind.ContractTr
 		ABI:        func() string { return ABI },
 	}
 	bound, err := myBind.Bind(&arg)
-	return bound, errors.Wrapf(err, "failed to bind MpcManager")
+	return bound, errors.Wrapf(err, "failed to bind MpcManagerTransactor")
 }
 
 func BindMpcManagerFilterer(address common.Address, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
@@ -54,5 +54,5 @@ func BindMpcManagerFilterer(address common.Address, filterer bind.ContractFilter
 		ABI:        func() string { return ABI },
 	}
 	bound, err := myBind.Bind(&arg)
-	return bound, errors.Wrapf(err, "failed to bind MpcManager")
+	return bound, errors.Wrapf(err, "failed to bind MpcManagerFilterer")
 }
