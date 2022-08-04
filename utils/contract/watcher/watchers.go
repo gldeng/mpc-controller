@@ -3,6 +3,7 @@ package watcher
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/pkg/errors"
 )
 
 type Watchers struct {
@@ -21,7 +22,7 @@ func (ws *Watchers) Watch(ctx context.Context) error {
 	}
 	for _, w := range ws.watchers {
 		if err := w.Watch(ctx); err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	return nil
