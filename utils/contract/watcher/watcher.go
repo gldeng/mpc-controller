@@ -54,6 +54,8 @@ func (w *Watcher) Watch(ctx context.Context) error {
 }
 
 func (w *Watcher) Close() {
-	close(w.closeCh)
-	w.wg.Wait()
+	if w != nil && w.closeCh != nil {
+		close(w.closeCh)
+		w.wg.Wait()
+	}
 }
