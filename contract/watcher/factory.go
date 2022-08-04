@@ -1,7 +1,6 @@
 package watcher
 
 import (
-	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
 	myBind "github.com/avalido/mpc-controller/utils/contract/bind"
@@ -41,7 +40,7 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerParticipantAdded)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtParticipantAdded), log); err != nil {
-				return nil, errors.Wrapf(err, fmt.Sprintf("failed to unpack %v log", EvtParticipantAdded))
+				return nil, errors.Wrapf(err, "failed to unpack %v log", EvtParticipantAdded)
 			}
 			myEvent.Raw = log
 			return myEvent, nil
@@ -51,7 +50,7 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerKeygenRequestAdded)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtKeygenRequestAdded), log); err != nil {
-				return nil, errors.Wrapf(err, fmt.Sprintf("failed to unpack %v log", EvtKeygenRequestAdded))
+				return nil, errors.Wrapf(err, "failed to unpack %v log", EvtKeygenRequestAdded)
 			}
 			myEvent.Raw = log
 			return myEvent, nil
@@ -61,7 +60,7 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerKeyGenerated)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtKeyGenerated), log); err != nil {
-				return nil, errors.Wrapf(err, fmt.Sprintf("failed to unpack %v log", EvtKeyGenerated))
+				return nil, errors.Wrapf(err, "failed to unpack %v log", EvtKeyGenerated)
 			}
 			myEvent.Raw = log
 			return myEvent, nil
@@ -71,7 +70,7 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerStakeRequestAdded)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtStakeRequestAdded), log); err != nil {
-				return nil, errors.Wrapf(err, fmt.Sprintf("failed to unpack %v log", EvtStakeRequestAdded))
+				return nil, errors.Wrapf(err, "failed to unpack %v log", EvtStakeRequestAdded)
 			}
 			myEvent.Raw = log
 			return myEvent, nil
@@ -81,7 +80,7 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerRequestStarted)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtRequestStarted), log); err != nil {
-				return nil, errors.Wrapf(err, fmt.Sprintf("failed to unpack %v log", EvtRequestStarted))
+				return nil, errors.Wrapf(err, "failed to unpack %v log", EvtRequestStarted)
 			}
 			myEvent.Raw = log
 			return myEvent, nil
