@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
-
 	"sync"
 	"time"
 )
@@ -41,29 +40,26 @@ type MpcManagerWatchers struct {
 }
 
 func (w *MpcManagerWatchers) Init(ctx context.Context) {
-	w.once.Do(func() {
-		reDialer := adapter.EthClientReDialer{
-			Logger:        logger.Default(),
-			EthURL:        w.EthWsURL,
-			BackOffPolicy: backoff.ExponentialPolicy(0, time.Second, time.Second*10),
-		}
-		ethClient, ethclientCh, err := reDialer.GetClient(context.Background())
-		w.Logger.FatalOnError(err, "Failed to get eth client")
-		w.contractFilterer = ethClient.(*ethclient.Client)
-		w.ethClientCh = ethclientCh
+	reDialer := adapter.EthClientReDialer{
+		Logger:        logger.Default(),
+		EthURL:        w.EthWsURL,
+		BackOffPolicy: backoff.ExponentialPolicy(0, time.Second, time.Second*10),
+	}
+	ethClient, ethClientCh, err := reDialer.GetClient(context.Background())
+	w.Logger.FatalOnError(err, "Failed to get eth client")
+	w.contractFilterer = ethClient.(*ethclient.Client)
+	w.ethClientCh = ethClientCh
 
-		boundFilterer, err := contract.BindMpcManagerFilterer(w.ContractAddr, w.contractFilterer)
-		w.Logger.FatalOnError(err, "Failed to bind MpcManager filterer")
+	boundFilterer, err := contract.BindMpcManagerFilterer(w.ContractAddr, w.contractFilterer)
+	w.Logger.FatalOnError(err, "Failed to bind MpcManager filterer")
 
-		watcherFactory := &MpcManagerWatcherFactory{w.Logger, boundFilterer}
-		w.watcherFactory = watcherFactory
+	watcherFactory := &MpcManagerWatcherFactory{w.Logger, boundFilterer}
+	w.watcherFactory = watcherFactory
 
-		err = w.watchParticipantAdded(ctx, nil, w.PubKeys)
-		w.Logger.FatalOnError(err, "Failed to watch ParticipantAdded")
-		err = w.watchRequestStarted(ctx, nil)
-		w.Logger.FatalOnError(err, "Failed to watch RequestStarted")
-
-	})
+	err = w.watchParticipantAdded(ctx, nil, w.PubKeys)
+	w.Logger.FatalOnError(err, "Failed to watch ParticipantAdded")
+	err = w.watchRequestStarted(ctx, nil)
+	w.Logger.FatalOnError(err, "Failed to watch RequestStarted")
 }
 
 func (w *MpcManagerWatchers) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
