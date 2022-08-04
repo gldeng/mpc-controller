@@ -7,7 +7,6 @@ import (
 	myBind "github.com/avalido/mpc-controller/utils/contract/bind"
 	"github.com/avalido/mpc-controller/utils/contract/watcher"
 
-	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
@@ -24,13 +23,12 @@ const (
 
 type EvtName string
 
-type Factory struct {
+type MpcManagerWatcherFactory struct {
 	Logger        logger.Logger
-	Publisher     dispatcher.Publisher
 	BoundFilterer myBind.BoundFilterer
 }
 
-func (f *Factory) NewWatcher(process watcher.Process, opts *bind.WatchOpts, name EvtName, queries ...[]interface{}) (*watcher.Watcher, error) {
+func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bind.WatchOpts, name EvtName, queries ...[]interface{}) (*watcher.Watcher, error) {
 	var (
 		logs   chan types.Log
 		sub    event.Subscription
