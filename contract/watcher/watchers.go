@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-type Watcher struct {
+type MpcManagerWatchers struct {
 	Logger       logger.Logger
 	PubKeys      [][]byte
 	EthWsURL     string
@@ -31,8 +31,6 @@ type Watcher struct {
 
 	once sync.Once
 
-	groupIDs [][32]byte
-
 	watcherFactory *MpcManagerWatcherFactory
 
 	participantAddedWatcher   *watcher.Watcher
@@ -42,7 +40,7 @@ type Watcher struct {
 	requestStartedWatcher     *watcher.Watcher
 }
 
-func (w *Watcher) Init(ctx context.Context) {
+func (w *MpcManagerWatchers) Init(ctx context.Context) {
 	w.once.Do(func() {
 		reDialer := adapter.EthClientReDialer{
 			Logger:        logger.Default(),
@@ -59,23 +57,32 @@ func (w *Watcher) Init(ctx context.Context) {
 
 		watcherFactory := &MpcManagerWatcherFactory{w.Logger, boundFilterer}
 		w.watcherFactory = watcherFactory
+
 		err = w.watchParticipantAdded(ctx, nil, w.PubKeys)
 		w.Logger.FatalOnError(err, "Failed to watch ParticipantAdded")
+		err = w.watchRequestStarted(ctx, nil)
+		w.Logger.FatalOnError(err, "Failed to watch RequestStarted")
+
 	})
 }
 
-func (w *Watcher) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (w *MpcManagerWatchers) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch _ := evtObj.Event.(type) {
 	case *events.ParticipantAdded:
-	case *events.KeygenRequestAdded:
+		var groupIDs [][32]byte
+		err := w.watchKeygenRequestAdded(ctx, nil, groupIDs)
+		w.Logger.ErrorOnError(err, "Failed to watch KeygenRequestAdded")
+		err = w.watchKeyGenerated(ctx, nil, groupIDs)
+		w.Logger.ErrorOnError(err, "Failed to watch KeyGenerated")
 	case *events.KeyGenerated:
-	case *events.StakeRequestAdded:
-	case *events.RequestStarted:
+		var genPubKeys [][]byte
+		err := w.watchStakeRequestAdded(ctx, nil, genPubKeys)
+		w.Logger.ErrorOnError(err, "Failed to watch StakeRequestAdded")
 	}
 }
 
 // ParticipantAdded
-func (w *Watcher) watchParticipantAdded(ctx context.Context, opts *bind.WatchOpts, pubKeys [][]byte) error {
+func (w *MpcManagerWatchers) watchParticipantAdded(ctx context.Context, opts *bind.WatchOpts, pubKeys [][]byte) error {
 	participantAddedWatcher, err := w.watcherFactory.NewWatcher(w.processParticipantAdded, opts, EvtParticipantAdded, watcher.QueryFromBytes(pubKeys))
 	if err != nil {
 		return errors.Wrapf(err, "failed to create %v watcher", EvtParticipantAdded)
@@ -85,14 +92,14 @@ func (w *Watcher) watchParticipantAdded(ctx context.Context, opts *bind.WatchOpt
 	return errors.Wrapf(err, "failed to watch %v", EvtParticipantAdded)
 }
 
-func (w *Watcher) processParticipantAdded(ctx context.Context, evt interface{}) error { // todo: further process
+func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerParticipantAdded)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.ParticipantAdded)(myEvt), nil))
 	return nil
 }
 
 // KeygenRequestAdded
-func (w *Watcher) watchKeygenRequestAdded(ctx context.Context, opts *bind.WatchOpts, groupIds [][32]byte) error {
+func (w *MpcManagerWatchers) watchKeygenRequestAdded(ctx context.Context, opts *bind.WatchOpts, groupIds [][32]byte) error {
 	keygenRequestAddedWatcher, err := w.watcherFactory.NewWatcher(w.processKeygenRequestAdded, opts, EvtKeygenRequestAdded, watcher.QueryFromBytes32(groupIds))
 	if err != nil {
 		return errors.Wrapf(err, "failed to create %v watcher", EvtKeygenRequestAdded)
@@ -102,14 +109,14 @@ func (w *Watcher) watchKeygenRequestAdded(ctx context.Context, opts *bind.WatchO
 	return errors.Wrapf(err, "failed to watch %v", EvtKeygenRequestAdded)
 }
 
-func (w *Watcher) processKeygenRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
+func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerKeygenRequestAdded)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeygenRequestAdded)(myEvt), nil))
 	return nil
 }
 
 // KeyGenerated
-func (w *Watcher) watchKeyGenerated(ctx context.Context, opts *bind.WatchOpts, groupIds [][32]byte) error {
+func (w *MpcManagerWatchers) watchKeyGenerated(ctx context.Context, opts *bind.WatchOpts, groupIds [][32]byte) error {
 	keyGeneratedWatcher, err := w.watcherFactory.NewWatcher(w.processKeyGenerated, opts, EvtKeyGenerated, watcher.QueryFromBytes32(groupIds))
 	if err != nil {
 		return errors.Wrapf(err, "failed to create %v watcher", EvtKeyGenerated)
@@ -119,14 +126,14 @@ func (w *Watcher) watchKeyGenerated(ctx context.Context, opts *bind.WatchOpts, g
 	return errors.Wrapf(err, "failed to watch %v", EvtKeyGenerated)
 }
 
-func (w *Watcher) processKeyGenerated(ctx context.Context, evt interface{}) error { // todo: further process
+func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerKeyGenerated)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeyGenerated)(myEvt), nil))
 	return nil
 }
 
 // StakeRequestAdded
-func (w *Watcher) watchStakeRequestAdded(ctx context.Context, opts *bind.WatchOpts, pubKeys [][]byte) error {
+func (w *MpcManagerWatchers) watchStakeRequestAdded(ctx context.Context, opts *bind.WatchOpts, pubKeys [][]byte) error {
 	stakeRequestAddedWatcher, err := w.watcherFactory.NewWatcher(w.processStakeRequestAdded, opts, EvtStakeRequestAdded, watcher.QueryFromBytes(pubKeys))
 	if err != nil {
 		return errors.Wrapf(err, "failed to create %v watcher", EvtStakeRequestAdded)
@@ -136,14 +143,14 @@ func (w *Watcher) watchStakeRequestAdded(ctx context.Context, opts *bind.WatchOp
 	return errors.Wrapf(err, "failed to watch %v", EvtStakeRequestAdded)
 }
 
-func (w *Watcher) processStakeRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
+func (w *MpcManagerWatchers) processStakeRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerStakeRequestAdded)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.StakeRequestAdded)(myEvt), nil))
 	return nil
 }
 
 // RequestStarted
-func (w *Watcher) watchRequestStarted(ctx context.Context, opts *bind.WatchOpts) error {
+func (w *MpcManagerWatchers) watchRequestStarted(ctx context.Context, opts *bind.WatchOpts) error {
 	requestStartedWatcher, err := w.watcherFactory.NewWatcher(w.processRequestStarted, opts, EvtRequestStarted)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create %v watcher", EvtRequestStarted)
@@ -153,7 +160,7 @@ func (w *Watcher) watchRequestStarted(ctx context.Context, opts *bind.WatchOpts)
 	return errors.Wrapf(err, "failed to watch %v", EvtRequestStarted)
 }
 
-func (w *Watcher) processRequestStarted(ctx context.Context, evt interface{}) error { // todo: further process
+func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerRequestStarted)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
 	return nil
