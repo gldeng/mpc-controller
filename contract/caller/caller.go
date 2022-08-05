@@ -29,10 +29,10 @@ type Caller interface {
 	GetGroupIdByKey(ctx context.Context, opts *bind.CallOpts, publicKey []byte) ([32]byte, error)
 	PrincipalTreasuryAddress(ctx context.Context, opts *bind.CallOpts) (common.Address, error)
 	RewardTreasuryAddress(ctx context.Context, opts *bind.CallOpts) (common.Address, error)
-	RetryCallFn(ctx context.Context, fn CallFn) error
+	RetryCall(ctx context.Context, fn Call) error
 }
 
-type CallFn func() (err error, retry bool)
+type Call func() (err error, retry bool)
 
 type MyCaller struct {
 	Logger         logger.Logger
@@ -59,7 +59,7 @@ func (c *MyCaller) GetGroup(ctx context.Context, opts *bind.CallOpts, groupId [3
 		group = out0
 		return nil, false
 	}
-	return group, errors.WithStack(c.RetryCallFn(ctx, fn))
+	return group, errors.WithStack(c.RetryCall(ctx, fn))
 }
 
 func (c *MyCaller) GetGroupIdByKey(ctx context.Context, opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
@@ -74,7 +74,7 @@ func (c *MyCaller) GetGroupIdByKey(ctx context.Context, opts *bind.CallOpts, pub
 		groupId = out0
 		return nil, false
 	}
-	return groupId, errors.WithStack(c.RetryCallFn(ctx, fn))
+	return groupId, errors.WithStack(c.RetryCall(ctx, fn))
 }
 
 func (c *MyCaller) PrincipalTreasuryAddress(ctx context.Context, opts *bind.CallOpts) (common.Address, error) {
@@ -85,7 +85,7 @@ func (c *MyCaller) RewardTreasuryAddress(ctx context.Context, opts *bind.CallOpt
 	return c.address(ctx, opts, MethodRewardTreasuryAddress)
 }
 
-func (c *MyCaller) RetryCallFn(ctx context.Context, fn CallFn) error {
+func (c *MyCaller) RetryCall(ctx context.Context, fn Call) error {
 	err := backoff.RetryRetryFnForever(ctx, func() (retry bool, err error) {
 		err, retry = fn()
 		if retry {
@@ -109,5 +109,5 @@ func (c *MyCaller) address(ctx context.Context, opts *bind.CallOpts, address Met
 		addr = out0
 		return nil, false
 	}
-	return addr, errors.WithStack(c.RetryCallFn(ctx, fn))
+	return addr, errors.WithStack(c.RetryCall(ctx, fn))
 }
