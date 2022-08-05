@@ -26,7 +26,10 @@ type Method string
 type Transactor interface {
 	JoinRequest(ctx context.Context, partiId [32]byte, reqHash [32]byte) (*types.Transaction, *types.Receipt, error)
 	ReportGeneratedKey(ctx context.Context, partiId [32]byte, genPubKey []byte) (*types.Transaction, *types.Receipt, error)
+	Transact(ctx context.Context, fn TransactFn) (*types.Transaction, *types.Receipt, error)
 }
+
+type TransactFn func() (tx *types.Transaction, err error, retry bool)
 
 type MyTransactor struct {
 	Logger             logger.Logger
@@ -128,6 +131,41 @@ func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32
 	err = errors.Wrapf(err, "failed to report generated public key. partiId:%v, genPubKey:%v", partiIdHex, genPubKeyHex)
 	if err != nil {
 		return nil, rcpt, errors.WithStack(err)
+	}
+
+	return tx, rcpt, nil
+}
+
+func (t *MyTransactor) Transact(ctx context.Context, fn TransactFn) (*types.Transaction, *types.Receipt, error) {
+	var tx *types.Transaction
+	err := backoff.RetryRetryFnForever(ctx, func() (retry bool, err error) {
+		tx, err, retry = fn()
+		if retry {
+			return true, errors.WithStack(err)
+		}
+		return false, errors.WithStack(err)
+	})
+
+	if err != nil {
+		return tx, nil, errors.WithStack(err)
+	}
+
+	var rcpt *types.Receipt
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+		rcpt, err = t.Receipter.TransactionReceipt(ctx, tx.Hash())
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+
+		if rcpt.Status != 1 {
+			return true, errors.WithStack(&ErrTypTransactionFailed{})
+		}
+
+		return false, nil
+	})
+
+	if err != nil {
+		return tx, rcpt, errors.WithStack(err)
 	}
 
 	return tx, rcpt, nil
