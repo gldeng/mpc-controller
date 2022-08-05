@@ -24,8 +24,8 @@ const (
 type Method string
 
 type Transactor interface {
-	JoinRequest(ctx context.Context, participantId [32]byte, requestHash [32]byte) (*types.Transaction, error)
-	ReportGeneratedKey(ctx context.Context, participantId [32]byte, generatedPublicKey []byte) (*types.Transaction, error)
+	JoinRequest(ctx context.Context, participantId [32]byte, requestHash [32]byte) (*types.Transaction, *types.Receipt, error)
+	ReportGeneratedKey(ctx context.Context, participantId [32]byte, generatedPublicKey []byte) (*types.Transaction, *types.Receipt, error)
 }
 
 type MyTransactor struct {
