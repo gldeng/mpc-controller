@@ -49,24 +49,6 @@ func (e *ErrTypAttemptToRejoin) Unwrap() error {
 
 // ----------
 
-type ErrTypTransactionFailed struct {
-	ErrMsg string
-	Cause  error
-}
-
-func (e *ErrTypTransactionFailed) Error() string {
-	if e.ErrMsg == "" {
-		return ErrMsgTransactionFailed + fmt.Sprintf(":%v", e.Cause)
-	}
-	return e.ErrMsg + fmt.Sprintf(":%v", e.Cause)
-}
-
-func (e *ErrTypTransactionFailed) Unwrap() error {
-	return e.Cause
-}
-
-// ----------
-
 type ErrTypAttemptToReconfirmKey struct {
 	ErrMsg string
 	Cause  error
@@ -80,5 +62,23 @@ func (e *ErrTypAttemptToReconfirmKey) Error() string {
 }
 
 func (e *ErrTypAttemptToReconfirmKey) Unwrap() error {
+	return e.Cause
+}
+
+// ----------
+
+type ErrTypTransactionFailed struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypTransactionFailed) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgTransactionFailed + fmt.Sprintf(":%v", e.Cause)
+	}
+	return e.ErrMsg + fmt.Sprintf(":%v", e.Cause)
+}
+
+func (e *ErrTypTransactionFailed) Unwrap() error {
 	return e.Cause
 }
