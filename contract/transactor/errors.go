@@ -5,6 +5,8 @@ import "fmt"
 const (
 	ErrMsgQuorumAlreadyReached = "quorum already reached"
 	ErrMsgAttemptToRejoin      = "attempt to rejoin"
+
+	ErrMsgTransactionFailed = "transaction failed"
 )
 
 // ----------error types ----------
@@ -40,5 +42,23 @@ func (e *ErrTypAttemptToRejoin) Error() string {
 }
 
 func (e *ErrTypAttemptToRejoin) Unwrap() error {
+	return e.Cause
+}
+
+// ----------
+
+type ErrTypTransactionFailed struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypTransactionFailed) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgTransactionFailed + fmt.Sprintf(":%v", e.Cause)
+	}
+	return e.ErrMsg + fmt.Sprintf(":%v", e.Cause)
+}
+
+func (e *ErrTypTransactionFailed) Unwrap() error {
 	return e.Cause
 }
