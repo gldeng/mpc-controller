@@ -28,7 +28,7 @@ type Method string
 type Transactor interface {
 	JoinRequest(ctx context.Context, partiId [32]byte, reqHash [32]byte) (*types.Transaction, *types.Receipt, error)
 	ReportGeneratedKey(ctx context.Context, partiId [32]byte, genPubKey []byte) (*types.Transaction, *types.Receipt, error)
-	Transact(ctx context.Context, fn TransactFn) (*types.Transaction, *types.Receipt, error)
+	RetryTransactFn(ctx context.Context, fn TransactFn) (*types.Transaction, *types.Receipt, error)
 }
 
 type TransactFn func() (tx *types.Transaction, err error, retry bool)
@@ -39,18 +39,18 @@ type MyTransactor struct {
 	ContractAddr       common.Address
 	Receipter          chain.Receipter
 	ContractTransactor bind.ContractTransactor
-	boundTransactor    bind2.BoundTransactor
+	bind2.BoundTransactor
 }
 
 func (t *MyTransactor) Init(ctx context.Context) {
 	boundFilterer, err := contract.BindMpcManagerTransactor(t.ContractAddr, t.ContractTransactor)
 	t.Logger.FatalOnError(err, "Failed to bind MpcManager filterer")
-	t.boundTransactor = boundFilterer
+	t.BoundTransactor = boundFilterer
 }
 
 func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, requestHash [32]byte) (*types.Transaction, *types.Receipt, error) {
 	fn := func() (tx *types.Transaction, err error, retry bool) {
-		tx, err = t.boundTransactor.Transact(t.Auth, string(MethodJoinRequest), participantId, requestHash)
+		tx, err = t.BoundTransactor.Transact(t.Auth, string(MethodJoinRequest), participantId, requestHash)
 		if err != nil {
 			errMsg := err.Error()
 			switch {
@@ -64,7 +64,7 @@ func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, 
 		return tx, nil, false
 	}
 
-	tx, rcpt, err := t.Transact(ctx, fn)
+	tx, rcpt, err := t.RetryTransactFn(ctx, fn)
 	partiIdHex := bytes.Bytes32ToHex(participantId)
 	reqHashHex := bytes.Bytes32ToHex(requestHash)
 	return tx, rcpt, errors.Wrapf(err, "failed to join request. partiId:%v, reqHash:%v", partiIdHex, reqHashHex)
@@ -72,7 +72,7 @@ func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, 
 
 func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32]byte, generatedPublicKey []byte) (*types.Transaction, *types.Receipt, error) {
 	fn := func() (tx *types.Transaction, err error, retry bool) {
-		tx, err = t.boundTransactor.Transact(t.Auth, string(MethodReportGeneratedKey), participantId, generatedPublicKey)
+		tx, err = t.BoundTransactor.Transact(t.Auth, string(MethodReportGeneratedKey), participantId, generatedPublicKey)
 		if err != nil {
 			errMsg := err.Error()
 			switch {
@@ -84,13 +84,13 @@ func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32
 		return tx, nil, false
 	}
 
-	tx, rcpt, err := t.Transact(ctx, fn)
+	tx, rcpt, err := t.RetryTransactFn(ctx, fn)
 	partiIdHex := bytes.Bytes32ToHex(participantId)
 	genPubKeyHex := bytes.BytesToHex(generatedPublicKey)
 	return tx, rcpt, errors.Wrapf(err, "failed to report generated public key. partiId:%v, genPubKey:%v", partiIdHex, genPubKeyHex)
 }
 
-func (t *MyTransactor) Transact(ctx context.Context, fn TransactFn) (*types.Transaction, *types.Receipt, error) {
+func (t *MyTransactor) RetryTransactFn(ctx context.Context, fn TransactFn) (*types.Transaction, *types.Receipt, error) {
 	var tx *types.Transaction
 	err := backoff.RetryRetryFnForever(ctx, func() (retry bool, err error) {
 		tx, err, retry = fn()

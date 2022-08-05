@@ -25,11 +25,11 @@ const (
 type Method string
 
 type Caller interface {
-	Call(ctx context.Context, fn CallFn) error
 	GetGroup(ctx context.Context, opts *bind.CallOpts, groupId [32]byte) ([][]byte, error)
 	GetGroupIdByKey(ctx context.Context, opts *bind.CallOpts, publicKey []byte) ([32]byte, error)
 	PrincipalTreasuryAddress(ctx context.Context, opts *bind.CallOpts) (common.Address, error)
 	RewardTreasuryAddress(ctx context.Context, opts *bind.CallOpts) (common.Address, error)
+	RetryCallFn(ctx context.Context, fn CallFn) error
 }
 
 type CallFn func() (err error, retry bool)
@@ -38,20 +38,20 @@ type MyCaller struct {
 	Logger         logger.Logger
 	ContractAddr   common.Address
 	ContractCaller bind.ContractCaller
-	boundCaller    bind2.BoundCaller
+	bind2.BoundCaller
 }
 
 func (t *MyCaller) Init(ctx context.Context) {
 	boundCaller, err := contract.BindMpcManagerCaller(t.ContractAddr, t.ContractCaller)
 	t.Logger.FatalOnError(err, "Failed to bind MpcManager caller")
-	t.boundCaller = boundCaller
+	t.BoundCaller = boundCaller
 }
 
 func (c *MyCaller) GetGroup(ctx context.Context, opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
 	var group [][]byte
 	fn := func() (err error, retry bool) {
 		var out []interface{}
-		err = c.boundCaller.Call(opts, &out, string(MethodGetGroup), groupId)
+		err = c.BoundCaller.Call(opts, &out, string(MethodGetGroup), groupId)
 		if err != nil {
 			return errors.WithStack(err), true
 		}
@@ -59,14 +59,14 @@ func (c *MyCaller) GetGroup(ctx context.Context, opts *bind.CallOpts, groupId [3
 		group = out0
 		return nil, false
 	}
-	return group, errors.WithStack(c.Call(ctx, fn))
+	return group, errors.WithStack(c.RetryCallFn(ctx, fn))
 }
 
 func (c *MyCaller) GetGroupIdByKey(ctx context.Context, opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
 	var groupId [32]byte
 	fn := func() (err error, retry bool) {
 		var out []interface{}
-		err = c.boundCaller.Call(opts, &out, string(MethodGetGroupIdByKey), publicKey)
+		err = c.BoundCaller.Call(opts, &out, string(MethodGetGroupIdByKey), publicKey)
 		if err != nil {
 			return errors.WithStack(err), true
 		}
@@ -74,7 +74,7 @@ func (c *MyCaller) GetGroupIdByKey(ctx context.Context, opts *bind.CallOpts, pub
 		groupId = out0
 		return nil, false
 	}
-	return groupId, errors.WithStack(c.Call(ctx, fn))
+	return groupId, errors.WithStack(c.RetryCallFn(ctx, fn))
 }
 
 func (c *MyCaller) PrincipalTreasuryAddress(ctx context.Context, opts *bind.CallOpts) (common.Address, error) {
@@ -85,7 +85,7 @@ func (c *MyCaller) RewardTreasuryAddress(ctx context.Context, opts *bind.CallOpt
 	return c.address(ctx, opts, MethodRewardTreasuryAddress)
 }
 
-func (c *MyCaller) Call(ctx context.Context, fn CallFn) error {
+func (c *MyCaller) RetryCallFn(ctx context.Context, fn CallFn) error {
 	err := backoff.RetryRetryFnForever(ctx, func() (retry bool, err error) {
 		err, retry = fn()
 		if retry {
@@ -101,7 +101,7 @@ func (c *MyCaller) address(ctx context.Context, opts *bind.CallOpts, address Met
 	var addr common.Address
 	fn := func() (err error, retry bool) {
 		var out []interface{}
-		err = c.boundCaller.Call(opts, &out, string(address))
+		err = c.BoundCaller.Call(opts, &out, string(address))
 		if err != nil {
 			return errors.WithStack(err), true
 		}
@@ -109,5 +109,5 @@ func (c *MyCaller) address(ctx context.Context, opts *bind.CallOpts, address Met
 		addr = out0
 		return nil, false
 	}
-	return addr, errors.WithStack(c.Call(ctx, fn))
+	return addr, errors.WithStack(c.RetryCallFn(ctx, fn))
 }

@@ -3,7 +3,7 @@ package watcher
 import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
-	myBind "github.com/avalido/mpc-controller/utils/contract/bind"
+	bind2 "github.com/avalido/mpc-controller/utils/contract/bind"
 	"github.com/avalido/mpc-controller/utils/contract/watcher"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,8 +23,8 @@ const (
 type EvtName string
 
 type MpcManagerWatcherFactory struct {
-	Logger        logger.Logger
-	BoundFilterer myBind.BoundFilterer
+	Logger logger.Logger
+	bind2.BoundFilterer
 }
 
 func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bind.WatchOpts, name EvtName, queries ...[]interface{}) (*watcher.Watcher, error) {
