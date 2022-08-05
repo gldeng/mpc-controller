@@ -6,6 +6,8 @@ const (
 	ErrMsgQuorumAlreadyReached = "quorum already reached"
 	ErrMsgAttemptToRejoin      = "attempt to rejoin"
 
+	ErrMsgAttemptToReconfirmKey = "attempt to reconfirm key"
+
 	ErrMsgTransactionFailed = "transaction failed"
 )
 
@@ -60,5 +62,23 @@ func (e *ErrTypTransactionFailed) Error() string {
 }
 
 func (e *ErrTypTransactionFailed) Unwrap() error {
+	return e.Cause
+}
+
+// ----------
+
+type ErrTypAttemptToReconfirmKey struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypAttemptToReconfirmKey) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgAttemptToReconfirmKey + fmt.Sprintf(":%v", e.Cause)
+	}
+	return e.ErrMsg + fmt.Sprintf(":%v", e.Cause)
+}
+
+func (e *ErrTypAttemptToReconfirmKey) Unwrap() error {
 	return e.Cause
 }
