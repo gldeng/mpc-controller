@@ -7,6 +7,15 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding low-level k-v db
 
+type KvDb interface {
+	Setter
+	Getter
+	Lister
+	MarshalSetter
+	UnmarshalGetter
+	UnmarshalLister
+}
+
 // Classic k-v storage
 
 type Setter interface {
