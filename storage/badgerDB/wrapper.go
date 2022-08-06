@@ -64,7 +64,7 @@ func (b *BadgerDB) List(ctx context.Context, prefix []byte) ([][]byte, error) {
 
 // With marshal and unmarshal support
 
-func (b *BadgerDB) MarshalSet(ctx context.Context, key []byte, val interface{}) error {
+func (b *BadgerDB) MSet(ctx context.Context, key []byte, val interface{}) error {
 	valBytes, err := json.Marshal(val)
 	if err != nil {
 		return errors.WithStack(err)
@@ -75,7 +75,7 @@ func (b *BadgerDB) MarshalSet(ctx context.Context, key []byte, val interface{}) 
 	return errors.WithStack(err)
 }
 
-func (b *BadgerDB) MarshalGet(ctx context.Context, key []byte, val interface{}) error {
+func (b *BadgerDB) MGet(ctx context.Context, key []byte, val interface{}) error {
 	valBytes, err := b.Get(ctx, key)
 	if err != nil {
 		return errors.WithStack(err)
@@ -88,6 +88,20 @@ func (b *BadgerDB) MarshalGet(ctx context.Context, key []byte, val interface{}) 
 	return nil
 }
 
-func (b *BadgerDB) MarshalList(ctx context.Context, prefix []byte, val interface{}) error {
+func (b *BadgerDB) MList(ctx context.Context, prefix []byte, val interface{}) error {
 	return errors.New("to to implemented") // todo
+}
+
+// With Model(s) interface support
+
+func (b *BadgerDB) SaveModel(ctx context.Context, data storage.Model) error {
+	return errors.WithStack(b.MSet(ctx, data.Key(), data))
+}
+
+func (b *BadgerDB) LoadModel(ctx context.Context, data storage.Model) error {
+	return errors.WithStack(b.MGet(ctx, data.Key(), data))
+}
+
+func (b *BadgerDB) ListModels(ctx context.Context, datum storage.Models) error {
+	return errors.WithStack(b.MList(ctx, datum.Prefix(), datum))
 }

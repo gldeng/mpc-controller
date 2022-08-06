@@ -39,15 +39,15 @@ type Lister interface {
 // With marshal and unmarshal support
 
 type MarshalSetter interface {
-	MarshalSet(ctx context.Context, key []byte, val interface{}) error
+	MSet(ctx context.Context, key []byte, val interface{}) error
 }
 
 type UnmarshalGetter interface {
-	MarshalGet(ctx context.Context, key []byte, val interface{}) error
+	MGet(ctx context.Context, key []byte, val interface{}) error
 }
 
 type UnmarshalLister interface {
-	MarshalList(ctx context.Context, prefix []byte, val interface{}) error
+	MList(ctx context.Context, prefix []byte, val interface{}) error
 }
 
 // With Model(s) interface support
