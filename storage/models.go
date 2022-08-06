@@ -1,16 +1,15 @@
 package storage
 
 import (
-	"bytes"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // Key prefixes
 var (
-	KeyPrefixGroup              KeyPrefix = []byte("group-")
-	KeyPrefixParticipant        KeyPrefix = []byte("parti-")
-	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey-")
+	KeyPrefixGroup              KeyPrefix = []byte("group")
+	KeyPrefixParticipant        KeyPrefix = []byte("parti")
+	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
 )
 
 const (
@@ -39,19 +38,19 @@ type GeneratedPublicKey struct {
 
 // Model keys
 
-// Key format: KeyPrefixGroup+ID
+// Key format: KeyPrefixGroup+"-"+ID
 func (m *Group) Key() []byte {
 	keyPayload := m.ID
 	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
 }
 
-// Key format: KeyPrefixParticipant+Hash(PubKey+GroupId)
+// Key format: KeyPrefixParticipant+"-"+Hash(PubKey+"-"+GroupId)
 func (m *Participant) Key() []byte {
-	keyPayload := hash256.FromBytes(bytes.Join([][]byte{m.PubKey.Bytes(), m.GroupId.Bytes()}, []byte("")))
+	keyPayload := hash256.FromBytes(JoinWithHyphen([][]byte{m.PubKey.Bytes(), m.GroupId.Bytes()}))
 	return Key(KeyPrefixParticipant, KeyPayload(keyPayload))
 }
 
-// Key format: KeyPrefixGeneratedPublicKey+Hash(GenPubKey)
+// Key format: KeyPrefixGeneratedPublicKey+"-"+Hash(GenPubKey)
 func (m *GeneratedPublicKey) Key() []byte {
 	keyPayload := hash256.FromBytes(m.GenPubKey[:])
 	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(keyPayload))

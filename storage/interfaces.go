@@ -82,5 +82,9 @@ type KeyPrefix []byte
 type KeyPayload [KeyPayLoadLength]byte
 
 func Key(pre KeyPrefix, payload KeyPayload) []byte {
-	return bytes.Join([][]byte{pre, payload[:]}, []byte(""))
+	return JoinWithHyphen([][]byte{pre, payload[:]})
+}
+
+func JoinWithHyphen(s [][]byte) []byte {
+	return bytes.Join(s, []byte("-"))
 }
