@@ -3,7 +3,6 @@ package participant
 import (
 	"context"
 	"github.com/avalido/mpc-controller/contract"
-	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
@@ -21,7 +20,6 @@ type ParticipantMaster struct {
 	MyPubKeyHex     string
 	Storer          storage.MarshalSetter
 
-	partiEvtWatcher *ParticipantAddedEventWatcher
 	partiInfoStorer *ParticipantInfoStorer
 	groupInfoStorer *GroupInfoStorer
 }
@@ -33,13 +31,6 @@ func (m *ParticipantMaster) Start(ctx context.Context) error {
 }
 
 func (m *ParticipantMaster) subscribe() {
-	partiWatcher := ParticipantAddedEventWatcher{
-		Logger:        m.Logger,
-		MyPubKeyBytes: m.MyPubKeyBytes,
-		ContractAddr:  m.ContractAddr,
-		Publisher:     m.Dispatcher,
-	}
-
 	partiInfoStorer := ParticipantInfoStorer{
 		Logger:          m.Logger,
 		Publisher:       m.Dispatcher,
@@ -56,11 +47,8 @@ func (m *ParticipantMaster) subscribe() {
 		Storer:       m.Storer,
 	}
 
-	m.partiEvtWatcher = &partiWatcher
 	m.partiInfoStorer = &partiInfoStorer
 	m.groupInfoStorer = &groupInfoStorer
-
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreated{}, m.partiEvtWatcher) // Publish event: *contract.MpcManagerParticipantAdded
 
 	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.partiInfoStorer) // Publish event: *events.ParticipantInfoStored
 	m.Dispatcher.Subscribe(&contract.MpcManagerParticipantAdded{}, m.groupInfoStorer) // Publish event: *events.GroupInfoStored
