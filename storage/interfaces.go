@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 )
 
@@ -11,8 +12,13 @@ type KvDb interface {
 	Setter
 	Getter
 	Lister
+
 	MarshalSetter
 	UnmarshalGetter
+	UnmarshalLister
+
+	ModelSaver
+	ModelLoader
 	UnmarshalLister
 }
 
@@ -42,4 +48,39 @@ type UnmarshalGetter interface {
 
 type UnmarshalLister interface {
 	MarshalList(ctx context.Context, prefix []byte, val interface{}) error
+}
+
+// With Model(s) interface support
+
+type Model interface {
+	Key() []byte
+}
+
+type Models interface {
+	Prefix() []byte
+}
+
+type ModelSaver interface {
+	SaveModel(ctx context.Context, data Model) error
+}
+
+type ModelLoader interface {
+	LoadModel(ctx context.Context, data Model) error
+}
+
+type ModelLister interface {
+	ListModels(ctx context.Context, datum Models) error
+}
+
+// Handy function to concat a key
+
+const (
+	KeyPayLoadLength = 32
+)
+
+type KeyPrefix []byte
+type KeyPayload [KeyPayLoadLength]byte
+
+func Key(pre KeyPrefix, payload KeyPayload) []byte {
+	return bytes.Join([][]byte{pre, payload[:]}, []byte(""))
 }
