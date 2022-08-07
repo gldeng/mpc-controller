@@ -8,7 +8,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/crypto"
 	mpcErrors "github.com/avalido/mpc-controller/utils/errors"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -83,11 +82,6 @@ func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (
 }
 
 func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err error) {
-	normalized, err := crypto.NormalizePubKeys(request.CompressedPartiPubKeys)
-	if err != nil {
-		return errors.Wrapf(err, "failed to normalize public keys")
-	}
-	request.CompressedPartiPubKeys = normalized
 	payloadBytes, err := json.Marshal(request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal KeygenRequest")
