@@ -219,6 +219,8 @@ func (w *MpcManagerWatchers) watchKeyGenerated(ctx context.Context, opts *bind.W
 
 func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerKeyGenerated)
+
+	// Save generated public key
 	genPubKey := storage.GeneratedPublicKey{
 		GenPubKey: myEvt.PublicKey,
 		GroupId:   myEvt.GroupId,
