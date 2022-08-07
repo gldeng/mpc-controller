@@ -36,13 +36,13 @@ type GeneratedPublicKey struct {
 }
 
 type StakeRequest struct {
-	RequestNumber uint64
-	TxHash        common.Hash
-	PublicKey     common.Hash
-	NodeID        string
-	Amount        string
-	StartTime     uint64
-	EndTime       uint64
+	ReqNo     uint64      `json:"reqNo"`
+	TxHash    common.Hash `json:"txHash"`
+	GenPubKey common.Hash `json:"genPubKey"`
+	NodeID    string      `json:"nodeID"`
+	Amount    string      `json:"amount"`
+	StartTime uint64      `json:"startTime"`
+	EndTime   uint64      `json:"endTime"`
 }
 
 // Model keys
