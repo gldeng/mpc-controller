@@ -94,9 +94,10 @@ func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt in
 		GroupId: myEvt.GroupId,
 		Index:   myEvt.Index.Uint64(),
 	}
-	err := errors.Wrapf(w.DB.SaveModel(ctx, &participant), "failed to save participant %v", participant)
+	err := w.DB.SaveModel(ctx, &participant)
 	w.Logger.DebugNilError(err, "Participant added", []logger.Field{{"participant", participant}}...)
-	return err
+	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.ParticipantAdded)(myEvt), nil))
+	return errors.Wrapf(err, "failed to save participant %v", participant)
 }
 
 // KeygenRequestAdded
