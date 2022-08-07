@@ -8,7 +8,7 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding low-level k-v db
 
-type KvDb interface {
+type DB interface {
 	Setter
 	Getter
 	Lister

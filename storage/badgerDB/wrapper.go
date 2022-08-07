@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var _ storage.KvDb = (*BadgerDB)(nil)
+var _ storage.DB = (*BadgerDB)(nil)
 
 type BadgerDB struct {
 	logger.Logger

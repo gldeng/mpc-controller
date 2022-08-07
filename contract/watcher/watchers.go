@@ -5,6 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/contract/watcher"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
@@ -19,6 +20,7 @@ import (
 
 type MpcManagerWatchers struct {
 	Logger       logger.Logger
+	DB           storage.DB
 	PubKeys      [][]byte
 	EthWsURL     string
 	ContractAddr common.Address
