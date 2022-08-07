@@ -11,6 +11,8 @@ var (
 	KeyPrefixGroup              KeyPrefix = []byte("group")
 	KeyPrefixParticipant        KeyPrefix = []byte("parti")
 	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
+
+	KeyPrefixStakeRequest KeyPrefix = []byte("stakeRequest")
 )
 
 type PubKey []byte
@@ -31,6 +33,16 @@ type Participant struct {
 type GeneratedPublicKey struct {
 	GenPubKey PubKey      `json:"genPubKey"`
 	GroupId   common.Hash `json:"groupId"`
+}
+
+type StakeRequest struct {
+	RequestNumber uint64
+	TxHash        common.Hash
+	PublicKey     common.Hash
+	NodeID        string
+	Amount        string
+	StartTime     uint64
+	EndTime       uint64
 }
 
 // Model keys
@@ -55,6 +67,10 @@ func (m *GeneratedPublicKey) Key() []byte {
 
 func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
 	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(hash))
+}
+
+func (m *StakeRequest) Key() []byte {
+	return Key(KeyPrefixStakeRequest, KeyPayload(m.TxHash))
 }
 
 // Handy methods
