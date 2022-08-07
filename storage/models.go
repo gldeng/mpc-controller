@@ -17,12 +17,19 @@ var (
 
 type PubKey []byte
 
-// Models
+// --------------------
 
 type Group struct {
 	ID    common.Hash `json:"id"`
 	Group []PubKey    `json:"group"`
 }
+
+func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID
+	keyPayload := m.ID
+	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
+}
+
+// --------------------
 
 type Participant struct {
 	PubKey  common.Hash `json:"pubKey"`
@@ -30,10 +37,39 @@ type Participant struct {
 	Index   uint64      `json:"index"`
 }
 
+func (m *Participant) Key() []byte { // Key format: KeyPrefixParticipant+"-"+Hash(PubKey+"-"+GroupId)
+	keyPayload := hash256.FromBytes(JoinWithHyphen([][]byte{m.PubKey.Bytes(), m.GroupId.Bytes()}))
+	return Key(KeyPrefixParticipant, KeyPayload(keyPayload))
+}
+
+func (m *Participant) ParticipantId() [32]byte {
+	var indexByte []byte
+	binary.BigEndian.PutUint64(indexByte, m.Index)
+
+	var partiId [32]byte
+	copy(partiId[:], m.GroupId[:])
+	partiId[31] = indexByte[0]
+
+	return partiId
+}
+
+// --------------------
+
 type GeneratedPublicKey struct {
 	GenPubKey PubKey      `json:"genPubKey"`
 	GroupId   common.Hash `json:"groupId"`
 }
+
+func (m *GeneratedPublicKey) Key() []byte { // Key format: KeyPrefixGeneratedPublicKey+"-"+Hash(GenPubKey)
+	keyPayload := hash256.FromBytes(m.GenPubKey[:])
+	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(keyPayload))
+}
+
+func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
+	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(hash))
+}
+
+// --------------------
 
 type StakeRequest struct {
 	ReqNo     string      `json:"reqNo"`
@@ -45,43 +81,6 @@ type StakeRequest struct {
 	EndTime   string      `json:"endTime"`
 }
 
-// Model keys
-
-// Key format: KeyPrefixGroup+"-"+ID
-func (m *Group) Key() []byte {
-	keyPayload := m.ID
-	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
-}
-
-// Key format: KeyPrefixParticipant+"-"+Hash(PubKey+"-"+GroupId)
-func (m *Participant) Key() []byte {
-	keyPayload := hash256.FromBytes(JoinWithHyphen([][]byte{m.PubKey.Bytes(), m.GroupId.Bytes()}))
-	return Key(KeyPrefixParticipant, KeyPayload(keyPayload))
-}
-
-// Key format: KeyPrefixGeneratedPublicKey+"-"+Hash(GenPubKey)
-func (m *GeneratedPublicKey) Key() []byte {
-	keyPayload := hash256.FromBytes(m.GenPubKey[:])
-	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(keyPayload))
-}
-
-func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
-	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(hash))
-}
-
-func (m *StakeRequest) Key() []byte {
+func (m *StakeRequest) Key() []byte { // Key format: KeyPrefixStakeRequest+"-"+TxHash
 	return Key(KeyPrefixStakeRequest, KeyPayload(m.TxHash))
-}
-
-// Handy methods
-
-func (m *Participant) ParticipantId() [32]byte {
-	var indexByte []byte
-	binary.BigEndian.PutUint64(indexByte, m.Index)
-
-	var partiId [32]byte
-	copy(partiId[:], m.GroupId[:])
-	partiId[31] = indexByte[0]
-
-	return partiId
 }
