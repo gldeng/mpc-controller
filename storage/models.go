@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/binary"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -50,4 +51,17 @@ func (m *Participant) Key() []byte {
 func (m *GeneratedPublicKey) Key() []byte {
 	keyPayload := hash256.FromBytes(m.GenPubKey[:])
 	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(keyPayload))
+}
+
+// Handy methods
+
+func (m *Participant) ParticipantId() [32]byte {
+	var indexByte []byte
+	binary.BigEndian.PutUint64(indexByte, m.Index)
+
+	var partiId [32]byte
+	copy(partiId[:], m.GroupId[:])
+	partiId[31] = indexByte[0]
+
+	return partiId
 }
