@@ -98,6 +98,19 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				break
 			}
 
+			stakeReq := storage.StakeRequest{
+				ReqNo:     evt.RequestNumber.String(),
+				TxHash:    txHash,
+				GenPubKey: evt.PublicKey,
+				NodeID:    evt.NodeID,
+				Amount:    evt.Amount.String(),
+				StartTime: evt.StartTime.String(),
+				EndTime:   evt.EndTime.String(),
+			}
+			err = eh.DB.SaveModel(ctx, &stakeReq)
+			eh.Logger.ErrorOnError(err, "Failed to save stake request", []logger.Field{
+				{"stakeReq", stakeReq}}...)
+
 			eh.Logger.WarnOnTrue(float64(len(eh.mpcManagerStakeRequestAddedChan)) > float64(cap(eh.mpcManagerStakeRequestAddedChan))*0.8, "Too may stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.mpcManagerStakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined stake request", []logger.Field{
