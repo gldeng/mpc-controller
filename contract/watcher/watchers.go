@@ -26,8 +26,10 @@ type MpcManagerWatchers struct {
 	ContractAddr common.Address
 	Publisher    dispatcher.Publisher
 
+	Caller contract.Caller
+
 	contractFilterer bind.ContractFilterer
-	ethClientCh      chan redialer.Client
+	ethClientCh      chan redialer.Client // todo: handle reconnection
 
 	watcherFactory *MpcManagerWatcherFactory
 
@@ -88,6 +90,7 @@ func (w *MpcManagerWatchers) watchParticipantAdded(ctx context.Context, opts *bi
 }
 
 func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt interface{}) error { // todo: further process
+	// Save participant
 	myEvt := evt.(*contract.MpcManagerParticipantAdded)
 	participant := storage.Participant{
 		PubKey:  myEvt.PublicKey,
@@ -95,9 +98,29 @@ func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt in
 		Index:   myEvt.Index.Uint64(),
 	}
 	err := w.DB.SaveModel(ctx, &participant)
-	w.Logger.DebugNilError(err, "Participant added", []logger.Field{{"participant", participant}}...)
+	if err != nil {
+		return errors.Wrapf(err, "failed to save participant %v", participant)
+	}
+
+	// Save group // todo: avoid duplicate saving group
+	rawPubKeys, err := w.Caller.GetGroup(nil, myEvt.GroupId)
+	var pubKeys []storage.PubKey
+	for _, rawPubKey := range rawPubKeys {
+		pubKeys = append(pubKeys, rawPubKey)
+	}
+	group := storage.Group{
+		ID:    myEvt.GroupId,
+		Group: pubKeys,
+	}
+	err = w.DB.SaveModel(ctx, &group)
+	if err != nil {
+		return errors.Wrapf(err, "failed to save group %v", group)
+	}
+
+	// Publish events.ParticipantAdded
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.ParticipantAdded)(myEvt), nil))
-	return errors.Wrapf(err, "failed to save participant %v", participant)
+	w.Logger.Debug("Participant added", []logger.Field{{"participant", participant}}...)
+	return nil
 }
 
 // KeygenRequestAdded
