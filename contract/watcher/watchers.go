@@ -28,7 +28,7 @@ import (
 type MpcManagerWatchers struct {
 	Logger       logger.Logger
 	DB           storage.DB
-	PubKeys      [][]byte
+	PubKey       []byte
 	EthWsURL     string
 	ContractAddr common.Address
 	Publisher    dispatcher.Publisher
@@ -66,7 +66,7 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 	watcherFactory := &MpcManagerWatcherFactory{w.Logger, boundFilterer}
 	w.watcherFactory = watcherFactory
 
-	err = w.watchParticipantAdded(ctx, nil, w.PubKeys)
+	err = w.watchParticipantAdded(ctx, nil, [][]byte{w.PubKey})
 	w.Logger.FatalOnError(err, "Failed to watch ParticipantAdded")
 	err = w.watchRequestStarted(ctx, nil)
 	w.Logger.FatalOnError(err, "Failed to watch RequestStarted")
@@ -183,7 +183,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	}
 
 	participant := storage.Participant{
-		PubKey:  hash256.FromBytes(w.PubKeys[0]),
+		PubKey:  hash256.FromBytes(w.PubKey),
 		GroupId: myEvt.GroupId,
 	}
 
