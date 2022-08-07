@@ -81,7 +81,7 @@ func (w *MpcManagerWatchers) Do(ctx context.Context, evtObj *dispatcher.EventObj
 		err = w.watchKeyGenerated(ctx, nil, groupIDs)
 		w.Logger.ErrorOnError(err, "Failed to watch KeyGenerated")
 	case *events.KeyGenerated:
-		var genPubKeys [][]byte
+		genPubKeys := [][]byte{evt.PublicKey}
 		err := w.watchStakeRequestAdded(ctx, nil, genPubKeys)
 		w.Logger.ErrorOnError(err, "Failed to watch StakeRequestAdded")
 	}
