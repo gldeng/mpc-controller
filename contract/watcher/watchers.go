@@ -62,9 +62,9 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 }
 
 func (w *MpcManagerWatchers) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
-	switch _ := evtObj.Event.(type) {
+	switch evt := evtObj.Event.(type) {
 	case *events.ParticipantAdded:
-		var groupIDs [][32]byte
+		groupIDs := [][32]byte{evt.GroupId}
 		err := w.watchKeygenRequestAdded(ctx, nil, groupIDs)
 		w.Logger.ErrorOnError(err, "Failed to watch KeygenRequestAdded")
 		err = w.watchKeyGenerated(ctx, nil, groupIDs)
