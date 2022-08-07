@@ -5,7 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
-	"github.com/avalido/mpc-controller/events"
+	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,10 +23,9 @@ type JoiningMaster struct {
 	Signer             *bind.TransactOpts
 	StakeReqCacheCap   uint32
 	StakeReqPublishDur time.Duration
-	Transactor         bind.ContractTransactor
+	Transactor         transactor.Transactor
 
-	joiningWatcher *StakeRequestAddedEventWatcher
-	joiningDealer  *StakeRequestAddedEventHandler
+	joiningDealer *StakeRequestAdded
 }
 
 func (m *JoiningMaster) Start(ctx context.Context) error {
@@ -36,27 +35,12 @@ func (m *JoiningMaster) Start(ctx context.Context) error {
 }
 
 func (m *JoiningMaster) subscribe() {
-	stakeAddedWatcher := StakeRequestAddedEventWatcher{
-		Logger:       m.Logger,
-		ContractAddr: m.ContractAddr,
-		Publisher:    m.Dispatcher,
+	stakeAddedHandler := StakeRequestAdded{
+		Logger:     m.Logger,
+		Transactor: m.Transactor,
 	}
 
-	stakeAddedHandler := StakeRequestAddedEventHandler{
-		Logger:          m.Logger,
-		MyPubKeyHashHex: m.MyPubKeyHashHex,
-		Signer:          m.Signer,
-		MyIndexGetter:   m.MyIndexGetter,
-		Receipter:       m.Receipter,
-		ContractAddr:    m.ContractAddr,
-		Transactor:      m.Transactor,
-		Publisher:       m.Dispatcher,
-	}
-
-	m.joiningWatcher = &stakeAddedWatcher
 	m.joiningDealer = &stakeAddedHandler
 
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreated{}, m.joiningWatcher)
-	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStored{}, m.joiningWatcher) // Publish event:  *contract.MpcManagerStakeRequestAdded
 	m.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, m.joiningDealer)
 }
