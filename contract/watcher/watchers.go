@@ -89,8 +89,14 @@ func (w *MpcManagerWatchers) watchParticipantAdded(ctx context.Context, opts *bi
 
 func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerParticipantAdded)
-	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.ParticipantAdded)(myEvt), nil))
-	return nil
+	participant := storage.Participant{
+		PubKey:  myEvt.PublicKey,
+		GroupId: myEvt.GroupId,
+		Index:   myEvt.Index.Uint64(),
+	}
+	err := errors.Wrapf(w.DB.SaveModel(ctx, &participant), "failed to save participant %v", participant)
+	w.Logger.DebugNilError(err, "Participant added", []logger.Field{{"participant", participant}}...)
+	return err
 }
 
 // KeygenRequestAdded
