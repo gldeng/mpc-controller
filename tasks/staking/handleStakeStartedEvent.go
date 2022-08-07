@@ -36,7 +36,7 @@ type Cache interface {
 	cache.ParticipantKeysGetter
 }
 
-// Subscribe event: *contract.MpcManagerStakeRequestStarted
+// Subscribe event: *events.RequestStarted
 
 // Publish event:
 
@@ -53,8 +53,8 @@ type StakeRequestStartedEventHandler struct {
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
-	mpcManagerStakeRequestStartedChan chan *contract.MpcManagerStakeRequestStarted
-	signStakeTxWs                     *work.Workshop
+	requestStartedChan chan *events.RequestStarted
+	signStakeTxWs      *work.Workshop
 
 	issueTxChan chan *issueTx
 	once        sync.Once
@@ -76,14 +76,14 @@ type StakeRequestStartedEventHandler struct {
 
 type issueTx struct {
 	*StakeTaskWrapper
-	*contract.MpcManagerStakeRequestStarted
+	*events.StakeRequestAdded
 }
 
 func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
 
-		eh.mpcManagerStakeRequestStartedChan = make(chan *contract.MpcManagerStakeRequestStarted, 1024)
+		eh.requestStartedChan = make(chan *events.RequestStarted, 1024)
 
 		eh.issueTxChan = make(chan *issueTx)
 		eh.issueTxCache = make(map[uint64]*issueTx)
@@ -94,11 +94,11 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 	})
 
 	switch evt := evtObj.Event.(type) {
-	case *contract.MpcManagerStakeRequestStarted:
+	case *events.RequestStarted:
 		select {
 		case <-ctx.Done():
 			return
-		case eh.mpcManagerStakeRequestStartedChan <- evt:
+		case eh.requestStartedChan <- evt:
 		}
 	}
 }
@@ -108,7 +108,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evt := <-eh.mpcManagerStakeRequestStartedChan:
+		case evt := <-eh.requestStartedChan:
 			pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
 			if pubKeyInfo == nil {
 				eh.Logger.Error("No GeneratedPubKeyInfo found")
@@ -202,7 +202,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					stw := args.([]interface{})[0].(*StakeTaskWrapper)
-					evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestStarted)
+					evt := args.([]interface{})[1].(*events.RequestStarted)
 					if err := stw.SignTx(ctx); err != nil {
 						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
 						return
