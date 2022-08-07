@@ -219,7 +219,16 @@ func (w *MpcManagerWatchers) watchKeyGenerated(ctx context.Context, opts *bind.W
 
 func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerKeyGenerated)
+	genPubKey := storage.GeneratedPublicKey{
+		GenPubKey: myEvt.PublicKey,
+		GroupId:   myEvt.GroupId,
+	}
+	err := w.DB.SaveModel(ctx, &genPubKey)
+	if err != nil {
+		return errors.Wrapf(err, "failed to load generated public key %v", genPubKey)
+	}
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeyGenerated)(myEvt), nil))
+	w.Logger.Debug("Public key generated", []logger.Field{{"genPubKey", genPubKey}}...)
 	return nil
 }
 
