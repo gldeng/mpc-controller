@@ -12,11 +12,7 @@ var (
 	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
 )
 
-const (
-	PubKeyLength = 64
-)
-
-type PubKey [PubKeyLength]byte
+type PubKey []byte
 
 // Models
 
