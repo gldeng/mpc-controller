@@ -18,7 +18,7 @@ var (
 	ErrCannotJoin = errors.New("Cannot join anymore")
 )
 
-// Subscribe event: *events.MpcManagerStakeRequestAdded
+// Subscribe event: *events.StakeRequestAdded
 
 // Publish event:
 
