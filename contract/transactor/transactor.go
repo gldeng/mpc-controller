@@ -55,9 +55,9 @@ func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, 
 			errMsg := err.Error()
 			switch {
 			case strings.Contains(errMsg, "QuorumAlreadyReached"):
-				return tx, errors.WithStack(&ErrTypQuorumAlreadyReached{Cause: err}), false
+				return tx, errors.WithStack(&ErrTypQuorumAlreadyReached{}), false
 			case strings.Contains(errMsg, "AttemptToRejoin "):
-				return tx, errors.WithStack(&ErrTypAttemptToRejoin{Cause: err}), false
+				return tx, errors.WithStack(&ErrTypAttemptToRejoin{}), false
 			}
 			return tx, errors.WithStack(err), true
 		}
@@ -77,7 +77,7 @@ func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32
 			errMsg := err.Error()
 			switch {
 			case strings.Contains(errMsg, "AttemptToReconfirmKey"):
-				return tx, errors.WithStack(&ErrTypAttemptToReconfirmKey{Cause: err}), false
+				return tx, errors.WithStack(&ErrTypAttemptToReconfirmKey{}), false
 			}
 			return tx, errors.WithStack(err), true
 		}
