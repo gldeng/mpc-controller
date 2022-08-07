@@ -53,6 +53,10 @@ func (m *GeneratedPublicKey) Key() []byte {
 	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(keyPayload))
 }
 
+func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
+	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(hash))
+}
+
 // Handy methods
 
 func (m *Participant) ParticipantId() [32]byte {
