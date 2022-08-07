@@ -2,12 +2,19 @@ package watcher
 
 import (
 	"context"
+	"encoding/binary"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/contract/caller"
+	"github.com/avalido/mpc-controller/contract/transactor"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/contract/watcher"
+	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/network/redialer"
 	"github.com/avalido/mpc-controller/utils/network/redialer/adapter"
@@ -26,7 +33,9 @@ type MpcManagerWatchers struct {
 	ContractAddr common.Address
 	Publisher    dispatcher.Publisher
 
-	Caller contract.Caller
+	Caller      caller.Caller
+	Transactor  transactor.Transactor
+	KeygenDoner core.KeygenDoner
 
 	contractFilterer bind.ContractFilterer
 	ethClientCh      chan redialer.Client // todo: handle reconnection
@@ -102,8 +111,8 @@ func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt in
 		return errors.Wrapf(err, "failed to save participant %v", participant)
 	}
 
-	// Save group // todo: avoid duplicate saving group
-	rawPubKeys, err := w.Caller.GetGroup(nil, myEvt.GroupId)
+	// Save group
+	rawPubKeys, err := w.Caller.GetGroup(ctx, nil, myEvt.GroupId)
 	var pubKeys []storage.PubKey
 	for _, rawPubKey := range rawPubKeys {
 		pubKeys = append(pubKeys, rawPubKey)
@@ -136,7 +145,64 @@ func (w *MpcManagerWatchers) watchKeygenRequestAdded(ctx context.Context, opts *
 
 func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerKeygenRequestAdded)
-	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeygenRequestAdded)(myEvt), nil))
+
+	// Request key generation
+	reqId := myEvt.Raw.TxHash.Hex()
+	group := storage.Group{ID: myEvt.GroupId}
+	err := w.DB.LoadModel(ctx, &group)
+	if err != nil {
+		return errors.Wrapf(err, "failed to load group %v", group)
+	}
+
+	var participants [][]byte
+	for _, pubKey := range group.Group {
+		participants = append(participants, pubKey)
+	}
+	participantsHexs := bytes.BytesToHexArr(participants)
+	normalized, err := crypto.NormalizePubKeys(participantsHexs) // for mpc-server compatibility
+	if err != nil {
+		return errors.Wrapf(err, "failed to normalize partiId public keys %v", participantsHexs)
+	}
+
+	keyGenReq := &core.KeygenRequest{
+		KeygenReqID:            reqId,
+		CompressedPartiPubKeys: normalized,
+		Threshold:              binary.BigEndian.Uint64(group.ID[30:31]),
+	}
+
+	res, err := w.KeygenDoner.KeygenDone(ctx, keyGenReq)
+	if err != nil {
+		return errors.Wrapf(err, "failed to request key generation %v", keyGenReq)
+	}
+
+	// Report generated public key
+	genPubKeyHex := res.Result
+	dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
+	if err != nil {
+		return errors.Wrapf(err, "failed to decompress generated public key %v", genPubKeyHex)
+	}
+
+	participant := storage.Participant{
+		PubKey:  hash256.FromBytes(w.PubKeys[0]),
+		GroupId: myEvt.GroupId,
+	}
+
+	err = w.DB.LoadModel(ctx, &participant)
+	if err != nil {
+		return errors.Wrapf(err, "failed to load participant %v", participant)
+	}
+
+	var indexByte []byte
+	binary.BigEndian.PutUint64(indexByte, participant.Index)
+
+	var partiId [32]byte
+	copy(partiId[:], group.ID[:])
+	partiId[30] = indexByte[0]
+
+	_, _, err = w.Transactor.ReportGeneratedKey(ctx, partiId, dnmGenPubKeyBytes)
+	if err != nil {
+		return errors.Wrapf(err, "failed to report generated public key %v with participant id %v", dnmGenPubKeyBytes, partiId)
+	}
 	return nil
 }
 
