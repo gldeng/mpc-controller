@@ -15,7 +15,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/prom"
-	"github.com/avalido/mpc-controller/support/keygen"
 	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
 	"github.com/avalido/mpc-controller/tasks/staking/joining"
@@ -33,7 +32,6 @@ import (
 	"reflect"
 
 	"github.com/avalido/mpc-controller/storage/badgerDB"
-	"github.com/avalido/mpc-controller/support/participant"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -112,7 +110,6 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Parse public myPrivKey
 	myPubKeyBytes := myCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
-	myPubKeyHex := bytes.BytesToHex(myPubKeyBytes)
 	myPubKeyHash := hash256.FromBytes(myPubKeyBytes)
 
 	// Convert chain ID
@@ -154,29 +151,6 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	cacheWrapper := cache.CacheWrapper{
 		Dispatcher: myDispatcher,
-	}
-
-	participantMaster := participant.ParticipantMaster{
-		ContractAddr:    contractAddr,
-		ContractCaller:  rpcEthCliWrapper,
-		Dispatcher:      myDispatcher,
-		Logger:          myLogger,
-		MyPubKeyBytes:   myPubKeyBytes,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyPubKeyHex:     myPubKeyHex,
-		Storer:          myDB,
-	}
-
-	keygenMaster := keygen.KeygenMaster{
-		ContractAddr:    contractAddr,
-		Dispatcher:      myDispatcher,
-		KeygenDoner:     mpcClient,
-		Logger:          myLogger,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Receipter:       rpcEthCliWrapper,
-		Signer:          signer,
-		Storer:          myDB,
-		Transactor:      rpcEthCliWrapper,
 	}
 
 	joiningMaster := joining.JoiningMaster{
@@ -231,8 +205,6 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Services: []Service{
 			&cacheWrapper,
 			&filterReconnector,
-			&participantMaster,
-			&keygenMaster,
 			&joiningMaster,
 			&stakingMaster,
 			&rewardMaster,
