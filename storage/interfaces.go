@@ -19,7 +19,7 @@ type DB interface {
 
 	ModelSaver
 	ModelLoader
-	UnmarshalLister
+	ModelLister
 }
 
 // Classic k-v storage
