@@ -2,14 +2,16 @@ package joining
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/contract/transactor"
+	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
 	"sync"
+	"time"
 )
 
 var (
@@ -21,30 +23,30 @@ var (
 // Publish event:
 
 type StakeRequestAdded struct {
-	Logger logger.Logger
-	PubKey []byte
+	Logger        logger.Logger
+	PubKey        []byte
+	DB            storage.DB
+	Transactor    transactor.Transactor
+	StakeReqCache *ristretto.Cache
 
-	DB         storage.DB
-	Transactor transactor.Transactor
-
-	mpcManagerStakeRequestAddedChan chan *contract.MpcManagerStakeRequestAdded
-	once                            sync.Once
+	stakeRequestAddedChan chan *events.StakeRequestAdded
+	once                  sync.Once
 	//ws                 *work.Workshop
 }
 
 func (eh *StakeRequestAdded) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.mpcManagerStakeRequestAddedChan = make(chan *contract.MpcManagerStakeRequestAdded, 1024)
+		eh.stakeRequestAddedChan = make(chan *events.StakeRequestAdded, 1024)
 		//eh.ws = work.NewWorkshop(eh.Logger, "joinRequest", time.Minute*10, 10)
 		go eh.joinRequest(ctx)
 	})
 
 	switch evt := evtObj.Event.(type) {
-	case *contract.MpcManagerStakeRequestAdded:
+	case *events.StakeRequestAdded:
 		select {
 		case <-ctx.Done():
 			return
-		case eh.mpcManagerStakeRequestAddedChan <- evt:
+		case eh.stakeRequestAddedChan <- evt:
 		}
 	}
 }
@@ -54,7 +56,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evt := <-eh.mpcManagerStakeRequestAddedChan:
+		case evt := <-eh.stakeRequestAddedChan:
 			//eh.ws.AddTask(ctx, &work.Task{
 			//	Args: []interface{}{myIndex, evt},
 			//	Ctx:  ctx,
@@ -98,6 +100,9 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				break
 			}
 
+			eh.StakeReqCache.SetWithTTL(txHash, evt, 1, time.Hour)
+			eh.StakeReqCache.Wait()
+
 			stakeReq := storage.StakeRequest{
 				ReqNo:     evt.RequestNumber.String(),
 				TxHash:    txHash,
@@ -111,8 +116,8 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			eh.Logger.ErrorOnError(err, "Failed to save stake request", []logger.Field{
 				{"stakeReq", stakeReq}}...)
 
-			eh.Logger.WarnOnTrue(float64(len(eh.mpcManagerStakeRequestAddedChan)) > float64(cap(eh.mpcManagerStakeRequestAddedChan))*0.8, "Too may stake request PENDED to join",
-				[]logger.Field{{"pendedStakeReqs", len(eh.mpcManagerStakeRequestAddedChan)}}...)
+			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too may stake request PENDED to join",
+				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined stake request", []logger.Field{
 				{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
 			//}},
