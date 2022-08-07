@@ -192,13 +192,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 		return errors.Wrapf(err, "failed to load participant %v", participant)
 	}
 
-	var indexByte []byte
-	binary.BigEndian.PutUint64(indexByte, participant.Index)
-
-	var partiId [32]byte
-	copy(partiId[:], group.ID[:])
-	partiId[30] = indexByte[0]
-
+	var partiId = participant.ParticipantId()
 	_, _, err = w.Transactor.ReportGeneratedKey(ctx, partiId, dnmGenPubKeyBytes)
 	if err != nil {
 		return errors.Wrapf(err, "failed to report generated public key %v with participant id %v", dnmGenPubKeyBytes, partiId)
