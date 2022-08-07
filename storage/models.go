@@ -12,7 +12,7 @@ var (
 	KeyPrefixParticipant        KeyPrefix = []byte("parti")
 	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
 
-	KeyPrefixStakeRequest KeyPrefix = []byte("stakeRequest")
+	KeyPrefixStakeRequest KeyPrefix = []byte("stakeReq")
 )
 
 type PubKey []byte
