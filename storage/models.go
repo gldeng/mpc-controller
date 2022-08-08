@@ -21,8 +21,6 @@ var (
 	KeyPrefixStakeRequest KeyPrefix = []byte("stakeReq")
 )
 
-type ReqHash [32]byte
-
 // PubKey
 
 type PubKey []byte // uncompressed
@@ -150,7 +148,7 @@ func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
 // JoinRequest
 
 type JoinRequest struct {
-	ReqHash ReqHash       `json:"reqHash"`
+	ReqHash [32]byte      `json:"reqHash"`
 	PartiId ParticipantId `json:"partiId"`
 	Args    interface{}   `json:"args"`
 }
