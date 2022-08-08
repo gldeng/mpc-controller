@@ -3,16 +3,15 @@ package staking
 import (
 	"context"
 	"fmt"
-	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
-	"github.com/avalido/mpc-controller/utils/addrs"
-	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/avalido/mpc-controller/utils/work"
@@ -40,27 +39,28 @@ type Cache interface {
 
 // Publish event:
 
-type StakeRequestStartedEventHandler struct {
+type StakeRequestStarted struct {
+	PubKey []byte
+
 	Balancer          chain.Balancer
 	CChainIssueClient chain.CChainIssuer
 	Cache             Cache // todo: to use cache.ICache instead
 	ChainNoncer       chain.Noncer
 	Logger            logger.Logger
-	MyPubKeyHashHex   string
 	Noncer            noncer.Noncer
 	PChainIssueClient chain.PChainIssuer
 	Publisher         dispatcher.Publisher
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
+	DB         storage.DB
+	Transactor transactor.Transactor
+
 	requestStartedChan chan *events.RequestStarted
 	signStakeTxWs      *work.Workshop
 
 	issueTxChan chan *issueTx
 	once        sync.Once
-
-	genPubKeyInfo *events.GeneratedPubKeyInfo // todo: value may vary for future key-rotation
-	myIndex       *big.Int
 
 	cChainAddress *common.Address // todo: value may vary for future key-rotation
 	addrLock      sync.Mutex
@@ -76,10 +76,10 @@ type StakeRequestStartedEventHandler struct {
 
 type issueTx struct {
 	*StakeTaskWrapper
-	*events.StakeRequestAdded
+	*storage.StakeRequest
 }
 
-func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
 
@@ -103,66 +103,73 @@ func (eh *StakeRequestStartedEventHandler) Do(ctx context.Context, evtObj *dispa
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
+func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.requestStartedChan:
-			pubKeyInfo := eh.Cache.GetGeneratedPubKeyInfo(evt.PublicKey.Hex())
-			if pubKeyInfo == nil {
-				eh.Logger.Error("No GeneratedPubKeyInfo found")
+			stakeReq := storage.StakeRequest{}
+			joinReq := storage.JoinRequest{
+			ReqHash: evt.RequestHash,
+			Args: &stakeReq,
+			}
+			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
+				eh.Logger.Debug("No JoinRequest load for stake", []logger.Field{{"key", evt.RequestHash}}...)
 				break
 			}
-			eh.genPubKeyInfo = pubKeyInfo // todo: data race protect
 
-			pubKeyHex := eh.genPubKeyInfo.CompressedGenPubKeyHex
-			pubkey, err := crypto.UnmarshalPubKeyHex(pubKeyHex)
+			genPubKey := storage.GeneratedPublicKey{}
+			key := genPubKey.KeyFromHash(stakeReq.GenPubKey),
+			if err := eh.DB.MGet(ctx,  key, &genPubKey); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to load generated public key", []logger.Field{{"key", key}}...)
+				break
+			}
+
+			cmpGenPubKeyHex, err := genPubKey.GenPubKey.CompressPubKeyHex()
 			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to unmarshal public key", []logger.Field{{"publicKey", pubkey}}...)
+				eh.Logger.ErrorOnError(err, "Failed to compress generated public key")
+				break
+			}
+
+			cChainAddr, err := genPubKey.GenPubKey.CChainAddress()
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to get C-Chain address")
 				break
 			}
 
 			eh.addrLock.Lock()
-			eh.cChainAddress = addrs.PubkeyToAddresse(pubkey)
-			cChainAddr := eh.cChainAddress
+			eh.cChainAddress = &cChainAddr
 			eh.addrLock.Unlock()
 
-			index := eh.Cache.GetMyIndex(eh.MyPubKeyHashHex, evt.PublicKey.Hex())
-			if index == nil {
-				eh.Logger.Error("Not found my index.")
-				break
+			group := storage.Group{
+				ID: genPubKey.GroupId,
 			}
-			eh.myIndex = index // todo: data race protect
-
-			ok := eh.isParticipant(evt)
-			if !ok {
-				eh.Logger.Debug("Not participant in StakeRequestStarted event", []logger.Field{
-					{"requestId", evt.RequestId},
-					{"TxHash", evt.Raw.TxHash}}...)
+			if err := eh.DB.LoadModel(ctx, &group); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to load group", []logger.Field{{"key", group.ID}}...)
 				break
 			}
 
-			partiKeys, err := eh.getNormalizedPartiKeys(evt.PublicKey, evt.ParticipantIndices)
+			cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
 			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to get normalized participant keys")
+				eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
 				break
 			}
 
-			nonce := eh.Noncer.GetNonce(evt.RequestId.Uint64()) // todo: how should nonce base adjust in case of validation errors among all participants?
+			nonce := eh.Noncer.GetNonce(stakeReq.ReqNo) // todo: how should nonce base adjust in case of validation errors among all participants?
 			taskID := stakeTaskIDPrefix + evt.Raw.TxHash.Hex()
 
 			signRequester := &SignRequester{
 				SignDoner: eh.SignDoner,
 				SignRequestArgs: SignRequestArgs{
 					TaskID:                 taskID,
-					CompressedPartiPubKeys: partiKeys,
-					CompressedGenPubKeyHex: eh.genPubKeyInfo.CompressedGenPubKeyHex,
+					CompressedPartiPubKeys: cmpPartiPubKeys,
+					CompressedGenPubKeyHex: cmpGenPubKeyHex,
 				},
 			}
 
 			eh.Logger.Debug("Nonce fetched", []logger.Field{
-				{"requestID", evt.RequestId.Uint64()},
+				{"requestID", stakeReq.ReqNo},
 				{"nonce", nonce},
 				{"taskID", evt.Raw.TxHash.Hex()}}...)
 
@@ -170,7 +177,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				TaskID:                        taskID,
 				MpcManagerStakeRequestStarted: evt,
 				NetworkContext:                eh.NetworkContext,
-				PubKeyHex:                     eh.genPubKeyInfo.CompressedGenPubKeyHex,
+				PubKeyHex:                     cmpGenPubKeyHex,
 				Nonce:                         nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()
@@ -187,37 +194,40 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 				StakeTask:         stakeTask,
 			}
 
+			amount := big.NewInt(int64(stw.DelegateAmt))
+
 			// params validation before request tx sign
-			if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
+			if err := eh.checkBalance(ctx, cChainAddr, amount); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to check balance before request tx sign", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
 				break
 			}
-			if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
+			if err := eh.checkStarTime(stakeReq.StartTime); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to check stake start time before request tx sign", []logger.Field{{"startTimeExpiredStakeTask", stw.StakeTask}}...)
 				break
 			}
 
 			eh.signStakeTxWs.AddTask(ctx, &work.Task{
-				Args: []interface{}{stw, evt},
+				Args: []interface{}{stw, &stakeReq},
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
 					stw := args.([]interface{})[0].(*StakeTaskWrapper)
-					evt := args.([]interface{})[1].(*events.RequestStarted)
+					stakeReq := args.([]interface{})[1].(*storage.StakeRequest)
 					if err := stw.SignTx(ctx); err != nil {
 						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
 						return
 					}
 
 					// params validation after tx signed, check this because signing consume gas and time
-					if err := eh.checkBalance(ctx, *cChainAddr, evt.Amount); err != nil {
+					amount := big.NewInt(int64(stw.DelegateAmt))
+					if err := eh.checkBalance(ctx, stw.CChainAddress, amount); err != nil {
 						eh.Logger.DebugOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
 						return
 					}
-					if err := eh.checkStarTime(evt.StartTime.Int64()); err != nil {
+					if err := eh.checkStarTime(stakeReq.StartTime); err != nil {
 						eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed", []logger.Field{{"startTimeExpiredStakeTask", stw.StakeTask}}...)
 						return
 					}
-					issueTx := &issueTx{stw, evt}
+					issueTx := &issueTx{stw, stakeReq}
 					select {
 					case <-ctx.Done():
 						return
@@ -229,7 +239,7 @@ func (eh *StakeRequestStartedEventHandler) signTx(ctx context.Context) {
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
+func (eh *StakeRequestStarted) issueTx(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -269,7 +279,7 @@ func (eh *StakeRequestStartedEventHandler) issueTx(ctx context.Context) {
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *StakeTaskWrapper) error {
+func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrapper) error {
 	stakeTask := stw.StakeTask
 	ids, err := stw.IssueTx(ctx)
 	signRequester := stw.SignRequester
@@ -328,7 +338,7 @@ func (eh *StakeRequestStartedEventHandler) doIssueTx(ctx context.Context, stw *S
 	return nil
 }
 
-func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context) {
+func (eh *StakeRequestStarted) checkIssueTxCache(ctx context.Context) {
 	issueT := time.NewTicker(time.Second * 60)
 	statsT := time.NewTicker(time.Minute * 5)
 	defer issueT.Stop()
@@ -376,7 +386,7 @@ func (eh *StakeRequestStartedEventHandler) checkIssueTxCache(ctx context.Context
 }
 
 // todo: use cache.IsParticipantChecker
-func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
+func (eh *StakeRequestStarted) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
 	var participating bool
 	for _, index := range req.ParticipantIndices {
 		if index.Cmp(eh.myIndex) == 0 {
@@ -392,7 +402,7 @@ func (eh *StakeRequestStartedEventHandler) isParticipant(req *contract.MpcManage
 	return true
 }
 
-func (eh *StakeRequestStartedEventHandler) syncNonce(ctx context.Context) error {
+func (eh *StakeRequestStarted) syncNonce(ctx context.Context) error {
 	addr := eh.cChainAddress
 	if addr != nil {
 		addressNonce, err := eh.ChainNoncer.NonceAt(ctx, *addr, nil)
@@ -404,30 +414,7 @@ func (eh *StakeRequestStartedEventHandler) syncNonce(ctx context.Context) error 
 	return nil
 }
 
-func (eh *StakeRequestStartedEventHandler) checkNonceContinuity(ctx context.Context, task *StakeTask) error {
-	exportTx, err := task.GetSignedExportTx()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get signed export tx")
-	}
-	evmInput := exportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx).Ins[0]
-
-	addressNonce, err := eh.ChainNoncer.NonceAt(ctx, evmInput.Address, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to request nonce")
-	}
-
-	if addressNonce > evmInput.Nonce {
-		return errors.WithStack(&ErrTypNonceRegress{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceRegress, addressNonce, evmInput.Nonce)})
-	}
-
-	if addressNonce < evmInput.Nonce {
-		return errors.WithStack(&ErrTypeNonceJump{ErrMsg: fmt.Sprintf("%v:addressNonce:%v,givenNonce:%v", ErrMsgNonceJump, addressNonce, evmInput.Nonce)})
-	}
-
-	return nil
-}
-
-func (eh *StakeRequestStartedEventHandler) checkBalance(ctx context.Context, addr common.Address, stakeAmt *big.Int) error {
+func (eh *StakeRequestStarted) checkBalance(ctx context.Context, addr common.Address, stakeAmt *big.Int) error {
 	bl, err := eh.Balancer.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return errors.WithStack(err)
@@ -443,7 +430,7 @@ func (eh *StakeRequestStartedEventHandler) checkBalance(ctx context.Context, add
 	}
 }
 
-func (eh *StakeRequestStartedEventHandler) checkStarTime(startTime int64) error {
+func (eh *StakeRequestStarted) checkStarTime(startTime int64) error {
 	startTime_ := time.Unix(startTime, 0)
 	now := time.Now()
 	switch {
@@ -466,19 +453,4 @@ func (eh *StakeRequestStartedEventHandler) checkStarTime(startTime int64) error 
 		//return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn60Seconds{})
 	}
 	return nil
-}
-
-// todo: use cache.NormalizedParticipantKeysGetter instead
-func (eh *StakeRequestStartedEventHandler) getNormalizedPartiKeys(genPubKeyHash common.Hash, partiIndices []*big.Int) ([]string, error) {
-	partiKeys := eh.Cache.GetParticipantKeys(genPubKeyHash, partiIndices)
-	if partiKeys == nil {
-		return nil, errors.New("Found no participant keys.")
-	}
-
-	normalized, err := crypto.NormalizePubKeys(partiKeys)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to normalized participant public keys: %v", partiKeys)
-	}
-
-	return normalized, nil
 }
