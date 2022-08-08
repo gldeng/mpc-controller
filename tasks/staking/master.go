@@ -4,9 +4,12 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/tasks/staking/joining"
+	"github.com/avalido/mpc-controller/tasks/staking/staking"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,7 +18,7 @@ import (
 type StakingMaster struct {
 	Balancer          chain.Balancer
 	CChainIssueClient chain.CChainIssuer
-	Cache             Cache
+	Cache             staking.Cache
 	ChainNoncer       chain.Noncer
 	ContractAddr      common.Address
 	Dispatcher        dispatcher.Dispatcher
@@ -24,9 +27,11 @@ type StakingMaster struct {
 	Noncer            noncer.Noncer
 	PChainIssueClient chain.PChainIssuer
 	SignDoner         core.SignDoner
+	Transactor        transactor.Transactor
 	chain.NetworkContext
 
-	stakingDealer *StakeRequestStarted
+	joiningDealer *joining.StakeRequestAdded
+	stakingDealer *staking.StakeRequestStarted
 }
 
 func (m *StakingMaster) Start(ctx context.Context) error {
@@ -36,7 +41,12 @@ func (m *StakingMaster) Start(ctx context.Context) error {
 }
 
 func (m *StakingMaster) subscribe() {
-	taskStartedDealer := StakeRequestStarted{
+	stakeAddedHandler := joining.StakeRequestAdded{
+		Logger:     m.Logger,
+		Transactor: m.Transactor,
+	}
+
+	taskStartedDealer := staking.StakeRequestStarted{
 		Balancer:          m.Balancer,
 		CChainIssueClient: m.CChainIssueClient,
 		Cache:             m.Cache,
@@ -49,10 +59,9 @@ func (m *StakingMaster) subscribe() {
 		SignDoner:         m.SignDoner,
 	}
 
+	m.joiningDealer = &stakeAddedHandler
 	m.stakingDealer = &taskStartedDealer
 
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreated{}, m.stakingWatcher)
-	m.Dispatcher.Subscribe(&events.GeneratedPubKeyInfoStored{}, m.stakingWatcher)
-
-	m.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestStarted{}, m.stakingDealer)
+	m.Dispatcher.Subscribe(&contract.MpcManagerStakeRequestAdded{}, m.joiningDealer)
+	m.Dispatcher.Subscribe(&events.RequestStarted{}, m.stakingDealer)
 }
