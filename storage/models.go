@@ -21,8 +21,63 @@ var (
 	KeyPrefixStakeRequest KeyPrefix = []byte("stakeReq")
 )
 
-type PubKey []byte
 type ReqHash [32]byte
+
+// PubKey
+
+type PubKey []byte // uncompressed
+
+func (m PubKey) CChainAddress() (common.Address, error) {
+	pubKey, err := crypto.UnmarshalPubkeyBytes(m)
+	if err != nil {
+		return *new(common.Address), errors.WithStack(err)
+	}
+	return *addrs.PubkeyToAddresse(pubKey), nil
+}
+
+func (m PubKey) CompressPubKey() ([]byte, error) {
+	normed, err := crypto.NormalizePubKeyBytes(m)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return normed, nil
+}
+
+func (m PubKey) CompressPubKeyHex() (string, error) {
+	normed, err := crypto.NormalizePubKey(common.Bytes2Hex(m))
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return *normed, nil
+}
+
+// PubKeys
+
+type PubKeys []PubKey
+
+func (m PubKeys) CompressPubKeys() ([][]byte, error) {
+	var cmps [][]byte
+	for _, pubKey := range m {
+		cmp, err := pubKey.CompressPubKey()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		cmps = append(cmps, cmp)
+	}
+	return cmps, nil
+}
+
+func (m PubKeys) CompressPubKeyHexs() ([]string, error) {
+	var cmps []string
+	for _, pubKey := range m {
+		cmp, err := pubKey.CompressPubKeyHex()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		cmps = append(cmps, cmp)
+	}
+	return cmps, nil
+}
 
 // ParticipantId
 
@@ -50,34 +105,6 @@ type Group struct {
 func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID
 	keyPayload := m.ID
 	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
-}
-
-func (m *Group) CompressGroupPubKeys() ([][]byte, error) {
-	var participants [][]byte
-	for _, pubKey := range m.Group {
-		participants = append(participants, pubKey)
-	}
-
-	normed, err := crypto.NormalizePubKeyBytesArr(participants)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compress participant public keys")
-	}
-
-	return normed, nil
-}
-
-func (m *Group) CompressGroupPubKeyHexs() ([]string, error) {
-	var participants []string
-	for _, pubKey := range m.Group {
-		participants = append(participants, common.Bytes2Hex(pubKey))
-	}
-
-	normed, err := crypto.NormalizePubKeys(participants)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compress participant public keys")
-	}
-
-	return normed, nil
 }
 
 // Participant
@@ -118,33 +145,6 @@ func (m *GeneratedPublicKey) Key() []byte { // Key format: KeyPrefixGeneratedPub
 
 func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
 	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(hash))
-}
-
-func (m *GeneratedPublicKey) CompressGenPubKey() ([]byte, error) {
-	normed, err := crypto.NormalizePubKeyBytes(m.GenPubKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compress generated public key")
-	}
-
-	return normed, nil
-}
-
-func (m *GeneratedPublicKey) CompressGenPubKeyHex() (*string, error) {
-	normed, err := crypto.NormalizePubKey(common.Bytes2Hex(m.GenPubKey))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compress generated public key")
-	}
-
-	return normed, nil
-}
-
-func (m *GeneratedPublicKey) CChainAddress() (common.Address, error) {
-	pubKey, err := crypto.UnmarshalPubkeyBytes(m.GenPubKey)
-	if err != nil {
-		return *new(common.Address), errors.Wrap(err, "failed to unmarshal public key")
-	}
-
-	return *addrs.PubkeyToAddresse(pubKey), nil
 }
 
 // JoinRequest
