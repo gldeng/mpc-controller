@@ -2,8 +2,10 @@ package storage
 
 import (
 	"encoding/binary"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 // Key prefixes
@@ -27,6 +29,20 @@ type Group struct {
 func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID
 	keyPayload := m.ID
 	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
+}
+
+func (m *Group) CompressGroupPubKeys() ([][]byte, error) {
+	var participants [][]byte
+	for _, pubKey := range m.Group {
+		participants = append(participants, pubKey)
+	}
+
+	normed, err := crypto.NormalizePubKeyBytesArr(participants)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compress participant public keys")
+	}
+
+	return normed, nil
 }
 
 // --------------------
