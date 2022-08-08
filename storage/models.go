@@ -9,16 +9,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// todo: use struct tag and reflect to deal with key.
+
 // Key prefixes
 var (
 	KeyPrefixGroup              KeyPrefix = []byte("group")
 	KeyPrefixParticipant        KeyPrefix = []byte("parti")
 	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
 
+	KeyPrefixJoinRequest  KeyPrefix = []byte("JoinReq")
 	KeyPrefixStakeRequest KeyPrefix = []byte("stakeReq")
 )
 
 type PubKey []byte
+type ReqHash [32]byte
 
 // ParticipantId
 
@@ -143,6 +147,18 @@ func (m *GeneratedPublicKey) CChainAddress() (common.Address, error) {
 	return *addrs.PubkeyToAddresse(pubKey), nil
 }
 
+// JoinRequest
+
+type JoinRequest struct {
+	ReqHash ReqHash
+	PartiId ParticipantId
+	Args    interface{}
+}
+
+func (m *JoinRequest) Key() []byte { // Key format: KeyPrefixJoinRequest+"-"+ReqHash
+	return Key(KeyPrefixJoinRequest, KeyPayload(m.ReqHash))
+}
+
 // StakeRequest
 
 type StakeRequest struct {
@@ -157,15 +173,4 @@ type StakeRequest struct {
 
 func (m *StakeRequest) Key() []byte { // Key format: KeyPrefixStakeRequest+"-"+TxHash
 	return Key(KeyPrefixStakeRequest, KeyPayload(m.TxHash))
-}
-
-// --------------------
-
-type RequestStart struct {
-	ReqHash      [32]byte
-	PartiIndices uint64
-}
-
-func (m *RequestStart) Key() []byte {
-
 }
