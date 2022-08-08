@@ -19,6 +19,7 @@ var (
 )
 
 type PubKey []byte
+type ParticipantId [32]byte
 
 // --------------------
 
@@ -73,7 +74,7 @@ func (m *Participant) Key() []byte { // Key format: KeyPrefixParticipant+"-"+Has
 	return Key(KeyPrefixParticipant, KeyPayload(keyPayload))
 }
 
-func (m *Participant) ParticipantId() [32]byte {
+func (m *Participant) ParticipantId() ParticipantId {
 	var indexByte []byte
 	binary.BigEndian.PutUint64(indexByte, m.Index)
 
@@ -141,4 +142,15 @@ type StakeRequest struct {
 
 func (m *StakeRequest) Key() []byte { // Key format: KeyPrefixStakeRequest+"-"+TxHash
 	return Key(KeyPrefixStakeRequest, KeyPayload(m.TxHash))
+}
+
+// --------------------
+
+type RequestStart struct {
+	ReqHash      [32]byte
+	PartiIndices uint64
+}
+
+func (m *RequestStart) Key() []byte {
+
 }
