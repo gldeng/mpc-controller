@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"math/big"
 )
 
 // todo: use struct tag and reflect to deal with key.
@@ -83,6 +84,10 @@ type ParticipantId [32]byte
 
 func (m ParticipantId) Index() uint64 {
 	return binary.BigEndian.Uint64(m[31:])
+}
+
+func (m ParticipantId) Joined(indices *big.Int) bool {
+	return indices.Bit(int(m.Index())-1) > 0
 }
 
 func (m ParticipantId) Threshold() uint64 {
