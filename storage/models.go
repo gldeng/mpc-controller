@@ -108,6 +108,15 @@ func (m *GeneratedPublicKey) CompressGenPubKey() ([]byte, error) {
 	return normed, nil
 }
 
+func (m *GeneratedPublicKey) CompressGenPubKeyHex() (*string, error) {
+	normed, err := crypto.NormalizePubKey(common.Bytes2Hex(m.GenPubKey))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compress generated public key")
+	}
+
+	return normed, nil
+}
+
 // --------------------
 
 type StakeRequest struct {
