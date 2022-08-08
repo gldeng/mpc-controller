@@ -125,8 +125,8 @@ type StakeRequest struct {
 	GenPubKey common.Hash `json:"genPubKey"`
 	NodeID    string      `json:"nodeID"`
 	Amount    string      `json:"amount"`
-	StartTime string      `json:"startTime"`
-	EndTime   string      `json:"endTime"`
+	StartTime int64       `json:"startTime"`
+	EndTime   int64       `json:"endTime"`
 }
 
 func (m *StakeRequest) Key() []byte { // Key format: KeyPrefixStakeRequest+"-"+TxHash

@@ -109,8 +109,8 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				GenPubKey: evt.PublicKey,
 				NodeID:    evt.NodeID,
 				Amount:    evt.Amount.String(),
-				StartTime: evt.StartTime.String(),
-				EndTime:   evt.EndTime.String(),
+				StartTime: evt.StartTime.Int64(),
+				EndTime:   evt.EndTime.Int64(),
 			}
 			err = eh.DB.SaveModel(ctx, &stakeReq)
 			eh.Logger.ErrorOnError(err, "Failed to save stake request", []logger.Field{
