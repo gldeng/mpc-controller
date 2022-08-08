@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/binary"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
@@ -115,6 +116,15 @@ func (m *GeneratedPublicKey) CompressGenPubKeyHex() (*string, error) {
 	}
 
 	return normed, nil
+}
+
+func (m *GeneratedPublicKey) CChainAddress() (common.Address, error) {
+	pubKey, err := crypto.UnmarshalPubkeyBytes(m.GenPubKey)
+	if err != nil {
+		return *new(common.Address), errors.Wrap(err, "failed to unmarshal public key")
+	}
+
+	return *addrs.PubkeyToAddresse(pubKey), nil
 }
 
 // --------------------
