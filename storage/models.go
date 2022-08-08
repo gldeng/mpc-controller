@@ -19,9 +19,24 @@ var (
 )
 
 type PubKey []byte
+
+// ParticipantId
+
 type ParticipantId [32]byte
 
-// --------------------
+func (m ParticipantId) Index() uint64 {
+	return binary.BigEndian.Uint64(m[31:])
+}
+
+func (m ParticipantId) Threshold() uint64 {
+	return binary.BigEndian.Uint64(m[30:31])
+}
+
+func (m ParticipantId) GroupSize() uint64 {
+	return binary.BigEndian.Uint64(m[29:30])
+}
+
+// Group
 
 type Group struct {
 	ID    common.Hash `json:"id"`
@@ -61,7 +76,7 @@ func (m *Group) CompressGroupPubKeyHexs() ([]string, error) {
 	return normed, nil
 }
 
-// --------------------
+// Participant
 
 type Participant struct {
 	PubKey  common.Hash `json:"pubKey"`
@@ -85,7 +100,7 @@ func (m *Participant) ParticipantId() ParticipantId {
 	return partiId
 }
 
-// --------------------
+// GeneratedPublicKey
 
 type GeneratedPublicKey struct {
 	GenPubKey PubKey      `json:"genPubKey"`
@@ -128,7 +143,7 @@ func (m *GeneratedPublicKey) CChainAddress() (common.Address, error) {
 	return *addrs.PubkeyToAddresse(pubKey), nil
 }
 
-// --------------------
+// StakeRequest
 
 type StakeRequest struct {
 	ReqNo     uint64      `json:"reqNo"`
