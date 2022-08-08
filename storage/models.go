@@ -150,9 +150,9 @@ func (m *GeneratedPublicKey) CChainAddress() (common.Address, error) {
 // JoinRequest
 
 type JoinRequest struct {
-	ReqHash ReqHash
-	PartiId ParticipantId
-	Args    interface{}
+	ReqHash ReqHash       `json:"reqHash"`
+	PartiId ParticipantId `json:"partiId"`
+	Args    interface{}   `json:"args"`
 }
 
 func (m *JoinRequest) Key() []byte { // Key format: KeyPrefixJoinRequest+"-"+ReqHash
