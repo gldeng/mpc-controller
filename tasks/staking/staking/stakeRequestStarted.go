@@ -181,7 +181,7 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				TaskID:         taskID,
 				StakeRequest:   &stakeReq,
 				NetworkContext: eh.NetworkContext,
-				PubKeyHex:      cmpGenPubKeyHex,
+				GenPubKey:      genPubKey.GenPubKey,
 				Nonce:          nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()

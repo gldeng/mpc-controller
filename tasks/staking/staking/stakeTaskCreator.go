@@ -4,7 +4,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/pkg/errors"
 	"math/big"
@@ -14,17 +13,12 @@ type StakeTaskCreator struct {
 	TaskID string
 	*storage.StakeRequest
 	chain.NetworkContext
-	PubKeyHex string
+	GenPubKey storage.PubKey
 	Nonce     uint64
 }
 
 func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
 	nodeID, err := ids.ShortFromPrefixedString(s.NodeID, ids.NodeIDPrefix)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	pubKey, err := crypto.UnmarshalPubKeyHex(s.PubKeyHex)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -41,7 +35,7 @@ func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
 	if !nAVAXAmount.IsUint64() || !startTime.IsUint64() || !endTIme.IsUint64() {
 		return nil, errors.New("invalid uint64")
 	}
-	task, err := NewStakeTask(s.TaskID, s.NetworkContext, reqNo, *pubKey, s.Nonce, ids.NodeID(nodeID), nAVAXAmount.Uint64(), startTime.Uint64(), endTIme.Uint64(), cchain.BaseFeeGwei)
+	task, err := NewStakeTask(s.TaskID, s.NetworkContext, reqNo, s.GenPubKey, s.Nonce, ids.NodeID(nodeID), nAVAXAmount.Uint64(), startTime.Uint64(), endTIme.Uint64(), cchain.BaseFeeGwei)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

@@ -38,7 +38,7 @@ package events
 //// ParticipantInfo stored key format: PrefixParticipantInfo-PubKeyHashHex-ID
 //type ParticipantInfo struct {
 //	PubKeyHashHex string
-//	PubKeyHex     string
+//	GenPubKey     string
 //	GroupIdHex    string
 //	Index         uint64
 //}

@@ -14,6 +14,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -48,12 +49,16 @@ type StakeTask struct {
 	factory            avaCrypto.FactorySECP256K1R
 }
 
-func NewStakeTask(taskID string, networkContext chain.NetworkContext, reqId uint64, pubkey ecdsa.PublicKey, nonce uint64, nodeID ids.NodeID, delegateAmt uint64,
+func NewStakeTask(taskID string, networkContext chain.NetworkContext, reqId uint64, pubKey storage.PubKey, nonce uint64, nodeID ids.NodeID, delegateAmt uint64,
 	startTime uint64, endTime uint64,
 	baseFeeGwei uint64) (*StakeTask, error) {
-	addr, err := ids.ToShortID(hashing.PubkeyBytesToAddress(serializeCompresed(&pubkey)))
+	cChainAddr, err := pubKey.CChainAddress()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get C-Chain address from %v", pubKey)
+	}
+	pChainAddr, err := pubKey.PChainAddress()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get P-Chain address from %v", pubKey)
 	}
 	return &StakeTask{
 		TaskID:        taskID,
@@ -63,8 +68,8 @@ func NewStakeTask(taskID string, networkContext chain.NetworkContext, reqId uint
 		baseFeeGwei:   baseFeeGwei,
 		StartTime:     startTime,
 		EndTime:       endTime,
-		CChainAddress: crypto.PubkeyToAddress(pubkey),
-		PChainAddress: addr,
+		CChainAddress: cChainAddr,
+		PChainAddress: pChainAddr,
 		RequestNo:     reqId,
 		NodeID:        nodeID,
 		factory:       avaCrypto.FactorySECP256K1R{},
