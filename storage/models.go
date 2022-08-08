@@ -45,6 +45,20 @@ func (m *Group) CompressGroupPubKeys() ([][]byte, error) {
 	return normed, nil
 }
 
+func (m *Group) CompressGroupPubKeyHexs() ([]string, error) {
+	var participants []string
+	for _, pubKey := range m.Group {
+		participants = append(participants, common.Bytes2Hex(pubKey))
+	}
+
+	normed, err := crypto.NormalizePubKeys(participants)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compress participant public keys")
+	}
+
+	return normed, nil
+}
+
 // --------------------
 
 type Participant struct {
