@@ -12,10 +12,6 @@ import (
 	"sync"
 )
 
-var (
-	ErrCannotJoin = errors.New("Cannot join anymore")
-)
-
 // Subscribe event: *events.StakeRequestAdded
 
 // Publish event:
@@ -28,7 +24,6 @@ type StakeRequestAdded struct {
 
 	stakeRequestAddedChan chan *events.StakeRequestAdded
 	once                  sync.Once
-	//ws                 *work.Workshop
 }
 
 func (eh *StakeRequestAdded) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -54,13 +49,6 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.stakeRequestAddedChan:
-			//eh.ws.AddTask(ctx, &work.Task{
-			//	Args: []interface{}{myIndex, evt},
-			//	Ctx:  ctx,
-			//	WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
-			//		myIndex := args.([]interface{})[0].(*big.Int)
-			//		evt := args.([]interface{})[1].(*contract.MpcManagerStakeRequestAdded)
-
 			genPubKey := &storage.GeneratedPublicKey{}
 			key := genPubKey.KeyFromHash(evt.PublicKey)
 			err := eh.DB.MGet(ctx, key, genPubKey)
@@ -80,10 +68,11 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				break
 			}
 
+			partiId := participant.ParticipantId()
 			txHash := evt.Raw.TxHash
-			_, _, err = eh.Transactor.JoinRequest(ctx, participant.ParticipantId(), txHash)
+			_, _, err = eh.Transactor.JoinRequest(ctx, partiId, txHash)
 			if err != nil {
-				switch errors.Cause(err).(type) { // todo: exploring more concrete error types
+				switch errors.Cause(err).(type) {
 				case *transactor.ErrTypQuorumAlreadyReached:
 					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{
 						{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
@@ -106,16 +95,21 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				StartTime: evt.StartTime.Int64(),
 				EndTime:   evt.EndTime.Int64(),
 			}
-			err = eh.DB.SaveModel(ctx, &stakeReq)
-			eh.Logger.ErrorOnError(err, "Failed to save stake request", []logger.Field{
-				{"stakeReq", stakeReq}}...)
 
-			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too may stake request PENDED to join",
+			joinReq := &storage.JoinRequest{
+				ReqHash: txHash,
+				PartiId: partiId,
+				Args:    &stakeReq,
+			}
+
+			err = eh.DB.SaveModel(ctx, joinReq)
+			eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for stake", []logger.Field{
+				{"joinReq", joinReq}}...)
+
+			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined stake request", []logger.Field{
 				{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
-			//}},
-			//})
 		}
 	}
 }
