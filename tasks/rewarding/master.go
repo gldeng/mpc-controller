@@ -10,7 +10,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/tasks/rewarding/porter"
 	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
-	"github.com/avalido/mpc-controller/tasks/rewarding/watcher"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -36,8 +35,7 @@ type Master struct {
 	utxoTracker *tracker.UTXOTracker
 
 	// export
-	exportUTXOReqEvtWatcher *watcher.ExportUTXORequestWatcher
-	utxoPorter              *porter.UTXOPorter
+	utxoPorter *porter.UTXOPorter
 }
 
 func (m *Master) Start(ctx context.Context) error {
@@ -71,12 +69,6 @@ func (m *Master) subscribe() {
 		Transactor:             m.Transactor,
 	}
 
-	exportUTXOReqEvtWatcher := watcher.ExportUTXORequestWatcher{
-		ContractAddr: m.ContractAddr,
-		Logger:       m.Logger,
-		Publisher:    m.Dispatcher,
-	}
-
 	utxoPorter := porter.UTXOPorter{
 		UTXOsFetchedEventCache: utxoFetchedEventCache,
 		UTXOExportedEventCache: utxoExportedEventCache,
@@ -91,13 +83,9 @@ func (m *Master) subscribe() {
 	}
 
 	m.utxoTracker = &utxoTracker
-	m.exportUTXOReqEvtWatcher = &exportUTXOReqEvtWatcher
 	m.utxoPorter = &utxoPorter
 
 	m.Dispatcher.Subscribe(&events.ReportedGenPubKey{}, m.utxoTracker)
-
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreated{}, m.exportUTXOReqEvtWatcher)
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKey{}, m.exportUTXOReqEvtWatcher)
 
 	m.Dispatcher.Subscribe(&events.ReportedGenPubKey{}, m.utxoPorter)
 	m.Dispatcher.Subscribe(&events.ExportUTXORequest{}, m.utxoPorter)
