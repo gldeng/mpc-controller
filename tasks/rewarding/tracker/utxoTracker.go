@@ -2,26 +2,21 @@ package tracker
 
 import (
 	"context"
-	"github.com/ava-labs/avalanchego/api"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
-	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/dgraph-io/ristretto"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"math/big"
 	"strconv"
 	"sync"
 	"time"
@@ -31,7 +26,7 @@ const (
 	checkUTXOInterval = time.Second * 1
 )
 
-// Subscribe event: *events.ReportedGenPubKey
+// Subscribe event: *events.KeyGenerated
 
 // Publish event: *events.UTXOReported
 
@@ -40,15 +35,18 @@ type UTXOTracker struct {
 	Logger       logger.Logger
 	PChainClient platformvm.Client
 	Publisher    dispatcher.Publisher
-	Receipter    chain.Receipter
-	Signer       *bind.TransactOpts
-	Transactor   bind.ContractTransactor
+	PubKey       []byte
+	DB           storage.DB
+	Transactor   transactor.Transactor
+	//Receipter    chain.Receipter
+	//Signer       *bind.TransactOpts
+	//Transactor   bind.ContractTransactor
 
-	reportedGenPubKeyEventChan  chan *events.ReportedGenPubKey
-	reportedGenPubKeyEventCache map[ids.ShortID]*events.ReportedGenPubKey
+	genPubKeyChan  chan *events.KeyGenerated
+	genPubKeyCache map[ids.ShortID]*events.KeyGenerated
 
-	reportUTXOsChan          chan *reportUTXOs
-	reportUTXOTaskAddedCache *ristretto.Cache
+	joinExportUTXOsChan          chan *storage.ExportUTXORequest
+	joinExportUTXOTaskAddedCache *ristretto.Cache
 
 	UTXOsFetchedEventCache *ristretto.Cache
 	utxoReportedEventCache *ristretto.Cache
@@ -60,34 +58,34 @@ type UTXOTracker struct {
 	lock sync.Mutex
 }
 
-type reportUTXOs struct {
-	utxos      []*avax.UTXO
-	groupID    [32]byte
-	partiIndex *big.Int
-	genPubKey  []byte
-}
-
-type reportUTXO struct {
-	utxo       *avax.UTXO
-	groupID    [32]byte `copier:"must"`
-	partiIndex *big.Int `copier:"must"`
-	genPubKey  []byte   `copier:"must"`
-}
+//type joinExportUTXOs struct {
+//	utxos []*avax.UTXO
+//	//groupID    [32]byte
+//	//partiIndex *big.Int
+//	//genPubKey  []byte
+//}
+//
+//type reportUTXO struct {
+//	utxo       *avax.UTXO
+//	groupID    [32]byte `copier:"must"`
+//	partiIndex *big.Int `copier:"must"`
+//	genPubKey  []byte   `copier:"must"`
+//}
 
 func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.reportedGenPubKeyEventChan = make(chan *events.ReportedGenPubKey, 1024)
-		eh.reportedGenPubKeyEventCache = make(map[ids.ShortID]*events.ReportedGenPubKey)
+		eh.genPubKeyChan = make(chan *events.KeyGenerated)
+		eh.genPubKeyCache = make(map[ids.ShortID]*events.KeyGenerated)
 
-		eh.reportUTXOWs = work.NewWorkshop(eh.Logger, "reportUTXOs", time.Minute*10, 10)
-		eh.reportUTXOsChan = make(chan *reportUTXOs, 256)
+		eh.reportUTXOWs = work.NewWorkshop(eh.Logger, "joinExportUTXOs", time.Minute*10, 10)
+		eh.joinExportUTXOsChan = make(chan *storage.ExportUTXORequest, 256)
 
 		reportUTXOTaskAddedCache, _ := ristretto.NewCache(&ristretto.Config{
 			NumCounters: 1e7,     // number of keys to track frequency of (10M).
 			MaxCost:     1 << 30, // maximum cost of cache (1GB).
 			BufferItems: 64,      // number of keys per Get buffer.
 		})
-		eh.reportUTXOTaskAddedCache = reportUTXOTaskAddedCache
+		eh.joinExportUTXOTaskAddedCache = reportUTXOTaskAddedCache
 
 		utxoReportedEventCache, _ := ristretto.NewCache(&ristretto.Config{
 			NumCounters: 1e7,     // number of keys to track frequency of (10M).
@@ -97,12 +95,18 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 		eh.utxoReportedEventCache = utxoReportedEventCache
 
 		go eh.fetchUTXOs(ctx)
-		go eh.reportUTXOs(ctx)
+		go eh.joinExportUTXOs(ctx)
 	})
 
 	switch evt := evtObj.Event.(type) {
-	case *events.ReportedGenPubKey:
-		eh.reportedGenPubKeyEventCache[evt.PChainAddress] = evt
+	case *events.KeyGenerated:
+		genPubKey := storage.PubKey(evt.PublicKey)
+		pChainAddr, err := genPubKey.PChainAddress()
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to get P-Chain address")
+			break
+		}
+		eh.genPubKeyCache[pChainAddr] = evt
 	}
 }
 
@@ -115,7 +119,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			for addr, pubKeyEvt := range eh.reportedGenPubKeyEventCache {
+			for addr, pubKeyEvt := range eh.genPubKeyCache {
 				utxosFromStake, err := eh.requestUTXOsFromStake(ctx, addr)
 				if err != nil {
 					eh.Logger.DebugOnError(err, "Failed to fetch UTXOs",
@@ -123,14 +127,25 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					continue
 				}
 
-				groupIdBytes := bytes.HexTo32Bytes(pubKeyEvt.GroupIdHex)
-				partiIndex := pubKeyEvt.MyPartiIndex
-				genPubKeyBytes := bytes.HexToBytes(pubKeyEvt.GenPubKeyHex)
+				//participant := storage.Participant{
+				//	PubKey:  hash256.FromBytes(eh.PubKey),
+				//	GroupId: pubKeyEvt.GroupId,
+				//}
+				//
+				//err = eh.DB.LoadModel(ctx, &participant)
+				//if err != nil {
+				//	eh.Logger.ErrorOnError(err, "failed to load participant", []logger.Field{{"key", participant.Key()}}...)
+				//	break
+				//}
+
+				//groupIdBytes := bytes.HexTo32Bytes(pubKeyEvt.GroupIdHex)
+				//partiIndex := pubKeyEvt.MyPartiIndex
+				//genPubKeyBytes := bytes.HexToBytes(pubKeyEvt.GenPubKeyHex)
 
 				var unreportedUTXOsFromStake []*avax.UTXO
 				for _, utxo := range utxosFromStake {
 					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-					_, ok := eh.reportUTXOTaskAddedCache.Get(utxoID)
+					_, ok := eh.joinExportUTXOTaskAddedCache.Get(utxoID)
 					if ok {
 						continue
 					}
@@ -149,29 +164,29 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					continue
 				}
 
-				reportUTXOs := &reportUTXOs{
-					utxos:      unreportedUTXOsFromStake,
-					groupID:    groupIdBytes,
-					partiIndex: partiIndex,
-					genPubKey:  genPubKeyBytes,
-				}
+				//joinExportUTXOs := &joinExportUTXOs{
+				//	utxos: unreportedUTXOsFromStake,
+				//	//groupID:    groupIdBytes,
+				//	//partiIndex: partiIndex,
+				//	//genPubKey:  genPubKeyBytes,
+				//}
 
 				select {
 				case <-ctx.Done():
 					return
-				case eh.reportUTXOsChan <- reportUTXOs:
+				case eh.joinExportUTXOsChan <- reportUTXOs:
 				}
 			}
 		}
 	}
 }
 
-func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
+func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case reportUTXOs := <-eh.reportUTXOsChan:
+		case reportUTXOs := <-eh.joinExportUTXOsChan:
 			for _, utxo := range reportUTXOs.utxos {
 				reportUtxo := &reportUTXO{
 					utxo:       utxo,
@@ -192,8 +207,8 @@ func (eh *UTXOTracker) reportUTXOs(ctx context.Context) {
 				eh.UTXOsFetchedEventCache.SetWithTTL(utxoID, reportEvt, 1, time.Hour)
 				eh.UTXOsFetchedEventCache.Wait()
 
-				eh.reportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
-				eh.reportUTXOTaskAddedCache.Wait()
+				eh.joinExportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
+				eh.joinExportUTXOTaskAddedCache.Wait()
 
 				eh.reportUTXOWs.AddTask(ctx, &work.Task{
 					Args: reportUtxo,
@@ -304,70 +319,70 @@ func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []
 	return utxosFiltered, nil
 }
 
-func (eh *UTXOTracker) doReportUTXO(ctx context.Context, reportUtxo *reportUTXO) (txHash *common.Hash, err error) {
-	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor) // todo: extract to reuse in multi flows.
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+//func (eh *UTXOTracker) doReportUTXO(ctx context.Context, reportUtxo *reportUTXO) (txHash *common.Hash, err error) {
+//	transactor, err := contract.NewMpcManagerTransactor(eh.ContractAddr, eh.Transactor) // todo: extract to reuse in multi flows.
+//	if err != nil {
+//		return nil, errors.WithStack(err)
+//	}
+//
+//	utxo := reportUtxo.utxo
+//
+//	var tx *types.Transaction
+//	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+//		tx, err = transactor.ReportUTXO(eh.Signer, reportUtxo.groupID, reportUtxo.partiIndex, reportUtxo.genPubKey, utxo.TxID, utxo.OutputIndex)
+//		if err != nil {
+//			return true, errors.WithStack(err)
+//		}
+//		var rcpt *types.Receipt
+//		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+//			rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
+//			if err != nil {
+//				return true, errors.WithStack(err) // todo: consider reverted case
+//			}
+//			if rcpt.Status != 1 {
+//				return true, errors.Errorf("tx receipt status != 1")
+//			}
+//			newTxHash := tx.Hash()
+//			txHash = &newTxHash
+//			return false, nil
+//		})
+//
+//		if err != nil {
+//			return true, errors.WithStack(err)
+//		}
+//		return false, nil
+//	})
+//	err = errors.Wrapf(err, "failed to report UTXO, txID:%v, outputIndex:%v", bytes.Bytes32ToHex(utxo.TxID), utxo.OutputIndex)
+//	return
+//}
 
-	utxo := reportUtxo.utxo
-
-	var tx *types.Transaction
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		tx, err = transactor.ReportUTXO(eh.Signer, reportUtxo.groupID, reportUtxo.partiIndex, reportUtxo.genPubKey, utxo.TxID, utxo.OutputIndex)
-		if err != nil {
-			return true, errors.WithStack(err)
-		}
-		var rcpt *types.Receipt
-		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-			rcpt, err = eh.Receipter.TransactionReceipt(ctx, tx.Hash())
-			if err != nil {
-				return true, errors.WithStack(err) // todo: consider reverted case
-			}
-			if rcpt.Status != 1 {
-				return true, errors.Errorf("tx receipt status != 1")
-			}
-			newTxHash := tx.Hash()
-			txHash = &newTxHash
-			return false, nil
-		})
-
-		if err != nil {
-			return true, errors.WithStack(err)
-		}
-		return false, nil
-	})
-	err = errors.Wrapf(err, "failed to report UTXO, txID:%v, outputIndex:%v", bytes.Bytes32ToHex(utxo.TxID), utxo.OutputIndex)
-	return
-}
-
-func (eh *UTXOTracker) checkRewardUTXO(ctx context.Context, txID ids.ID) (bool, error) {
-	utxoBytesArr, err := eh.PChainClient.GetRewardUTXOs(ctx, &api.GetTxArgs{TxID: txID})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get reward UTXO for txID %q", txID)
-	}
-
-	if len(utxoBytesArr) == 0 {
-		return false, nil
-	}
-
-	var utxos []*avax.UTXO
-	for _, utxoBytes := range utxoBytesArr {
-		if utxoBytes == nil {
-			continue
-		}
-		utxo := &avax.UTXO{}
-		if version, err := platformvm.Codec.Unmarshal(utxoBytes, utxo); err != nil {
-			return false, errors.Wrapf(err, "error parsing UTXO, codec version:%v", version)
-		}
-		utxos = append(utxos, utxo)
-	}
-
-	if len(utxos) == 0 {
-		return false, nil
-	}
-	return true, nil
-}
+//func (eh *UTXOTracker) checkRewardUTXO(ctx context.Context, txID ids.ID) (bool, error) {
+//	utxoBytesArr, err := eh.PChainClient.GetRewardUTXOs(ctx, &api.GetTxArgs{TxID: txID})
+//	if err != nil {
+//		return false, errors.Wrapf(err, "failed to get reward UTXO for txID %q", txID)
+//	}
+//
+//	if len(utxoBytesArr) == 0 {
+//		return false, nil
+//	}
+//
+//	var utxos []*avax.UTXO
+//	for _, utxoBytes := range utxoBytesArr {
+//		if utxoBytes == nil {
+//			continue
+//		}
+//		utxo := &avax.UTXO{}
+//		if version, err := platformvm.Codec.Unmarshal(utxoBytes, utxo); err != nil {
+//			return false, errors.Wrapf(err, "error parsing UTXO, codec version:%v", version)
+//		}
+//		utxos = append(utxos, utxo)
+//	}
+//
+//	if len(utxos) == 0 {
+//		return false, nil
+//	}
+//	return true, nil
+//}
 
 func (eh *UTXOTracker) isFromImportTx(ctx context.Context, txID ids.ID) (bool, error) {
 	txBytes, err := eh.PChainClient.GetTx(ctx, txID)
