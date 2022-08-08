@@ -99,7 +99,7 @@ func (m ParticipantId) GroupSize() uint64 {
 
 type Group struct {
 	ID    common.Hash `json:"id"`
-	Group []PubKey    `json:"group"`
+	Group PubKeys     `json:"group"`
 }
 
 func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID

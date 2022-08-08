@@ -11,7 +11,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/contract/watcher"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -143,7 +142,7 @@ func (w *MpcManagerWatchers) watchKeygenRequestAdded(ctx context.Context, opts *
 	return errors.Wrapf(err, "failed to watch %v", EvtKeygenRequestAdded)
 }
 
-func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
+func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt interface{}) error {
 	myEvt := evt.(*contract.MpcManagerKeygenRequestAdded)
 
 	// Request key generation
@@ -154,14 +153,9 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 		return errors.Wrapf(err, "failed to load group %v", group)
 	}
 
-	var participants [][]byte
-	for _, pubKey := range group.Group {
-		participants = append(participants, pubKey)
-	}
-	participantsHexs := bytes.BytesToHexArr(participants)
-	normalized, err := crypto.NormalizePubKeys(participantsHexs) // for mpc-server compatibility
+	normalized, err := group.Group.CompressPubKeyHexs() // for mpc-server compatibility
 	if err != nil {
-		return errors.Wrapf(err, "failed to normalize partiId public keys %v", participantsHexs)
+		return errors.Wrapf(err, "failed to compress participant public keys")
 	}
 
 	keyGenReq := &core.KeygenRequest{
