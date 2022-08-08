@@ -8,10 +8,8 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
-	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
 	"sync"
-	"time"
 )
 
 var (
@@ -23,11 +21,10 @@ var (
 // Publish event:
 
 type StakeRequestAdded struct {
-	Logger        logger.Logger
-	PubKey        []byte
-	DB            storage.DB
-	Transactor    transactor.Transactor
-	StakeReqCache *ristretto.Cache
+	Logger     logger.Logger
+	PubKey     []byte
+	DB         storage.DB
+	Transactor transactor.Transactor
 
 	stakeRequestAddedChan chan *events.StakeRequestAdded
 	once                  sync.Once
@@ -99,9 +96,6 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				}
 				break
 			}
-
-			eh.StakeReqCache.SetWithTTL(txHash, evt, 1, time.Hour)
-			eh.StakeReqCache.Wait()
 
 			stakeReq := storage.StakeRequest{
 				ReqNo:     evt.RequestNumber.Uint64(),
