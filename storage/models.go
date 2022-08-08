@@ -120,7 +120,7 @@ func (m *GeneratedPublicKey) CompressGenPubKeyHex() (*string, error) {
 // --------------------
 
 type StakeRequest struct {
-	ReqNo     string      `json:"reqNo"`
+	ReqNo     uint64      `json:"reqNo"`
 	TxHash    common.Hash `json:"txHash"`
 	GenPubKey common.Hash `json:"genPubKey"`
 	NodeID    string      `json:"nodeID"`

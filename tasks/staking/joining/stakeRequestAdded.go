@@ -104,7 +104,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			eh.StakeReqCache.Wait()
 
 			stakeReq := storage.StakeRequest{
-				ReqNo:     evt.RequestNumber.String(),
+				ReqNo:     evt.RequestNumber.Uint64(),
 				TxHash:    txHash,
 				GenPubKey: evt.PublicKey,
 				NodeID:    evt.NodeID,
