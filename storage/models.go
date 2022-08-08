@@ -2,9 +2,12 @@ package storage
 
 import (
 	"encoding/binary"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
+	ids2 "github.com/avalido/mpc-controller/utils/ids"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
@@ -32,6 +35,14 @@ func (m PubKey) CChainAddress() (common.Address, error) {
 		return *new(common.Address), errors.WithStack(err)
 	}
 	return *addrs.PubkeyToAddresse(pubKey), nil
+}
+
+func (m PubKey) PChainAddress() (ids.ShortID, error) {
+	id, err := ids2.ShortIDFromPubKeyBytes(m)
+	if err != nil {
+		return *new(ids.ShortID), nil
+	}
+	return *id, nil
 }
 
 func (m PubKey) CompressPubKey() ([]byte, error) {
