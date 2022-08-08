@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
@@ -111,17 +110,22 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 		case evt := <-eh.requestStartedChan:
 			stakeReq := storage.StakeRequest{}
 			joinReq := storage.JoinRequest{
-			ReqHash: evt.RequestHash,
-			Args: &stakeReq,
+				ReqHash: evt.RequestHash,
+				Args:    &stakeReq,
 			}
 			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
 				eh.Logger.Debug("No JoinRequest load for stake", []logger.Field{{"key", evt.RequestHash}}...)
 				break
 			}
 
+			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
+				eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqNo", stakeReq.ReqNo}, {"reqHash", evt.RequestHash}}...)
+				break
+			}
+
 			genPubKey := storage.GeneratedPublicKey{}
-			key := genPubKey.KeyFromHash(stakeReq.GenPubKey),
-			if err := eh.DB.MGet(ctx,  key, &genPubKey); err != nil {
+			key := genPubKey.KeyFromHash(stakeReq.GenPubKey)
+			if err := eh.DB.MGet(ctx, key, &genPubKey); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to load generated public key", []logger.Field{{"key", key}}...)
 				break
 			}
@@ -383,23 +387,6 @@ func (eh *StakeRequestStarted) checkIssueTxCache(ctx context.Context) {
 				{"cachedNonces", nonces}}...)
 		}
 	}
-}
-
-// todo: use cache.IsParticipantChecker
-func (eh *StakeRequestStarted) isParticipant(req *contract.MpcManagerStakeRequestStarted) bool {
-	var participating bool
-	for _, index := range req.ParticipantIndices {
-		if index.Cmp(eh.myIndex) == 0 {
-			participating = true
-			break
-		}
-	}
-
-	if !participating {
-		return false
-	}
-
-	return true
 }
 
 func (eh *StakeRequestStarted) syncNonce(ctx context.Context) error {
