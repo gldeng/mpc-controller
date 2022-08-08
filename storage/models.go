@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"crypto/ecdsa"
 	"encoding/binary"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/addrs"
@@ -59,6 +60,14 @@ func (m PubKey) CompressPubKeyHex() (string, error) {
 		return "", errors.WithStack(err)
 	}
 	return *normed, nil
+}
+
+func (m PubKey) EcdsaPubKey() (*ecdsa.PublicKey, error) {
+	pk, err := crypto.UnmarshalPubkeyBytes(m)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return pk, nil
 }
 
 // PubKeys
