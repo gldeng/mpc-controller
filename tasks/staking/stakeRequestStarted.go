@@ -178,11 +178,11 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				{"taskID", evt.Raw.TxHash.Hex()}}...)
 
 			taskCreator := StakeTaskCreator{
-				TaskID:                        taskID,
-				MpcManagerStakeRequestStarted: evt,
-				NetworkContext:                eh.NetworkContext,
-				PubKeyHex:                     cmpGenPubKeyHex,
-				Nonce:                         nonce,
+				TaskID:         taskID,
+				StakeRequest:   &stakeReq,
+				NetworkContext: eh.NetworkContext,
+				PubKeyHex:      cmpGenPubKeyHex,
+				Nonce:          nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()
 			if err != nil {
@@ -320,7 +320,7 @@ func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrap
 		ImportTxID:       ids[1],
 		AddDelegatorTxID: ids[2],
 
-		RequestID:   stakeTask.RequestID,
+		RequestID:   stakeTask.RequestNo,
 		DelegateAmt: stakeTask.DelegateAmt,
 		StartTime:   stakeTask.StartTime,
 		EndTime:     stakeTask.EndTime,

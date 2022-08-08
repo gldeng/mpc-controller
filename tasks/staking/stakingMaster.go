@@ -26,8 +26,7 @@ type StakingMaster struct {
 	SignDoner         core.SignDoner
 	chain.NetworkContext
 
-	stakingWatcher *StakeRequestStartedEventWatcher
-	stakingDealer  *StakeRequestStarted
+	stakingDealer *StakeRequestStarted
 }
 
 func (m *StakingMaster) Start(ctx context.Context) error {
@@ -37,19 +36,12 @@ func (m *StakingMaster) Start(ctx context.Context) error {
 }
 
 func (m *StakingMaster) subscribe() {
-	taskStartedWatcher := StakeRequestStartedEventWatcher{
-		Logger:       m.Logger,
-		ContractAddr: m.ContractAddr,
-		Publisher:    m.Dispatcher,
-	}
-
 	taskStartedDealer := StakeRequestStarted{
 		Balancer:          m.Balancer,
 		CChainIssueClient: m.CChainIssueClient,
 		Cache:             m.Cache,
 		ChainNoncer:       m.ChainNoncer,
 		Logger:            m.Logger,
-		MyPubKeyHashHex:   m.MyPubKeyHashHex,
 		NetworkContext:    m.NetworkContext,
 		Noncer:            m.Noncer,
 		PChainIssueClient: m.PChainIssueClient,
@@ -57,7 +49,6 @@ func (m *StakingMaster) subscribe() {
 		SignDoner:         m.SignDoner,
 	}
 
-	m.stakingWatcher = &taskStartedWatcher
 	m.stakingDealer = &taskStartedDealer
 
 	m.Dispatcher.Subscribe(&events.ContractFiltererCreated{}, m.stakingWatcher)

@@ -28,7 +28,7 @@ const (
 )
 
 type StakeTask struct {
-	RequestID          uint64
+	RequestNo          uint64
 	Nonce              uint64
 	TaskID             string
 	network            chain.NetworkContext
@@ -65,7 +65,7 @@ func NewStakeTask(taskID string, networkContext chain.NetworkContext, reqId uint
 		EndTime:       endTime,
 		CChainAddress: crypto.PubkeyToAddress(pubkey),
 		PChainAddress: addr,
-		RequestID:     reqId,
+		RequestNo:     reqId,
 		NodeID:        nodeID,
 		factory:       avaCrypto.FactorySECP256K1R{},
 	}, nil
