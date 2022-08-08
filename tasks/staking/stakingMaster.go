@@ -27,7 +27,7 @@ type StakingMaster struct {
 	chain.NetworkContext
 
 	stakingWatcher *StakeRequestStartedEventWatcher
-	stakingDealer  *StakeRequestStartedEventHandler
+	stakingDealer  *StakeRequestStarted
 }
 
 func (m *StakingMaster) Start(ctx context.Context) error {
@@ -43,7 +43,7 @@ func (m *StakingMaster) subscribe() {
 		Publisher:    m.Dispatcher,
 	}
 
-	taskStartedDealer := StakeRequestStartedEventHandler{
+	taskStartedDealer := StakeRequestStarted{
 		Balancer:          m.Balancer,
 		CChainIssueClient: m.CChainIssueClient,
 		Cache:             m.Cache,
