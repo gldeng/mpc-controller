@@ -17,19 +17,17 @@ import (
 )
 
 type Master struct {
-	BoundCaller            caller.Caller
-	BoundTransactor        transactor.Transactor
-	ClientPChain           platformvm.Client
-	DB                     storage.DB
-	Dispatcher             dispatcher.Dispatcher
-	IssuerCChain           chain.CChainIssuer
-	IssuerPChain           chain.PChainIssuer
-	Logger                 logger.Logger
-	NetWorkCtx             chain.NetworkContext
-	PartiPubKey            storage.PubKey
-	SignerMPC              core.SignDoner
-	UTXOExportedEventCache *ristretto.Cache
-	UTXOsFetchedEventCache *ristretto.Cache
+	BoundCaller     caller.Caller
+	BoundTransactor transactor.Transactor
+	ClientPChain    platformvm.Client
+	DB              storage.DB
+	Dispatcher      dispatcher.Dispatcher
+	IssuerCChain    chain.CChainIssuer
+	IssuerPChain    chain.PChainIssuer
+	Logger          logger.Logger
+	NetWorkCtx      chain.NetworkContext
+	PartiPubKey     storage.PubKey
+	SignerMPC       core.SignDoner
 
 	// track
 	utxoTracker *tracker.UTXOTracker
