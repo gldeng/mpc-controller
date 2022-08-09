@@ -34,11 +34,11 @@ type Transactor interface {
 type Transact func() (tx *types.Transaction, err error, retry bool)
 
 type MyTransactor struct {
-	Logger             logger.Logger
 	Auth               *bind.TransactOpts
 	ContractAddr       common.Address
-	Receipter          chain.Receipter
 	ContractTransactor bind.ContractTransactor
+	EthClient          chain.EthClient
+	Logger             logger.Logger
 	bind2.BoundTransactor
 }
 
@@ -106,7 +106,7 @@ func (t *MyTransactor) RetryTransact(ctx context.Context, fn Transact) (*types.T
 
 	var rcpt *types.Receipt
 	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		rcpt, err = t.Receipter.TransactionReceipt(ctx, tx.Hash())
+		rcpt, err = t.EthClient.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {
 			return true, errors.WithStack(err)
 		}

@@ -35,9 +35,9 @@ type Caller interface {
 type Call func() (err error, retry bool)
 
 type MyCaller struct {
-	Logger         logger.Logger
 	ContractAddr   common.Address
 	ContractCaller bind.ContractCaller
+	Logger         logger.Logger
 	bind2.BoundCaller
 }
 
