@@ -164,7 +164,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Transactor:      rpcEthCliWrapper,
 	}
 
-	stakingMaster := staking.StakingMaster{
+	stakingMaster := staking.Master{
 		Balancer:          ethRpcClient,
 		CChainIssueClient: evmClientWrapper,
 		Cache:             &cacheWrapper,

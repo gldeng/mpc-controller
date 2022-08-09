@@ -18,7 +18,7 @@ type StakeRequestAdded struct {
 	BoundTransactor transactor.Transactor
 	DB              storage.DB
 	Logger          logger.Logger
-	PartiPubKey     []byte
+	PartiPubKey     storage.PubKey
 
 	stakeRequestAddedChan chan *events.StakeRequestAdded
 	once                  sync.Once

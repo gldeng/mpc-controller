@@ -36,24 +36,17 @@ type Cache interface {
 
 // Subscribe event: *events.RequestStarted
 
-// Publish event:
-
 type StakeRequestStarted struct {
-	PubKey []byte
-
-	Balancer          chain.Balancer
-	CChainIssueClient chain.CChainIssuer
-	Cache             Cache // todo: to use cache.ICache instead
-	ChainNoncer       chain.Noncer
-	Logger            logger.Logger
-	Noncer            noncer.Noncer
-	PChainIssueClient chain.PChainIssuer
-	Publisher         dispatcher.Publisher
-	SignDoner         core.SignDoner
-	chain.NetworkContext
-
-	DB         storage.DB
-	Transactor transactor.Transactor
+	BoundTransactor transactor.Transactor
+	DB              storage.DB
+	EthClient       chain.EthClient
+	IssuerCChain    chain.CChainIssuer
+	IssuerPChain    chain.PChainIssuer
+	Logger          logger.Logger
+	NetWorkCtx      chain.NetworkContext
+	NonceGiver      noncer.Noncer
+	PartiPubKey     storage.PubKey
+	SignerMPC       core.SignDoner
 
 	requestStartedChan chan *events.RequestStarted
 	signStakeTxWs      *work.Workshop
@@ -61,13 +54,10 @@ type StakeRequestStarted struct {
 	issueTxChan chan *issueTx
 	once        sync.Once
 
-	cChainAddress *common.Address // todo: value may vary for future key-rotation
-	addrLock      sync.Mutex
-
 	issueTxCache     map[uint64]*issueTx
 	issueTxCacheLock sync.RWMutex
 
-	nextNonce uint64
+	nextNonce uint64 // todo: future key-rotation influence
 
 	doneStakeTasks     uint64
 	errIssueStakeTasks uint64
@@ -135,10 +125,6 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				break
 			}
 
-			eh.addrLock.Lock()
-			eh.cChainAddress = &cChainAddr
-			eh.addrLock.Unlock()
-
 			group := storage.Group{
 				ID: stakeReq.GroupId,
 			}
@@ -153,11 +139,11 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				break
 			}
 
-			nonce := eh.Noncer.GetNonce(stakeReq.ReqNo) // todo: how should nonce base adjust in case of validation errors among all participants?
+			nonce := eh.NonceGiver.GetNonce(stakeReq.ReqNo) // todo: how should nonce base adjust in case of validation errors among all participants?
 			taskID := stakeTaskIDPrefix + evt.Raw.TxHash.Hex()
 
 			signRequester := &SignRequester{
-				SignDoner: eh.SignDoner,
+				SignDoner: eh.SignerMPC,
 				SignRequestArgs: SignRequestArgs{
 					TaskID:                 taskID,
 					CompressedPartiPubKeys: cmpPartiPubKeys,
@@ -173,7 +159,7 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			taskCreator := StakeTaskCreator{
 				TaskID:         taskID,
 				StakeRequest:   &stakeReq,
-				NetworkContext: eh.NetworkContext,
+				NetworkContext: eh.NetWorkCtx,
 				Nonce:          nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()
@@ -183,9 +169,9 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			}
 
 			stw := &StakeTaskWrapper{
-				CChainIssueClient: eh.CChainIssueClient,
+				CChainIssueClient: eh.IssuerCChain,
 				Logger:            eh.Logger,
-				PChainIssueClient: eh.PChainIssueClient,
+				PChainIssueClient: eh.IssuerPChain,
 				SignRequester:     signRequester,
 				StakeTask:         stakeTask,
 			}
@@ -247,7 +233,7 @@ func (eh *StakeRequestStarted) issueTx(ctx context.Context) {
 			eh.issueTxCacheLock.Unlock()
 
 			// Sync nonce
-			if err := eh.syncNonce(ctx); err != nil {
+			if err := eh.syncNonce(ctx, issueTx.CChainAddress); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to sync nonce")
 				break
 			}
@@ -325,7 +311,6 @@ func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrap
 
 		ParticipantPubKeys: signRequester.CompressedPartiPubKeys,
 	}
-	//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(&newEvt, nil))
 
 	eh.doneStakeTasks++
 	prom.StakeTaskDone.Inc()
@@ -381,20 +366,17 @@ func (eh *StakeRequestStarted) checkIssueTxCache(ctx context.Context) {
 	}
 }
 
-func (eh *StakeRequestStarted) syncNonce(ctx context.Context) error {
-	addr := eh.cChainAddress
-	if addr != nil {
-		addressNonce, err := eh.ChainNoncer.NonceAt(ctx, *addr, nil)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		eh.nextNonce = addressNonce
+func (eh *StakeRequestStarted) syncNonce(ctx context.Context, addr common.Address) error {
+	addressNonce, err := eh.EthClient.NonceAt(ctx, addr, nil)
+	if err != nil {
+		return errors.WithStack(err)
 	}
+	eh.nextNonce = addressNonce
 	return nil
 }
 
 func (eh *StakeRequestStarted) checkBalance(ctx context.Context, addr common.Address, stakeAmt *big.Int) error {
-	bl, err := eh.Balancer.BalanceAt(ctx, addr, nil)
+	bl, err := eh.EthClient.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
