@@ -22,9 +22,7 @@ var (
 	KeyPrefixParticipant        KeyPrefix = []byte("parti")
 	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
 
-	KeyPrefixJoinRequest       KeyPrefix = []byte("JoinReq")
-	KeyPrefixStakeRequest      KeyPrefix = []byte("stakeReq")
-	KeyPrefixExportUTXORequest KeyPrefix = []byte("exportUTXOReq")
+	KeyPrefixJoinRequest KeyPrefix = []byte("JoinReq")
 )
 
 // PubKey
@@ -180,7 +178,7 @@ type JoinRequest struct {
 }
 
 func (m *JoinRequest) Key() []byte { // Key format: KeyPrefixJoinRequest+"-"+ReqHash
-	return Key(KeyPrefixJoinRequest, KeyPayload(m.ReqHash))
+	return Key(KeyPrefixJoinRequest, m.ReqHash)
 }
 
 // StakeRequest
@@ -195,8 +193,8 @@ type StakeRequest struct {
 	EndTime   int64       `json:"endTime"`
 }
 
-func (m *StakeRequest) Key() []byte { // Key format: KeyPrefixStakeRequest+"-"+TxHash
-	return Key(KeyPrefixStakeRequest, KeyPayload(m.TxHash))
+func (m *StakeRequest) ReqHash() [32]byte {
+	return m.TxHash
 }
 
 // ExportUTXORequest
@@ -204,15 +202,11 @@ func (m *StakeRequest) Key() []byte { // Key format: KeyPrefixStakeRequest+"-"+T
 type ExportUTXORequest struct {
 	TxID        ids.ID `json:"txID"`
 	OutputIndex uint32 `json:"outputIndex"`
+	GenPubKey   PubKey `json:"genPubKey"`
 }
 
-func (m *ExportUTXORequest) Key() []byte { // Key format: KeyPrefixExportUTXORequest+"-"+Hash(TxID+"-"+bytes(OutputIndex))
-	return m.KeyFromTxIDAndOutputIndex(m.TxID, m.OutputIndex)
-}
-
-func (m *ExportUTXORequest) KeyFromTxIDAndOutputIndex(txID ids.ID, outputIndex uint32) []byte {
+func (m *ExportUTXORequest) ReqHash() [32]byte {
 	bs := make([]byte, 1)
 	binary.BigEndian.PutUint64(bs, uint64(m.OutputIndex))
-	keyPayload := hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs}))
-	return Key(KeyPrefixExportUTXORequest, KeyPayload(keyPayload))
+	return hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs}))
 }
