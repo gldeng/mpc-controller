@@ -28,6 +28,7 @@ type Master struct {
 
 func (m *Master) Start(ctx context.Context) error {
 	m.subscribe()
+	m.watcher.Init(ctx)
 	<-ctx.Done()
 	return nil
 }
