@@ -64,8 +64,6 @@ func (m *Master) subscribe() {
 		Logger:                 m.Logger,
 		PChainClient:           m.PChainClient,
 		Publisher:              m.Dispatcher,
-		Receipter:              m.Receipter,
-		Signer:                 m.Signer,
 		Transactor:             m.Transactor,
 	}
 

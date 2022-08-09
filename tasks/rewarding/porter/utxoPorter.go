@@ -16,6 +16,7 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/crypto/secp256k1r"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
+	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	portIssuer "github.com/avalido/mpc-controller/utils/port/issuer"
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
@@ -162,10 +163,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					{"txID", utxoExportReq.TxID}, {"outputIndex", utxoExportReq.OutputIndex}}...)
 				break
 			}
-			utxoRepEvt := val.(*events.UTXOReported)
+			utxo := val.(*avax.UTXO)
 
 			taskID := exportPrincipalTaskIDPrefix
-			if utxoRepEvt.NativeUTXO.OutputIndex == 1 {
+			if utxo.OutputIndex == 1 {
 				taskID = exportRewardTaskIDPrefix
 			}
 
@@ -177,7 +178,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				CChainID:   eh.CChainID(),
 				PChainAddr: pChainAddr,
 				CChainArr:  treasureAddr,
-				UTXO:       utxoRepEvt.NativeUTXO,
+				UTXO:       utxo,
 
 				SignDoner: eh.SignDoner,
 				SignReqArgs: &signer.SignRequestArgs{
@@ -236,8 +237,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					}
 
 					newEvt := &events.UTXOExported{
-						NativeUTXO:   utxoRepEvt.NativeUTXO,
-						MpcUTXO:      utxoRepEvt.MpcUTXO,
+						NativeUTXO:   utxo,
+						MpcUTXO:      myAvax.MpcUTXOFromUTXO(utxo),
 						ExportedTxID: ids[0],
 						ImportedTxID: ids[1],
 					}
@@ -247,7 +248,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 
 					//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
 
-					switch utxoRepEvt.NativeUTXO.OutputIndex {
+					switch utxo.OutputIndex {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
 						prom.PrincipalUTXOExported.Inc()
