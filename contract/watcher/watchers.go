@@ -24,22 +24,28 @@ import (
 	"time"
 )
 
-type MpcManagerWatchers struct {
-	Logger       logger.Logger
-	DB           storage.DB
-	PubKey       []byte
-	EthWsURL     string
-	ContractAddr common.Address
-	Publisher    dispatcher.Publisher
+// Subscribe event: *events.ParticipantAdded
+// Subscribe event: *events.KeyGenerated
 
-	Caller      caller.Caller
-	Transactor  transactor.Transactor
-	KeygenDoner core.KeygenDoner
+// Publish event: *events.ParticipantAdded
+// Publish event: *events.KeyGenerated
+// Publish event: *events.StakeRequestAdded
+// Publish event: *events.RequestStarted
+
+type MpcManagerWatchers struct {
+	BoundCaller     caller.Caller
+	BoundTransactor transactor.Transactor
+	ContractAddr    common.Address
+	DB              storage.DB
+	EthWsURL        string
+	KeyGeneratorMPC core.KeygenDoner
+	Logger          logger.Logger
+	PartiPubKey     storage.PubKey
+	Publisher       dispatcher.Publisher
 
 	contractFilterer bind.ContractFilterer
 	ethClientCh      chan redialer.Client // todo: handle reconnection
-
-	watcherFactory *MpcManagerWatcherFactory
+	watcherFactory   *MpcManagerWatcherFactory
 
 	participantAddedWatcher   *watcher.Watcher
 	keygenRequestAddedWatcher *watcher.Watcher
@@ -65,7 +71,7 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 	watcherFactory := &MpcManagerWatcherFactory{w.Logger, boundFilterer}
 	w.watcherFactory = watcherFactory
 
-	err = w.watchParticipantAdded(ctx, nil, [][]byte{w.PubKey})
+	err = w.watchParticipantAdded(ctx, nil, [][]byte{w.PartiPubKey})
 	w.Logger.FatalOnError(err, "Failed to watch ParticipantAdded")
 	err = w.watchRequestStarted(ctx, nil)
 	w.Logger.FatalOnError(err, "Failed to watch RequestStarted")
@@ -111,7 +117,7 @@ func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt in
 	}
 
 	// Save group
-	rawPubKeys, err := w.Caller.GetGroup(ctx, nil, myEvt.GroupId)
+	rawPubKeys, err := w.BoundCaller.GetGroup(ctx, nil, myEvt.GroupId)
 	var pubKeys []storage.PubKey
 	for _, rawPubKey := range rawPubKeys {
 		pubKeys = append(pubKeys, rawPubKey)
@@ -164,7 +170,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 		Threshold:              binary.BigEndian.Uint64(group.ID[30:31]),
 	}
 
-	res, err := w.KeygenDoner.KeygenDone(ctx, keyGenReq)
+	res, err := w.KeyGeneratorMPC.KeygenDone(ctx, keyGenReq)
 	if err != nil {
 		return errors.Wrapf(err, "failed to request key generation %v", keyGenReq)
 	}
@@ -177,7 +183,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	}
 
 	participant := storage.Participant{
-		PubKey:  hash256.FromBytes(w.PubKey),
+		PubKey:  hash256.FromBytes(w.PartiPubKey),
 		GroupId: myEvt.GroupId,
 	}
 
@@ -187,7 +193,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	}
 
 	var partiId = participant.ParticipantId()
-	_, _, err = w.Transactor.ReportGeneratedKey(ctx, partiId, dnmGenPubKeyBytes)
+	_, _, err = w.BoundTransactor.ReportGeneratedKey(ctx, partiId, dnmGenPubKeyBytes)
 	if err != nil {
 		return errors.Wrapf(err, "failed to report generated public key %v with participant id %v", dnmGenPubKeyBytes, partiId)
 	}
