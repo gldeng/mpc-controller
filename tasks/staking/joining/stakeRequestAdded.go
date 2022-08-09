@@ -74,14 +74,11 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			if err != nil {
 				switch errors.Cause(err).(type) {
 				case *transactor.ErrTypQuorumAlreadyReached:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{
-						{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", txHash}}...)
 				case *transactor.ErrTypAttemptToRejoin:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{
-						{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", txHash}}...)
 				default:
-					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{
-						{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
+					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", txHash}}...)
 				}
 				break
 			}
