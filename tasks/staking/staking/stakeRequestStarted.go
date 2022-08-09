@@ -3,7 +3,6 @@ package staking
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
@@ -27,12 +26,6 @@ import (
 const (
 	stakeTaskIDPrefix = "STAKE-"
 )
-
-type Cache interface {
-	cache.MyIndexGetter
-	cache.GeneratedPubKeyInfoGetter
-	cache.ParticipantKeysGetter
-}
 
 // Subscribe event: *events.RequestStarted
 
