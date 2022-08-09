@@ -14,13 +14,11 @@ import (
 
 // Subscribe event: *events.StakeRequestAdded
 
-// Publish event:
-
 type StakeRequestAdded struct {
-	Logger     logger.Logger
-	PubKey     []byte
-	DB         storage.DB
-	Transactor transactor.Transactor
+	BoundTransactor transactor.Transactor
+	DB              storage.DB
+	Logger          logger.Logger
+	PartiPubKey     []byte
 
 	stakeRequestAddedChan chan *events.StakeRequestAdded
 	once                  sync.Once
@@ -29,7 +27,6 @@ type StakeRequestAdded struct {
 func (eh *StakeRequestAdded) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
 		eh.stakeRequestAddedChan = make(chan *events.StakeRequestAdded, 1024)
-		//eh.ws = work.NewWorkshop(eh.Logger, "joinRequest", time.Minute*10, 10)
 		go eh.joinRequest(ctx)
 	})
 
@@ -58,7 +55,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			}
 
 			participant := storage.Participant{
-				PubKey:  hash256.FromBytes(eh.PubKey),
+				PubKey:  hash256.FromBytes(eh.PartiPubKey),
 				GroupId: genPubKey.GroupId,
 			}
 
@@ -70,7 +67,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 
 			partiId := participant.ParticipantId()
 			txHash := evt.Raw.TxHash
-			_, _, err = eh.Transactor.JoinRequest(ctx, partiId, txHash)
+			_, _, err = eh.BoundTransactor.JoinRequest(ctx, partiId, txHash)
 			if err != nil {
 				switch errors.Cause(err).(type) {
 				case *transactor.ErrTypQuorumAlreadyReached:
