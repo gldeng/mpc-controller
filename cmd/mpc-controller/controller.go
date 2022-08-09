@@ -153,7 +153,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		BoundTransactor: &boundTransactor,
 		ContractAddr:    contractAddr,
 		DB:              myDB,
-		EthWsURL:        config.EthRpcUrl,
+		EthWsURL:        config.EthWsUrl,
 		KeyGeneratorMPC: mpcClient,
 		Logger:          myLogger,
 		PartiPubKey:     myPartiPubKey,
