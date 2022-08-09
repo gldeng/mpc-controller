@@ -37,6 +37,10 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 	switch name {
 	case EvtParticipantAdded:
 		logs, sub, err = f.BoundFilterer.WatchLogs(opts, string(EvtParticipantAdded), queries...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to watch %v logs", EvtParticipantAdded)
+			break
+		}
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerParticipantAdded)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtParticipantAdded), log); err != nil {
@@ -47,6 +51,10 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		}
 	case EvtKeygenRequestAdded:
 		logs, sub, err = f.BoundFilterer.WatchLogs(opts, string(EvtKeygenRequestAdded), queries...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to watch %v logs", EvtKeygenRequestAdded)
+			break
+		}
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerKeygenRequestAdded)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtKeygenRequestAdded), log); err != nil {
@@ -57,6 +65,10 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		}
 	case EvtKeyGenerated:
 		logs, sub, err = f.BoundFilterer.WatchLogs(opts, string(EvtKeyGenerated), queries...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to watch %v logs", EvtKeyGenerated)
+			break
+		}
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerKeyGenerated)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtKeyGenerated), log); err != nil {
@@ -67,6 +79,10 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		}
 	case EvtStakeRequestAdded:
 		logs, sub, err = f.BoundFilterer.WatchLogs(opts, string(EvtStakeRequestAdded), queries...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to watch %v logs", EvtStakeRequestAdded)
+			break
+		}
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerStakeRequestAdded)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtStakeRequestAdded), log); err != nil {
@@ -77,6 +93,10 @@ func (f *MpcManagerWatcherFactory) NewWatcher(process watcher.Process, opts *bin
 		}
 	case EvtRequestStarted:
 		logs, sub, err = f.BoundFilterer.WatchLogs(opts, string(EvtRequestStarted), queries...)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to watch %v logs", EvtRequestStarted)
+			break
+		}
 		unpack = func(log types.Log) (interface{}, error) {
 			myEvent := new(contract.MpcManagerRequestStarted)
 			if err := f.BoundFilterer.UnpackLog(myEvent, string(EvtRequestStarted), log); err != nil {
