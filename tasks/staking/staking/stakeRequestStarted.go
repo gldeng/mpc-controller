@@ -123,10 +123,9 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				break
 			}
 
-			genPubKey := storage.GeneratedPublicKey{}
-			key := genPubKey.KeyFromHash(stakeReq.GenPubKey)
-			if err := eh.DB.MGet(ctx, key, &genPubKey); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to load generated public key", []logger.Field{{"key", key}}...)
+			genPubKey := storage.GeneratedPublicKey{GenPubKey: stakeReq.GenPubKey}
+			if err := eh.DB.LoadModel(ctx, &genPubKey); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to load generated public key", []logger.Field{{"key", genPubKey.Key()}}...)
 				break
 			}
 
@@ -181,7 +180,6 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				TaskID:         taskID,
 				StakeRequest:   &stakeReq,
 				NetworkContext: eh.NetworkContext,
-				GenPubKey:      genPubKey.GenPubKey,
 				Nonce:          nonce,
 			}
 			stakeTask, err := taskCreator.CreateStakeTask()

@@ -186,11 +186,12 @@ func (m *JoinRequest) Key() []byte { // Key format: KeyPrefixJoinRequest+"-"+Req
 type StakeRequest struct {
 	ReqNo     uint64      `json:"reqNo"`
 	TxHash    common.Hash `json:"txHash"`
-	GenPubKey common.Hash `json:"genPubKey"`
 	NodeID    string      `json:"nodeID"`
 	Amount    string      `json:"amount"`
 	StartTime int64       `json:"startTime"`
 	EndTime   int64       `json:"endTime"`
+
+	GenPubKey PubKey `json:"genPubKey"`
 }
 
 func (m *StakeRequest) ReqHash() [32]byte {
@@ -202,7 +203,8 @@ func (m *StakeRequest) ReqHash() [32]byte {
 type ExportUTXORequest struct {
 	TxID        ids.ID `json:"txID"`
 	OutputIndex uint32 `json:"outputIndex"`
-	GenPubKey   PubKey `json:"genPubKey"`
+
+	GenPubKey PubKey `json:"genPubKey"`
 }
 
 func (m *ExportUTXORequest) ReqHash() [32]byte {

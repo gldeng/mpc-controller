@@ -13,8 +13,7 @@ type StakeTaskCreator struct {
 	TaskID string
 	*storage.StakeRequest
 	chain.NetworkContext
-	GenPubKey storage.PubKey
-	Nonce     uint64
+	Nonce uint64
 }
 
 func (s *StakeTaskCreator) CreateStakeTask() (*StakeTask, error) {
