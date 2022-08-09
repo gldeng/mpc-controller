@@ -25,8 +25,8 @@ type Master struct {
 	IssuerCChain           chain.CChainIssuer
 	IssuerPChain           chain.PChainIssuer
 	Logger                 logger.Logger
-	PartiPubKey            storage.PubKey
 	NetWorkCtx             chain.NetworkContext
+	PartiPubKey            storage.PubKey
 	SignerMPC              core.SignDoner
 	UTXOExportedEventCache *ristretto.Cache
 	UTXOsFetchedEventCache *ristretto.Cache
