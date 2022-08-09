@@ -191,7 +191,7 @@ type StakeRequest struct {
 	StartTime int64       `json:"startTime"`
 	EndTime   int64       `json:"endTime"`
 
-	GenPubKey PubKey `json:"genPubKey"`
+	*GeneratedPublicKey `json:"genPubKey"`
 }
 
 func (m *StakeRequest) ReqHash() [32]byte {
@@ -204,7 +204,7 @@ type ExportUTXORequest struct {
 	TxID        ids.ID `json:"txID"`
 	OutputIndex uint32 `json:"outputIndex"`
 
-	GenPubKey PubKey `json:"genPubKey"`
+	*GeneratedPublicKey `json:"genPubKey"`
 }
 
 func (m *ExportUTXORequest) ReqHash() [32]byte {

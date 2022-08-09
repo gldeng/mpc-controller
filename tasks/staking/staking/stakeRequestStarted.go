@@ -119,23 +119,17 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			}
 
 			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
-				eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqNo", stakeReq.ReqNo}, {"reqHash", evt.RequestHash}}...)
+				eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", evt.RequestHash}}...)
 				break
 			}
 
-			genPubKey := storage.GeneratedPublicKey{GenPubKey: stakeReq.GenPubKey}
-			if err := eh.DB.LoadModel(ctx, &genPubKey); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to load generated public key", []logger.Field{{"key", genPubKey.Key()}}...)
-				break
-			}
-
-			cmpGenPubKeyHex, err := genPubKey.GenPubKey.CompressPubKeyHex()
+			cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to compress generated public key")
 				break
 			}
 
-			cChainAddr, err := genPubKey.GenPubKey.CChainAddress()
+			cChainAddr, err := stakeReq.GenPubKey.CChainAddress()
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to get C-Chain address")
 				break
@@ -146,7 +140,7 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			eh.addrLock.Unlock()
 
 			group := storage.Group{
-				ID: genPubKey.GroupId,
+				ID: stakeReq.GroupId,
 			}
 			if err := eh.DB.LoadModel(ctx, &group); err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to load group", []logger.Field{{"key", group.ID}}...)

@@ -84,13 +84,13 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			}
 
 			stakeReq := storage.StakeRequest{
-				ReqNo:     evt.RequestNumber.Uint64(),
-				TxHash:    txHash,
-				NodeID:    evt.NodeID,
-				Amount:    evt.Amount.String(),
-				StartTime: evt.StartTime.Int64(),
-				EndTime:   evt.EndTime.Int64(),
-				GenPubKey: genPubKey.GenPubKey,
+				ReqNo:              evt.RequestNumber.Uint64(),
+				TxHash:             txHash,
+				NodeID:             evt.NodeID,
+				Amount:             evt.Amount.String(),
+				StartTime:          evt.StartTime.Int64(),
+				EndTime:            evt.EndTime.Int64(),
+				GeneratedPublicKey: genPubKey,
 			}
 
 			joinReq := &storage.JoinRequest{

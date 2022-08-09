@@ -196,9 +196,9 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 				}
 
 				exportUTXOReq := storage.ExportUTXORequest{
-					TxID:        utxo.TxID,
-					OutputIndex: utxo.OutputIndex,
-					GenPubKey:   genPubKey.GenPubKey,
+					TxID:               utxo.TxID,
+					OutputIndex:        utxo.OutputIndex,
+					GeneratedPublicKey: &genPubKey,
 				}
 
 				partiId := participant.ParticipantId()
