@@ -5,7 +5,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/core"
@@ -32,46 +31,36 @@ import (
 )
 
 const (
-	exportPrincipalTaskIDPrefix = "PRINCIPAL-"
-	exportRewardTaskIDPrefix    = "REWARD-"
+	taskIDPrefixPrincipalExport = "PRINCIPAL-"
+	taskIDPrefixRewardExport    = "REWARD-"
 )
 
 const (
-	principalUTXO utxoOutputIndex = iota
-	rewardUTXO
+	utxoOutputIndexPrincipal utxoOutputIndex = iota
+	utxoOutputIndexReward
 )
 
 type utxoOutputIndex int
 
 // Subscribe event: *events.RequestStarted
 
-// Publish event: *events.UTXOExported
-
 type UTXOPorter struct {
-	CChainIssueClient chain.CChainIssuer
-	Cache             cache.ICache
-	Logger            logger.Logger
-	MyPubKeyHashHex   string
-	PChainIssueClient chain.PChainIssuer
-	Publisher         dispatcher.Publisher
-	SignDoner         core.SignDoner
-	chain.NetworkContext
-
-	Caller caller.Caller
-
-	ws *work.Workshop
-
-	DB storage.DB
-
+	BoundCaller            caller.Caller
+	DB                     storage.DB
+	IssuerCChain           chain.CChainIssuer
+	IssuerPChain           chain.PChainIssuer
+	Logger                 logger.Logger
+	NetWorkCtx             chain.NetworkContext
+	SignerMPC              core.SignDoner
+	UTXOExportedEventCache *ristretto.Cache
 	UTXOsFetchedEventCache *ristretto.Cache
 
+	ws                       *work.Workshop
 	requestStartedChan       chan *events.RequestStarted
 	exportUTXOTaskAddedCache *ristretto.Cache
-	UTXOExportedEventCache   *ristretto.Cache
-
-	once                   sync.Once
-	exportedRewardUTXOs    uint64
-	exportedPrincipalUTXOs uint64
+	once                     sync.Once
+	exportedRewardUTXOs      uint64
+	exportedPrincipalUTXOs   uint64
 }
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -165,30 +154,30 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			}
 			utxo := val.(*avax.UTXO)
 
-			taskID := exportPrincipalTaskIDPrefix
+			taskID := taskIDPrefixPrincipalExport
 			if utxo.OutputIndex == 1 {
-				taskID = exportRewardTaskIDPrefix
+				taskID = taskIDPrefixRewardExport
 			}
 
 			args := &Args{
 				Logger:     eh.Logger,
-				NetworkID:  eh.NetworkID(),
-				ExportFee:  eh.ExportFee(),
-				PChainID:   ids.Empty, // todo: config it
-				CChainID:   eh.CChainID(),
+				NetworkID:  eh.NetWorkCtx.NetworkID(),
+				ExportFee:  eh.NetWorkCtx.ExportFee(),
+				PChainID:   ids.Empty,
+				CChainID:   eh.NetWorkCtx.CChainID(),
 				PChainAddr: pChainAddr,
 				CChainArr:  treasureAddr,
 				UTXO:       utxo,
 
-				SignDoner: eh.SignDoner,
+				SignDoner: eh.SignerMPC,
 				SignReqArgs: &signer.SignRequestArgs{
 					TaskID:                 taskID + evt.Raw.TxHash.Hex(),
 					CompressedPartiPubKeys: cmpPartiPubKeys,
 					CompressedGenPubKeyHex: cmpGenPubKeyHex,
 				},
 
-				CChainIssueClient: eh.CChainIssueClient,
-				PChainIssueClient: eh.PChainIssueClient,
+				CChainIssueClient: eh.IssuerCChain,
+				PChainIssueClient: eh.IssuerPChain,
 			}
 
 			eh.exportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
@@ -246,8 +235,6 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					eh.UTXOExportedEventCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 					eh.UTXOExportedEventCache.Wait()
 
-					//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
-
 					switch utxo.OutputIndex {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
@@ -270,13 +257,13 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 
 func (eh *UTXOPorter) treasuryAddress(ctx context.Context, outputIndex utxoOutputIndex) (addr common.Address, err error) {
 	switch {
-	case outputIndex == principalUTXO:
-		if addr, err = eh.Caller.PrincipalTreasuryAddress(ctx, nil); err != nil {
+	case outputIndex == utxoOutputIndexPrincipal:
+		if addr, err = eh.BoundCaller.PrincipalTreasuryAddress(ctx, nil); err != nil {
 			return *new(common.Address), errors.WithStack(err)
 		}
 
-	case outputIndex == rewardUTXO:
-		if addr, err = eh.Caller.RewardTreasuryAddress(ctx, nil); err != nil {
+	case outputIndex == utxoOutputIndexReward:
+		if addr, err = eh.BoundCaller.RewardTreasuryAddress(ctx, nil); err != nil {
 			return *new(common.Address), errors.WithStack(err)
 		}
 	}

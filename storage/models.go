@@ -25,7 +25,7 @@ var (
 	KeyPrefixJoinRequest KeyPrefix = []byte("JoinReq")
 )
 
-// PubKey
+// PartiPubKey
 
 type PubKey []byte // uncompressed
 
@@ -61,7 +61,7 @@ func (m PubKey) CompressPubKeyHex() (string, error) {
 	return *normed, nil
 }
 
-func (m PubKey) EcdsaPubKey() (*ecdsa.PublicKey, error) {
+func (m PubKey) ECDSAPubKey() (*ecdsa.PublicKey, error) {
 	pk, err := crypto.UnmarshalPubkeyBytes(m)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -137,7 +137,7 @@ type Participant struct {
 	Index   uint64      `json:"index"`
 }
 
-func (m *Participant) Key() []byte { // Key format: KeyPrefixParticipant+"-"+Hash(PubKey+"-"+GroupId)
+func (m *Participant) Key() []byte { // Key format: KeyPrefixParticipant+"-"+Hash(PartiPubKey+"-"+GroupId)
 	keyPayload := hash256.FromBytes(JoinWithHyphen([][]byte{m.PubKey.Bytes(), m.GroupId.Bytes()}))
 	return Key(KeyPrefixParticipant, KeyPayload(keyPayload))
 }

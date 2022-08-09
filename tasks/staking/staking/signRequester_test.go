@@ -50,11 +50,11 @@ package staking
 //		return output
 //	}
 //
-//	signDoner := &mocks.SignDoner{} // todo: use NewSignDoner() and Expecter Interfaces.
+//	signDoner := &mocks.SignerMPC{} // todo: use NewSignDoner() and Expecter Interfaces.
 //	signDoner.On("SignDone", ctx, &exportTxSignReq).Return(mockResultFn, nil)
 //
 //	signRequester := &SignRequester{
-//		SignDoner:       signDoner,
+//		SignerMPC:       signDoner,
 //		SignRequestArgs: suite.SignRequestArgs,
 //	}
 //
@@ -87,11 +87,11 @@ package staking
 //		return output
 //	}
 //
-//	signDoner := &mocks.SignDoner{}
+//	signDoner := &mocks.SignerMPC{}
 //	signDoner.On("SignDone", ctx, &exportTxSignReq).Return(mockResultFn, nil)
 //
 //	signRequester := &SignRequester{
-//		SignDoner:       signDoner,
+//		SignerMPC:       signDoner,
 //		SignRequestArgs: suite.SignRequestArgs,
 //	}
 //
@@ -124,11 +124,11 @@ package staking
 //		return output
 //	}
 //
-//	signDoner := &mocks.SignDoner{}
+//	signDoner := &mocks.SignerMPC{}
 //	signDoner.On("SignDone", ctx, &exportTxSignReq).Return(mockResultFn, nil)
 //
 //	signRequester := &SignRequester{
-//		SignDoner:       signDoner,
+//		SignerMPC:       signDoner,
 //		SignRequestArgs: suite.SignRequestArgs,
 //	}
 //

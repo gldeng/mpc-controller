@@ -149,13 +149,13 @@ package staking
 //		return output
 //	}
 //
-//	signDoner := &mocks.SignDoner{}
+//	signDoner := &mocks.SignerMPC{}
 //	signDoner.On("SignDone", ctx, &exportTxSignReq).Return(mockExportTxSigResultFn, nil)
 //	signDoner.On("SignDone", ctx, &importTxSignReq).Return(mockImportTxSigResultFn, nil)
 //	signDoner.On("SignDone", ctx, &addDelegatorTxSignReq).Return(mockaddDelegatorTxSigResultFn, nil)
 //
 //	signRequester := &SignRequester{
-//		SignDoner:       signDoner,
+//		SignerMPC:       signDoner,
 //		SignRequestArgs: signRequestArgs,
 //	}
 //

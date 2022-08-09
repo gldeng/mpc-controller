@@ -16,7 +16,6 @@ import (
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/dgraph-io/ristretto"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"strconv"
 	"sync"
@@ -29,30 +28,21 @@ const (
 
 // Subscribe event: *events.KeyGenerated
 
-// Publish event: *events.UTXOReported
-
 type UTXOTracker struct {
-	ContractAddr common.Address
-	Logger       logger.Logger
-	PChainClient platformvm.Client
-	Publisher    dispatcher.Publisher
-	PubKey       []byte
-	DB           storage.DB
-	Transactor   transactor.Transactor
-
-	genPubKeyCache map[ids.ShortID]*events.KeyGenerated
-
-	utxosToExportCh              chan *utxosToExport
-	joinExportUTXOTaskAddedCache *ristretto.Cache
-
-	UTXOsFetchedEventCache *ristretto.Cache
-	joinUTXOExportReqCache *ristretto.Cache
+	BoundTransactor        transactor.Transactor
+	ClientPChain           platformvm.Client
+	DB                     storage.DB
+	Logger                 logger.Logger
+	PartiPubKey            storage.PubKey
 	UTXOExportedEventCache *ristretto.Cache
+	UTXOsFetchedEventCache *ristretto.Cache
 
-	joinUTXOExportWs *work.Workshop
-
-	once sync.Once
-	lock sync.Mutex
+	genPubKeyCache               map[ids.ShortID]*events.KeyGenerated
+	utxosToExportCh              chan *utxosToExport
+	joinUTXOExportTaskAddedCache *ristretto.Cache
+	joinUTXOExportReqCache       *ristretto.Cache
+	joinUTXOExportWs             *work.Workshop
+	once                         sync.Once
 }
 
 type utxosToExport struct {
@@ -73,7 +63,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 			MaxCost:     1 << 30, // maximum cost of cache (1GB).
 			BufferItems: 64,      // number of keys per Get buffer.
 		})
-		eh.joinExportUTXOTaskAddedCache = reportUTXOTaskAddedCache
+		eh.joinUTXOExportTaskAddedCache = reportUTXOTaskAddedCache
 
 		utxoReportedEventCache, _ := ristretto.NewCache(&ristretto.Config{
 			NumCounters: 1e7,     // number of keys to track frequency of (10M).
@@ -118,7 +108,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 				var nativeUTXOsToExport []*avax.UTXO
 				for _, utxo := range utxosFromStake {
 					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-					_, ok := eh.joinExportUTXOTaskAddedCache.Get(utxoID)
+					_, ok := eh.joinUTXOExportTaskAddedCache.Get(utxoID)
 					if ok {
 						continue
 					}
@@ -169,7 +159,7 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 				}
 
 				participant := storage.Participant{
-					PubKey:  hash256.FromBytes(eh.PubKey),
+					PubKey:  hash256.FromBytes(eh.PartiPubKey),
 					GroupId: genPubKey.GroupId,
 				}
 
@@ -197,8 +187,8 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 				utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
 				eh.UTXOsFetchedEventCache.SetWithTTL(utxoID, utxo, 1, time.Hour)
 				eh.UTXOsFetchedEventCache.Wait()
-				eh.joinExportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
-				eh.joinExportUTXOTaskAddedCache.Wait()
+				eh.joinUTXOExportTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
+				eh.joinUTXOExportTaskAddedCache.Wait()
 
 				eh.joinUTXOExportWs.AddTask(ctx, &work.Task{
 					Args: &joinReq,
@@ -220,7 +210,7 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 								return
 							}
 
-							_, _, err := eh.Transactor.JoinRequest(ctx, partiId, reqHash)
+							_, _, err := eh.BoundTransactor.JoinRequest(ctx, partiId, reqHash)
 							if err != nil {
 								switch errors.Cause(err).(type) {
 								case *transactor.ErrTypQuorumAlreadyReached:
@@ -239,7 +229,6 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							eh.joinUTXOExportReqCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 							eh.joinUTXOExportReqCache.Wait()
 
-							//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(reportEvt, nil))
 							switch utxo.OutputIndex {
 							case 0:
 								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"utxoID", utxo.UTXOID}}...)
@@ -292,7 +281,7 @@ func (eh *UTXOTracker) requestUTXOsFromStake(ctx context.Context, addr ids.Short
 func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
 	var utxoBytesArr [][]byte
 	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		utxoBytesArr, _, _, err = eh.PChainClient.GetUTXOs(ctx, []ids.ShortID{addr}, 0, addr, ids.ID{})
+		utxoBytesArr, _, _, err = eh.ClientPChain.GetUTXOs(ctx, []ids.ShortID{addr}, 0, addr, ids.ID{})
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
@@ -317,7 +306,7 @@ func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []
 }
 
 func (eh *UTXOTracker) isFromImportTx(ctx context.Context, txID ids.ID) (bool, error) {
-	txBytes, err := eh.PChainClient.GetTx(ctx, txID)
+	txBytes, err := eh.ClientPChain.GetTx(ctx, txID)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to GetTx")
 	}
