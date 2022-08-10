@@ -223,7 +223,7 @@ func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interf
 		return errors.Wrapf(err, "failed to load generated public key %v", genPubKey)
 	}
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeyGenerated)(myEvt), nil))
-	w.Logger.Debug("Public key generated", []logger.Field{
+	w.Logger.Info("Public key generated", []logger.Field{
 		{"groupId", genPubKey.GroupId},
 		{"genPubKey", genPubKey.GenPubKey},
 		{"cChainAddr", genPubKey.GenPubKey.CChainAddress()},
