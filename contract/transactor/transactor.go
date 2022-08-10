@@ -31,7 +31,7 @@ type Transactor interface {
 	RetryTransact(ctx context.Context, fn Transact) (*types.Transaction, *types.Receipt, error)
 }
 
-type Transact func() (tx *types.Transaction, err error, retry bool, checkSuccess bool)
+type Transact func() (tx *types.Transaction, err error, retry bool, checkReceipt bool)
 
 type MyTransactor struct {
 	Auth               *bind.TransactOpts
@@ -49,7 +49,7 @@ func (t *MyTransactor) Init(ctx context.Context) {
 }
 
 func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, requestHash [32]byte) (*types.Transaction, *types.Receipt, error) {
-	fn := func() (tx *types.Transaction, err error, retry bool, checkSuccess bool) {
+	fn := func() (tx *types.Transaction, err error, retry bool, checkReceipt bool) {
 		tx, err = t.BoundTransactor.Transact(t.Auth, string(MethodJoinRequest), participantId, requestHash)
 		if err != nil {
 			errMsg := err.Error()
@@ -71,7 +71,7 @@ func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, 
 }
 
 func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32]byte, generatedPublicKey []byte) (*types.Transaction, *types.Receipt, error) {
-	fn := func() (tx *types.Transaction, err error, retry bool, checkSuccess bool) {
+	fn := func() (tx *types.Transaction, err error, retry bool, checkReceipt bool) {
 		tx, err = t.BoundTransactor.Transact(t.Auth, string(MethodReportGeneratedKey), participantId, generatedPublicKey)
 		if err != nil {
 			errMsg := err.Error()
@@ -95,13 +95,13 @@ func (t *MyTransactor) RetryTransact(ctx context.Context, fn Transact) (*types.T
 	var rcpt *types.Receipt
 
 	err := backoff.RetryRetryFn10Times(ctx, func() (retry bool, err error) {
-		var checkSuccess bool
-		tx, err, retry, checkSuccess = fn()
+		var checkReceipt bool
+		tx, err, retry, checkReceipt = fn()
 		if retry {
 			return true, errors.WithStack(err)
 		}
 
-		if !checkSuccess {
+		if !checkReceipt {
 			return false, errors.WithStack(err)
 		}
 
