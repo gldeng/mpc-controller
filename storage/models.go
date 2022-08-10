@@ -102,7 +102,7 @@ func (m PubKeys) CompressPubKeyHexs() ([]string, error) {
 type ParticipantId [32]byte
 
 func (m ParticipantId) Index() uint64 {
-	return binary.BigEndian.Uint64(m[31:])
+	return new(big.Int).SetBytes(m[31:32]).Uint64()
 }
 
 func (m ParticipantId) Joined(indices *big.Int) bool {
@@ -110,11 +110,11 @@ func (m ParticipantId) Joined(indices *big.Int) bool {
 }
 
 func (m ParticipantId) Threshold() uint64 {
-	return binary.BigEndian.Uint64(m[30:31])
+	return new(big.Int).SetBytes(m[30:31]).Uint64()
 }
 
 func (m ParticipantId) GroupSize() uint64 {
-	return binary.BigEndian.Uint64(m[29:30])
+	return new(big.Int).SetBytes(m[29:30]).Uint64()
 }
 
 // Group
@@ -129,18 +129,12 @@ func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID
 	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
 }
 
-func (m *Group) Size() uint64 {
-	t := m.ID[29:30]
-	bigT := new(big.Int)
-	bigT.SetBytes(t)
-	return bigT.Uint64()
+func (m *Group) GroupSize() uint64 {
+	return new(big.Int).SetBytes(m.ID[29:30]).Uint64()
 }
 
 func (m *Group) Threshold() uint64 {
-	t := m.ID[30:31]
-	bigT := new(big.Int)
-	bigT.SetBytes(t)
-	return bigT.Uint64()
+	return new(big.Int).SetBytes(m.ID[30:31]).Uint64()
 }
 
 // Participant
