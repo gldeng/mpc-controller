@@ -2,7 +2,6 @@ package watcher
 
 import (
 	"context"
-	"encoding/binary"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
@@ -167,7 +166,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	keyGenReq := &core.KeygenRequest{
 		KeygenReqID:            reqId,
 		CompressedPartiPubKeys: normalized,
-		Threshold:              binary.BigEndian.Uint64(group.ID[30:31]),
+		Threshold:              group.Threshold(),
 	}
 
 	res, err := w.KeyGeneratorMPC.KeygenDone(ctx, keyGenReq)
