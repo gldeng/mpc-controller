@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/contract/watcher"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -196,6 +197,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	if err != nil {
 		return errors.Wrapf(err, "failed to report generated public key %v with participant id %v", dnmGenPubKeyBytes, partiId)
 	}
+	w.Logger.Debug("Reported generated public key", []logger.Field{{"genPubKey", bytes.BytesToHex(dnmGenPubKeyBytes)}}...)
 	return nil
 }
 
