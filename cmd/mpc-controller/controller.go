@@ -125,16 +125,19 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth rpc client, url: %q", config.EthRpcUrl))
 	}
+	rpcEthCliWrapper := &chain.RpcEthClientWrapper{myLogger, ethRpcClient}
 
 	// Create C-Chain issue client
 	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
+	evmClientWrapper := &chain.EvmClientWrapper{myLogger, cChainIssueCli}
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
+	platformvmClientWrapper := &chain.PlatformvmClientWrapper{myLogger, pChainIssueCli}
 
 	boundCaller := caller.MyCaller{
 		ContractAddr:   contractAddr,
-		ContractCaller: ethRpcClient,
+		ContractCaller: rpcEthCliWrapper,
 		Logger:         myLogger,
 	}
 	boundCaller.Init(ctx)
@@ -142,8 +145,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	boundTransactor := transactor.MyTransactor{
 		Auth:               signer,
 		ContractAddr:       contractAddr,
-		ContractTransactor: ethRpcClient,
-		EthClient:          ethRpcClient,
+		ContractTransactor: rpcEthCliWrapper,
+		EthClient:          rpcEthCliWrapper,
 		Logger:             myLogger,
 	}
 	boundTransactor.Init(ctx)
@@ -166,8 +169,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		ClientPChain:    pChainIssueCli,
 		DB:              myDB,
 		Dispatcher:      myDispatcher,
-		IssuerCChain:    cChainIssueCli,
-		IssuerPChain:    pChainIssueCli,
+		IssuerCChain:    evmClientWrapper,
+		IssuerPChain:    platformvmClientWrapper,
 		Logger:          myLogger,
 		NetWorkCtx:      networkCtx(config),
 		PartiPubKey:     myPartiPubKey,
@@ -178,9 +181,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		BoundTransactor: &boundTransactor,
 		DB:              myDB,
 		Dispatcher:      myDispatcher,
-		EthClient:       ethRpcClient,
-		IssuerCChain:    cChainIssueCli,
-		IssuerPChain:    pChainIssueCli,
+		EthClient:       rpcEthCliWrapper,
+		IssuerCChain:    evmClientWrapper,
+		IssuerPChain:    platformvmClientWrapper,
 		Logger:          myLogger,
 		NetWorkCtx:      networkCtx(config),
 		NonceGiver:      noncer,
