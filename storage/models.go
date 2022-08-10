@@ -129,6 +129,20 @@ func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID
 	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
 }
 
+func (m *Group) Size() uint64 {
+	t := m.ID[29:30]
+	bigT := new(big.Int)
+	bigT.SetBytes(t)
+	return bigT.Uint64()
+}
+
+func (m *Group) Threshold() uint64 {
+	t := m.ID[30:31]
+	bigT := new(big.Int)
+	bigT.SetBytes(t)
+	return bigT.Uint64()
+}
+
 // Participant
 
 type Participant struct {
