@@ -31,7 +31,7 @@ type Transactor interface {
 	RetryTransact(ctx context.Context, fn Transact) (*types.Transaction, *types.Receipt, error)
 }
 
-type Transact func() (tx *types.Transaction, err error, retry bool)
+type Transact func() (tx *types.Transaction, err error, retry bool, checkSuccess bool)
 
 type MyTransactor struct {
 	Auth               *bind.TransactOpts
@@ -49,19 +49,19 @@ func (t *MyTransactor) Init(ctx context.Context) {
 }
 
 func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, requestHash [32]byte) (*types.Transaction, *types.Receipt, error) {
-	fn := func() (tx *types.Transaction, err error, retry bool) {
+	fn := func() (tx *types.Transaction, err error, retry bool, checkSuccess bool) {
 		tx, err = t.BoundTransactor.Transact(t.Auth, string(MethodJoinRequest), participantId, requestHash)
 		if err != nil {
 			errMsg := err.Error()
 			switch {
 			case strings.Contains(errMsg, "QuorumAlreadyReached"):
-				return tx, errors.WithStack(&ErrTypQuorumAlreadyReached{}), false
+				return tx, errors.WithStack(&ErrTypQuorumAlreadyReached{}), false, false
 			case strings.Contains(errMsg, "AttemptToRejoin "):
-				return tx, errors.WithStack(&ErrTypAttemptToRejoin{}), false
+				return tx, errors.WithStack(&ErrTypAttemptToRejoin{}), false, false
 			}
-			return tx, errors.WithStack(err), true
+			return tx, errors.WithStack(err), true, true
 		}
-		return tx, nil, false
+		return tx, nil, false, true
 	}
 
 	tx, rcpt, err := t.RetryTransact(ctx, fn)
@@ -71,17 +71,17 @@ func (t *MyTransactor) JoinRequest(ctx context.Context, participantId [32]byte, 
 }
 
 func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32]byte, generatedPublicKey []byte) (*types.Transaction, *types.Receipt, error) {
-	fn := func() (tx *types.Transaction, err error, retry bool) {
+	fn := func() (tx *types.Transaction, err error, retry bool, checkSuccess bool) {
 		tx, err = t.BoundTransactor.Transact(t.Auth, string(MethodReportGeneratedKey), participantId, generatedPublicKey)
 		if err != nil {
 			errMsg := err.Error()
 			switch {
 			case strings.Contains(errMsg, "AttemptToReconfirmKey"):
-				return tx, errors.WithStack(&ErrTypAttemptToReconfirmKey{}), false
+				return tx, errors.WithStack(&ErrTypAttemptToReconfirmKey{}), false, false
 			}
-			return tx, errors.WithStack(err), true
+			return tx, errors.WithStack(err), true, true
 		}
-		return tx, nil, false
+		return tx, nil, false, true
 	}
 
 	tx, rcpt, err := t.RetryTransact(ctx, fn)
@@ -92,31 +92,39 @@ func (t *MyTransactor) ReportGeneratedKey(ctx context.Context, participantId [32
 
 func (t *MyTransactor) RetryTransact(ctx context.Context, fn Transact) (*types.Transaction, *types.Receipt, error) {
 	var tx *types.Transaction
-	err := backoff.RetryRetryFnForever(ctx, func() (retry bool, err error) {
-		tx, err, retry = fn()
+	var rcpt *types.Receipt
+
+	err := backoff.RetryRetryFn10Times(ctx, func() (retry bool, err error) {
+		var checkSuccess bool
+		tx, err, retry, checkSuccess = fn()
 		if retry {
 			return true, errors.WithStack(err)
 		}
-		return false, errors.WithStack(err)
+
+		if !checkSuccess {
+			return false, errors.WithStack(err)
+		}
+
+		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+			rcpt, err = t.EthClient.TransactionReceipt(ctx, tx.Hash())
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
+
+			if rcpt.Status != 1 {
+				return true, errors.WithStack(&ErrTypTransactionFailed{})
+			}
+
+			return false, nil
+		})
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+		return false, nil
 	})
 
 	if err != nil {
 		return tx, nil, errors.WithStack(err)
 	}
-
-	var rcpt *types.Receipt
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
-		rcpt, err = t.EthClient.TransactionReceipt(ctx, tx.Hash())
-		if err != nil {
-			return true, errors.WithStack(err)
-		}
-
-		if rcpt.Status != 1 {
-			return true, errors.WithStack(&ErrTypTransactionFailed{})
-		}
-
-		return false, nil
-	})
-
 	return tx, rcpt, errors.WithStack(err)
 }
