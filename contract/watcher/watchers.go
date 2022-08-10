@@ -224,7 +224,8 @@ func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interf
 	}
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeyGenerated)(myEvt), nil))
 	w.Logger.Debug("Public key generated", []logger.Field{
-		{"genPubKey", genPubKey},
+		{"groupId", genPubKey.GroupId},
+		{"genPubKey", genPubKey.GenPubKey},
 		{"cChainAddr", genPubKey.GenPubKey.CChainAddress()},
 		{"pChainAddr", genPubKey.GenPubKey.PChainAddress()}}...)
 	return nil
