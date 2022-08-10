@@ -103,7 +103,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined stake request", []logger.Field{
-				{"reqNo", evt.RequestNumber}, {"txHash", txHash}}...)
+				{"reqNo", evt.RequestNumber}, {"reqHash", txHash}}...)
 		}
 	}
 }
