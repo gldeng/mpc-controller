@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/addrs"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	ids2 "github.com/avalido/mpc-controller/utils/ids"
@@ -27,6 +28,14 @@ var (
 // PartiPubKey
 
 type PubKey []byte // uncompressed
+
+func (m PubKey) String() string {
+	return m.PubKeyHex()
+}
+
+func (m PubKey) PubKeyHex() string {
+	return bytes.BytesToHex(m)
+}
 
 func (m PubKey) CChainAddress() (common.Address, error) {
 	pubKey, err := crypto.UnmarshalPubkeyBytes(m)
