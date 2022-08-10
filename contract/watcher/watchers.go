@@ -225,8 +225,14 @@ func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interf
 		return errors.Wrapf(err, "failed to load generated public key %v", genPubKey)
 	}
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeyGenerated)(myEvt), nil))
-	cChainAddr, _ := genPubKey.GenPubKey.CChainAddress()
-	pChainAddr, _ := genPubKey.GenPubKey.PChainAddress()
+	cChainAddr, err := genPubKey.GenPubKey.CChainAddress()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get C-Chain address from %v", genPubKey.GenPubKey)
+	}
+	pChainAddr, err := genPubKey.GenPubKey.PChainAddress()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get P-Chain address from %v", genPubKey.GenPubKey)
+	}
 	w.Logger.Info("Public key generated", []logger.Field{
 		{"groupId", genPubKey.GroupId},
 		{"genPubKey", genPubKey.GenPubKey},
