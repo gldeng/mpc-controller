@@ -194,13 +194,13 @@ func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
 // JoinRequest
 
 type JoinRequest struct {
-	ReqHash [32]byte      `json:"reqHash"`
+	ReqHash common.Hash   `json:"reqHash"`
 	PartiId ParticipantId `json:"partiId"`
 	Args    interface{}   `json:"args"`
 }
 
 func (m *JoinRequest) Key() []byte { // Key format: KeyPrefixJoinRequest+"-"+ReqHash
-	return Key(KeyPrefixJoinRequest, m.ReqHash)
+	return Key(KeyPrefixJoinRequest, KeyPayload(m.ReqHash))
 }
 
 // StakeRequest
@@ -216,7 +216,7 @@ type StakeRequest struct {
 	*GeneratedPublicKey `json:"genPubKey"`
 }
 
-func (m *StakeRequest) ReqHash() [32]byte {
+func (m *StakeRequest) ReqHash() common.Hash {
 	return m.TxHash
 }
 
@@ -229,7 +229,7 @@ type ExportUTXORequest struct {
 	*GeneratedPublicKey `json:"genPubKey"`
 }
 
-func (m *ExportUTXORequest) ReqHash() [32]byte {
+func (m *ExportUTXORequest) ReqHash() common.Hash {
 	bs := new(big.Int).SetUint64(uint64(m.OutputIndex)).Bytes()
 	return hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs}))
 }
