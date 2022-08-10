@@ -2,7 +2,6 @@ package storage
 
 import (
 	"crypto/ecdsa"
-	"encoding/binary"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/crypto"
@@ -151,13 +150,11 @@ func (m *Participant) Key() []byte { // Key format: KeyPrefixParticipant+"-"+Has
 }
 
 func (m *Participant) ParticipantId() ParticipantId {
-	var indexByte []byte
-	binary.BigEndian.PutUint64(indexByte, m.Index)
-
+	groupIdBig := new(big.Int).SetBytes(m.GroupId[:])
+	indexBig := new(big.Int).SetUint64(m.Index)
+	partiIdBig := new(big.Int).Or(groupIdBig, indexBig)
 	var partiId [32]byte
-	copy(partiId[:], m.GroupId[:])
-	partiId[31] = indexByte[0]
-
+	copy(partiId[:], partiIdBig.Bytes())
 	return partiId
 }
 
@@ -216,7 +213,6 @@ type ExportUTXORequest struct {
 }
 
 func (m *ExportUTXORequest) ReqHash() [32]byte {
-	bs := make([]byte, 1)
-	binary.BigEndian.PutUint64(bs, uint64(m.OutputIndex))
+	bs := new(big.Int).SetUint64(uint64(m.OutputIndex)).Bytes()
 	return hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs}))
 }
