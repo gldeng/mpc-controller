@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -74,15 +75,8 @@ type ModelLister interface {
 
 // Handy function to concat a key
 
-const (
-	KeyPayLoadLength = 32
-)
-
-type KeyPrefix []byte
-type KeyPayload [KeyPayLoadLength]byte
-
-func Key(pre KeyPrefix, payload KeyPayload) []byte {
-	return JoinWithHyphen([][]byte{pre, payload[:]})
+func Key(prefix []byte, payload common.Hash) []byte {
+	return JoinWithHyphen([][]byte{prefix, payload[:]})
 }
 
 func JoinWithHyphen(s [][]byte) []byte {

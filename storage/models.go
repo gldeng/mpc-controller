@@ -18,11 +18,11 @@ import (
 
 // Key prefixes
 var (
-	KeyPrefixGroup              KeyPrefix = []byte("group")
-	KeyPrefixParticipant        KeyPrefix = []byte("parti")
-	KeyPrefixGeneratedPublicKey KeyPrefix = []byte("genPubKey")
+	KeyPrefixGroup              = []byte("group")
+	KeyPrefixParticipant        = []byte("parti")
+	KeyPrefixGeneratedPublicKey = []byte("genPubKey")
 
-	KeyPrefixJoinRequest KeyPrefix = []byte("JoinReq")
+	KeyPrefixJoinRequest = []byte("JoinReq")
 )
 
 // PartiPubKey
@@ -142,7 +142,7 @@ type Group struct {
 
 func (m *Group) Key() []byte { // Key format: KeyPrefixGroup+"-"+ID
 	keyPayload := m.ID
-	return Key(KeyPrefixGroup, KeyPayload(keyPayload))
+	return Key(KeyPrefixGroup, keyPayload)
 }
 
 func (m *Group) GroupSize() uint64 {
@@ -163,7 +163,7 @@ type Participant struct {
 
 func (m *Participant) Key() []byte { // Key format: KeyPrefixParticipant+"-"+Hash(PartiPubKey+"-"+GroupId)
 	keyPayload := hash256.FromBytes(JoinWithHyphen([][]byte{m.PubKey.Bytes(), m.GroupId.Bytes()}))
-	return Key(KeyPrefixParticipant, KeyPayload(keyPayload))
+	return Key(KeyPrefixParticipant, keyPayload)
 }
 
 func (m *Participant) ParticipantId() ParticipantId {
@@ -184,11 +184,11 @@ type GeneratedPublicKey struct {
 
 func (m *GeneratedPublicKey) Key() []byte { // Key format: KeyPrefixGeneratedPublicKey+"-"+Hash(GenPubKey)
 	keyPayload := hash256.FromBytes(m.GenPubKey[:])
-	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(keyPayload))
+	return Key(KeyPrefixGeneratedPublicKey, keyPayload)
 }
 
 func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
-	return Key(KeyPrefixGeneratedPublicKey, KeyPayload(hash))
+	return Key(KeyPrefixGeneratedPublicKey, hash)
 }
 
 // JoinRequest
@@ -200,7 +200,7 @@ type JoinRequest struct {
 }
 
 func (m *JoinRequest) Key() []byte { // Key format: KeyPrefixJoinRequest+"-"+ReqHash
-	return Key(KeyPrefixJoinRequest, KeyPayload(m.ReqHash))
+	return Key(KeyPrefixJoinRequest, m.ReqHash)
 }
 
 // StakeRequest
