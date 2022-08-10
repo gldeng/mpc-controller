@@ -38,7 +38,11 @@ func (m PubKey) PubKeyHex() string {
 }
 
 func (m PubKey) CChainAddress() (common.Address, error) {
-	pubKey, err := crypto.UnmarshalPubkeyBytes(m)
+	cmp, err := m.CompressPubKey()
+	if err != nil {
+		return *new(common.Address), errors.WithStack(err)
+	}
+	pubKey, err := crypto.UnmarshalPubkeyBytes(cmp)
 	if err != nil {
 		return *new(common.Address), errors.WithStack(err)
 	}
@@ -46,7 +50,11 @@ func (m PubKey) CChainAddress() (common.Address, error) {
 }
 
 func (m PubKey) PChainAddress() (ids.ShortID, error) {
-	id, err := ids2.ShortIDFromPubKeyBytes(m)
+	cmp, err := m.CompressPubKey()
+	if err != nil {
+		return *new(ids.ShortID), nil
+	}
+	id, err := ids2.ShortIDFromPubKeyBytes(cmp)
 	if err != nil {
 		return *new(ids.ShortID), nil
 	}
