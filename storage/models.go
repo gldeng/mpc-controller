@@ -191,6 +191,50 @@ func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
 	return Key(KeyPrefixGeneratedPublicKey, hash)
 }
 
+// RequestHash
+
+const (
+	TaskTypUnknown TaskType = iota
+	TaskTypStake
+	TaskTypReturn
+)
+
+type TaskType uint8
+
+type RequestHash [32]byte
+
+func (m RequestHash) TaskType() TaskType {
+	n := new(big.Int).SetBytes(m[0:1]).Uint64()
+	switch {
+	case n == 1:
+		return TaskTypStake
+	case n == 2:
+		return TaskTypReturn
+	default:
+		return TaskTypUnknown
+	}
+}
+
+func (m RequestHash) IsTaskType(t TaskType) bool {
+	return m.TaskType() == t
+}
+
+func (m RequestHash) SetTaskType(t TaskType) {
+	var reqHash []byte
+	typ := new(big.Int).SetUint64(uint64(t)).Bytes()[7:8]
+	reqHash = append(reqHash, typ...)
+	reqHash = append(reqHash, m[1:]...)
+	copy(m[:], reqHash)
+}
+
+func (m RequestHash) CommonHash() common.Hash {
+	return common.Hash(m)
+}
+
+func (m RequestHash) String() string {
+	return m.CommonHash().String()
+}
+
 // JoinRequest
 
 type JoinRequest struct {
@@ -217,7 +261,9 @@ type StakeRequest struct {
 }
 
 func (m *StakeRequest) ReqHash() common.Hash {
-	return m.TxHash
+	reqHash := RequestHash(m.TxHash)
+	reqHash.SetTaskType(TaskTypStake)
+	return reqHash.CommonHash()
 }
 
 // ExportUTXORequest
@@ -231,5 +277,7 @@ type ExportUTXORequest struct {
 
 func (m *ExportUTXORequest) ReqHash() common.Hash {
 	bs := new(big.Int).SetUint64(uint64(m.OutputIndex)).Bytes()
-	return hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs}))
+	reqHash := RequestHash(hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs})))
+	reqHash.SetTaskType(TaskTypReturn)
+	return reqHash.CommonHash()
 }
