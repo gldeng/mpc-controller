@@ -2,6 +2,7 @@ package storage
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
@@ -199,12 +200,16 @@ const (
 	TaskTypReturn
 )
 
+const (
+	Init32ByteMask = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00"
+)
+
 type TaskType uint8
 
 type RequestHash [32]byte
 
-func (m RequestHash) TaskType() TaskType {
-	n := new(big.Int).SetBytes(m[0:1]).Uint64()
+func (m *RequestHash) TaskType() TaskType {
+	n := new(big.Int).SetBytes(m[31:32]).Uint64()
 	switch {
 	case n == 1:
 		return TaskTypStake
@@ -215,30 +220,36 @@ func (m RequestHash) TaskType() TaskType {
 	}
 }
 
-func (m RequestHash) IsTaskType(t TaskType) bool {
-	return m.TaskType() == t
+func (m *RequestHash) IsTaskType(t TaskType) bool {
+	reqTyp := new(big.Int).SetBytes(m[31:32]).Uint64()
+	return uint64(t) == reqTyp
 }
 
-func (m RequestHash) SetTaskType(t TaskType) {
-	var reqHash []byte
-	typ := new(big.Int).SetUint64(uint64(t)).Bytes()[7:8]
-	reqHash = append(reqHash, typ...)
-	reqHash = append(reqHash, m[1:]...)
-	copy(m[:], reqHash)
+func (m *RequestHash) SetTaskType(t TaskType) {
+	mask, _ := new(big.Int).SetString(Init32ByteMask, 16)
+	fmt.Printf("mask: %v, hex: %v\n", mask.String(), bytes.BytesToHex(mask.Bytes()))
+	reqHash := new(big.Int).SetBytes(m[:])
+	fmt.Printf("reqHash: %v, hex:%v\n", reqHash.String(), bytes.BytesToHex(reqHash.Bytes()))
+
+	reqHash = new(big.Int).And(mask, reqHash)
+	fmt.Printf("reqHashAnd: %v, hex:%v\n", reqHash.String(), bytes.BytesToHex(reqHash.Bytes()))
+
+	typ := new(big.Int).SetUint64(uint64(t))
+	reqHashTyp := new(big.Int).Or(reqHash, typ)
+	fmt.Printf("reqHashTyp: %v, hex:%v\n", reqHashTyp.String(), bytes.BytesToHex(reqHashTyp.Bytes()))
+
+	copy(m[:], reqHashTyp.Bytes())
+	fmt.Printf("final reqHash hex:%v\n", m.String())
 }
 
-func (m RequestHash) CommonHash() common.Hash {
-	return common.Hash(m)
-}
-
-func (m RequestHash) String() string {
-	return m.CommonHash().String()
+func (m *RequestHash) String() string {
+	return common.Hash(*m).String()
 }
 
 // JoinRequest
 
 type JoinRequest struct {
-	ReqHash common.Hash   `json:"reqHash"`
+	ReqHash RequestHash   `json:"reqHash"`
 	PartiId ParticipantId `json:"partiId"`
 	Args    interface{}   `json:"args"`
 }
@@ -260,10 +271,10 @@ type StakeRequest struct {
 	*GeneratedPublicKey `json:"genPubKey"`
 }
 
-func (m *StakeRequest) ReqHash() common.Hash {
+func (m *StakeRequest) ReqHash() RequestHash {
 	reqHash := RequestHash(m.TxHash)
 	reqHash.SetTaskType(TaskTypStake)
-	return reqHash.CommonHash()
+	return reqHash
 }
 
 // ExportUTXORequest
@@ -275,9 +286,9 @@ type ExportUTXORequest struct {
 	*GeneratedPublicKey `json:"genPubKey"`
 }
 
-func (m *ExportUTXORequest) ReqHash() common.Hash {
+func (m *ExportUTXORequest) ReqHash() RequestHash {
 	bs := new(big.Int).SetUint64(uint64(m.OutputIndex)).Bytes()
 	reqHash := RequestHash(hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs})))
 	reqHash.SetTaskType(TaskTypReturn)
-	return reqHash.CommonHash()
+	return reqHash
 }

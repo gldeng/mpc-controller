@@ -67,15 +67,17 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 
 			partiId := participant.ParticipantId()
 			txHash := evt.Raw.TxHash
-			_, _, err = eh.BoundTransactor.JoinRequest(ctx, partiId, txHash)
+			reqHash := (storage.RequestHash)(txHash)
+			reqHash.SetTaskType(storage.TaskTypStake)
+			_, _, err = eh.BoundTransactor.JoinRequest(ctx, partiId, reqHash)
 			if err != nil {
 				switch errors.Cause(err).(type) {
 				case *transactor.ErrTypQuorumAlreadyReached:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", txHash}}...)
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash}}...)
 				case *transactor.ErrTypAttemptToRejoin:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", txHash}}...)
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash}}...)
 				default:
-					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", txHash}}...)
+					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", reqHash}}...)
 				}
 				break
 			}
@@ -90,8 +92,6 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				GeneratedPublicKey: genPubKey,
 			}
 
-			reqHash := stakeReq.ReqHash()
-
 			joinReq := &storage.JoinRequest{
 				ReqHash: reqHash,
 				PartiId: partiId,
@@ -105,7 +105,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined stake request", []logger.Field{
-				{"reqNo", evt.RequestNumber}, {"reqHash", txHash}}...)
+				{"reqNo", evt.RequestNumber}, {"reqHash", reqHash}}...)
 		}
 	}
 }

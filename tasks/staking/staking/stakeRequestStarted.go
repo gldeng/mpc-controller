@@ -91,12 +91,14 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.requestStartedChan:
-			if !storage.RequestHash(evt.RequestHash).IsTaskType(storage.TaskTypStake) {
+			reqHash := (storage.RequestHash)(evt.RequestHash)
+			if !reqHash.IsTaskType(storage.TaskTypStake) {
 				break
 			}
+
 			stakeReq := storage.StakeRequest{}
 			joinReq := storage.JoinRequest{
-				ReqHash: evt.RequestHash,
+				ReqHash: reqHash,
 				Args:    &stakeReq,
 			}
 			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
@@ -104,10 +106,10 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				break
 			}
 
-			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
-				eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", evt.RequestHash}}...)
-				break
-			}
+			//if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
+			//	eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", evt.RequestHash}}...)
+			//	break
+			//}
 
 			cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
 			if err != nil {
