@@ -100,7 +100,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				Args:    &utxoExportReq,
 			}
 			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
-				eh.Logger.Debug("No JoinRequest load for UTXO export", []logger.Field{{"key", evt.RequestHash}}...)
+				eh.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
 				break
 			}
 
