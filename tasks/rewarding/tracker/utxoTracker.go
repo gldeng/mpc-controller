@@ -214,11 +214,11 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							if err != nil {
 								switch errors.Cause(err).(type) {
 								case *transactor.ErrTypQuorumAlreadyReached:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash}}...)
+									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
 								case *transactor.ErrTypAttemptToRejoin:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash}}...)
+									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
 								default:
-									eh.Logger.ErrorOnError(err, "Failed to join UTXO export request", []logger.Field{{"reqHash", reqHash}}...)
+									eh.Logger.ErrorOnError(err, "Failed to join UTXO export request", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
 								}
 								return
 							}
@@ -231,9 +231,9 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 
 							switch utxo.OutputIndex {
 							case 0:
-								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"utxoID", utxo.UTXOID}}...)
+								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
 							case 1:
-								eh.Logger.Debug("Joined reward UTXO export request", []logger.Field{{"utxoID", utxo.UTXOID}}...)
+								eh.Logger.Debug("Joined reward UTXO export request", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
 							}
 							return
 						},
