@@ -2,7 +2,6 @@ package storage
 
 import (
 	"crypto/ecdsa"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
@@ -227,19 +226,11 @@ func (m *RequestHash) IsTaskType(t TaskType) bool {
 
 func (m *RequestHash) SetTaskType(t TaskType) {
 	mask, _ := new(big.Int).SetString(Init32ByteMask, 16)
-	fmt.Printf("mask: %v, hex: %v\n", mask.String(), bytes.BytesToHex(mask.Bytes()))
 	reqHash := new(big.Int).SetBytes(m[:])
-	fmt.Printf("reqHash: %v, hex:%v\n", reqHash.String(), bytes.BytesToHex(reqHash.Bytes()))
-
 	reqHash = new(big.Int).And(mask, reqHash)
-	fmt.Printf("reqHashAnd: %v, hex:%v\n", reqHash.String(), bytes.BytesToHex(reqHash.Bytes()))
-
 	typ := new(big.Int).SetUint64(uint64(t))
 	reqHashTyp := new(big.Int).Or(reqHash, typ)
-	fmt.Printf("reqHashTyp: %v, hex:%v\n", reqHashTyp.String(), bytes.BytesToHex(reqHashTyp.Bytes()))
-
 	copy(m[:], reqHashTyp.Bytes())
-	fmt.Printf("final reqHash hex:%v\n", m.String())
 }
 
 func (m *RequestHash) String() string {
