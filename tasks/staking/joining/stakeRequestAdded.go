@@ -90,8 +90,10 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				GeneratedPublicKey: genPubKey,
 			}
 
+			reqHash := stakeReq.ReqHash()
+
 			joinReq := &storage.JoinRequest{
-				ReqHash: txHash,
+				ReqHash: reqHash,
 				PartiId: partiId,
 				Args:    &stakeReq,
 			}
