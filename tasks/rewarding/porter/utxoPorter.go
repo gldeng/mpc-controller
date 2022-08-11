@@ -94,6 +94,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.requestStartedChan:
+			if !storage.RequestHash(evt.RequestHash).IsTaskType(storage.TaskTypReturn) {
+				break
+			}
 			utxoExportReq := storage.ExportUTXORequest{}
 			joinReq := storage.JoinRequest{
 				ReqHash: evt.RequestHash,

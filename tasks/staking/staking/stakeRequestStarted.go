@@ -91,6 +91,9 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.requestStartedChan:
+			if !storage.RequestHash(evt.RequestHash).IsTaskType(storage.TaskTypStake) {
+				break
+			}
 			stakeReq := storage.StakeRequest{}
 			joinReq := storage.JoinRequest{
 				ReqHash: evt.RequestHash,
