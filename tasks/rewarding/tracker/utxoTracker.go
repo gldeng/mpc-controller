@@ -40,7 +40,7 @@ type UTXOTracker struct {
 	genPubKeyCache               map[ids.ShortID]*events.KeyGenerated
 	utxosToExportCh              chan *utxosToExport
 	joinUTXOExportTaskAddedCache *ristretto.Cache
-	joinUTXOExportReqCache       *ristretto.Cache
+	joinedUTXOExportCache        *ristretto.Cache
 	joinUTXOExportWs             *work.Workshop
 	once                         sync.Once
 }
@@ -70,7 +70,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 			MaxCost:     1 << 30, // maximum cost of cache (1GB).
 			BufferItems: 64,      // number of keys per Get buffer.
 		})
-		eh.joinUTXOExportReqCache = utxoReportedEventCache
+		eh.joinedUTXOExportCache = utxoReportedEventCache
 
 		go eh.fetchUTXOs(ctx)
 		go eh.joinExportUTXOs(ctx)
@@ -112,7 +112,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					if ok {
 						continue
 					}
-					_, ok = eh.joinUTXOExportReqCache.Get(utxoID)
+					_, ok = eh.joinedUTXOExportCache.Get(utxoID)
 					if ok {
 						continue
 					}
@@ -198,10 +198,13 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							joinReq := args.(*storage.JoinRequest)
 							partiId := joinReq.PartiId
 							reqHash := joinReq.ReqHash
+							reqArgs := joinReq.Args.(*storage.ExportUTXORequest)
+							txID := reqArgs.TxID
+							outputIndex := reqArgs.OutputIndex
 
 							exportUTXOReq := joinReq.Args.(*storage.ExportUTXORequest)
 							utxoID := exportUTXOReq.TxID.String() + strconv.Itoa(int(exportUTXOReq.OutputIndex))
-							_, ok := eh.joinUTXOExportReqCache.Get(utxoID)
+							_, ok := eh.joinedUTXOExportCache.Get(utxoID)
 							if ok {
 								return
 							}
@@ -214,11 +217,11 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							if err != nil {
 								switch errors.Cause(err).(type) {
 								case *transactor.ErrTypQuorumAlreadyReached:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
+									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 								case *transactor.ErrTypAttemptToRejoin:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
+									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 								default:
-									eh.Logger.ErrorOnError(err, "Failed to join UTXO export request", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
+									eh.Logger.ErrorOnError(err, "Failed to join UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 								}
 								return
 							}
@@ -226,14 +229,14 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							err = eh.DB.SaveModel(ctx, joinReq)
 							eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for UTXO export", []logger.Field{{"joinReq", joinReq}}...)
 
-							eh.joinUTXOExportReqCache.SetWithTTL(utxoID, " ", 1, time.Hour)
-							eh.joinUTXOExportReqCache.Wait()
+							eh.joinedUTXOExportCache.SetWithTTL(utxoID, " ", 1, time.Hour)
+							eh.joinedUTXOExportCache.Wait()
 
-							switch utxo.OutputIndex {
+							switch outputIndex {
 							case 0:
-								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
+								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 							case 1:
-								eh.Logger.Debug("Joined reward UTXO export request", []logger.Field{{"reqHash", reqHash}, {"utxoID", utxo.UTXOID}}...)
+								eh.Logger.Debug("Joined reward UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 							}
 							return
 						},
