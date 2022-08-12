@@ -73,11 +73,11 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			if err != nil {
 				switch errors.Cause(err).(type) {
 				case *transactor.ErrTypQuorumAlreadyReached:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash}}...)
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash.String()}}...)
 				case *transactor.ErrTypAttemptToRejoin:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash}}...)
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash.String()}}...)
 				default:
-					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", reqHash}}...)
+					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", reqHash.String()}}...)
 				}
 				break
 			}
@@ -105,7 +105,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
 			eh.Logger.Debug("Joined stake request", []logger.Field{
-				{"reqNo", evt.RequestNumber}, {"reqHash", reqHash}}...)
+				{"reqNo", evt.RequestNumber}, {"reqHash", reqHash.String()}}...)
 		}
 	}
 }
