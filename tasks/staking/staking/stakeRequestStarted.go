@@ -80,7 +80,16 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 		select {
 		case <-ctx.Done():
 			return
-		case eh.requestStartedChan <- evt:
+		default:
+			reqHash := (storage.RequestHash)(evt.RequestHash)
+			if !reqHash.IsTaskType(storage.TaskTypStake) {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case eh.requestStartedChan <- evt:
+			}
 		}
 	}
 }
@@ -92,10 +101,6 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			return
 		case evt := <-eh.requestStartedChan:
 			reqHash := (storage.RequestHash)(evt.RequestHash)
-			if !reqHash.IsTaskType(storage.TaskTypStake) {
-				break
-			}
-
 			stakeReq := storage.StakeRequest{}
 			joinReq := storage.JoinRequest{
 				ReqHash: reqHash,
