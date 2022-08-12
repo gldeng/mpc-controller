@@ -36,7 +36,7 @@ func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
 }
 
 func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error) {
-	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		err = b.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(key)
 			if err != nil {
@@ -50,6 +50,9 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 			return errors.WithStack(err)
 		})
 		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return false, errors.WithStack(err)
+			}
 			return true, errors.WithStack(err)
 		}
 		return false, nil
