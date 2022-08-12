@@ -69,18 +69,6 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 			txHash := evt.Raw.TxHash
 			reqHash := (storage.RequestHash)(txHash)
 			reqHash.SetTaskType(storage.TaskTypStake)
-			_, _, err = eh.BoundTransactor.JoinRequest(ctx, partiId, reqHash)
-			if err != nil {
-				switch errors.Cause(err).(type) {
-				case *transactor.ErrTypQuorumAlreadyReached:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash.String()}}...)
-				case *transactor.ErrTypAttemptToRejoin:
-					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash.String()}}...)
-				default:
-					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", reqHash.String()}}...)
-				}
-				break
-			}
 
 			stakeReq := storage.StakeRequest{
 				ReqNo:              evt.RequestNumber.Uint64(),
@@ -98,9 +86,23 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				Args:    &stakeReq,
 			}
 
-			err = eh.DB.SaveModel(ctx, joinReq)
-			eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for stake", []logger.Field{
-				{"joinReq", joinReq}}...)
+			if err = eh.DB.SaveModel(ctx, joinReq); err != nil { // todo: consider add TTL(Time To Live) limit
+				eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for stake", []logger.Field{
+					{"joinReq", joinReq}}...)
+				break
+			}
+
+			_, _, err = eh.BoundTransactor.JoinRequest(ctx, partiId, reqHash)
+			if err != nil {
+				switch errors.Cause(err).(type) {
+				case *transactor.ErrTypQuorumAlreadyReached:
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash.String()}}...)
+				case *transactor.ErrTypAttemptToRejoin:
+					eh.Logger.DebugOnError(err, "Join stake request not accepted", []logger.Field{{"reqHash", reqHash.String()}}...)
+				default:
+					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", reqHash.String()}}...)
+				}
+			}
 
 			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
