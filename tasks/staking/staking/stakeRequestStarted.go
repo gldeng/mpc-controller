@@ -77,19 +77,14 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 
 	switch evt := evtObj.Event.(type) {
 	case *events.RequestStarted:
+		reqHash := (storage.RequestHash)(evt.RequestHash)
+		if !reqHash.IsTaskType(storage.TaskTypStake) {
+			break
+		}
 		select {
 		case <-ctx.Done():
 			return
-		default:
-			reqHash := (storage.RequestHash)(evt.RequestHash)
-			if !reqHash.IsTaskType(storage.TaskTypStake) {
-				break
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case eh.requestStartedChan <- evt:
-			}
+		case eh.requestStartedChan <- evt:
 		}
 	}
 }
@@ -107,14 +102,13 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				Args:    &stakeReq,
 			}
 			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
-				eh.Logger.Debug("No JoinRequest load for stake", []logger.Field{{"key", evt.RequestHash}}...)
+				eh.Logger.DebugOnError(err, "No JoinRequest load for stake", []logger.Field{{"reqHash", reqHash.String()}}...)
 				break
 			}
-
-			//if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
-			//	eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", evt.RequestHash}}...)
-			//	break
-			//}
+			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
+				eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", evt.RequestHash}}...)
+				break
+			}
 
 			cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
 			if err != nil {

@@ -80,6 +80,10 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 	switch evt := evtObj.Event.(type) {
 	case *events.RequestStarted:
+		reqHash := (storage.RequestHash)(evt.RequestHash)
+		if !reqHash.IsTaskType(storage.TaskTypReturn) {
+			break
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -95,24 +99,20 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			return
 		case evt := <-eh.requestStartedChan:
 			reqHash := (storage.RequestHash)(evt.RequestHash)
-			if !reqHash.IsTaskType(storage.TaskTypReturn) {
-				break
-			}
-
 			utxoExportReq := storage.ExportUTXORequest{}
 			joinReq := storage.JoinRequest{
 				ReqHash: reqHash,
 				Args:    &utxoExportReq,
 			}
+
 			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
 				eh.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
 				break
 			}
-
-			//if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
-			//	eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.RequestHash}}...)
-			//	break
-			//}
+			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
+				eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.RequestHash}}...)
+				break
+			}
 
 			group := storage.Group{
 				ID: utxoExportReq.GroupId,
