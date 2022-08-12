@@ -213,6 +213,11 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 								return
 							}
 
+							if err = eh.DB.SaveModel(ctx, joinReq); err != nil {
+								eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for UTXO export", []logger.Field{{"joinReq", joinReq}}...)
+								return
+							}
+
 							_, _, err := eh.BoundTransactor.JoinRequest(ctx, partiId, reqHash)
 							if err != nil {
 								switch errors.Cause(err).(type) {
@@ -225,9 +230,6 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 								}
 								return
 							}
-
-							err = eh.DB.SaveModel(ctx, joinReq)
-							eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for UTXO export", []logger.Field{{"joinReq", joinReq}}...)
 
 							eh.joinedUTXOExportCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 							eh.joinedUTXOExportCache.Wait()
