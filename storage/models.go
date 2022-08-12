@@ -115,6 +115,10 @@ func (m PubKeys) CompressPubKeyHexs() ([]string, error) {
 
 // ParticipantId
 
+const (
+	InitBit = "8000000000000000000000000000000000000000000000000000000000000000"
+)
+
 type ParticipantId [32]byte
 
 func (m ParticipantId) Index() uint64 {
@@ -122,7 +126,12 @@ func (m ParticipantId) Index() uint64 {
 }
 
 func (m ParticipantId) Joined(indices *big.Int) bool {
-	return indices.Bit(int(m.Index())-1) > 0
+	myIndex := m.Index() - 1
+	initBit, _ := new(big.Int).SetString(InitBit, 16)
+	myConfirm := new(big.Int).Rsh(initBit, uint(myIndex))
+	and := new(big.Int).And(indices, myConfirm)
+	zero := big.NewInt(0)
+	return and.Cmp(zero) == 1
 }
 
 func (m ParticipantId) Threshold() uint64 {
