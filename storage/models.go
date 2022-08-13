@@ -134,6 +134,25 @@ func (m ParticipantId) Joined(indices *big.Int) bool {
 	return and.Cmp(zero) == 1
 }
 
+// Indices
+
+type Indices big.Int
+
+func (m *Indices) Indices() []uint {
+	var joinedPartiIndices []uint
+	for i := 0; i < 248; i++ {
+		indices := (big.Int)(*m)
+		initBit, _ := new(big.Int).SetString(InitBit, 16)
+		myConfirm := new(big.Int).Rsh(initBit, uint(i))
+		and := new(big.Int).And(&indices, myConfirm)
+		zero := big.NewInt(0)
+		if and.Cmp(zero) == 1 {
+			joinedPartiIndices = append(joinedPartiIndices, uint(i+1))
+		}
+	}
+	return joinedPartiIndices
+}
+
 func (m ParticipantId) Threshold() uint64 {
 	return new(big.Int).SetBytes(m[30:31]).Uint64()
 }
