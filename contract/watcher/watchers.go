@@ -274,6 +274,11 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
 	reqHash := (storage.RequestHash)(myEvt.RequestHash)
 	indices := (*storage.Indices)(myEvt.ParticipantIndices)
-	w.Logger.Info("Request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
+	switch {
+	case reqHash.IsTaskType(storage.TaskTypStake):
+		w.Logger.Info("Stake request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
+	case reqHash.IsTaskType(storage.TaskTypReturn):
+		w.Logger.Info("Return request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
+	}
 	return nil
 }
