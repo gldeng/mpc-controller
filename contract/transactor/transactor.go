@@ -101,6 +101,9 @@ func (t *MyTransactor) RetryTransact(ctx context.Context, fn Transact) (*types.T
 	err := backoff.RetryRetryFn10Times(ctx, func() (retry bool, err error) {
 		var checkReceipt bool
 		tx, err, retry, checkReceipt = fn()
+		if !retry && !checkReceipt {
+			return false, errors.WithStack(err)
+		}
 		if retry {
 			return true, errors.WithStack(err)
 		}
