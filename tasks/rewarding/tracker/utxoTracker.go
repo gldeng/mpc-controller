@@ -225,6 +225,8 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 								case *transactor.ErrTypAttemptToRejoin:
 									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
+								case *transactor.ErrTypExecutionReverted:
+									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 								default:
 									eh.Logger.ErrorOnError(err, "Failed to join UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
 								}
