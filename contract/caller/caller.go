@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"time"
 
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/backoff"
@@ -86,7 +87,7 @@ func (c *MyCaller) RewardTreasuryAddress(ctx context.Context, opts *bind.CallOpt
 }
 
 func (c *MyCaller) RetryCall(ctx context.Context, fn Call) error {
-	err := backoff.RetryRetryFnForever(ctx, func() (retry bool, err error) {
+	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 		err, retry = fn()
 		if retry {
 			return true, errors.WithStack(err)
