@@ -102,6 +102,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				default:
 					eh.Logger.ErrorOnError(err, "Failed to join state request", []logger.Field{{"reqHash", reqHash.String()}}...)
 				}
+				break
 			}
 
 			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
