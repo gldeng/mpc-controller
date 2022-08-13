@@ -272,5 +272,8 @@ func (w *MpcManagerWatchers) watchRequestStarted(ctx context.Context, opts *bind
 func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerRequestStarted)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
+	reqHash := (storage.RequestHash)(myEvt.RequestHash)
+	indices := (*storage.Indices)(myEvt.ParticipantIndices)
+	w.Logger.Info("Request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
 	return nil
 }
