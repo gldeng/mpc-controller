@@ -9,6 +9,8 @@ const (
 	ErrMsgAttemptToReconfirmKey = "attempt to reconfirm key"
 
 	ErrMsgTransactionFailed = "transaction failed"
+
+	ErrMsgExecutionReverted = "execution reverted"
 )
 
 // ----------error types ----------
@@ -80,5 +82,23 @@ func (e *ErrTypTransactionFailed) Error() string {
 }
 
 func (e *ErrTypTransactionFailed) Unwrap() error {
+	return e.Cause
+}
+
+// ----------
+
+type ErrTypExecutionReverted struct {
+	ErrMsg string
+	Cause  error
+}
+
+func (e *ErrTypExecutionReverted) Error() string {
+	if e.ErrMsg == "" {
+		return ErrMsgExecutionReverted + fmt.Sprintf(":%v", e.Cause)
+	}
+	return e.ErrMsg + fmt.Sprintf(":%v", e.Cause)
+}
+
+func (e *ErrTypExecutionReverted) Unwrap() error {
 	return e.Cause
 }
