@@ -1,11 +1,13 @@
 package staking
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"sort"
 	"sync"
 )
 
 type issueTxContainer struct {
+	address common.Address
 	sync.Mutex
 	issueTxs issueTxs
 }
@@ -52,6 +54,10 @@ func (c *issueTxContainer) Nonces() []uint64 {
 		nonces = append(nonces, t.Nonce)
 	}
 	return nonces
+}
+
+func (c *issueTxContainer) Address() common.Address {
+	return c.address
 }
 
 func (c *issueTxContainer) sort() {
