@@ -14,7 +14,6 @@ type Workspace struct {
 	Logger     logger.Logger
 	MaxIdleDur time.Duration // 0 means forever
 	TaskChan   chan *Task
-	IdleChan   chan struct{}
 
 	lastActiveTime time.Time
 	status         uint32 // 0: idle, 1: busy
@@ -42,7 +41,6 @@ func (w *Workspace) Run(ctx context.Context) {
 			for _, workFn := range task.WorkFns {
 				workFn(task.Ctx, task.Args)
 			}
-			w.IdleChan <- struct{}{}
 			atomic.StoreUint32(&w.status, 0)
 			w.lastActiveTime = time.Now()
 		}
