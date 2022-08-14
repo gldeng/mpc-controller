@@ -5,12 +5,14 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/pkg/errors"
 )
 
 // todo: consider refactoring with Template Method design pattern
 
 type StakeTaskWrapper struct {
+	ReqHash storage.RequestHash
 	*SignRequester
 	*StakeTask
 	CChainIssueClient chain.CChainIssuer
