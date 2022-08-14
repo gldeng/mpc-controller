@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -49,6 +48,7 @@ type StakeRequestStarted struct {
 
 	issueTxCache     map[uint64]*issueTx
 	issueTxCacheLock sync.RWMutex
+	issueTxContainer *issueTxContainer
 
 	nextNonce uint64 // todo: future key-rotation influence
 
@@ -69,10 +69,10 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 
 		eh.issueTxChan = make(chan *issueTx)
 		eh.issueTxCache = make(map[uint64]*issueTx)
+		eh.issueTxContainer = new(issueTxContainer)
 
 		go eh.signTx(ctx)
 		go eh.issueTx(ctx)
-		go eh.checkIssueTxCache(ctx)
 	})
 
 	switch evt := evtObj.Event.(type) {
@@ -166,6 +166,7 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			}
 
 			stw := &StakeTaskWrapper{
+				ReqHash:           reqHash,
 				CChainIssueClient: eh.IssuerCChain,
 				Logger:            eh.Logger,
 				PChainIssueClient: eh.IssuerPChain,
@@ -185,7 +186,7 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				break
 			}
 
-			eh.signStakeTxWs.AddTask(ctx, &work.Task{
+			err = eh.signStakeTxWs.AddTask(ctx, &work.Task{
 				Args: []interface{}{stw, &stakeReq},
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
@@ -207,53 +208,52 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 						return
 					}
 					issueTx := &issueTx{stw, stakeReq}
-					select {
-					case <-ctx.Done():
-						return
-					case eh.issueTxChan <- issueTx:
-					}
+					eh.issueTxContainer.AddSort(issueTx)
 				}},
 			})
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to add sign stake task", []logger.Field{
+					{"reqHash", reqHash.String()},
+					{"requestID", stakeReq.ReqNo}}...)
+			}
 		}
 	}
 }
 
 func (eh *StakeRequestStarted) issueTx(ctx context.Context) {
+	issueT := time.NewTicker(time.Second)
+	defer issueT.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case issueTx := <-eh.issueTxChan:
-			// Cache tx for later issue
-			eh.issueTxCacheLock.Lock()
-			eh.issueTxCache[issueTx.Nonce] = issueTx
-			eh.issueTxCacheLock.Unlock()
-
-			// Sync nonce
-			if err := eh.syncNonce(ctx, issueTx.CChainAddress); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to sync nonce")
+		case <-issueT.C:
+			if eh.issueTxContainer.IsEmpty() {
+				break
+			}
+			addressNonce, err := eh.EthClient.NonceAt(ctx, eh.issueTxContainer.Address(), nil)
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to query nonce")
 				break
 			}
 
-			// Continuous issue tx
-			for i := int(eh.nextNonce); i < int(eh.nextNonce)+len(eh.issueTxCache); i++ {
-				eh.issueTxCacheLock.RLock()
-				issueTx, ok := eh.issueTxCache[uint64(i)]
-				eh.issueTxCacheLock.RUnlock()
-				if !ok {
-					break
-				}
-				eh.doIssueTx(ctx, issueTx.StakeTaskWrapper)
-				eh.nextNonce++
+			txs := eh.issueTxContainer.ContinuousTxs(addressNonce)
+			if len(txs) == 0 {
+				break
+			}
+			for _, tx := range txs {
+				eh.doIssueTx(ctx, tx.StakeTaskWrapper)
 			}
 
-			eh.issueTxCacheLock.Lock()
-			for nonce, _ := range eh.issueTxCache {
-				if nonce < eh.nextNonce {
-					delete(eh.issueTxCache, nonce)
-				}
-			}
-			eh.issueTxCacheLock.Unlock()
+			eh.issueTxContainer.TrimLeft(txs[len(txs)-1].Nonce)
+
+			nonces := eh.issueTxContainer.Nonces()
+			eh.Logger.Debug("Stake tasks stats", []logger.Field{
+				{"cachedStakeTasks", len(nonces)},
+				{"doneStakeTasks", eh.doneStakeTasks},
+				{"errIssueStakeTasks", eh.errIssueStakeTasks},
+				{"cachedNonces", nonces}}...)
 		}
 	}
 }
@@ -268,7 +268,7 @@ func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrap
 		case *chain.ErrTypSharedMemoryNotFound:
 			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgSharedMemoryNotFound, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
 		case *chain.ErrTypInsufficientFunds:
-			eh.Logger.WarnOnError(err, "Stake task not done for "+chain.ErrMsgInsufficientFunds, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
+			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgInsufficientFunds, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
 		case *chain.ErrTypInvalidNonce:
 			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgInvalidNonce, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
 		case *chain.ErrTypConflictAtomicInputs:
@@ -312,63 +312,7 @@ func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrap
 	eh.doneStakeTasks++
 	prom.StakeTaskDone.Inc()
 
-	eh.Logger.Info("Stake task DONE", []logger.Field{{"stakeTaskDoneEvent", newEvt}}...)
-	return nil
-}
-
-func (eh *StakeRequestStarted) checkIssueTxCache(ctx context.Context) {
-	issueT := time.NewTicker(time.Second * 60)
-	statsT := time.NewTicker(time.Minute * 5)
-	defer issueT.Stop()
-	defer statsT.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-issueT.C:
-			if len(eh.issueTxCache) != 0 {
-				var issueTxs []*issueTx
-				eh.issueTxCacheLock.RLock()
-				for _, issueTx := range eh.issueTxCache {
-					issueTxs = append(issueTxs, issueTx)
-				}
-				eh.issueTxCacheLock.RUnlock()
-				for _, issueTx := range issueTxs {
-					select {
-					case <-ctx.Done():
-						return
-					case eh.issueTxChan <- issueTx:
-					}
-				}
-			}
-		case <-statsT.C:
-			var nonces []int
-			eh.issueTxCacheLock.RLock()
-			for nonce, _ := range eh.issueTxCache {
-				nonces = append(nonces, int(nonce))
-			}
-			eh.issueTxCacheLock.RUnlock()
-			sort.Ints(nonces)
-
-			if len(nonces) == 0 {
-				break
-			}
-			eh.Logger.Debug("Stake tasks stats", []logger.Field{
-				{"cachedStakeTasks", len(eh.issueTxCache)},
-				{"doneStakeTasks", eh.doneStakeTasks},
-				{"errIssueStakeTasks", eh.errIssueStakeTasks},
-				{"cachedNonces", nonces}}...)
-		}
-	}
-}
-
-func (eh *StakeRequestStarted) syncNonce(ctx context.Context, addr common.Address) error {
-	addressNonce, err := eh.EthClient.NonceAt(ctx, addr, nil)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	eh.nextNonce = addressNonce
+	eh.Logger.Info("Stake task DONE", []logger.Field{{"reqHash", stw.ReqHash.String()}, {"stakeTaskDoneEvent", newEvt}}...)
 	return nil
 }
 
