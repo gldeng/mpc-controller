@@ -7,7 +7,6 @@ import (
 )
 
 type issueTxContainer struct {
-	address common.Address
 	sync.Mutex
 	issueTxs issueTxs
 }
@@ -57,7 +56,7 @@ func (c *issueTxContainer) Nonces() []uint64 {
 }
 
 func (c *issueTxContainer) Address() common.Address {
-	return c.address
+	return c.issueTxs[0].CChainAddress // todo: take key-rotation into consideration
 }
 
 func (c *issueTxContainer) sort() {
