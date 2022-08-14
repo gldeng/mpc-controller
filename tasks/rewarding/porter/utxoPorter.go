@@ -188,7 +188,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			eh.exportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 			eh.exportUTXOTaskAddedCache.Wait()
 
-			eh.ws.AddTask(ctx, &work.Task{
+			err = eh.ws.AddTask(ctx, &work.Task{
 				Args: args,
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
@@ -256,6 +256,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						{"exportedRewardUTXOs", totalRewards}}...)
 				}},
 			})
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to add UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
+			}
 		}
 	}
 }

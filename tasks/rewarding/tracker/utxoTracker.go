@@ -190,7 +190,7 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 				eh.joinUTXOExportTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 				eh.joinUTXOExportTaskAddedCache.Wait()
 
-				eh.joinUTXOExportWs.AddTask(ctx, &work.Task{
+				err = eh.joinUTXOExportWs.AddTask(ctx, &work.Task{
 					Args: &joinReq,
 					Ctx:  ctx,
 					WorkFns: []work.WorkFn{
@@ -246,6 +246,9 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 						},
 					},
 				})
+				if err != nil {
+					eh.Logger.ErrorOnError(err, "Failed to add join UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
+				}
 			}
 		}
 	}
