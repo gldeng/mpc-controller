@@ -27,6 +27,10 @@ var (
 
 	// reward
 
+	UTXOExportRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "utxo_export_request_started_total",
+		Help: "The total number of UTXO export request started",
+	})
 	PrincipalUTXOExported = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "principal_utxo_exported_total",
 		Help: "The total number of PrincipalUTXOExportedEvent",
