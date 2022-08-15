@@ -289,6 +289,7 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		prom.StakeRequestStarted.Inc()
 	case reqHash.IsTaskType(storage.TaskTypReturn):
 		w.Logger.Info("Return request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
+		prom.UTXOExportRequestStarted.Inc()
 	}
 	return nil
 }
