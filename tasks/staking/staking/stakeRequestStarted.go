@@ -211,11 +211,14 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 					eh.issueTxContainer.AddSort(issueTx)
 				}},
 			})
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to add sign stake task", []logger.Field{
-					{"reqHash", reqHash.String()},
-					{"requestID", stakeReq.ReqNo}}...)
-			}
+			eh.Logger.ErrorOnError(err, "Failed to add sign stake task", []logger.Field{
+				{"reqHash", reqHash.String()},
+				{"reqNo", stakeReq.ReqNo},
+				{"taskId", taskID}}...)
+			eh.Logger.InfoNilError(err, "Stake sign task added", []logger.Field{
+				{"reqHash", reqHash.String()},
+				{"reqNo", stakeReq.ReqNo},
+				{"taskId", taskID}}...)
 		}
 	}
 }
