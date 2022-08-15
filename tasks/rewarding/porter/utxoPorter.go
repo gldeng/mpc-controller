@@ -240,6 +240,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					eh.UTXOExportedEventCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 					eh.UTXOExportedEventCache.Wait()
 
+					prom.UTXOExported.Inc()
 					switch utxo.OutputIndex {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)

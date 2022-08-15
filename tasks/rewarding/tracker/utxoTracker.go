@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -236,11 +237,14 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							eh.joinedUTXOExportCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 							eh.joinedUTXOExportCache.Wait()
 
+							prom.UTXOExportRequestJoined.Inc()
 							switch outputIndex {
 							case 0:
 								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
+								prom.PrincipalUTXOExportRequestJoined.Inc()
 							case 1:
 								eh.Logger.Debug("Joined reward UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
+								prom.RewardUTXOExportRequestJoined.Inc()
 							}
 							return
 						},
