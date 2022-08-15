@@ -16,6 +16,10 @@ var (
 		Name: prefix + "stake_request_added_total",
 		Help: "The total number of StakeRequestAddedEvent",
 	})
+	StakeRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "stake_request_started_total",
+		Help: "The total number of StakeRequestStartedEvent",
+	})
 	StakeTaskDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "stake_task_done_total",
 		Help: "The total number of StakeTaskDoneEvent",
