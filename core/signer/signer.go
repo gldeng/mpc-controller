@@ -32,7 +32,7 @@ func (s *Signer) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byt
 
 	res, err := s.SignDone(ctx, &exportTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestID: %q", exportTxSignReq.SignReqID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestNo: %q", exportTxSignReq.SignReqID)
 	}
 
 	if res == nil || res.Result == "" {
@@ -52,7 +52,7 @@ func (s *Signer) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byt
 
 	res, err := s.SignDone(ctx, &importTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestID: %q", importTxSignReq.SignReqID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestNo: %q", importTxSignReq.SignReqID)
 	}
 
 	if res == nil || res.Result == "" {
@@ -72,7 +72,7 @@ func (s *Signer) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHash []by
 
 	res, err := s.SignDone(ctx, &addDelegatorTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestID: %q", addDelegatorTxSignReq.SignReqID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestNo: %q", addDelegatorTxSignReq.SignReqID)
 	}
 
 	if res == nil || res.Result == "" {

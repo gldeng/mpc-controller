@@ -5,17 +5,17 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/signer"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
-	"github.com/avalido/mpc-controller/utils/bytes"
-	"github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/crypto/secp256k1r"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
+	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	portIssuer "github.com/avalido/mpc-controller/utils/port/issuer"
 	"github.com/avalido/mpc-controller/utils/port/porter"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
@@ -31,44 +31,41 @@ import (
 )
 
 const (
-	exportPrincipalTaskIDPrefix = "PRINCIPAL-"
-	exportRewardTaskIDPrefix    = "REWARD-"
+	taskIDPrefixPrincipalExport = "PRINCIPAL-"
+	taskIDPrefixRewardExport    = "REWARD-"
 )
 
-// Subscribe event: *events.ReportedGenPubKeyEvent
-// Subscribe event: *events.ExportUTXORequestEvent
+const (
+	utxoOutputIndexPrincipal utxoOutputIndex = iota
+	utxoOutputIndexReward
+)
 
-// Publish event: *events.UTXOExportedEvent
+type utxoOutputIndex int
+
+// Subscribe event: *events.RequestStarted
 
 type UTXOPorter struct {
-	CChainIssueClient chain.CChainIssuer
-	Cache             cache.ICache
-	Logger            logger.Logger
-	MyPubKeyHashHex   string
-	PChainIssueClient chain.PChainIssuer
-	Publisher         dispatcher.Publisher
-	SignDoner         core.SignDoner
-	chain.NetworkContext
+	BoundCaller            caller.Caller
+	DB                     storage.DB
+	IssuerCChain           chain.CChainIssuer
+	IssuerPChain           chain.PChainIssuer
+	Logger                 logger.Logger
+	NetWorkCtx             chain.NetworkContext
+	SignerMPC              core.SignDoner
+	UTXOExportedEventCache *ristretto.Cache
+	UTXOsFetchedEventCache *ristretto.Cache
 
-	ws *work.Workshop
-
-	reportedGenPubKeyEventCache map[string]*events.ReportedGenPubKeyEvent
-	UTXOsFetchedEventCache      *ristretto.Cache
-
-	ExportUTXORequestEventChan chan *events.ExportUTXORequestEvent
-	exportUTXOTaskAddedCache   *ristretto.Cache
-	UTXOExportedEventCache     *ristretto.Cache
-
-	once                   sync.Once
-	exportedRewardUTXOs    uint64
-	exportedPrincipalUTXOs uint64
+	ws                       *work.Workshop
+	requestStartedChan       chan *events.RequestStarted
+	exportUTXOTaskAddedCache *ristretto.Cache
+	once                     sync.Once
+	exportedRewardUTXOs      uint64
+	exportedPrincipalUTXOs   uint64
 }
 
 func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		eh.reportedGenPubKeyEventCache = make(map[string]*events.ReportedGenPubKeyEvent)
-
-		eh.ExportUTXORequestEventChan = make(chan *events.ExportUTXORequestEvent, 1024)
+		eh.requestStartedChan = make(chan *events.RequestStarted, 1024)
 		eh.ws = work.NewWorkshop(eh.Logger, "signRewardTx", time.Minute*10, 10)
 
 		exportUTXOTaskAddedCache, _ := ristretto.NewCache(&ristretto.Config{
@@ -82,13 +79,15 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	})
 
 	switch evt := evtObj.Event.(type) {
-	case *events.ReportedGenPubKeyEvent:
-		eh.reportedGenPubKeyEventCache[evt.GenPubKeyHashHex] = evt
-	case *events.ExportUTXORequestEvent:
+	case *events.RequestStarted:
+		reqHash := (storage.RequestHash)(evt.RequestHash)
+		if !reqHash.IsTaskType(storage.TaskTypReturn) {
+			break
+		}
 		select {
 		case <-ctx.Done():
 			return
-		case eh.ExportUTXORequestEventChan <- evt:
+		case eh.requestStartedChan <- evt:
 		}
 	}
 }
@@ -98,21 +97,56 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case evt := <-eh.ExportUTXORequestEventChan:
-			if !eh.Cache.IsParticipant(eh.MyPubKeyHashHex, evt.GenPubKeyHash.String(), evt.ParticipantIndices) {
-				eh.Logger.Debug("Not participant in ExportUTXORequest event", []logger.Field{
-					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}, {"txHash", evt.TxHash}}...)
+		case evt := <-eh.requestStartedChan:
+			reqHash := (storage.RequestHash)(evt.RequestHash)
+			utxoExportReq := storage.ExportUTXORequest{}
+			joinReq := storage.JoinRequest{
+				ReqHash: reqHash,
+				Args:    &utxoExportReq,
+			}
+
+			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
+				eh.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
 				break
 			}
-			partiKeys, err := eh.Cache.GetNormalizedParticipantKeys(evt.GenPubKeyHash, evt.ParticipantIndices)
-			if err != nil { // todo: deal with err case
-				eh.Logger.Error("UTXOPorter failed to export reward", []logger.Field{
-					{"error", err},
-					{"exportUTXORequestEvent", evt}}...)
+			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
+				eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.RequestHash}}...)
 				break
 			}
 
-			utxoID := evt.TxID.String() + strconv.Itoa(int(evt.OutputIndex))
+			group := storage.Group{
+				ID: utxoExportReq.GroupId,
+			}
+			if err := eh.DB.LoadModel(ctx, &group); err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to load group", []logger.Field{{"key", group.ID}}...)
+				break
+			}
+
+			cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
+				break
+			}
+
+			cmpGenPubKeyHex, err := utxoExportReq.GenPubKey.CompressPubKeyHex()
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to compress generated public key")
+				break
+			}
+
+			pChainAddr, err := utxoExportReq.GenPubKey.PChainAddress()
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to get P-Chain address")
+				break
+			}
+
+			treasureAddr, err := eh.treasuryAddress(ctx, utxoOutputIndex(utxoExportReq.OutputIndex))
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to get treasure address")
+				break
+			}
+
+			utxoID := utxoExportReq.TxID.String() + strconv.Itoa(int(utxoExportReq.OutputIndex))
 			_, ok := eh.exportUTXOTaskAddedCache.Get(utxoID)
 			if ok {
 				break
@@ -120,52 +154,41 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			val, ok := eh.UTXOsFetchedEventCache.Get(utxoID)
 			if !ok {
 				eh.Logger.Warn("No local reported UTXO found", []logger.Field{
-					{"txID", evt.TxID}, {"outputIndex", evt.OutputIndex}}...)
+					{"txID", utxoExportReq.TxID}, {"outputIndex", utxoExportReq.OutputIndex}}...)
 				break
 			}
-			utxoRepEvt := val.(*events.UTXOReportedEvent)
+			utxo := val.(*avax.UTXO)
 
-			genPubKeyHex := bytes.BytesToHex(utxoRepEvt.GenPubKeyBytes)
-			compressedGenPubKey, err := crypto.NormalizePubKey(genPubKeyHex)
-			if err != nil {
-				eh.Logger.Error("Failed to normalize generated public key", []logger.Field{
-					{"error", err},
-					{"genPubKey", genPubKeyHex}}...)
-				break
-			}
-
-			genPubKeyEvt := eh.reportedGenPubKeyEventCache[evt.GenPubKeyHash.String()]
-
-			taskID := exportPrincipalTaskIDPrefix
-			if utxoRepEvt.NativeUTXO.OutputIndex == 1 {
-				taskID = exportRewardTaskIDPrefix
+			taskID := taskIDPrefixPrincipalExport
+			if utxo.OutputIndex == 1 {
+				taskID = taskIDPrefixRewardExport
 			}
 
 			args := &Args{
 				Logger:     eh.Logger,
-				NetworkID:  eh.NetworkID(),
-				ExportFee:  eh.ExportFee(),
-				PChainID:   ids.Empty, // todo: config it
-				CChainID:   eh.CChainID(),
-				PChainAddr: genPubKeyEvt.PChainAddress,
-				CChainArr:  evt.To,
-				UTXO:       utxoRepEvt.NativeUTXO,
+				NetworkID:  eh.NetWorkCtx.NetworkID(),
+				ExportFee:  eh.NetWorkCtx.ExportFee(),
+				PChainID:   ids.Empty,
+				CChainID:   eh.NetWorkCtx.CChainID(),
+				PChainAddr: pChainAddr,
+				CChainArr:  treasureAddr,
+				UTXO:       utxo,
 
-				SignDoner: eh.SignDoner,
+				SignDoner: eh.SignerMPC,
 				SignReqArgs: &signer.SignRequestArgs{
-					TaskID:                 taskID + evt.TxHash.Hex(),
-					CompressedPartiPubKeys: partiKeys,
-					CompressedGenPubKeyHex: *compressedGenPubKey,
+					TaskID:                 taskID + evt.Raw.TxHash.Hex(),
+					CompressedPartiPubKeys: cmpPartiPubKeys,
+					CompressedGenPubKeyHex: cmpGenPubKeyHex,
 				},
 
-				CChainIssueClient: eh.CChainIssueClient,
-				PChainIssueClient: eh.PChainIssueClient,
+				CChainIssueClient: eh.IssuerCChain,
+				PChainIssueClient: eh.IssuerPChain,
 			}
 
 			eh.exportUTXOTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 			eh.exportUTXOTaskAddedCache.Wait()
 
-			eh.ws.AddTask(ctx, &work.Task{
+			err = eh.ws.AddTask(ctx, &work.Task{
 				Args: args,
 				Ctx:  ctx,
 				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
@@ -207,9 +230,9 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						return
 					}
 
-					newEvt := &events.UTXOExportedEvent{
-						NativeUTXO:   utxoRepEvt.NativeUTXO,
-						MpcUTXO:      utxoRepEvt.MpcUTXO,
+					newEvt := &events.UTXOExported{
+						NativeUTXO:   utxo,
+						MpcUTXO:      myAvax.MpcUTXOFromUTXO(utxo),
 						ExportedTxID: ids[0],
 						ImportedTxID: ids[1],
 					}
@@ -217,17 +240,16 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					eh.UTXOExportedEventCache.SetWithTTL(utxoID, " ", 1, time.Hour)
 					eh.UTXOExportedEventCache.Wait()
 
-					//eh.Publisher.Publish(ctx, dispatcher.NewEvtObj(newEvt, nil))
-
-					switch utxoRepEvt.NativeUTXO.OutputIndex {
+					prom.UTXOExported.Inc()
+					switch utxo.OutputIndex {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
 						prom.PrincipalUTXOExported.Inc()
-						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
+						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExported", newEvt}}...)
 					case uint32(events.OutputIndexReward):
 						atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
 						prom.RewardUTXOExported.Inc()
-						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExportedEvent", newEvt}}...)
+						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExported", newEvt}}...)
 					}
 					totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
 					totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
@@ -235,8 +257,26 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						{"exportedRewardUTXOs", totalRewards}}...)
 				}},
 			})
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to add UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
+			}
 		}
 	}
+}
+
+func (eh *UTXOPorter) treasuryAddress(ctx context.Context, outputIndex utxoOutputIndex) (addr common.Address, err error) {
+	switch {
+	case outputIndex == utxoOutputIndexPrincipal:
+		if addr, err = eh.BoundCaller.PrincipalTreasuryAddress(ctx, nil); err != nil {
+			return *new(common.Address), errors.WithStack(err)
+		}
+
+	case outputIndex == utxoOutputIndexReward:
+		if addr, err = eh.BoundCaller.RewardTreasuryAddress(ctx, nil); err != nil {
+			return *new(common.Address), errors.WithStack(err)
+		}
+	}
+	return
 }
 
 type Args struct {

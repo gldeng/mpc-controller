@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/hashing"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -16,6 +17,14 @@ func ShortIDFromPrivKeyHex(privKeyHex string) (*ids.ShortID, error) {
 	}
 
 	return ShortIDFromPubKey(&privKey.PublicKey)
+}
+
+func ShortIDFromPubKeyBytes(pubKeyBytes []byte) (*ids.ShortID, error) {
+	pubKey, err := myCrypto.UnmarshalPubKeyHex(bytes.BytesToHex(pubKeyBytes))
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return ShortIDFromPubKey(pubKey)
 }
 
 func ShortIDFromPubKeyHex(pubKeyHex string) (*ids.ShortID, error) {

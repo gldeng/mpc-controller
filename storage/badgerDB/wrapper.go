@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/pkg/errors"
 	"time"
 )
+
+var _ storage.DB = (*BadgerDB)(nil)
 
 type BadgerDB struct {
 	logger.Logger
@@ -33,7 +36,7 @@ func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
 }
 
 func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error) {
-	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		err = b.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(key)
 			if err != nil {
@@ -47,6 +50,9 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 			return errors.WithStack(err)
 		})
 		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return false, errors.WithStack(err)
+			}
 			return true, errors.WithStack(err)
 		}
 		return false, nil
@@ -61,7 +67,7 @@ func (b *BadgerDB) List(ctx context.Context, prefix []byte) ([][]byte, error) {
 
 // With marshal and unmarshal support
 
-func (b *BadgerDB) MarshalSet(ctx context.Context, key []byte, val interface{}) error {
+func (b *BadgerDB) MSet(ctx context.Context, key []byte, val interface{}) error {
 	valBytes, err := json.Marshal(val)
 	if err != nil {
 		return errors.WithStack(err)
@@ -72,7 +78,7 @@ func (b *BadgerDB) MarshalSet(ctx context.Context, key []byte, val interface{}) 
 	return errors.WithStack(err)
 }
 
-func (b *BadgerDB) MarshalGet(ctx context.Context, key []byte, val interface{}) error {
+func (b *BadgerDB) MGet(ctx context.Context, key []byte, val interface{}) error {
 	valBytes, err := b.Get(ctx, key)
 	if err != nil {
 		return errors.WithStack(err)
@@ -85,6 +91,20 @@ func (b *BadgerDB) MarshalGet(ctx context.Context, key []byte, val interface{}) 
 	return nil
 }
 
-func (b *BadgerDB) MarshalList(ctx context.Context, prefix []byte, val interface{}) error {
+func (b *BadgerDB) MList(ctx context.Context, prefix []byte, val interface{}) error {
 	return errors.New("to to implemented") // todo
+}
+
+// With Model(s) interface support
+
+func (b *BadgerDB) SaveModel(ctx context.Context, data storage.Model) error {
+	return errors.WithStack(b.MSet(ctx, data.Key(), data))
+}
+
+func (b *BadgerDB) LoadModel(ctx context.Context, data storage.Model) error {
+	return errors.WithStack(b.MGet(ctx, data.Key(), data))
+}
+
+func (b *BadgerDB) ListModels(ctx context.Context, datum storage.Models) error {
+	return errors.WithStack(b.MList(ctx, datum.Prefix(), datum))
 }

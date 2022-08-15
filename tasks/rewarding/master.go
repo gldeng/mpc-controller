@@ -3,41 +3,37 @@ package rewarding
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/contract/caller"
+	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/tasks/rewarding/porter"
 	"github.com/avalido/mpc-controller/tasks/rewarding/tracker"
-	"github.com/avalido/mpc-controller/tasks/rewarding/watcher"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/dgraph-io/ristretto"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type Master struct {
-	CChainIssueClient chain.CChainIssuer
-	Cache             cache.ICache
-	ContractAddr      common.Address
-	Dispatcher        dispatcher.Dispatcher
-	Logger            logger.Logger
-	MyPubKeyHashHex   string
-	PChainClient      platformvm.Client
-	Receipter         chain.Receipter
-	RewardUTXOGetter  chain.RewardUTXOGetter
-	SignDoner         core.SignDoner
-	Signer            *bind.TransactOpts
-	Transactor        bind.ContractTransactor
-	chain.NetworkContext
+	BoundCaller     caller.Caller
+	BoundTransactor transactor.Transactor
+	ClientPChain    platformvm.Client
+	DB              storage.DB
+	Dispatcher      dispatcher.Dispatcher
+	IssuerCChain    chain.CChainIssuer
+	IssuerPChain    chain.PChainIssuer
+	Logger          logger.Logger
+	NetWorkCtx      chain.NetworkContext
+	PartiPubKey     storage.PubKey
+	SignerMPC       core.SignDoner
 
 	// track
 	utxoTracker *tracker.UTXOTracker
 
 	// export
-	exportUTXOReqEvtWatcher *watcher.ExportUTXORequestWatcher
-	utxoPorter              *porter.UTXOPorter
+	utxoPorter *porter.UTXOPorter
 }
 
 func (m *Master) Start(ctx context.Context) error {
@@ -60,45 +56,30 @@ func (m *Master) subscribe() {
 	})
 
 	utxoTracker := tracker.UTXOTracker{
-		UTXOsFetchedEventCache: utxoFetchedEventCache,
-		UTXOExportedEventCache: utxoExportedEventCache,
-		ContractAddr:           m.ContractAddr,
+		BoundTransactor:        m.BoundTransactor,
+		ClientPChain:           m.ClientPChain,
+		DB:                     m.DB,
 		Logger:                 m.Logger,
-		PChainClient:           m.PChainClient,
-		Publisher:              m.Dispatcher,
-		Receipter:              m.Receipter,
-		Signer:                 m.Signer,
-		Transactor:             m.Transactor,
-	}
-
-	exportUTXOReqEvtWatcher := watcher.ExportUTXORequestWatcher{
-		ContractAddr: m.ContractAddr,
-		Logger:       m.Logger,
-		Publisher:    m.Dispatcher,
+		PartiPubKey:            m.PartiPubKey,
+		UTXOExportedEventCache: utxoExportedEventCache,
+		UTXOsFetchedEventCache: utxoFetchedEventCache,
 	}
 
 	utxoPorter := porter.UTXOPorter{
-		UTXOsFetchedEventCache: utxoFetchedEventCache,
-		UTXOExportedEventCache: utxoExportedEventCache,
-		CChainIssueClient:      m.CChainIssueClient,
-		Cache:                  m.Cache,
+		BoundCaller:            m.BoundCaller,
+		DB:                     m.DB,
+		IssuerCChain:           m.IssuerCChain,
+		IssuerPChain:           m.IssuerPChain,
 		Logger:                 m.Logger,
-		MyPubKeyHashHex:        m.MyPubKeyHashHex,
-		NetworkContext:         m.NetworkContext,
-		PChainIssueClient:      m.PChainClient,
-		Publisher:              m.Dispatcher,
-		SignDoner:              m.SignDoner,
+		NetWorkCtx:             m.NetWorkCtx,
+		SignerMPC:              m.SignerMPC,
+		UTXOExportedEventCache: utxoExportedEventCache,
+		UTXOsFetchedEventCache: utxoFetchedEventCache,
 	}
 
 	m.utxoTracker = &utxoTracker
-	m.exportUTXOReqEvtWatcher = &exportUTXOReqEvtWatcher
 	m.utxoPorter = &utxoPorter
 
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoTracker)
-
-	m.Dispatcher.Subscribe(&events.ContractFiltererCreatedEvent{}, m.exportUTXOReqEvtWatcher)
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.exportUTXOReqEvtWatcher)
-
-	m.Dispatcher.Subscribe(&events.ReportedGenPubKeyEvent{}, m.utxoPorter)
-	m.Dispatcher.Subscribe(&events.ExportUTXORequestEvent{}, m.utxoPorter)
+	m.Dispatcher.Subscribe(&events.KeyGenerated{}, m.utxoTracker)
+	m.Dispatcher.Subscribe(&events.RequestStarted{}, m.utxoPorter)
 }

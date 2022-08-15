@@ -16,6 +16,10 @@ var (
 		Name: prefix + "stake_request_added_total",
 		Help: "The total number of StakeRequestAddedEvent",
 	})
+	StakeRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "stake_request_started_total",
+		Help: "The total number of StakeRequestStartedEvent",
+	})
 	StakeTaskDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "stake_task_done_total",
 		Help: "The total number of StakeTaskDoneEvent",
@@ -23,6 +27,26 @@ var (
 
 	// reward
 
+	UTXOExportRequestJoined = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "utxo_export_request_joined_total",
+		Help: "The total number of UTXO export request joined",
+	})
+	PrincipalUTXOExportRequestJoined = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "principal_utxo_export_request_joined_total",
+		Help: "The total number of principal UTXO export request joined",
+	})
+	RewardUTXOExportRequestJoined = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "reward_utxo_export_request_joined_total",
+		Help: "The total number of reward UTXO export request joined",
+	})
+	UTXOExportRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "utxo_export_request_started_total",
+		Help: "The total number of UTXO export request started",
+	})
+	UTXOExported = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "utxo_exported_total",
+		Help: "The total number of UTXO exported",
+	})
 	PrincipalUTXOExported = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "principal_utxo_exported_total",
 		Help: "The total number of PrincipalUTXOExportedEvent",

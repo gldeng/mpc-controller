@@ -10,6 +10,12 @@ import (
 	"math/big"
 )
 
+type EthClient interface {
+	Receipter
+	Noncer
+	Balancer
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding C-Chain status
 

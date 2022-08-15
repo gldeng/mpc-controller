@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
-	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/misc"
 	"github.com/pkg/errors"
 	"strconv"
@@ -19,7 +18,6 @@ type Workshop struct {
 	MaxIdleDur time.Duration // 0 means forever
 
 	taskChan chan *Task
-	idleChan chan struct{}
 
 	TaskZone *TaskZone
 	once     sync.Once
@@ -33,12 +31,9 @@ type Workshop struct {
 
 func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, maxWorkspaces uint32) *Workshop {
 	taskChan := make(chan *Task, 1024)
-	idleChan := make(chan struct{}, 1024)
 	taskZone := &TaskZone{
 		Id:               name + "_workshop_" + "_taskZone_" + misc.NewID()[:4],
 		Logger:           logger,
-		TaskChan:         taskChan,
-		IdleChan:         idleChan,
 		PerTaskQueueSize: 1024,
 	}
 
@@ -47,7 +42,6 @@ func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, ma
 		Logger:        logger,
 		MaxIdleDur:    maxIdleDur,
 		taskChan:      taskChan,
-		idleChan:      idleChan,
 		TaskZone:      taskZone,
 		MaxWorkspaces: maxWorkspaces,
 		workspacesMap: make(map[string]*Workspace),
@@ -55,84 +49,79 @@ func NewWorkshop(logger logger.Logger, name string, maxIdleDur time.Duration, ma
 	return workshop
 }
 
-func (w *Workshop) AddTask(ctx context.Context, t *Task) {
+func (w *Workshop) AddTask(ctx context.Context, t *Task) error {
 	w.once.Do(func() {
-		go w.TaskZone.Run(ctx)
-		go w.checkState(ctx)
+		go w.run(ctx)
 	})
-
-	if atomic.LoadUint32(&w.livingWorkspaces) == 0 {
-		w.newWorkspace(ctx)
-		w.taskChan <- t
-		return
-	}
-
-	if atomic.LoadUint32(&w.livingWorkspaces) == w.MaxWorkspaces {
-		if !w.isIdle() {
-			w.Logger.Warn(w.Id + " no idle workspace, task en-zoned")
-			err := backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
-				if err := w.TaskZone.EnZone(t); err != nil {
-					return true, errors.WithStack(err)
-				}
-				return false, nil
-			})
-			w.Logger.ErrorOnError(err, w.Id+" failed to en-zone task.")
-			return
-		}
-		w.taskChan <- t
-		return
-	}
-
-	if w.isIdle() {
-		w.taskChan <- t
-		return
-	}
-
-	w.newWorkspace(ctx)
-	w.taskChan <- t
-	return
+	return errors.WithStack(w.TaskZone.EnZone(t))
 }
 
-func (w *Workshop) checkState(ctx context.Context) {
-	t := time.NewTicker(time.Minute * 5)
+func (w *Workshop) run(ctx context.Context) {
+	t := time.NewTicker(time.Second)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
-				w.Id+" too many living workspaces",
-				[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
-					{"maxWorkspaces", w.MaxWorkspaces}}...)
-
-			z := w.TaskZone
-			var totalTasks int
-			var totalCap int
-			for priority, q := range z.taskPriorityQueues {
-				totalTasks = totalTasks + q.Count()
-				totalCap = totalCap + q.Capacity()
-
-				isTooMany := float64(q.Count()) > float64(q.Capacity())*0.8
-				z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks of priority "+strconv.Itoa(priority),
-					[]logger.Field{{"totalTasks", q.Count()}, {"maxTasks", q.Capacity()}}...)
+			if w.TaskZone.IsEmpty() {
+				break
 			}
-
-			isTooMany := float64(totalTasks) > float64(totalCap)*0.8
-
-			z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks",
-				[]logger.Field{{"totalTasks", totalTasks},
-					{"maxTasks", totalCap}}...)
-
-			z.Logger.DebugOnTrue(isTooMany, z.Id+" en-zoned tasks stats in priority", []logger.Field{
-				{"p5", z.tasksInQueue(5)},
-				{"p4", z.tasksInQueue(4)},
-				{"p3", z.tasksInQueue(3)},
-				{"p2", z.tasksInQueue(2)},
-				{"p1", z.tasksInQueue(1)},
-				{"p0", z.tasksInQueue(0)}}...)
+			if atomic.LoadUint32(&w.livingWorkspaces) == 0 {
+				w.newWorkspace(ctx)
+				w.taskChan <- w.TaskZone.DeZone()
+				break
+			}
+			if atomic.LoadUint32(&w.livingWorkspaces) == w.MaxWorkspaces {
+				if !w.isIdle() {
+					w.Logger.Warn(w.Id + " no idle workspace.")
+					break
+				}
+				w.taskChan <- w.TaskZone.DeZone()
+				break
+			}
+			if w.isIdle() {
+				w.taskChan <- w.TaskZone.DeZone()
+				break
+			}
+			w.newWorkspace(ctx)
+			w.taskChan <- w.TaskZone.DeZone()
 		}
+		w.checkState(ctx)
 	}
+}
+
+func (w *Workshop) checkState(ctx context.Context) {
+	w.Logger.WarnOnTrue(float64(atomic.LoadUint32(&w.livingWorkspaces)) > float64(w.MaxWorkspaces)*0.8,
+		w.Id+" too many living workspaces",
+		[]logger.Field{{"livingWorkspaces", atomic.LoadUint32(&w.livingWorkspaces)},
+			{"maxWorkspaces", w.MaxWorkspaces}}...)
+
+	z := w.TaskZone
+	var totalTasks int
+	var totalCap int
+	for priority, q := range z.taskPriorityQueues {
+		totalTasks = totalTasks + q.Count()
+		totalCap = totalCap + q.Capacity()
+
+		isTooMany := float64(q.Count()) > float64(q.Capacity())*0.8
+		z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks of priority "+strconv.Itoa(priority),
+			[]logger.Field{{"totalTasks", q.Count()}, {"maxTasks", q.Capacity()}}...)
+	}
+
+	isTooMany := float64(totalTasks) > float64(totalCap)*0.8
+
+	z.Logger.WarnOnTrue(isTooMany, z.Id+" too many en-zoned tasks",
+		[]logger.Field{{"totalTasks", totalTasks},
+			{"maxTasks", totalCap}}...)
+
+	z.Logger.DebugOnTrue(isTooMany, z.Id+" en-zoned tasks stats in priority", []logger.Field{
+		{"p5", z.tasksInQueue(5)},
+		{"p4", z.tasksInQueue(4)},
+		{"p3", z.tasksInQueue(3)},
+		{"p2", z.tasksInQueue(2)},
+		{"p1", z.tasksInQueue(1)},
+		{"p0", z.tasksInQueue(0)}}...)
 }
 
 func (w *Workshop) LivingWorkspaces() int {
@@ -158,7 +147,6 @@ func (w *Workshop) newWorkspace(ctx context.Context) {
 		Logger:     w.Logger,
 		MaxIdleDur: w.MaxIdleDur,
 		TaskChan:   w.taskChan,
-		IdleChan:   w.idleChan,
 	}
 	w.lock.Lock()
 	w.workspacesMap[ws.Id] = ws

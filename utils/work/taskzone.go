@@ -17,32 +17,19 @@ type Task struct {
 type TaskZone struct {
 	Id               string
 	Logger           logger.Logger
-	TaskChan         chan *Task
-	IdleChan         chan struct{}
 	PerTaskQueueSize int
 
 	taskPriorityQueues map[int]queue.Queue
 	once               sync.Once
-}
-
-func (z *TaskZone) Run(ctx context.Context) {
-	z.once.Do(func() {
-		z.taskPriorityQueues = make(map[int]queue.Queue)
-	})
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-z.IdleChan:
-			if t := z.deZone(); t != nil {
-				z.TaskChan <- t
-				z.Logger.Debug(z.Id + "task de-zoned")
-			}
-		}
-	}
+	sync.Mutex
 }
 
 func (z *TaskZone) EnZone(t *Task) error {
+	z.once.Do(func() {
+		z.taskPriorityQueues = make(map[int]queue.Queue)
+	})
+	z.Lock()
+	defer z.Unlock()
 	_, ok := z.taskPriorityQueues[t.Priority]
 	if !ok {
 		z.taskPriorityQueues[t.Priority] = queue.NewArrayQueue(z.PerTaskQueueSize)
@@ -51,7 +38,19 @@ func (z *TaskZone) EnZone(t *Task) error {
 	return q.Enqueue(t)
 }
 
-func (z *TaskZone) deZone() (t *Task) {
+func (z *TaskZone) IsEmpty() bool {
+	z.Lock()
+	defer z.Unlock()
+	var total int
+	for i := 0; i <= 5; i++ {
+		total += z.tasksInQueue(i)
+	}
+	return total == 0
+}
+
+func (z *TaskZone) DeZone() (t *Task) {
+	z.Lock()
+	defer z.Unlock()
 	for priority := 5; priority >= 0; priority-- {
 		q, ok := z.taskPriorityQueues[priority]
 		if !ok {

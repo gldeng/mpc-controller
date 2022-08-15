@@ -4,7 +4,7 @@ vars:
   ROLE_DEFAULT_ADMIN: 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC
   ROLE_DEFAULT_ADMIN_PK: 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
   C_CHAIN_RPC_URL: http://127.0.0.1:9650/ext/bc/C/rpc
-  MPC_GROUP_ID: 36140f8887346f1edd7aed2eca82ec83f9126a475cd5a3f1bac225a42ec146b8
+  MPC_GROUP_ID: 902656e8cdb467a7e2f30099f57437f53578ecfa61280fee99bcc7d42f070400
 
 testcases:
   - name: readMpcManagerAddress
@@ -19,6 +19,6 @@ testcases:
 
   - name: Request keygen with pre-defined group ID
     steps:
-      - script: cast send --rpc-url {{.C_CHAIN_RPC_URL}} --from {{.ROLE_DEFAULT_ADMIN}} --private-key {{.ROLE_DEFAULT_ADMIN_PK}} {{.readMpcManagerAddress.content}} "requestKeygen(bytes32)" {{.MPC_GROUP_ID}}
+      - script: cast send --rpc-url {{.C_CHAIN_RPC_URL}} --from {{.ROLE_DEFAULT_ADMIN}} --private-key {{.ROLE_DEFAULT_ADMIN_PK}} --gas-limit 900000 {{.readMpcManagerAddress.content}} "requestKeygen(bytes32)" {{.MPC_GROUP_ID}}
         assertions: # todo: to improve assertion, plus check lastGenPubKey and lastGenAddress
           - result.systemout ShouldNotBeEmpty

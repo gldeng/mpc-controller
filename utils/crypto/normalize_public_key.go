@@ -10,6 +10,18 @@ import (
 
 // Normalize public key(s)
 
+func NormalizePubKeyBytesArr(pubKeyBytesArr [][]byte) ([][]byte, error) {
+	var normPubKey [][]byte
+	for _, pubKeyBytes := range pubKeyBytesArr {
+		res, err := NormalizePubKeyBytes(pubKeyBytes)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		normPubKey = append(normPubKey, res)
+	}
+	return normPubKey, nil
+}
+
 func NormalizePubKeyBytes(pubKeyBytes []byte) ([]byte, error) {
 	pubkeyHex, err := NormalizePubKey(common.Bytes2Hex(pubKeyBytes))
 	if err != nil {

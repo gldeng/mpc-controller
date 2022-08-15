@@ -1,11 +1,26 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding low-level k-v db
+
+type DB interface {
+	Setter
+	Getter
+	Lister
+
+	MarshalSetter
+	UnmarshalGetter
+	UnmarshalLister
+
+	ModelSaver
+	ModelLoader
+	ModelLister
+}
 
 // Classic k-v storage
 
@@ -24,13 +39,45 @@ type Lister interface {
 // With marshal and unmarshal support
 
 type MarshalSetter interface {
-	MarshalSet(ctx context.Context, key []byte, val interface{}) error
+	MSet(ctx context.Context, key []byte, val interface{}) error
 }
 
 type UnmarshalGetter interface {
-	MarshalGet(ctx context.Context, key []byte, val interface{}) error
+	MGet(ctx context.Context, key []byte, val interface{}) error
 }
 
 type UnmarshalLister interface {
-	MarshalList(ctx context.Context, prefix []byte, val interface{}) error
+	MList(ctx context.Context, prefix []byte, val interface{}) error
+}
+
+// With Model(s) interface support
+
+type Model interface {
+	Key() []byte
+}
+
+type Models interface {
+	Prefix() []byte
+}
+
+type ModelSaver interface {
+	SaveModel(ctx context.Context, data Model) error
+}
+
+type ModelLoader interface {
+	LoadModel(ctx context.Context, data Model) error
+}
+
+type ModelLister interface {
+	ListModels(ctx context.Context, datum Models) error
+}
+
+// Handy function to concat a key
+
+func Key(prefix []byte, payload [32]byte) []byte {
+	return JoinWithHyphen([][]byte{prefix, payload[:]})
+}
+
+func JoinWithHyphen(s [][]byte) []byte {
+	return bytes.Join(s, []byte("-"))
 }
