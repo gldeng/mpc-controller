@@ -259,7 +259,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			})
 			eh.Logger.ErrorOnError(err, "Failed to add UTXO export task", []logger.Field{
 				{"reqHash", reqHash.String()}, {"taskId", taskID}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
-			eh.Logger.InfoNilError(err, "Failed to add UTXO export task", []logger.Field{
+			eh.Logger.InfoNilError(err, "UTXO export task added", []logger.Field{
 				{"reqHash", reqHash.String()}, {"taskId", taskID}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
 		}
 	}

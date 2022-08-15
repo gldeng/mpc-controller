@@ -250,9 +250,8 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 						},
 					},
 				})
-				if err != nil {
-					eh.Logger.ErrorOnError(err, "Failed to add join UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
-				}
+				eh.Logger.ErrorOnError(err, "Failed to add join UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
+				eh.Logger.InfoNilError(err, "Join UTXO export task added", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
 			}
 		}
 	}
