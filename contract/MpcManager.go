@@ -1939,6 +1939,295 @@ func (_AddressUpgradeable *AddressUpgradeableTransactorRaw) Transact(opts *bind.
 	return _AddressUpgradeable.Contract.contract.Transact(opts, method, params...)
 }
 
+// ConfirmationHelpersMetaData contains all meta data concerning the ConfirmationHelpers contract.
+var ConfirmationHelpersMetaData = &bind.MetaData{
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"myIndex\",\"type\":\"uint8\"}],\"name\":\"confirm\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"indices\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"confirmedCount\",\"type\":\"uint8\"}],\"name\":\"makeConfirmation\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"confirmation\",\"type\":\"uint256\"}],\"name\":\"parseConfirmation\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"indices\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"confirmedCount\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
+	Sigs: map[string]string{
+		"09b1599a": "confirm(uint8)",
+		"9b5861a3": "makeConfirmation(uint256,uint8)",
+		"8ef6b7c8": "parseConfirmation(uint256)",
+	},
+	Bin: "0x6101ef61003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061004b5760003560e01c806309b1599a146100505780638ef6b7c8146100765780639b5861a3146100a9575b600080fd5b61006361005e36600461010b565b6100bc565b6040519081526020015b60405180910390f35b61009261008436600461012d565b60ff1981169160ff90911690565b6040805192835260ff90911660208301520161006d565b6100636100b7366004610146565b6100da565b60006100c9600183610172565b60ff16600160ff1b901c9050919050565b600060ff8316156100ed576100ed6101a3565b5060ff161790565b803560ff8116811461010657600080fd5b919050565b60006020828403121561011d57600080fd5b610126826100f5565b9392505050565b60006020828403121561013f57600080fd5b5035919050565b6000806040838503121561015957600080fd5b82359150610169602084016100f5565b90509250929050565b600060ff821660ff84168082101561019a57634e487b7160e01b600052601160045260246000fd5b90039392505050565b634e487b7160e01b600052600160045260246000fdfea2646970667358221220dee448ff4d87dd5d8e5e95c471a9612fef8e86715bd46e8e083d087a2251240a64736f6c634300080a0033",
+}
+
+// ConfirmationHelpersABI is the input ABI used to generate the binding from.
+// Deprecated: Use ConfirmationHelpersMetaData.ABI instead.
+var ConfirmationHelpersABI = ConfirmationHelpersMetaData.ABI
+
+// Deprecated: Use ConfirmationHelpersMetaData.Sigs instead.
+// ConfirmationHelpersFuncSigs maps the 4-byte function signature to its string representation.
+var ConfirmationHelpersFuncSigs = ConfirmationHelpersMetaData.Sigs
+
+// ConfirmationHelpersBin is the compiled bytecode used for deploying new contracts.
+// Deprecated: Use ConfirmationHelpersMetaData.Bin instead.
+var ConfirmationHelpersBin = ConfirmationHelpersMetaData.Bin
+
+// DeployConfirmationHelpers deploys a new Ethereum contract, binding an instance of ConfirmationHelpers to it.
+func DeployConfirmationHelpers(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *ConfirmationHelpers, error) {
+	parsed, err := ConfirmationHelpersMetaData.GetAbi()
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	if parsed == nil {
+		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
+	}
+
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(ConfirmationHelpersBin), backend)
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	return address, tx, &ConfirmationHelpers{ConfirmationHelpersCaller: ConfirmationHelpersCaller{contract: contract}, ConfirmationHelpersTransactor: ConfirmationHelpersTransactor{contract: contract}, ConfirmationHelpersFilterer: ConfirmationHelpersFilterer{contract: contract}}, nil
+}
+
+// ConfirmationHelpers is an auto generated Go binding around an Ethereum contract.
+type ConfirmationHelpers struct {
+	ConfirmationHelpersCaller     // Read-only binding to the contract
+	ConfirmationHelpersTransactor // Write-only binding to the contract
+	ConfirmationHelpersFilterer   // Log filterer for contract events
+}
+
+// ConfirmationHelpersCaller is an auto generated read-only Go binding around an Ethereum contract.
+type ConfirmationHelpersCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// ConfirmationHelpersTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type ConfirmationHelpersTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// ConfirmationHelpersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type ConfirmationHelpersFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// ConfirmationHelpersSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type ConfirmationHelpersSession struct {
+	Contract     *ConfirmationHelpers // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts        // Call options to use throughout this session
+	TransactOpts bind.TransactOpts    // Transaction auth options to use throughout this session
+}
+
+// ConfirmationHelpersCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type ConfirmationHelpersCallerSession struct {
+	Contract *ConfirmationHelpersCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts              // Call options to use throughout this session
+}
+
+// ConfirmationHelpersTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type ConfirmationHelpersTransactorSession struct {
+	Contract     *ConfirmationHelpersTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts              // Transaction auth options to use throughout this session
+}
+
+// ConfirmationHelpersRaw is an auto generated low-level Go binding around an Ethereum contract.
+type ConfirmationHelpersRaw struct {
+	Contract *ConfirmationHelpers // Generic contract binding to access the raw methods on
+}
+
+// ConfirmationHelpersCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type ConfirmationHelpersCallerRaw struct {
+	Contract *ConfirmationHelpersCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// ConfirmationHelpersTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type ConfirmationHelpersTransactorRaw struct {
+	Contract *ConfirmationHelpersTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewConfirmationHelpers creates a new instance of ConfirmationHelpers, bound to a specific deployed contract.
+func NewConfirmationHelpers(address common.Address, backend bind.ContractBackend) (*ConfirmationHelpers, error) {
+	contract, err := bindConfirmationHelpers(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &ConfirmationHelpers{ConfirmationHelpersCaller: ConfirmationHelpersCaller{contract: contract}, ConfirmationHelpersTransactor: ConfirmationHelpersTransactor{contract: contract}, ConfirmationHelpersFilterer: ConfirmationHelpersFilterer{contract: contract}}, nil
+}
+
+// NewConfirmationHelpersCaller creates a new read-only instance of ConfirmationHelpers, bound to a specific deployed contract.
+func NewConfirmationHelpersCaller(address common.Address, caller bind.ContractCaller) (*ConfirmationHelpersCaller, error) {
+	contract, err := bindConfirmationHelpers(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &ConfirmationHelpersCaller{contract: contract}, nil
+}
+
+// NewConfirmationHelpersTransactor creates a new write-only instance of ConfirmationHelpers, bound to a specific deployed contract.
+func NewConfirmationHelpersTransactor(address common.Address, transactor bind.ContractTransactor) (*ConfirmationHelpersTransactor, error) {
+	contract, err := bindConfirmationHelpers(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &ConfirmationHelpersTransactor{contract: contract}, nil
+}
+
+// NewConfirmationHelpersFilterer creates a new log filterer instance of ConfirmationHelpers, bound to a specific deployed contract.
+func NewConfirmationHelpersFilterer(address common.Address, filterer bind.ContractFilterer) (*ConfirmationHelpersFilterer, error) {
+	contract, err := bindConfirmationHelpers(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &ConfirmationHelpersFilterer{contract: contract}, nil
+}
+
+// bindConfirmationHelpers binds a generic wrapper to an already deployed contract.
+func bindConfirmationHelpers(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(ConfirmationHelpersABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_ConfirmationHelpers *ConfirmationHelpersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _ConfirmationHelpers.Contract.ConfirmationHelpersCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_ConfirmationHelpers *ConfirmationHelpersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _ConfirmationHelpers.Contract.ConfirmationHelpersTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_ConfirmationHelpers *ConfirmationHelpersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _ConfirmationHelpers.Contract.ConfirmationHelpersTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_ConfirmationHelpers *ConfirmationHelpersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _ConfirmationHelpers.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_ConfirmationHelpers *ConfirmationHelpersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _ConfirmationHelpers.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_ConfirmationHelpers *ConfirmationHelpersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _ConfirmationHelpers.Contract.contract.Transact(opts, method, params...)
+}
+
+// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
+//
+// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
+func (_ConfirmationHelpers *ConfirmationHelpersCaller) Confirm(opts *bind.CallOpts, myIndex uint8) (*big.Int, error) {
+	var out []interface{}
+	err := _ConfirmationHelpers.contract.Call(opts, &out, "confirm", myIndex)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
+//
+// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
+func (_ConfirmationHelpers *ConfirmationHelpersSession) Confirm(myIndex uint8) (*big.Int, error) {
+	return _ConfirmationHelpers.Contract.Confirm(&_ConfirmationHelpers.CallOpts, myIndex)
+}
+
+// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
+//
+// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
+func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) Confirm(myIndex uint8) (*big.Int, error) {
+	return _ConfirmationHelpers.Contract.Confirm(&_ConfirmationHelpers.CallOpts, myIndex)
+}
+
+// MakeConfirmation is a free data retrieval call binding the contract method 0x9b5861a3.
+//
+// Solidity: function makeConfirmation(uint256 indices, uint8 confirmedCount) pure returns(uint256)
+func (_ConfirmationHelpers *ConfirmationHelpersCaller) MakeConfirmation(opts *bind.CallOpts, indices *big.Int, confirmedCount uint8) (*big.Int, error) {
+	var out []interface{}
+	err := _ConfirmationHelpers.contract.Call(opts, &out, "makeConfirmation", indices, confirmedCount)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// MakeConfirmation is a free data retrieval call binding the contract method 0x9b5861a3.
+//
+// Solidity: function makeConfirmation(uint256 indices, uint8 confirmedCount) pure returns(uint256)
+func (_ConfirmationHelpers *ConfirmationHelpersSession) MakeConfirmation(indices *big.Int, confirmedCount uint8) (*big.Int, error) {
+	return _ConfirmationHelpers.Contract.MakeConfirmation(&_ConfirmationHelpers.CallOpts, indices, confirmedCount)
+}
+
+// MakeConfirmation is a free data retrieval call binding the contract method 0x9b5861a3.
+//
+// Solidity: function makeConfirmation(uint256 indices, uint8 confirmedCount) pure returns(uint256)
+func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) MakeConfirmation(indices *big.Int, confirmedCount uint8) (*big.Int, error) {
+	return _ConfirmationHelpers.Contract.MakeConfirmation(&_ConfirmationHelpers.CallOpts, indices, confirmedCount)
+}
+
+// ParseConfirmation is a free data retrieval call binding the contract method 0x8ef6b7c8.
+//
+// Solidity: function parseConfirmation(uint256 confirmation) pure returns(uint256 indices, uint8 confirmedCount)
+func (_ConfirmationHelpers *ConfirmationHelpersCaller) ParseConfirmation(opts *bind.CallOpts, confirmation *big.Int) (struct {
+	Indices        *big.Int
+	ConfirmedCount uint8
+}, error) {
+	var out []interface{}
+	err := _ConfirmationHelpers.contract.Call(opts, &out, "parseConfirmation", confirmation)
+
+	outstruct := new(struct {
+		Indices        *big.Int
+		ConfirmedCount uint8
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Indices = *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	outstruct.ConfirmedCount = *abi.ConvertType(out[1], new(uint8)).(*uint8)
+
+	return *outstruct, err
+
+}
+
+// ParseConfirmation is a free data retrieval call binding the contract method 0x8ef6b7c8.
+//
+// Solidity: function parseConfirmation(uint256 confirmation) pure returns(uint256 indices, uint8 confirmedCount)
+func (_ConfirmationHelpers *ConfirmationHelpersSession) ParseConfirmation(confirmation *big.Int) (struct {
+	Indices        *big.Int
+	ConfirmedCount uint8
+}, error) {
+	return _ConfirmationHelpers.Contract.ParseConfirmation(&_ConfirmationHelpers.CallOpts, confirmation)
+}
+
+// ParseConfirmation is a free data retrieval call binding the contract method 0x8ef6b7c8.
+//
+// Solidity: function parseConfirmation(uint256 confirmation) pure returns(uint256 indices, uint8 confirmedCount)
+func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) ParseConfirmation(confirmation *big.Int) (struct {
+	Indices        *big.Int
+	ConfirmedCount uint8
+}, error) {
+	return _ConfirmationHelpers.Contract.ParseConfirmation(&_ConfirmationHelpers.CallOpts, confirmation)
+}
+
 // ContextMetaData contains all meta data concerning the Context contract.
 var ContextMetaData = &bind.MetaData{
 	ABI: "[]",
@@ -4823,12 +5112,288 @@ func (_Initializable *InitializableFilterer) ParseInitialized(log types.Log) (*I
 	return event, nil
 }
 
+// KeygenStatusHelpersMetaData contains all meta data concerning the KeygenStatusHelpers contract.
+var KeygenStatusHelpersMetaData = &bind.MetaData{
+	ABI: "[{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"keygenRequest\",\"type\":\"bytes32\"}],\"name\":\"getGroupId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"keygenRequest\",\"type\":\"bytes32\"}],\"name\":\"getKeygenStatus\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"internalType\":\"uint8\",\"name\":\"keygenStatus\",\"type\":\"uint8\"}],\"name\":\"makeKeygenRequest\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
+	Sigs: map[string]string{
+		"293911c3": "getGroupId(bytes32)",
+		"1762ff8e": "getKeygenStatus(bytes32)",
+		"40a21abb": "makeKeygenRequest(bytes32,uint8)",
+	},
+	Bin: "0x61012e61003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361060475760003560e01c80631762ff8e14604c578063293911c314607457806340a21abb146093575b600080fd5b605d605736600460ac565b60ff1690565b60405160ff90911681526020015b60405180910390f35b6086607f36600460ac565b60ff191690565b604051908152602001606b565b6086609e36600460c4565b60ff1660ff19919091161790565b60006020828403121560bd57600080fd5b5035919050565b6000806040838503121560d657600080fd5b82359150602083013560ff8116811460ed57600080fd5b80915050925092905056fea2646970667358221220d06d5fd9c6bbed3feb587553dfb754a27be029bb0fd49874d577b627677d046464736f6c634300080a0033",
+}
+
+// KeygenStatusHelpersABI is the input ABI used to generate the binding from.
+// Deprecated: Use KeygenStatusHelpersMetaData.ABI instead.
+var KeygenStatusHelpersABI = KeygenStatusHelpersMetaData.ABI
+
+// Deprecated: Use KeygenStatusHelpersMetaData.Sigs instead.
+// KeygenStatusHelpersFuncSigs maps the 4-byte function signature to its string representation.
+var KeygenStatusHelpersFuncSigs = KeygenStatusHelpersMetaData.Sigs
+
+// KeygenStatusHelpersBin is the compiled bytecode used for deploying new contracts.
+// Deprecated: Use KeygenStatusHelpersMetaData.Bin instead.
+var KeygenStatusHelpersBin = KeygenStatusHelpersMetaData.Bin
+
+// DeployKeygenStatusHelpers deploys a new Ethereum contract, binding an instance of KeygenStatusHelpers to it.
+func DeployKeygenStatusHelpers(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *KeygenStatusHelpers, error) {
+	parsed, err := KeygenStatusHelpersMetaData.GetAbi()
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	if parsed == nil {
+		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
+	}
+
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(KeygenStatusHelpersBin), backend)
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	return address, tx, &KeygenStatusHelpers{KeygenStatusHelpersCaller: KeygenStatusHelpersCaller{contract: contract}, KeygenStatusHelpersTransactor: KeygenStatusHelpersTransactor{contract: contract}, KeygenStatusHelpersFilterer: KeygenStatusHelpersFilterer{contract: contract}}, nil
+}
+
+// KeygenStatusHelpers is an auto generated Go binding around an Ethereum contract.
+type KeygenStatusHelpers struct {
+	KeygenStatusHelpersCaller     // Read-only binding to the contract
+	KeygenStatusHelpersTransactor // Write-only binding to the contract
+	KeygenStatusHelpersFilterer   // Log filterer for contract events
+}
+
+// KeygenStatusHelpersCaller is an auto generated read-only Go binding around an Ethereum contract.
+type KeygenStatusHelpersCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// KeygenStatusHelpersTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type KeygenStatusHelpersTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// KeygenStatusHelpersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type KeygenStatusHelpersFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// KeygenStatusHelpersSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type KeygenStatusHelpersSession struct {
+	Contract     *KeygenStatusHelpers // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts        // Call options to use throughout this session
+	TransactOpts bind.TransactOpts    // Transaction auth options to use throughout this session
+}
+
+// KeygenStatusHelpersCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type KeygenStatusHelpersCallerSession struct {
+	Contract *KeygenStatusHelpersCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts              // Call options to use throughout this session
+}
+
+// KeygenStatusHelpersTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type KeygenStatusHelpersTransactorSession struct {
+	Contract     *KeygenStatusHelpersTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts              // Transaction auth options to use throughout this session
+}
+
+// KeygenStatusHelpersRaw is an auto generated low-level Go binding around an Ethereum contract.
+type KeygenStatusHelpersRaw struct {
+	Contract *KeygenStatusHelpers // Generic contract binding to access the raw methods on
+}
+
+// KeygenStatusHelpersCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type KeygenStatusHelpersCallerRaw struct {
+	Contract *KeygenStatusHelpersCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// KeygenStatusHelpersTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type KeygenStatusHelpersTransactorRaw struct {
+	Contract *KeygenStatusHelpersTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewKeygenStatusHelpers creates a new instance of KeygenStatusHelpers, bound to a specific deployed contract.
+func NewKeygenStatusHelpers(address common.Address, backend bind.ContractBackend) (*KeygenStatusHelpers, error) {
+	contract, err := bindKeygenStatusHelpers(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &KeygenStatusHelpers{KeygenStatusHelpersCaller: KeygenStatusHelpersCaller{contract: contract}, KeygenStatusHelpersTransactor: KeygenStatusHelpersTransactor{contract: contract}, KeygenStatusHelpersFilterer: KeygenStatusHelpersFilterer{contract: contract}}, nil
+}
+
+// NewKeygenStatusHelpersCaller creates a new read-only instance of KeygenStatusHelpers, bound to a specific deployed contract.
+func NewKeygenStatusHelpersCaller(address common.Address, caller bind.ContractCaller) (*KeygenStatusHelpersCaller, error) {
+	contract, err := bindKeygenStatusHelpers(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &KeygenStatusHelpersCaller{contract: contract}, nil
+}
+
+// NewKeygenStatusHelpersTransactor creates a new write-only instance of KeygenStatusHelpers, bound to a specific deployed contract.
+func NewKeygenStatusHelpersTransactor(address common.Address, transactor bind.ContractTransactor) (*KeygenStatusHelpersTransactor, error) {
+	contract, err := bindKeygenStatusHelpers(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &KeygenStatusHelpersTransactor{contract: contract}, nil
+}
+
+// NewKeygenStatusHelpersFilterer creates a new log filterer instance of KeygenStatusHelpers, bound to a specific deployed contract.
+func NewKeygenStatusHelpersFilterer(address common.Address, filterer bind.ContractFilterer) (*KeygenStatusHelpersFilterer, error) {
+	contract, err := bindKeygenStatusHelpers(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &KeygenStatusHelpersFilterer{contract: contract}, nil
+}
+
+// bindKeygenStatusHelpers binds a generic wrapper to an already deployed contract.
+func bindKeygenStatusHelpers(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(KeygenStatusHelpersABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_KeygenStatusHelpers *KeygenStatusHelpersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _KeygenStatusHelpers.Contract.KeygenStatusHelpersCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_KeygenStatusHelpers *KeygenStatusHelpersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _KeygenStatusHelpers.Contract.KeygenStatusHelpersTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_KeygenStatusHelpers *KeygenStatusHelpersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _KeygenStatusHelpers.Contract.KeygenStatusHelpersTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_KeygenStatusHelpers *KeygenStatusHelpersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _KeygenStatusHelpers.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_KeygenStatusHelpers *KeygenStatusHelpersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _KeygenStatusHelpers.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_KeygenStatusHelpers *KeygenStatusHelpersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _KeygenStatusHelpers.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetGroupId is a free data retrieval call binding the contract method 0x293911c3.
+//
+// Solidity: function getGroupId(bytes32 keygenRequest) pure returns(bytes32)
+func (_KeygenStatusHelpers *KeygenStatusHelpersCaller) GetGroupId(opts *bind.CallOpts, keygenRequest [32]byte) ([32]byte, error) {
+	var out []interface{}
+	err := _KeygenStatusHelpers.contract.Call(opts, &out, "getGroupId", keygenRequest)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GetGroupId is a free data retrieval call binding the contract method 0x293911c3.
+//
+// Solidity: function getGroupId(bytes32 keygenRequest) pure returns(bytes32)
+func (_KeygenStatusHelpers *KeygenStatusHelpersSession) GetGroupId(keygenRequest [32]byte) ([32]byte, error) {
+	return _KeygenStatusHelpers.Contract.GetGroupId(&_KeygenStatusHelpers.CallOpts, keygenRequest)
+}
+
+// GetGroupId is a free data retrieval call binding the contract method 0x293911c3.
+//
+// Solidity: function getGroupId(bytes32 keygenRequest) pure returns(bytes32)
+func (_KeygenStatusHelpers *KeygenStatusHelpersCallerSession) GetGroupId(keygenRequest [32]byte) ([32]byte, error) {
+	return _KeygenStatusHelpers.Contract.GetGroupId(&_KeygenStatusHelpers.CallOpts, keygenRequest)
+}
+
+// GetKeygenStatus is a free data retrieval call binding the contract method 0x1762ff8e.
+//
+// Solidity: function getKeygenStatus(bytes32 keygenRequest) pure returns(uint8)
+func (_KeygenStatusHelpers *KeygenStatusHelpersCaller) GetKeygenStatus(opts *bind.CallOpts, keygenRequest [32]byte) (uint8, error) {
+	var out []interface{}
+	err := _KeygenStatusHelpers.contract.Call(opts, &out, "getKeygenStatus", keygenRequest)
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// GetKeygenStatus is a free data retrieval call binding the contract method 0x1762ff8e.
+//
+// Solidity: function getKeygenStatus(bytes32 keygenRequest) pure returns(uint8)
+func (_KeygenStatusHelpers *KeygenStatusHelpersSession) GetKeygenStatus(keygenRequest [32]byte) (uint8, error) {
+	return _KeygenStatusHelpers.Contract.GetKeygenStatus(&_KeygenStatusHelpers.CallOpts, keygenRequest)
+}
+
+// GetKeygenStatus is a free data retrieval call binding the contract method 0x1762ff8e.
+//
+// Solidity: function getKeygenStatus(bytes32 keygenRequest) pure returns(uint8)
+func (_KeygenStatusHelpers *KeygenStatusHelpersCallerSession) GetKeygenStatus(keygenRequest [32]byte) (uint8, error) {
+	return _KeygenStatusHelpers.Contract.GetKeygenStatus(&_KeygenStatusHelpers.CallOpts, keygenRequest)
+}
+
+// MakeKeygenRequest is a free data retrieval call binding the contract method 0x40a21abb.
+//
+// Solidity: function makeKeygenRequest(bytes32 groupId, uint8 keygenStatus) pure returns(bytes32)
+func (_KeygenStatusHelpers *KeygenStatusHelpersCaller) MakeKeygenRequest(opts *bind.CallOpts, groupId [32]byte, keygenStatus uint8) ([32]byte, error) {
+	var out []interface{}
+	err := _KeygenStatusHelpers.contract.Call(opts, &out, "makeKeygenRequest", groupId, keygenStatus)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// MakeKeygenRequest is a free data retrieval call binding the contract method 0x40a21abb.
+//
+// Solidity: function makeKeygenRequest(bytes32 groupId, uint8 keygenStatus) pure returns(bytes32)
+func (_KeygenStatusHelpers *KeygenStatusHelpersSession) MakeKeygenRequest(groupId [32]byte, keygenStatus uint8) ([32]byte, error) {
+	return _KeygenStatusHelpers.Contract.MakeKeygenRequest(&_KeygenStatusHelpers.CallOpts, groupId, keygenStatus)
+}
+
+// MakeKeygenRequest is a free data retrieval call binding the contract method 0x40a21abb.
+//
+// Solidity: function makeKeygenRequest(bytes32 groupId, uint8 keygenStatus) pure returns(bytes32)
+func (_KeygenStatusHelpers *KeygenStatusHelpersCallerSession) MakeKeygenRequest(groupId [32]byte, keygenStatus uint8) ([32]byte, error) {
+	return _KeygenStatusHelpers.Contract.MakeKeygenRequest(&_KeygenStatusHelpers.CallOpts, groupId, keygenStatus)
+}
+
 // MpcManagerMetaData contains all meta data concerning the MpcManager contract.
 var MpcManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"name\":\"AttemptToReaddGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToReconfirmKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToRejoin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AvaLidoOnly\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GroupNotFound\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupMembership\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupSize\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPublicKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidThreshold\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeyNotGenerated\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"QuorumAlreadyReached\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"KeyGenerated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"KeygenRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"ParticipantAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"participantIndices\",\"type\":\"uint256\"}],\"name\":\"RequestStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"StakeRequestAdded\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"avaLidoAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"publicKeys\",\"type\":\"bytes[]\"},{\"internalType\":\"uint8\",\"name\":\"threshold\",\"type\":\"uint8\"}],\"name\":\"createGroup\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"getGroup\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"getGroupIdByKey\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_roleMpcAdmin\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_avaLidoAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_principalTreasuryAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rewardTreasuryAddress\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"}],\"name\":\"joinRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenPubKey\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"principalTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"generatedPublicKey\",\"type\":\"bytes\"}],\"name\":\"reportGeneratedKey\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"requestKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"requestStake\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"name\":\"AttemptToReaddGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToReconfirmKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToRejoin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AvaLidoOnly\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GotPendingKeygenRequest\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GroupNotFound\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupMembership\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupSize\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPublicKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidThreshold\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeyNotGenerated\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeygenNotRequested\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInAuthorizedGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"QuorumAlreadyReached\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"KeyGenerated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"}],\"name\":\"KeygenRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"}],\"name\":\"KeygenRequestCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"ParticipantAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"participantIndices\",\"type\":\"uint256\"}],\"name\":\"RequestStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"StakeRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"avaLidoAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"publicKeys\",\"type\":\"bytes[]\"},{\"internalType\":\"uint8\",\"name\":\"threshold\",\"type\":\"uint8\"}],\"name\":\"createGroup\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"getGroup\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"getGroupIdByKey\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_roleMpcAdmin\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rolePauseManager\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_avaLidoAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_principalTreasuryAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rewardTreasuryAddress\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"}],\"name\":\"joinRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenPubKey\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastKeygenRequest\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastKeygenRequestNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"principalTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"generatedPublicKey\",\"type\":\"bytes\"}],\"name\":\"reportGeneratedKey\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"requestKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"requestStake\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"resume\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 	Sigs: map[string]string{
 		"a217fddf": "DEFAULT_ADMIN_ROLE()",
 		"9523a0a8": "avaLidoAddress()",
+		"d5f488d9": "cancelKeygen()",
 		"7612e8a2": "createGroup(bytes[],uint8)",
 		"b567d4ba": "getGroup(bytes32)",
 		"6962ef6a": "getGroupIdByKey(bytes)",
@@ -4837,20 +5402,25 @@ var MpcManagerMetaData = &bind.MetaData{
 		"ca15c873": "getRoleMemberCount(bytes32)",
 		"2f2ff15d": "grantRole(bytes32,address)",
 		"91d14854": "hasRole(bytes32,address)",
-		"f8c8765e": "initialize(address,address,address,address)",
+		"1459457a": "initialize(address,address,address,address,address)",
 		"273d5a5e": "joinRequest(bytes32,bytes32)",
 		"ee34ad00": "lastGenAddress()",
 		"0d45d2f3": "lastGenPubKey()",
+		"95a99d6b": "lastKeygenRequest()",
+		"040aa2e9": "lastKeygenRequestNumber()",
+		"8456cb59": "pause()",
+		"5c975abb": "paused()",
 		"c666a4d9": "principalTreasuryAddress()",
 		"36568abe": "renounceRole(bytes32,address)",
 		"406c67b5": "reportGeneratedKey(bytes32,bytes)",
 		"e661d90d": "requestKeygen(bytes32)",
 		"89060b34": "requestStake(string,uint256,uint256,uint256)",
+		"046f7da2": "resume()",
 		"d547741f": "revokeRole(bytes32,address)",
 		"fa914882": "rewardTreasuryAddress()",
 		"01ffc9a7": "supportsInterface(bytes4)",
 	},
-	Bin: "0x608060405234801561001057600080fd5b50611f4a806100206000396000f3fe6080604052600436106101355760003560e01c806391d14854116100ab578063ca15c8731161006f578063ca15c8731461037e578063d547741f1461039e578063e661d90d146103be578063ee34ad00146103de578063f8c8765e146103fe578063fa9148821461041e57600080fd5b806391d14854146102dc5780639523a0a8146102fc578063a217fddf1461031c578063b567d4ba14610331578063c666a4d91461035e57600080fd5b806336568abe116100fd57806336568abe14610211578063406c67b5146102315780636962ef6a146102515780637612e8a21461027157806389060b34146102915780639010d07c146102a457600080fd5b806301ffc9a71461013a5780630d45d2f31461016f578063248a9ca314610191578063273d5a5e146101cf5780632f2ff15d146101f1575b600080fd5b34801561014657600080fd5b5061015a6101553660046117fd565b61043e565b60405190151581526020015b60405180910390f35b34801561017b57600080fd5b50610184610469565b6040516101669190611883565b34801561019d57600080fd5b506101c16101ac366004611896565b60009081526020819052604090206001015490565b604051908152602001610166565b3480156101db57600080fd5b506101ef6101ea3660046118af565b6104f7565b005b3480156101fd57600080fd5b506101ef61020c3660046118ed565b61065e565b34801561021d57600080fd5b506101ef61022c3660046118ed565b610688565b34801561023d57600080fd5b506101ef61024c366004611962565b61070b565b34801561025d57600080fd5b506101c161026c3660046119ae565b6108f8565b34801561027d57600080fd5b506101ef61028c3660046119f0565b610923565b6101ef61029f366004611a7c565b610c4e565b3480156102b057600080fd5b506102c46102bf3660046118af565b610d69565b6040516001600160a01b039091168152602001610166565b3480156102e857600080fd5b5061015a6102f73660046118ed565b610d88565b34801561030857600080fd5b506005546102c4906001600160a01b031681565b34801561032857600080fd5b506101c1600081565b34801561033d57600080fd5b5061035161034c366004611896565b610db1565b6040516101669190611ad6565b34801561036a57600080fd5b506006546102c4906001600160a01b031681565b34801561038a57600080fd5b506101c1610399366004611896565b610ffd565b3480156103aa57600080fd5b506101ef6103b93660046118ed565b611014565b3480156103ca57600080fd5b506101ef6103d9366004611896565b611039565b3480156103ea57600080fd5b506004546102c4906001600160a01b031681565b34801561040a57600080fd5b506101ef610419366004611b38565b611092565b34801561042a57600080fd5b506007546102c4906001600160a01b031681565b60006001600160e01b03198216635a05180f60e01b1480610463575061046382611206565b92915050565b6003805461047690611b8c565b80601f01602080910402602001604051908101604052809291908181526020018280546104a290611b8c565b80156104ef5780601f106104c4576101008083540402835291602001916104ef565b820191906000526020600020905b8154815290600101906020018083116104d257829003601f168201915b505050505081565b60008281526008602052604090206001015482906001600160a01b031633146105335760405163644496af60e11b815260040160405180910390fd5b60ff1983166000818152600b6020908152604080832086845290915290205460ff80861691600887901c82169181168281111561058357604051631c0d61b560e11b815260040160405180910390fd5b60ff1982166000610595600187611bdd565b60ff16600160ff1b901c9050600081831611156105c557604051635d3e08c360e01b815260040160405180910390fd5b6105cf8183611c00565b9150826105db81611c18565b93506105ea9050856001611c38565b60ff168360ff16141561063057604080518a8152602081018490527e4a164c5a5884d2634c5ecf652835a6bd3fa42d0a95f937a72818e3ff90b709910160405180910390a15b506000958652600b602090815260408088209988529890529690942060ff9094169095179092555050505050565b6000828152602081905260409020600101546106798161123b565b6106838383611248565b505050565b6001600160a01b03811633146106fd5760405162461bcd60e51b815260206004820152602f60248201527f416363657373436f6e74726f6c3a2063616e206f6e6c792072656e6f756e636560448201526e103937b632b9903337b91039b2b63360891b60648201526084015b60405180910390fd5b610707828261126a565b5050565b60008381526008602052604090206001015483906001600160a01b031633146107475760405163644496af60e11b815260040160405180910390fd5b60405160ff85811691601087901c90911690600090600a9061076c9088908890611c5d565b908152604051908190036020019020549050600061078b600185611bdd565b60ff16600160ff1b901c9050600081831611156107bb576040516356ea295d60e11b815260040160405180910390fd5b60ff19821660ff83166107ce8383611c00565b9150806107da81611c18565b9150508460ff168160ff1614156108c45760405160ff198b16908190600990610806908d908d90611c5d565b9081526040519081900360200190205561082260038b8b611764565b506108628a8a8080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525061128c92505050565b600460006101000a8154816001600160a01b0302191690836001600160a01b03160217905550807f767b7aa89023ecd2db985822c15a32856d9106f50b5b2d5a65aa0f30d3cf457d8b8b6040516108ba929190611c96565b60405180910390a2505b8060ff168217600a8a8a6040516108dc929190611c5d565b9081526040519081900360200190205550505050505050505050565b60006009838360405161090c929190611c5d565b908152602001604051809103902054905092915050565b7f9fece4792c7ff5d25a4f6041da7db799a6228be21fcb6358ef0b12f1dd685cb661094d8161123b565b82600281108061095d575060f881115b1561097b57604051632cbdc23160e01b815260040160405180910390fd5b60018360ff1610806109905750808360ff1610155b156109ae5760405163aabd5a0960e01b815260040160405180910390fd5b606060005b82811015610a5c5760408787838181106109cf576109cf611cb2565b90506020028101906109e19190611cc8565b905014610a015760405163145a1fdd60e31b815260040160405180910390fd5b81878783818110610a1457610a14611cb2565b9050602002810190610a269190611cc8565b604051602001610a3893929190611d0f565b60405160208183030381529060405291508080610a5490611d37565b9150506109b3565b508051602080830191909120600162ffffff19909116601085901b1761ff00600888811b91909116919091178281176000818152929094526040909120909101549091906001600160a01b03168015610ac85760405163747c28d160e11b815260040160405180910390fd5b60005b88811015610c4257610ade816001611c00565b84179250898982818110610af457610af4611cb2565b9050602002810190610b069190611cc8565b6000858152600860205260409020610b1f929091611764565b50610b818a8a83818110610b3557610b35611cb2565b9050602002810190610b479190611cc8565b8080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525061128c92505050565b600084815260086020526040902060010180546001600160a01b0319166001600160a01b0392909216919091179055898982818110610bc257610bc2611cb2565b9050602002810190610bd49190611cc8565b604051610be2929190611c5d565b6040519081900390207f39f1368dd39c286ea788ed1ca8b79dddbdad29f340f0100a5f2a60bd4d2f269a85610c18846001611c00565b6040805192835260208301919091520160405180910390a280610c3a81611d37565b915050610acb565b50505050505050505050565b6005546001600160a01b03163314610c795760405163709136d360e11b815260040160405180910390fd5b6004546001600160a01b0316610ca257604051636695821760e11b815260040160405180910390fd5b823414610cc25760405163162908e360e11b815260040160405180910390fd5b6004546040516001600160a01b039091169084156108fc029085906000818181858888f19350505050158015610cfc573d6000803e3d6000fd5b506000610d0761129c565b90506003604051610d189190611d52565b60405180910390207f18d59ead2751a952ffa140860eedfe61eefb762649f64d9a222b9c8e2b7bf594828888888888604051610d5996959493929190611dee565b60405180910390a2505050505050565b6000828152600160205260408120610d8190836112be565b9392505050565b6000918252602082815260408084206001600160a01b0393909316845291905290205460ff1690565b6060601082901c60ff1680610dd95760405163a5edf99360e01b815260040160405180910390fd5b60008167ffffffffffffffff811115610df457610df4611e26565b604051908082528060200260200182016040528015610e2757816020015b6060815260200190600190039081610e125790505b5060018517600081815260086020526040812080549394509192909190610e4d90611b8c565b80601f0160208091040260200160405190810160405280929190818152602001828054610e7990611b8c565b8015610ec65780601f10610e9b57610100808354040283529160200191610ec6565b820191906000526020600020905b815481529060010190602001808311610ea957829003601f168201915b50505050509050805160001415610ef05760405163a5edf99360e01b815260040160405180910390fd5b8083600081518110610f0457610f04611cb2565b602090810291909101015260015b84811015610ff257610f25816001611c00565b87176000818152600860205260409020805491945090610f4490611b8c565b80601f0160208091040260200160405190810160405280929190818152602001828054610f7090611b8c565b8015610fbd5780601f10610f9257610100808354040283529160200191610fbd565b820191906000526020600020905b815481529060010190602001808311610fa057829003601f168201915b5050505050848281518110610fd457610fd4611cb2565b60200260200101819052508080610fea90611d37565b915050610f12565b509195945050505050565b6000818152600160205260408120610463906112ca565b60008281526020819052604090206001015461102f8161123b565b610683838361126a565b7f9fece4792c7ff5d25a4f6041da7db799a6228be21fcb6358ef0b12f1dd685cb66110638161123b565b60405182907f5e169d3e7bcbd6275f0072b5b8ebc2971595796ad9715cabd718a8237baa732790600090a25050565b600254610100900460ff16158080156110b25750600254600160ff909116105b806110cc5750303b1580156110cc575060025460ff166001145b61112f5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084016106f4565b6002805460ff191660011790558015611152576002805461ff0019166101001790555b61117c7f9fece4792c7ff5d25a4f6041da7db799a6228be21fcb6358ef0b12f1dd685cb6866112d4565b600580546001600160a01b038087166001600160a01b03199283161790925560068054868416908316179055600780549285169290911691909117905580156111ff576002805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b5050505050565b60006001600160e01b03198216637965db0b60e01b148061046357506301ffc9a760e01b6001600160e01b0319831614610463565b61124581336112de565b50565b6112528282611337565b600082815260016020526040902061068390826113bb565b61127482826113d0565b60008281526001602052604090206106839082611435565b8051602090910120600081905290565b60006001600c60008282546112b19190611c00565b9091555050600c54919050565b6000610d81838361144a565b6000610463825490565b6107078282611248565b6112e88282610d88565b610707576112f581611474565b611300836020611486565b604051602001611311929190611e3c565b60408051601f198184030181529082905262461bcd60e51b82526106f491600401611883565b6113418282610d88565b610707576000828152602081815260408083206001600160a01b03851684529091529020805460ff191660011790556113773390565b6001600160a01b0316816001600160a01b0316837f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a45050565b6000610d81836001600160a01b038416611622565b6113da8282610d88565b15610707576000828152602081815260408083206001600160a01b0385168085529252808320805460ff1916905551339285917ff6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b9190a45050565b6000610d81836001600160a01b038416611671565b600082600001828154811061146157611461611cb2565b9060005260206000200154905092915050565b60606104636001600160a01b03831660145b60606000611495836002611eb1565b6114a0906002611c00565b67ffffffffffffffff8111156114b8576114b8611e26565b6040519080825280601f01601f1916602001820160405280156114e2576020820181803683370190505b509050600360fc1b816000815181106114fd576114fd611cb2565b60200101906001600160f81b031916908160001a905350600f60fb1b8160018151811061152c5761152c611cb2565b60200101906001600160f81b031916908160001a9053506000611550846002611eb1565b61155b906001611c00565b90505b60018111156115d3576f181899199a1a9b1b9c1cb0b131b232b360811b85600f166010811061158f5761158f611cb2565b1a60f81b8282815181106115a5576115a5611cb2565b60200101906001600160f81b031916908160001a90535060049490941c936115cc81611ed0565b905061155e565b508315610d815760405162461bcd60e51b815260206004820181905260248201527f537472696e67733a20686578206c656e67746820696e73756666696369656e7460448201526064016106f4565b600081815260018301602052604081205461166957508154600181810184556000848152602080822090930184905584548482528286019093526040902091909155610463565b506000610463565b6000818152600183016020526040812054801561175a576000611695600183611ee7565b85549091506000906116a990600190611ee7565b905081811461170e5760008660000182815481106116c9576116c9611cb2565b90600052602060002001549050808760000184815481106116ec576116ec611cb2565b6000918252602080832090910192909255918252600188019052604090208390555b855486908061171f5761171f611efe565b600190038181906000526020600020016000905590558560010160008681526020019081526020016000206000905560019350505050610463565b6000915050610463565b82805461177090611b8c565b90600052602060002090601f01602090048101928261179257600085556117d8565b82601f106117ab5782800160ff198235161785556117d8565b828001600101855582156117d8579182015b828111156117d85782358255916020019190600101906117bd565b506117e49291506117e8565b5090565b5b808211156117e457600081556001016117e9565b60006020828403121561180f57600080fd5b81356001600160e01b031981168114610d8157600080fd5b60005b8381101561184257818101518382015260200161182a565b83811115611851576000848401525b50505050565b6000815180845261186f816020860160208601611827565b601f01601f19169290920160200192915050565b602081526000610d816020830184611857565b6000602082840312156118a857600080fd5b5035919050565b600080604083850312156118c257600080fd5b50508035926020909101359150565b80356001600160a01b03811681146118e857600080fd5b919050565b6000806040838503121561190057600080fd5b82359150611910602084016118d1565b90509250929050565b60008083601f84011261192b57600080fd5b50813567ffffffffffffffff81111561194357600080fd5b60208301915083602082850101111561195b57600080fd5b9250929050565b60008060006040848603121561197757600080fd5b83359250602084013567ffffffffffffffff81111561199557600080fd5b6119a186828701611919565b9497909650939450505050565b600080602083850312156119c157600080fd5b823567ffffffffffffffff8111156119d857600080fd5b6119e485828601611919565b90969095509350505050565b600080600060408486031215611a0557600080fd5b833567ffffffffffffffff80821115611a1d57600080fd5b818601915086601f830112611a3157600080fd5b813581811115611a4057600080fd5b8760208260051b8501011115611a5557600080fd5b6020928301955093505084013560ff81168114611a7157600080fd5b809150509250925092565b600080600080600060808688031215611a9457600080fd5b853567ffffffffffffffff811115611aab57600080fd5b611ab788828901611919565b9099909850602088013597604081013597506060013595509350505050565b6000602080830181845280855180835260408601915060408160051b870101925083870160005b82811015611b2b57603f19888603018452611b19858351611857565b94509285019290850190600101611afd565b5092979650505050505050565b60008060008060808587031215611b4e57600080fd5b611b57856118d1565b9350611b65602086016118d1565b9250611b73604086016118d1565b9150611b81606086016118d1565b905092959194509250565b600181811c90821680611ba057607f821691505b60208210811415611bc157634e487b7160e01b600052602260045260246000fd5b50919050565b634e487b7160e01b600052601160045260246000fd5b600060ff821660ff841680821015611bf757611bf7611bc7565b90039392505050565b60008219821115611c1357611c13611bc7565b500190565b600060ff821660ff811415611c2f57611c2f611bc7565b60010192915050565b600060ff821660ff84168060ff03821115611c5557611c55611bc7565b019392505050565b8183823760009101908152919050565b81835281816020850137506000828201602090810191909152601f909101601f19169091010190565b602081526000611caa602083018486611c6d565b949350505050565b634e487b7160e01b600052603260045260246000fd5b6000808335601e19843603018112611cdf57600080fd5b83018035915067ffffffffffffffff821115611cfa57600080fd5b60200191503681900382131561195b57600080fd5b60008451611d21818460208901611827565b8201838582376000930192835250909392505050565b6000600019821415611d4b57611d4b611bc7565b5060010190565b600080835481600182811c915080831680611d6e57607f831692505b6020808410821415611d8e57634e487b7160e01b86526022600452602486fd5b818015611da25760018114611db357611de0565b60ff19861689528489019650611de0565b60008a81526020902060005b86811015611dd85781548b820152908501908301611dbf565b505084890196505b509498975050505050505050565b86815260a060208201526000611e0860a083018789611c6d565b60408301959095525060608101929092526080909101529392505050565b634e487b7160e01b600052604160045260246000fd5b7f416363657373436f6e74726f6c3a206163636f756e7420000000000000000000815260008351611e74816017850160208801611827565b7001034b99036b4b9b9b4b733903937b6329607d1b6017918401918201528351611ea5816028840160208801611827565b01602801949350505050565b6000816000190483118215151615611ecb57611ecb611bc7565b500290565b600081611edf57611edf611bc7565b506000190190565b600082821015611ef957611ef9611bc7565b500390565b634e487b7160e01b600052603160045260246000fdfea264697066735822122025987b41034940ec556af61d303ddb9b0e41b1bdb4be981bce70d6dcae42aeca64736f6c634300080a0033",
+	Bin: "0x608060405234801561001057600080fd5b506000805460ff19169055612f558061002a6000396000f3fe6080604052600436106101b75760003560e01c806389060b34116100ec578063c666a4d91161008a578063d5f488d911610064578063d5f488d9146104cf578063e661d90d146104e4578063ee34ad0014610504578063fa9148821461052457600080fd5b8063c666a4d91461046f578063ca15c8731461048f578063d547741f146104af57600080fd5b80639523a0a8116100c65780639523a0a8146103f757806395a99d6b14610417578063a217fddf1461042d578063b567d4ba1461044257600080fd5b806389060b341461038c5780639010d07c1461039f57806391d14854146103d757600080fd5b80632f2ff15d116101595780635c975abb116101335780635c975abb1461031f5780636962ef6a146103375780637612e8a2146103575780638456cb591461037757600080fd5b80632f2ff15d146102bf57806336568abe146102df578063406c67b5146102ff57600080fd5b80630d45d2f3116101955780630d45d2f31461022c5780631459457a1461024e578063248a9ca31461026e578063273d5a5e1461029f57600080fd5b806301ffc9a7146101bc578063040aa2e9146101f1578063046f7da214610215575b600080fd5b3480156101c857600080fd5b506101dc6101d736600461278b565b610544565b60405190151581526020015b60405180910390f35b3480156101fd57600080fd5b5061020760045481565b6040519081526020016101e8565b34801561022157600080fd5b5061022a61056f565b005b34801561023857600080fd5b506102416105a4565b6040516101e89190612811565b34801561025a57600080fd5b5061022a610269366004612840565b610632565b34801561027a57600080fd5b506102076102893660046128a5565b6000908152600160208190526040909120015490565b3480156102ab57600080fd5b5061022a6102ba3660046128be565b6107c4565b3480156102cb57600080fd5b5061022a6102da3660046128e0565b610c4e565b3480156102eb57600080fd5b5061022a6102fa3660046128e0565b610c79565b34801561030b57600080fd5b5061022a61031a366004612955565b610cf7565b34801561032b57600080fd5b5060005460ff166101dc565b34801561034357600080fd5b506102076103523660046129a1565b6112de565b34801561036357600080fd5b5061022a6103723660046129f2565b611309565b34801561038357600080fd5b5061022a611782565b61022a61039a366004612a78565b6117b4565b3480156103ab57600080fd5b506103bf6103ba3660046128be565b6118d7565b6040516001600160a01b0390911681526020016101e8565b3480156103e357600080fd5b506101dc6103f23660046128e0565b6118f6565b34801561040357600080fd5b506008546103bf906001600160a01b031681565b34801561042357600080fd5b5061020760055481565b34801561043957600080fd5b50610207600081565b34801561044e57600080fd5b5061046261045d3660046128a5565b611921565b6040516101e89190612ad2565b34801561047b57600080fd5b506009546103bf906001600160a01b031681565b34801561049b57600080fd5b506102076104aa3660046128a5565b611cda565b3480156104bb57600080fd5b5061022a6104ca3660046128e0565b611cf1565b3480156104db57600080fd5b5061022a611d17565b3480156104f057600080fd5b5061022a6104ff3660046128a5565b611ef2565b34801561051057600080fd5b506007546103bf906001600160a01b031681565b34801561053057600080fd5b50600a546103bf906001600160a01b031681565b60006001600160e01b03198216635a05180f60e01b1480610569575061056982612070565b92915050565b7fd76e3374742c17bd14ffaf46cd349ec292baf7d8425512fa8fe132557a4c967b610599816120a5565b6105a16120af565b50565b600680546105b190612b34565b80601f01602080910402602001604051908101604052809291908181526020018280546105dd90612b34565b801561062a5780601f106105ff5761010080835404028352916020019161062a565b820191906000526020600020905b81548152906001019060200180831161060d57829003601f168201915b505050505081565b600354610100900460ff16158080156106525750600354600160ff909116105b8061066c5750303b15801561066c575060035460ff166001145b6106d45760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084015b60405180910390fd5b6003805460ff1916600117905580156106f7576003805461ff0019166101001790555b61070f600080516020612f0083398151915287612101565b6107397fd76e3374742c17bd14ffaf46cd349ec292baf7d8425512fa8fe132557a4c967b86612101565b600880546001600160a01b038087166001600160a01b03199283161790925560098054868416908316179055600a80549285169290911691909117905580156107bc576003805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b505050505050565b6000828152600b602052604090206001015482906001600160a01b031633146108005760405163644496af60e11b815260040160405180910390fd5b60405163293911c360e01b81526004810184905260009073__$8bdb76e071e054ed67589cbbec8cebebc3$__9063293911c390602401602060405180830381865af4158015610853573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108779190612b6f565b6040516324b15ec360e21b81526004810186905290915060009073__$8bdb76e071e054ed67589cbbec8cebebc3$__906392c57b0c90602401602060405180830381865af41580156108cd573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108f19190612b88565b6040516342acf11960e01b81526004810184905290915060009073__$8bdb76e071e054ed67589cbbec8cebebc3$__906342acf11990602401602060405180830381865af4158015610947573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061096b9190612b88565b6000848152600e602090815260408083208984529091528082205490516311ded6f960e31b81526004810182905292935091819073__$dbfce4025c0e818ed6859550440ec7fe16$__90638ef6b7c8906024016040805180830381865af41580156109da573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109fe9190612ba5565b915091508360ff168160ff161115610a2957604051631c0d61b560e11b815260040160405180910390fd5b6040516304d8accd60e11b815260ff8616600482015273__$dbfce4025c0e818ed6859550440ec7fe16$__906309b1599a90602401602060405180830381865af4158015610a7b573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610a9f9190612b6f565b506040516304d8accd60e11b815260ff8616600482015260009073__$dbfce4025c0e818ed6859550440ec7fe16$__906309b1599a90602401602060405180830381865af4158015610af5573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610b199190612b6f565b905082811615610b3c57604051635d3e08c360e01b815260040160405180910390fd5b610b468184612beb565b925081610b5281612c03565b9250610b619050856001612c23565b60ff168260ff161415610ba857887e4a164c5a5884d2634c5ecf652835a6bd3fa42d0a95f937a72818e3ff90b70984604051610b9f91815260200190565b60405180910390a25b604051639b5861a360e01b81526004810184905260ff8316602482015273__$dbfce4025c0e818ed6859550440ec7fe16$__90639b5861a390604401602060405180830381865af4158015610c01573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c259190612b6f565b6000978852600e60209081526040808a209b8a529a905298909620979097555050505050505050565b60008281526001602081905260409091200154610c6a816120a5565b610c748383612107565b505050565b6001600160a01b0381163314610ce95760405162461bcd60e51b815260206004820152602f60248201527f416363657373436f6e74726f6c3a2063616e206f6e6c792072656e6f756e636560448201526e103937b632b9903337b91039b2b63360891b60648201526084016106cb565b610cf38282612129565b5050565b6000838152600b602052604090206001015483906001600160a01b03163314610d335760405163644496af60e11b815260040160405180910390fd5b600554604051630bb17fc760e11b8152600481019190915260019073__$8580d8497b1e143320e28ed226b5cc2df9$__90631762ff8e90602401602060405180830381865af4158015610d8a573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610dae9190612b88565b60ff1614610dcf57604051631ddf7a4d60e01b815260040160405180910390fd5b60405163293911c360e01b81526004810185905260009073__$8bdb76e071e054ed67589cbbec8cebebc3$__9063293911c390602401602060405180830381865af4158015610e22573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610e469190612b6f565b9050600073__$8580d8497b1e143320e28ed226b5cc2df9$__63293911c36005546040518263ffffffff1660e01b8152600401610e8591815260200190565b602060405180830381865af4158015610ea2573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ec69190612b6f565b9050808214610ee85760405163057fcc0d60e31b815260040160405180910390fd5b6040516324b15ec360e21b81526004810187905260009073__$8bdb76e071e054ed67589cbbec8cebebc3$__906392c57b0c90602401602060405180830381865af4158015610f3b573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610f5f9190612b88565b6040516367ca739160e01b81526004810189905290915060009073__$8bdb76e071e054ed67589cbbec8cebebc3$__906367ca739190602401602060405180830381865af4158015610fb5573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610fd99190612b88565b90506000600d600060045481526020019081526020016000208888604051611002929190612c48565b908152604051908190036020018120546304d8accd60e11b825260ff85166004830152915060009073__$dbfce4025c0e818ed6859550440ec7fe16$__906309b1599a90602401602060405180830381865af4158015611066573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061108a9190612b6f565b9050818116156110ad576040516356ea295d60e11b815260040160405180910390fd5b6040516311ded6f960e31b815260048101839052600090819073__$dbfce4025c0e818ed6859550440ec7fe16$__90638ef6b7c8906024016040805180830381865af4158015611101573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906111259190612ba5565b90925090506111348383612beb565b91508061114081612c03565b9150508460ff168160ff1614156112215787600c8c8c604051611164929190612c48565b9081526040519081900360200190205561118060068c8c6126f2565b506111c08b8b8080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525061214b92505050565b600760006101000a8154816001600160a01b0302191690836001600160a01b03160217905550877f767b7aa89023ecd2db985822c15a32856d9106f50b5b2d5a65aa0f30d3cf457d8c8c604051611218929190612c81565b60405180910390a25b604051639b5861a360e01b81526004810183905260ff8216602482015273__$dbfce4025c0e818ed6859550440ec7fe16$__90639b5861a390604401602060405180830381865af415801561127a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061129e9190612b6f565b6004546000908152600d60205260409081902090516112c0908e908e90612c48565b90815260405190819003602001902055505050505050505050505050565b6000600c83836040516112f2929190612c48565b908152602001604051809103902054905092915050565b600080516020612f00833981519152611321816120a5565b826002811080611331575060f881115b1561134f57604051632cbdc23160e01b815260040160405180910390fd5b60018360ff1610806113645750808360ff1610155b156113825760405163aabd5a0960e01b815260040160405180910390fd5b606060005b828110156114305760408787838181106113a3576113a3612c9d565b90506020028101906113b59190612cb3565b9050146113d55760405163145a1fdd60e31b815260040160405180910390fd5b818787838181106113e8576113e8612c9d565b90506020028101906113fa9190612cb3565b60405160200161140c93929190612cfa565b6040516020818303038152906040529150808061142890612d22565b915050611387565b5080516020820120604051630e52a72960e01b815260048101919091526024810183905260ff8516604482015260009073__$8bdb76e071e054ed67589cbbec8cebebc3$__90630e52a72990606401602060405180830381865af415801561149c573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906114c09190612b6f565b604051633978d80760e21b8152600481018290526001602482015290915060009073__$8bdb76e071e054ed67589cbbec8cebebc3$__9063e5e3601c90604401602060405180830381865af415801561151d573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906115419190612b6f565b6000818152600b60205260409020600101549091506001600160a01b0316801561157e5760405163747c28d160e11b815260040160405180910390fd5b60005b888110156117765773__$8bdb76e071e054ed67589cbbec8cebebc3$__63e5e3601c856115af846001612beb565b6040516001600160e01b031960e085901b16815260048101929092526024820152604401602060405180830381865af41580156115f0573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116149190612b6f565b925089898281811061162857611628612c9d565b905060200281019061163a9190612cb3565b6000858152600b602052604090206116539290916126f2565b506116b58a8a8381811061166957611669612c9d565b905060200281019061167b9190612cb3565b8080601f01602080910402602001604051908101604052809392919081815260200183838082843760009201919091525061214b92505050565b6000848152600b6020526040902060010180546001600160a01b0319166001600160a01b03929092169190911790558989828181106116f6576116f6612c9d565b90506020028101906117089190612cb3565b604051611716929190612c48565b6040519081900390207f39f1368dd39c286ea788ed1ca8b79dddbdad29f340f0100a5f2a60bd4d2f269a8561174c846001612beb565b6040805192835260208301919091520160405180910390a28061176e81612d22565b915050611581565b50505050505050505050565b7fd76e3374742c17bd14ffaf46cd349ec292baf7d8425512fa8fe132557a4c967b6117ac816120a5565b6105a161215b565b6117bc612198565b6008546001600160a01b031633146117e75760405163709136d360e11b815260040160405180910390fd5b6007546001600160a01b031661181057604051636695821760e11b815260040160405180910390fd5b8234146118305760405163162908e360e11b815260040160405180910390fd5b6007546040516001600160a01b039091169084156108fc029085906000818181858888f1935050505015801561186a573d6000803e3d6000fd5b5060006118756121e0565b905060066040516118869190612d3d565b60405180910390207f18d59ead2751a952ffa140860eedfe61eefb762649f64d9a222b9c8e2b7bf5948288888888886040516118c796959493929190612dd9565b60405180910390a2505050505050565b60008281526002602052604081206118ef9083612202565b9392505050565b60009182526001602090815260408084206001600160a01b0393909316845291905290205460ff1690565b6040516367ca739160e01b81526004810182905260609060009073__$8bdb76e071e054ed67589cbbec8cebebc3$__906367ca739190602401602060405180830381865af4158015611977573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061199b9190612b88565b60ff169050806119be5760405163a5edf99360e01b815260040160405180910390fd5b60008167ffffffffffffffff8111156119d9576119d9612e11565b604051908082528060200260200182016040528015611a0c57816020015b60608152602001906001900390816119f75790505b50604051633978d80760e21b8152600481018690526001602482015290915060009073__$8bdb76e071e054ed67589cbbec8cebebc3$__9063e5e3601c90604401602060405180830381865af4158015611a6a573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611a8e9190612b6f565b6000818152600b6020526040812080549293509091611aac90612b34565b80601f0160208091040260200160405190810160405280929190818152602001828054611ad890612b34565b8015611b255780601f10611afa57610100808354040283529160200191611b25565b820191906000526020600020905b815481529060010190602001808311611b0857829003601f168201915b50505050509050805160001415611b4f5760405163a5edf99360e01b815260040160405180910390fd5b8083600081518110611b6357611b63612c9d565b602090810291909101015260015b84811015611ccf5773__$8bdb76e071e054ed67589cbbec8cebebc3$__63e5e3601c88611b9f846001612beb565b6040516001600160e01b031960e085901b16815260048101929092526024820152604401602060405180830381865af4158015611be0573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611c049190612b6f565b6000818152600b60205260409020805491945090611c2190612b34565b80601f0160208091040260200160405190810160405280929190818152602001828054611c4d90612b34565b8015611c9a5780601f10611c6f57610100808354040283529160200191611c9a565b820191906000526020600020905b815481529060010190602001808311611c7d57829003601f168201915b5050505050848281518110611cb157611cb1612c9d565b60200260200101819052508080611cc790612d22565b915050611b71565b509195945050505050565b60008181526002602052604081206105699061220e565b60008281526001602081905260409091200154611d0d816120a5565b610c748383612129565b600080516020612f00833981519152611d2f816120a5565b600554604051630bb17fc760e11b8152600481019190915260019073__$8580d8497b1e143320e28ed226b5cc2df9$__90631762ff8e90602401602060405180830381865af4158015611d86573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611daa9190612b88565b60ff1614611db55750565b60055460405163293911c360e01b815260009173__$8580d8497b1e143320e28ed226b5cc2df9$__9163293911c391611df49160040190815260200190565b602060405180830381865af4158015611e11573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611e359190612b6f565b6040516340a21abb60e01b8152600481018290526003602482015290915073__$8580d8497b1e143320e28ed226b5cc2df9$__906340a21abb90604401602060405180830381865af4158015611e8f573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611eb39190612b6f565b60055560045460405190815281907f18bd951622d7679aeca001a2b4eb8bdb6a8219133a53c3844ff60d242779fbce9060200160405180910390a25050565b600080516020612f00833981519152611f0a816120a5565b600554604051630bb17fc760e11b8152600481019190915260019073__$8580d8497b1e143320e28ed226b5cc2df9$__90631762ff8e90602401602060405180830381865af4158015611f61573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611f859190612b88565b60ff161415611fa757604051631646c6ed60e01b815260040160405180910390fd5b6040516340a21abb60e01b8152600481018390526001602482015273__$8580d8497b1e143320e28ed226b5cc2df9$__906340a21abb90604401602060405180830381865af4158015611ffe573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906120229190612b6f565b600555600061202f612218565b9050827f2c4e541fc5a09477bd9a8def9002118cfc6183ee63865ac6226813a045a4a7cd8260405161206391815260200190565b60405180910390a2505050565b60006001600160e01b03198216637965db0b60e01b148061056957506301ffc9a760e01b6001600160e01b0319831614610569565b6105a1813361223a565b6120b7612293565b6000805460ff191690557f5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa335b6040516001600160a01b03909116815260200160405180910390a1565b610cf382825b61211182826122dc565b6000828152600260205260409020610c749082612347565b612133828261235c565b6000828152600260205260409020610c7490826123c3565b8051602090910120600081905290565b612163612198565b6000805460ff191660011790557f62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a2586120e43390565b60005460ff16156121de5760405162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b60448201526064016106cb565b565b60006001600f60008282546121f59190612beb565b9091555050600f54919050565b60006118ef83836123d8565b6000610569825490565b600060016004600082825461222d9190612beb565b9091555050600454919050565b61224482826118f6565b610cf35761225181612402565b61225c836020612414565b60405160200161226d929190612e27565b60408051601f198184030181529082905262461bcd60e51b82526106cb91600401612811565b60005460ff166121de5760405162461bcd60e51b815260206004820152601460248201527314185d5cd8589b194e881b9bdd081c185d5cd95960621b60448201526064016106cb565b6122e682826118f6565b610cf35760008281526001602081815260408084206001600160a01b0386168086529252808420805460ff19169093179092559051339285917f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d9190a45050565b60006118ef836001600160a01b0384166125b0565b61236682826118f6565b15610cf35760008281526001602090815260408083206001600160a01b0385168085529252808320805460ff1916905551339285917ff6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b9190a45050565b60006118ef836001600160a01b0384166125ff565b60008260000182815481106123ef576123ef612c9d565b9060005260206000200154905092915050565b60606105696001600160a01b03831660145b60606000612423836002612e9c565b61242e906002612beb565b67ffffffffffffffff81111561244657612446612e11565b6040519080825280601f01601f191660200182016040528015612470576020820181803683370190505b509050600360fc1b8160008151811061248b5761248b612c9d565b60200101906001600160f81b031916908160001a905350600f60fb1b816001815181106124ba576124ba612c9d565b60200101906001600160f81b031916908160001a90535060006124de846002612e9c565b6124e9906001612beb565b90505b6001811115612561576f181899199a1a9b1b9c1cb0b131b232b360811b85600f166010811061251d5761251d612c9d565b1a60f81b82828151811061253357612533612c9d565b60200101906001600160f81b031916908160001a90535060049490941c9361255a81612ebb565b90506124ec565b5083156118ef5760405162461bcd60e51b815260206004820181905260248201527f537472696e67733a20686578206c656e67746820696e73756666696369656e7460448201526064016106cb565b60008181526001830160205260408120546125f757508154600181810184556000848152602080822090930184905584548482528286019093526040902091909155610569565b506000610569565b600081815260018301602052604081205480156126e8576000612623600183612ed2565b855490915060009061263790600190612ed2565b905081811461269c57600086600001828154811061265757612657612c9d565b906000526020600020015490508087600001848154811061267a5761267a612c9d565b6000918252602080832090910192909255918252600188019052604090208390555b85548690806126ad576126ad612ee9565b600190038181906000526020600020016000905590558560010160008681526020019081526020016000206000905560019350505050610569565b6000915050610569565b8280546126fe90612b34565b90600052602060002090601f0160209004810192826127205760008555612766565b82601f106127395782800160ff19823516178555612766565b82800160010185558215612766579182015b8281111561276657823582559160200191906001019061274b565b50612772929150612776565b5090565b5b808211156127725760008155600101612777565b60006020828403121561279d57600080fd5b81356001600160e01b0319811681146118ef57600080fd5b60005b838110156127d05781810151838201526020016127b8565b838111156127df576000848401525b50505050565b600081518084526127fd8160208601602086016127b5565b601f01601f19169290920160200192915050565b6020815260006118ef60208301846127e5565b80356001600160a01b038116811461283b57600080fd5b919050565b600080600080600060a0868803121561285857600080fd5b61286186612824565b945061286f60208701612824565b935061287d60408701612824565b925061288b60608701612824565b915061289960808701612824565b90509295509295909350565b6000602082840312156128b757600080fd5b5035919050565b600080604083850312156128d157600080fd5b50508035926020909101359150565b600080604083850312156128f357600080fd5b8235915061290360208401612824565b90509250929050565b60008083601f84011261291e57600080fd5b50813567ffffffffffffffff81111561293657600080fd5b60208301915083602082850101111561294e57600080fd5b9250929050565b60008060006040848603121561296a57600080fd5b83359250602084013567ffffffffffffffff81111561298857600080fd5b6129948682870161290c565b9497909650939450505050565b600080602083850312156129b457600080fd5b823567ffffffffffffffff8111156129cb57600080fd5b6129d78582860161290c565b90969095509350505050565b60ff811681146105a157600080fd5b600080600060408486031215612a0757600080fd5b833567ffffffffffffffff80821115612a1f57600080fd5b818601915086601f830112612a3357600080fd5b813581811115612a4257600080fd5b8760208260051b8501011115612a5757600080fd5b60209283019550935050840135612a6d816129e3565b809150509250925092565b600080600080600060808688031215612a9057600080fd5b853567ffffffffffffffff811115612aa757600080fd5b612ab38882890161290c565b9099909850602088013597604081013597506060013595509350505050565b6000602080830181845280855180835260408601915060408160051b870101925083870160005b82811015612b2757603f19888603018452612b158583516127e5565b94509285019290850190600101612af9565b5092979650505050505050565b600181811c90821680612b4857607f821691505b60208210811415612b6957634e487b7160e01b600052602260045260246000fd5b50919050565b600060208284031215612b8157600080fd5b5051919050565b600060208284031215612b9a57600080fd5b81516118ef816129e3565b60008060408385031215612bb857600080fd5b825191506020830151612bca816129e3565b809150509250929050565b634e487b7160e01b600052601160045260246000fd5b60008219821115612bfe57612bfe612bd5565b500190565b600060ff821660ff811415612c1a57612c1a612bd5565b60010192915050565b600060ff821660ff84168060ff03821115612c4057612c40612bd5565b019392505050565b8183823760009101908152919050565b81835281816020850137506000828201602090810191909152601f909101601f19169091010190565b602081526000612c95602083018486612c58565b949350505050565b634e487b7160e01b600052603260045260246000fd5b6000808335601e19843603018112612cca57600080fd5b83018035915067ffffffffffffffff821115612ce557600080fd5b60200191503681900382131561294e57600080fd5b60008451612d0c8184602089016127b5565b8201838582376000930192835250909392505050565b6000600019821415612d3657612d36612bd5565b5060010190565b600080835481600182811c915080831680612d5957607f831692505b6020808410821415612d7957634e487b7160e01b86526022600452602486fd5b818015612d8d5760018114612d9e57612dcb565b60ff19861689528489019650612dcb565b60008a81526020902060005b86811015612dc35781548b820152908501908301612daa565b505084890196505b509498975050505050505050565b86815260a060208201526000612df360a083018789612c58565b60408301959095525060608101929092526080909101529392505050565b634e487b7160e01b600052604160045260246000fd5b7f416363657373436f6e74726f6c3a206163636f756e7420000000000000000000815260008351612e5f8160178501602088016127b5565b7001034b99036b4b9b9b4b733903937b6329607d1b6017918401918201528351612e908160288401602088016127b5565b01602801949350505050565b6000816000190483118215151615612eb657612eb6612bd5565b500290565b600081612eca57612eca612bd5565b506000190190565b600082821015612ee457612ee4612bd5565b500390565b634e487b7160e01b600052603160045260246000fdfe9fece4792c7ff5d25a4f6041da7db799a6228be21fcb6358ef0b12f1dd685cb6a26469706673582212206d11835800912300fe31e598eb22c575989e046dfa725e3e2f32bc5d373ffe6b64736f6c634300080a0033",
 }
 
 // MpcManagerABI is the input ABI used to generate the binding from.
@@ -4874,6 +5444,15 @@ func DeployMpcManager(auth *bind.TransactOpts, backend bind.ContractBackend) (co
 	if parsed == nil {
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
+
+	keygenStatusHelpersAddr, _, _, _ := DeployKeygenStatusHelpers(auth, backend)
+	MpcManagerBin = strings.Replace(MpcManagerBin, "__$8580d8497b1e143320e28ed226b5cc2df9$__", keygenStatusHelpersAddr.String()[2:], -1)
+
+	participantIdHelpersAddr, _, _, _ := DeployParticipantIdHelpers(auth, backend)
+	MpcManagerBin = strings.Replace(MpcManagerBin, "__$8bdb76e071e054ed67589cbbec8cebebc3$__", participantIdHelpersAddr.String()[2:], -1)
+
+	confirmationHelpersAddr, _, _, _ := DeployConfirmationHelpers(auth, backend)
+	MpcManagerBin = strings.Replace(MpcManagerBin, "__$dbfce4025c0e818ed6859550440ec7fe16$__", confirmationHelpersAddr.String()[2:], -1)
 
 	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(MpcManagerBin), backend)
 	if err != nil {
@@ -5334,6 +5913,99 @@ func (_MpcManager *MpcManagerCallerSession) LastGenPubKey() ([]byte, error) {
 	return _MpcManager.Contract.LastGenPubKey(&_MpcManager.CallOpts)
 }
 
+// LastKeygenRequest is a free data retrieval call binding the contract method 0x95a99d6b.
+//
+// Solidity: function lastKeygenRequest() view returns(bytes32)
+func (_MpcManager *MpcManagerCaller) LastKeygenRequest(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _MpcManager.contract.Call(opts, &out, "lastKeygenRequest")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// LastKeygenRequest is a free data retrieval call binding the contract method 0x95a99d6b.
+//
+// Solidity: function lastKeygenRequest() view returns(bytes32)
+func (_MpcManager *MpcManagerSession) LastKeygenRequest() ([32]byte, error) {
+	return _MpcManager.Contract.LastKeygenRequest(&_MpcManager.CallOpts)
+}
+
+// LastKeygenRequest is a free data retrieval call binding the contract method 0x95a99d6b.
+//
+// Solidity: function lastKeygenRequest() view returns(bytes32)
+func (_MpcManager *MpcManagerCallerSession) LastKeygenRequest() ([32]byte, error) {
+	return _MpcManager.Contract.LastKeygenRequest(&_MpcManager.CallOpts)
+}
+
+// LastKeygenRequestNumber is a free data retrieval call binding the contract method 0x040aa2e9.
+//
+// Solidity: function lastKeygenRequestNumber() view returns(uint256)
+func (_MpcManager *MpcManagerCaller) LastKeygenRequestNumber(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _MpcManager.contract.Call(opts, &out, "lastKeygenRequestNumber")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// LastKeygenRequestNumber is a free data retrieval call binding the contract method 0x040aa2e9.
+//
+// Solidity: function lastKeygenRequestNumber() view returns(uint256)
+func (_MpcManager *MpcManagerSession) LastKeygenRequestNumber() (*big.Int, error) {
+	return _MpcManager.Contract.LastKeygenRequestNumber(&_MpcManager.CallOpts)
+}
+
+// LastKeygenRequestNumber is a free data retrieval call binding the contract method 0x040aa2e9.
+//
+// Solidity: function lastKeygenRequestNumber() view returns(uint256)
+func (_MpcManager *MpcManagerCallerSession) LastKeygenRequestNumber() (*big.Int, error) {
+	return _MpcManager.Contract.LastKeygenRequestNumber(&_MpcManager.CallOpts)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_MpcManager *MpcManagerCaller) Paused(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _MpcManager.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_MpcManager *MpcManagerSession) Paused() (bool, error) {
+	return _MpcManager.Contract.Paused(&_MpcManager.CallOpts)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_MpcManager *MpcManagerCallerSession) Paused() (bool, error) {
+	return _MpcManager.Contract.Paused(&_MpcManager.CallOpts)
+}
+
 // PrincipalTreasuryAddress is a free data retrieval call binding the contract method 0xc666a4d9.
 //
 // Solidity: function principalTreasuryAddress() view returns(address)
@@ -5427,6 +6099,27 @@ func (_MpcManager *MpcManagerCallerSession) SupportsInterface(interfaceId [4]byt
 	return _MpcManager.Contract.SupportsInterface(&_MpcManager.CallOpts, interfaceId)
 }
 
+// CancelKeygen is a paid mutator transaction binding the contract method 0xd5f488d9.
+//
+// Solidity: function cancelKeygen() returns()
+func (_MpcManager *MpcManagerTransactor) CancelKeygen(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _MpcManager.contract.Transact(opts, "cancelKeygen")
+}
+
+// CancelKeygen is a paid mutator transaction binding the contract method 0xd5f488d9.
+//
+// Solidity: function cancelKeygen() returns()
+func (_MpcManager *MpcManagerSession) CancelKeygen() (*types.Transaction, error) {
+	return _MpcManager.Contract.CancelKeygen(&_MpcManager.TransactOpts)
+}
+
+// CancelKeygen is a paid mutator transaction binding the contract method 0xd5f488d9.
+//
+// Solidity: function cancelKeygen() returns()
+func (_MpcManager *MpcManagerTransactorSession) CancelKeygen() (*types.Transaction, error) {
+	return _MpcManager.Contract.CancelKeygen(&_MpcManager.TransactOpts)
+}
+
 // CreateGroup is a paid mutator transaction binding the contract method 0x7612e8a2.
 //
 // Solidity: function createGroup(bytes[] publicKeys, uint8 threshold) returns()
@@ -5469,25 +6162,25 @@ func (_MpcManager *MpcManagerTransactorSession) GrantRole(role [32]byte, account
 	return _MpcManager.Contract.GrantRole(&_MpcManager.TransactOpts, role, account)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf8c8765e.
+// Initialize is a paid mutator transaction binding the contract method 0x1459457a.
 //
-// Solidity: function initialize(address _roleMpcAdmin, address _avaLidoAddress, address _principalTreasuryAddress, address _rewardTreasuryAddress) returns()
-func (_MpcManager *MpcManagerTransactor) Initialize(opts *bind.TransactOpts, _roleMpcAdmin common.Address, _avaLidoAddress common.Address, _principalTreasuryAddress common.Address, _rewardTreasuryAddress common.Address) (*types.Transaction, error) {
-	return _MpcManager.contract.Transact(opts, "initialize", _roleMpcAdmin, _avaLidoAddress, _principalTreasuryAddress, _rewardTreasuryAddress)
+// Solidity: function initialize(address _roleMpcAdmin, address _rolePauseManager, address _avaLidoAddress, address _principalTreasuryAddress, address _rewardTreasuryAddress) returns()
+func (_MpcManager *MpcManagerTransactor) Initialize(opts *bind.TransactOpts, _roleMpcAdmin common.Address, _rolePauseManager common.Address, _avaLidoAddress common.Address, _principalTreasuryAddress common.Address, _rewardTreasuryAddress common.Address) (*types.Transaction, error) {
+	return _MpcManager.contract.Transact(opts, "initialize", _roleMpcAdmin, _rolePauseManager, _avaLidoAddress, _principalTreasuryAddress, _rewardTreasuryAddress)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf8c8765e.
+// Initialize is a paid mutator transaction binding the contract method 0x1459457a.
 //
-// Solidity: function initialize(address _roleMpcAdmin, address _avaLidoAddress, address _principalTreasuryAddress, address _rewardTreasuryAddress) returns()
-func (_MpcManager *MpcManagerSession) Initialize(_roleMpcAdmin common.Address, _avaLidoAddress common.Address, _principalTreasuryAddress common.Address, _rewardTreasuryAddress common.Address) (*types.Transaction, error) {
-	return _MpcManager.Contract.Initialize(&_MpcManager.TransactOpts, _roleMpcAdmin, _avaLidoAddress, _principalTreasuryAddress, _rewardTreasuryAddress)
+// Solidity: function initialize(address _roleMpcAdmin, address _rolePauseManager, address _avaLidoAddress, address _principalTreasuryAddress, address _rewardTreasuryAddress) returns()
+func (_MpcManager *MpcManagerSession) Initialize(_roleMpcAdmin common.Address, _rolePauseManager common.Address, _avaLidoAddress common.Address, _principalTreasuryAddress common.Address, _rewardTreasuryAddress common.Address) (*types.Transaction, error) {
+	return _MpcManager.Contract.Initialize(&_MpcManager.TransactOpts, _roleMpcAdmin, _rolePauseManager, _avaLidoAddress, _principalTreasuryAddress, _rewardTreasuryAddress)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf8c8765e.
+// Initialize is a paid mutator transaction binding the contract method 0x1459457a.
 //
-// Solidity: function initialize(address _roleMpcAdmin, address _avaLidoAddress, address _principalTreasuryAddress, address _rewardTreasuryAddress) returns()
-func (_MpcManager *MpcManagerTransactorSession) Initialize(_roleMpcAdmin common.Address, _avaLidoAddress common.Address, _principalTreasuryAddress common.Address, _rewardTreasuryAddress common.Address) (*types.Transaction, error) {
-	return _MpcManager.Contract.Initialize(&_MpcManager.TransactOpts, _roleMpcAdmin, _avaLidoAddress, _principalTreasuryAddress, _rewardTreasuryAddress)
+// Solidity: function initialize(address _roleMpcAdmin, address _rolePauseManager, address _avaLidoAddress, address _principalTreasuryAddress, address _rewardTreasuryAddress) returns()
+func (_MpcManager *MpcManagerTransactorSession) Initialize(_roleMpcAdmin common.Address, _rolePauseManager common.Address, _avaLidoAddress common.Address, _principalTreasuryAddress common.Address, _rewardTreasuryAddress common.Address) (*types.Transaction, error) {
+	return _MpcManager.Contract.Initialize(&_MpcManager.TransactOpts, _roleMpcAdmin, _rolePauseManager, _avaLidoAddress, _principalTreasuryAddress, _rewardTreasuryAddress)
 }
 
 // JoinRequest is a paid mutator transaction binding the contract method 0x273d5a5e.
@@ -5509,6 +6202,27 @@ func (_MpcManager *MpcManagerSession) JoinRequest(participantId [32]byte, reques
 // Solidity: function joinRequest(bytes32 participantId, bytes32 requestHash) returns()
 func (_MpcManager *MpcManagerTransactorSession) JoinRequest(participantId [32]byte, requestHash [32]byte) (*types.Transaction, error) {
 	return _MpcManager.Contract.JoinRequest(&_MpcManager.TransactOpts, participantId, requestHash)
+}
+
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
+//
+// Solidity: function pause() returns()
+func (_MpcManager *MpcManagerTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _MpcManager.contract.Transact(opts, "pause")
+}
+
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
+//
+// Solidity: function pause() returns()
+func (_MpcManager *MpcManagerSession) Pause() (*types.Transaction, error) {
+	return _MpcManager.Contract.Pause(&_MpcManager.TransactOpts)
+}
+
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
+//
+// Solidity: function pause() returns()
+func (_MpcManager *MpcManagerTransactorSession) Pause() (*types.Transaction, error) {
+	return _MpcManager.Contract.Pause(&_MpcManager.TransactOpts)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
@@ -5593,6 +6307,27 @@ func (_MpcManager *MpcManagerSession) RequestStake(nodeID string, amount *big.In
 // Solidity: function requestStake(string nodeID, uint256 amount, uint256 startTime, uint256 endTime) payable returns()
 func (_MpcManager *MpcManagerTransactorSession) RequestStake(nodeID string, amount *big.Int, startTime *big.Int, endTime *big.Int) (*types.Transaction, error) {
 	return _MpcManager.Contract.RequestStake(&_MpcManager.TransactOpts, nodeID, amount, startTime, endTime)
+}
+
+// Resume is a paid mutator transaction binding the contract method 0x046f7da2.
+//
+// Solidity: function resume() returns()
+func (_MpcManager *MpcManagerTransactor) Resume(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _MpcManager.contract.Transact(opts, "resume")
+}
+
+// Resume is a paid mutator transaction binding the contract method 0x046f7da2.
+//
+// Solidity: function resume() returns()
+func (_MpcManager *MpcManagerSession) Resume() (*types.Transaction, error) {
+	return _MpcManager.Contract.Resume(&_MpcManager.TransactOpts)
+}
+
+// Resume is a paid mutator transaction binding the contract method 0x046f7da2.
+//
+// Solidity: function resume() returns()
+func (_MpcManager *MpcManagerTransactorSession) Resume() (*types.Transaction, error) {
+	return _MpcManager.Contract.Resume(&_MpcManager.TransactOpts)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
@@ -5964,13 +6699,14 @@ func (it *MpcManagerKeygenRequestAddedIterator) Close() error {
 
 // MpcManagerKeygenRequestAdded represents a KeygenRequestAdded event raised by the MpcManager contract.
 type MpcManagerKeygenRequestAdded struct {
-	GroupId [32]byte
-	Raw     types.Log // Blockchain specific contextual infos
+	GroupId       [32]byte
+	RequestNumber *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
 }
 
-// FilterKeygenRequestAdded is a free log retrieval operation binding the contract event 0x5e169d3e7bcbd6275f0072b5b8ebc2971595796ad9715cabd718a8237baa7327.
+// FilterKeygenRequestAdded is a free log retrieval operation binding the contract event 0x2c4e541fc5a09477bd9a8def9002118cfc6183ee63865ac6226813a045a4a7cd.
 //
-// Solidity: event KeygenRequestAdded(bytes32 indexed groupId)
+// Solidity: event KeygenRequestAdded(bytes32 indexed groupId, uint256 requestNumber)
 func (_MpcManager *MpcManagerFilterer) FilterKeygenRequestAdded(opts *bind.FilterOpts, groupId [][32]byte) (*MpcManagerKeygenRequestAddedIterator, error) {
 
 	var groupIdRule []interface{}
@@ -5985,9 +6721,9 @@ func (_MpcManager *MpcManagerFilterer) FilterKeygenRequestAdded(opts *bind.Filte
 	return &MpcManagerKeygenRequestAddedIterator{contract: _MpcManager.contract, event: "KeygenRequestAdded", logs: logs, sub: sub}, nil
 }
 
-// WatchKeygenRequestAdded is a free log subscription operation binding the contract event 0x5e169d3e7bcbd6275f0072b5b8ebc2971595796ad9715cabd718a8237baa7327.
+// WatchKeygenRequestAdded is a free log subscription operation binding the contract event 0x2c4e541fc5a09477bd9a8def9002118cfc6183ee63865ac6226813a045a4a7cd.
 //
-// Solidity: event KeygenRequestAdded(bytes32 indexed groupId)
+// Solidity: event KeygenRequestAdded(bytes32 indexed groupId, uint256 requestNumber)
 func (_MpcManager *MpcManagerFilterer) WatchKeygenRequestAdded(opts *bind.WatchOpts, sink chan<- *MpcManagerKeygenRequestAdded, groupId [][32]byte) (event.Subscription, error) {
 
 	var groupIdRule []interface{}
@@ -6027,12 +6763,157 @@ func (_MpcManager *MpcManagerFilterer) WatchKeygenRequestAdded(opts *bind.WatchO
 	}), nil
 }
 
-// ParseKeygenRequestAdded is a log parse operation binding the contract event 0x5e169d3e7bcbd6275f0072b5b8ebc2971595796ad9715cabd718a8237baa7327.
+// ParseKeygenRequestAdded is a log parse operation binding the contract event 0x2c4e541fc5a09477bd9a8def9002118cfc6183ee63865ac6226813a045a4a7cd.
 //
-// Solidity: event KeygenRequestAdded(bytes32 indexed groupId)
+// Solidity: event KeygenRequestAdded(bytes32 indexed groupId, uint256 requestNumber)
 func (_MpcManager *MpcManagerFilterer) ParseKeygenRequestAdded(log types.Log) (*MpcManagerKeygenRequestAdded, error) {
 	event := new(MpcManagerKeygenRequestAdded)
 	if err := _MpcManager.contract.UnpackLog(event, "KeygenRequestAdded", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MpcManagerKeygenRequestCanceledIterator is returned from FilterKeygenRequestCanceled and is used to iterate over the raw logs and unpacked data for KeygenRequestCanceled events raised by the MpcManager contract.
+type MpcManagerKeygenRequestCanceledIterator struct {
+	Event *MpcManagerKeygenRequestCanceled // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MpcManagerKeygenRequestCanceledIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MpcManagerKeygenRequestCanceled)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MpcManagerKeygenRequestCanceled)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MpcManagerKeygenRequestCanceledIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MpcManagerKeygenRequestCanceledIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MpcManagerKeygenRequestCanceled represents a KeygenRequestCanceled event raised by the MpcManager contract.
+type MpcManagerKeygenRequestCanceled struct {
+	GroupId       [32]byte
+	RequestNumber *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterKeygenRequestCanceled is a free log retrieval operation binding the contract event 0x18bd951622d7679aeca001a2b4eb8bdb6a8219133a53c3844ff60d242779fbce.
+//
+// Solidity: event KeygenRequestCanceled(bytes32 indexed groupId, uint256 requestNumber)
+func (_MpcManager *MpcManagerFilterer) FilterKeygenRequestCanceled(opts *bind.FilterOpts, groupId [][32]byte) (*MpcManagerKeygenRequestCanceledIterator, error) {
+
+	var groupIdRule []interface{}
+	for _, groupIdItem := range groupId {
+		groupIdRule = append(groupIdRule, groupIdItem)
+	}
+
+	logs, sub, err := _MpcManager.contract.FilterLogs(opts, "KeygenRequestCanceled", groupIdRule)
+	if err != nil {
+		return nil, err
+	}
+	return &MpcManagerKeygenRequestCanceledIterator{contract: _MpcManager.contract, event: "KeygenRequestCanceled", logs: logs, sub: sub}, nil
+}
+
+// WatchKeygenRequestCanceled is a free log subscription operation binding the contract event 0x18bd951622d7679aeca001a2b4eb8bdb6a8219133a53c3844ff60d242779fbce.
+//
+// Solidity: event KeygenRequestCanceled(bytes32 indexed groupId, uint256 requestNumber)
+func (_MpcManager *MpcManagerFilterer) WatchKeygenRequestCanceled(opts *bind.WatchOpts, sink chan<- *MpcManagerKeygenRequestCanceled, groupId [][32]byte) (event.Subscription, error) {
+
+	var groupIdRule []interface{}
+	for _, groupIdItem := range groupId {
+		groupIdRule = append(groupIdRule, groupIdItem)
+	}
+
+	logs, sub, err := _MpcManager.contract.WatchLogs(opts, "KeygenRequestCanceled", groupIdRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MpcManagerKeygenRequestCanceled)
+				if err := _MpcManager.contract.UnpackLog(event, "KeygenRequestCanceled", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseKeygenRequestCanceled is a log parse operation binding the contract event 0x18bd951622d7679aeca001a2b4eb8bdb6a8219133a53c3844ff60d242779fbce.
+//
+// Solidity: event KeygenRequestCanceled(bytes32 indexed groupId, uint256 requestNumber)
+func (_MpcManager *MpcManagerFilterer) ParseKeygenRequestCanceled(log types.Log) (*MpcManagerKeygenRequestCanceled, error) {
+	event := new(MpcManagerKeygenRequestCanceled)
+	if err := _MpcManager.contract.UnpackLog(event, "KeygenRequestCanceled", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -6185,6 +7066,140 @@ func (_MpcManager *MpcManagerFilterer) ParseParticipantAdded(log types.Log) (*Mp
 	return event, nil
 }
 
+// MpcManagerPausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the MpcManager contract.
+type MpcManagerPausedIterator struct {
+	Event *MpcManagerPaused // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MpcManagerPausedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MpcManagerPaused)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MpcManagerPaused)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MpcManagerPausedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MpcManagerPausedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MpcManagerPaused represents a Paused event raised by the MpcManager contract.
+type MpcManagerPaused struct {
+	Account common.Address
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterPaused is a free log retrieval operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_MpcManager *MpcManagerFilterer) FilterPaused(opts *bind.FilterOpts) (*MpcManagerPausedIterator, error) {
+
+	logs, sub, err := _MpcManager.contract.FilterLogs(opts, "Paused")
+	if err != nil {
+		return nil, err
+	}
+	return &MpcManagerPausedIterator{contract: _MpcManager.contract, event: "Paused", logs: logs, sub: sub}, nil
+}
+
+// WatchPaused is a free log subscription operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_MpcManager *MpcManagerFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *MpcManagerPaused) (event.Subscription, error) {
+
+	logs, sub, err := _MpcManager.contract.WatchLogs(opts, "Paused")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MpcManagerPaused)
+				if err := _MpcManager.contract.UnpackLog(event, "Paused", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParsePaused is a log parse operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_MpcManager *MpcManagerFilterer) ParsePaused(log types.Log) (*MpcManagerPaused, error) {
+	event := new(MpcManagerPaused)
+	if err := _MpcManager.contract.UnpackLog(event, "Paused", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // MpcManagerRequestStartedIterator is returned from FilterRequestStarted and is used to iterate over the raw logs and unpacked data for RequestStarted events raised by the MpcManager contract.
 type MpcManagerRequestStartedIterator struct {
 	Event *MpcManagerRequestStarted // Event containing the contract specifics and raw log
@@ -6261,10 +7276,15 @@ type MpcManagerRequestStarted struct {
 
 // FilterRequestStarted is a free log retrieval operation binding the contract event 0x004a164c5a5884d2634c5ecf652835a6bd3fa42d0a95f937a72818e3ff90b709.
 //
-// Solidity: event RequestStarted(bytes32 requestHash, uint256 participantIndices)
-func (_MpcManager *MpcManagerFilterer) FilterRequestStarted(opts *bind.FilterOpts) (*MpcManagerRequestStartedIterator, error) {
+// Solidity: event RequestStarted(bytes32 indexed requestHash, uint256 participantIndices)
+func (_MpcManager *MpcManagerFilterer) FilterRequestStarted(opts *bind.FilterOpts, requestHash [][32]byte) (*MpcManagerRequestStartedIterator, error) {
 
-	logs, sub, err := _MpcManager.contract.FilterLogs(opts, "RequestStarted")
+	var requestHashRule []interface{}
+	for _, requestHashItem := range requestHash {
+		requestHashRule = append(requestHashRule, requestHashItem)
+	}
+
+	logs, sub, err := _MpcManager.contract.FilterLogs(opts, "RequestStarted", requestHashRule)
 	if err != nil {
 		return nil, err
 	}
@@ -6273,10 +7293,15 @@ func (_MpcManager *MpcManagerFilterer) FilterRequestStarted(opts *bind.FilterOpt
 
 // WatchRequestStarted is a free log subscription operation binding the contract event 0x004a164c5a5884d2634c5ecf652835a6bd3fa42d0a95f937a72818e3ff90b709.
 //
-// Solidity: event RequestStarted(bytes32 requestHash, uint256 participantIndices)
-func (_MpcManager *MpcManagerFilterer) WatchRequestStarted(opts *bind.WatchOpts, sink chan<- *MpcManagerRequestStarted) (event.Subscription, error) {
+// Solidity: event RequestStarted(bytes32 indexed requestHash, uint256 participantIndices)
+func (_MpcManager *MpcManagerFilterer) WatchRequestStarted(opts *bind.WatchOpts, sink chan<- *MpcManagerRequestStarted, requestHash [][32]byte) (event.Subscription, error) {
 
-	logs, sub, err := _MpcManager.contract.WatchLogs(opts, "RequestStarted")
+	var requestHashRule []interface{}
+	for _, requestHashItem := range requestHash {
+		requestHashRule = append(requestHashRule, requestHashItem)
+	}
+
+	logs, sub, err := _MpcManager.contract.WatchLogs(opts, "RequestStarted", requestHashRule)
 	if err != nil {
 		return nil, err
 	}
@@ -6310,7 +7335,7 @@ func (_MpcManager *MpcManagerFilterer) WatchRequestStarted(opts *bind.WatchOpts,
 
 // ParseRequestStarted is a log parse operation binding the contract event 0x004a164c5a5884d2634c5ecf652835a6bd3fa42d0a95f937a72818e3ff90b709.
 //
-// Solidity: event RequestStarted(bytes32 requestHash, uint256 participantIndices)
+// Solidity: event RequestStarted(bytes32 indexed requestHash, uint256 participantIndices)
 func (_MpcManager *MpcManagerFilterer) ParseRequestStarted(log types.Log) (*MpcManagerRequestStarted, error) {
 	event := new(MpcManagerRequestStarted)
 	if err := _MpcManager.contract.UnpackLog(event, "RequestStarted", log); err != nil {
@@ -6949,6 +7974,968 @@ func (_MpcManager *MpcManagerFilterer) WatchStakeRequestAdded(opts *bind.WatchOp
 func (_MpcManager *MpcManagerFilterer) ParseStakeRequestAdded(log types.Log) (*MpcManagerStakeRequestAdded, error) {
 	event := new(MpcManagerStakeRequestAdded)
 	if err := _MpcManager.contract.UnpackLog(event, "StakeRequestAdded", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MpcManagerUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the MpcManager contract.
+type MpcManagerUnpausedIterator struct {
+	Event *MpcManagerUnpaused // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MpcManagerUnpausedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MpcManagerUnpaused)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MpcManagerUnpaused)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MpcManagerUnpausedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MpcManagerUnpausedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MpcManagerUnpaused represents a Unpaused event raised by the MpcManager contract.
+type MpcManagerUnpaused struct {
+	Account common.Address
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterUnpaused is a free log retrieval operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_MpcManager *MpcManagerFilterer) FilterUnpaused(opts *bind.FilterOpts) (*MpcManagerUnpausedIterator, error) {
+
+	logs, sub, err := _MpcManager.contract.FilterLogs(opts, "Unpaused")
+	if err != nil {
+		return nil, err
+	}
+	return &MpcManagerUnpausedIterator{contract: _MpcManager.contract, event: "Unpaused", logs: logs, sub: sub}, nil
+}
+
+// WatchUnpaused is a free log subscription operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_MpcManager *MpcManagerFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *MpcManagerUnpaused) (event.Subscription, error) {
+
+	logs, sub, err := _MpcManager.contract.WatchLogs(opts, "Unpaused")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MpcManagerUnpaused)
+				if err := _MpcManager.contract.UnpackLog(event, "Unpaused", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseUnpaused is a log parse operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_MpcManager *MpcManagerFilterer) ParseUnpaused(log types.Log) (*MpcManagerUnpaused, error) {
+	event := new(MpcManagerUnpaused)
+	if err := _MpcManager.contract.UnpackLog(event, "Unpaused", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ParticipantIdHelpersMetaData contains all meta data concerning the ParticipantIdHelpers contract.
+var ParticipantIdHelpersMetaData = &bind.MetaData{
+	ABI: "[{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"}],\"name\":\"getGroupId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupOrParticipantId\",\"type\":\"bytes32\"}],\"name\":\"getGroupSize\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"}],\"name\":\"getParticipantIndex\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupOrParticipantId\",\"type\":\"bytes32\"}],\"name\":\"getThreshold\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"groupSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"name\":\"makeGroupId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"participantIndex\",\"type\":\"uint256\"}],\"name\":\"makeParticipantId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
+	Sigs: map[string]string{
+		"293911c3": "getGroupId(bytes32)",
+		"67ca7391": "getGroupSize(bytes32)",
+		"92c57b0c": "getParticipantIndex(bytes32)",
+		"42acf119": "getThreshold(bytes32)",
+		"0e52a729": "makeGroupId(bytes32,uint256,uint256)",
+		"e5e3601c": "makeParticipantId(bytes32,uint256)",
+	},
+	Bin: "0x61021d61003a600b82828239805160001a60731461002d57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061006c5760003560e01c80630e52a72914610071578063293911c31461009757806342acf119146100ac57806367ca7391146100d557806392c57b0c146100ec578063e5e3601c14610100575b600080fd5b61008461007f36600461016a565b610113565b6040519081526020015b60405180910390f35b6100846100a5366004610196565b60ff191690565b6100c36100ba366004610196565b60081c60ff1690565b60405160ff909116815260200161008e565b6100c36100e3366004610196565b60101c60ff1690565b6100c36100fa366004610196565b60ff1690565b61008461010e3660046101af565b610152565b600060ff831115610126576101266101d1565b60ff821115610137576101376101d1565b5062ffffff198316601083901b17600882901b179392505050565b600060ff821115610165576101656101d1565b501790565b60008060006060848603121561017f57600080fd5b505081359360208301359350604090920135919050565b6000602082840312156101a857600080fd5b5035919050565b600080604083850312156101c257600080fd5b50508035926020909101359150565b634e487b7160e01b600052600160045260246000fdfea2646970667358221220efe0b8f2a7cc7189c74258418326e7986d632a838b2989d2b7b88446b74ab80664736f6c634300080a0033",
+}
+
+// ParticipantIdHelpersABI is the input ABI used to generate the binding from.
+// Deprecated: Use ParticipantIdHelpersMetaData.ABI instead.
+var ParticipantIdHelpersABI = ParticipantIdHelpersMetaData.ABI
+
+// Deprecated: Use ParticipantIdHelpersMetaData.Sigs instead.
+// ParticipantIdHelpersFuncSigs maps the 4-byte function signature to its string representation.
+var ParticipantIdHelpersFuncSigs = ParticipantIdHelpersMetaData.Sigs
+
+// ParticipantIdHelpersBin is the compiled bytecode used for deploying new contracts.
+// Deprecated: Use ParticipantIdHelpersMetaData.Bin instead.
+var ParticipantIdHelpersBin = ParticipantIdHelpersMetaData.Bin
+
+// DeployParticipantIdHelpers deploys a new Ethereum contract, binding an instance of ParticipantIdHelpers to it.
+func DeployParticipantIdHelpers(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *ParticipantIdHelpers, error) {
+	parsed, err := ParticipantIdHelpersMetaData.GetAbi()
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	if parsed == nil {
+		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
+	}
+
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(ParticipantIdHelpersBin), backend)
+	if err != nil {
+		return common.Address{}, nil, nil, err
+	}
+	return address, tx, &ParticipantIdHelpers{ParticipantIdHelpersCaller: ParticipantIdHelpersCaller{contract: contract}, ParticipantIdHelpersTransactor: ParticipantIdHelpersTransactor{contract: contract}, ParticipantIdHelpersFilterer: ParticipantIdHelpersFilterer{contract: contract}}, nil
+}
+
+// ParticipantIdHelpers is an auto generated Go binding around an Ethereum contract.
+type ParticipantIdHelpers struct {
+	ParticipantIdHelpersCaller     // Read-only binding to the contract
+	ParticipantIdHelpersTransactor // Write-only binding to the contract
+	ParticipantIdHelpersFilterer   // Log filterer for contract events
+}
+
+// ParticipantIdHelpersCaller is an auto generated read-only Go binding around an Ethereum contract.
+type ParticipantIdHelpersCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// ParticipantIdHelpersTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type ParticipantIdHelpersTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// ParticipantIdHelpersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type ParticipantIdHelpersFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// ParticipantIdHelpersSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type ParticipantIdHelpersSession struct {
+	Contract     *ParticipantIdHelpers // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts         // Call options to use throughout this session
+	TransactOpts bind.TransactOpts     // Transaction auth options to use throughout this session
+}
+
+// ParticipantIdHelpersCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type ParticipantIdHelpersCallerSession struct {
+	Contract *ParticipantIdHelpersCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts               // Call options to use throughout this session
+}
+
+// ParticipantIdHelpersTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type ParticipantIdHelpersTransactorSession struct {
+	Contract     *ParticipantIdHelpersTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts               // Transaction auth options to use throughout this session
+}
+
+// ParticipantIdHelpersRaw is an auto generated low-level Go binding around an Ethereum contract.
+type ParticipantIdHelpersRaw struct {
+	Contract *ParticipantIdHelpers // Generic contract binding to access the raw methods on
+}
+
+// ParticipantIdHelpersCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type ParticipantIdHelpersCallerRaw struct {
+	Contract *ParticipantIdHelpersCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// ParticipantIdHelpersTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type ParticipantIdHelpersTransactorRaw struct {
+	Contract *ParticipantIdHelpersTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewParticipantIdHelpers creates a new instance of ParticipantIdHelpers, bound to a specific deployed contract.
+func NewParticipantIdHelpers(address common.Address, backend bind.ContractBackend) (*ParticipantIdHelpers, error) {
+	contract, err := bindParticipantIdHelpers(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &ParticipantIdHelpers{ParticipantIdHelpersCaller: ParticipantIdHelpersCaller{contract: contract}, ParticipantIdHelpersTransactor: ParticipantIdHelpersTransactor{contract: contract}, ParticipantIdHelpersFilterer: ParticipantIdHelpersFilterer{contract: contract}}, nil
+}
+
+// NewParticipantIdHelpersCaller creates a new read-only instance of ParticipantIdHelpers, bound to a specific deployed contract.
+func NewParticipantIdHelpersCaller(address common.Address, caller bind.ContractCaller) (*ParticipantIdHelpersCaller, error) {
+	contract, err := bindParticipantIdHelpers(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &ParticipantIdHelpersCaller{contract: contract}, nil
+}
+
+// NewParticipantIdHelpersTransactor creates a new write-only instance of ParticipantIdHelpers, bound to a specific deployed contract.
+func NewParticipantIdHelpersTransactor(address common.Address, transactor bind.ContractTransactor) (*ParticipantIdHelpersTransactor, error) {
+	contract, err := bindParticipantIdHelpers(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &ParticipantIdHelpersTransactor{contract: contract}, nil
+}
+
+// NewParticipantIdHelpersFilterer creates a new log filterer instance of ParticipantIdHelpers, bound to a specific deployed contract.
+func NewParticipantIdHelpersFilterer(address common.Address, filterer bind.ContractFilterer) (*ParticipantIdHelpersFilterer, error) {
+	contract, err := bindParticipantIdHelpers(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &ParticipantIdHelpersFilterer{contract: contract}, nil
+}
+
+// bindParticipantIdHelpers binds a generic wrapper to an already deployed contract.
+func bindParticipantIdHelpers(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(ParticipantIdHelpersABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_ParticipantIdHelpers *ParticipantIdHelpersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _ParticipantIdHelpers.Contract.ParticipantIdHelpersCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_ParticipantIdHelpers *ParticipantIdHelpersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _ParticipantIdHelpers.Contract.ParticipantIdHelpersTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_ParticipantIdHelpers *ParticipantIdHelpersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _ParticipantIdHelpers.Contract.ParticipantIdHelpersTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _ParticipantIdHelpers.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_ParticipantIdHelpers *ParticipantIdHelpersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _ParticipantIdHelpers.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_ParticipantIdHelpers *ParticipantIdHelpersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _ParticipantIdHelpers.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetGroupId is a free data retrieval call binding the contract method 0x293911c3.
+//
+// Solidity: function getGroupId(bytes32 participantId) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCaller) GetGroupId(opts *bind.CallOpts, participantId [32]byte) ([32]byte, error) {
+	var out []interface{}
+	err := _ParticipantIdHelpers.contract.Call(opts, &out, "getGroupId", participantId)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GetGroupId is a free data retrieval call binding the contract method 0x293911c3.
+//
+// Solidity: function getGroupId(bytes32 participantId) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersSession) GetGroupId(participantId [32]byte) ([32]byte, error) {
+	return _ParticipantIdHelpers.Contract.GetGroupId(&_ParticipantIdHelpers.CallOpts, participantId)
+}
+
+// GetGroupId is a free data retrieval call binding the contract method 0x293911c3.
+//
+// Solidity: function getGroupId(bytes32 participantId) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerSession) GetGroupId(participantId [32]byte) ([32]byte, error) {
+	return _ParticipantIdHelpers.Contract.GetGroupId(&_ParticipantIdHelpers.CallOpts, participantId)
+}
+
+// GetGroupSize is a free data retrieval call binding the contract method 0x67ca7391.
+//
+// Solidity: function getGroupSize(bytes32 groupOrParticipantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCaller) GetGroupSize(opts *bind.CallOpts, groupOrParticipantId [32]byte) (uint8, error) {
+	var out []interface{}
+	err := _ParticipantIdHelpers.contract.Call(opts, &out, "getGroupSize", groupOrParticipantId)
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// GetGroupSize is a free data retrieval call binding the contract method 0x67ca7391.
+//
+// Solidity: function getGroupSize(bytes32 groupOrParticipantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersSession) GetGroupSize(groupOrParticipantId [32]byte) (uint8, error) {
+	return _ParticipantIdHelpers.Contract.GetGroupSize(&_ParticipantIdHelpers.CallOpts, groupOrParticipantId)
+}
+
+// GetGroupSize is a free data retrieval call binding the contract method 0x67ca7391.
+//
+// Solidity: function getGroupSize(bytes32 groupOrParticipantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerSession) GetGroupSize(groupOrParticipantId [32]byte) (uint8, error) {
+	return _ParticipantIdHelpers.Contract.GetGroupSize(&_ParticipantIdHelpers.CallOpts, groupOrParticipantId)
+}
+
+// GetParticipantIndex is a free data retrieval call binding the contract method 0x92c57b0c.
+//
+// Solidity: function getParticipantIndex(bytes32 participantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCaller) GetParticipantIndex(opts *bind.CallOpts, participantId [32]byte) (uint8, error) {
+	var out []interface{}
+	err := _ParticipantIdHelpers.contract.Call(opts, &out, "getParticipantIndex", participantId)
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// GetParticipantIndex is a free data retrieval call binding the contract method 0x92c57b0c.
+//
+// Solidity: function getParticipantIndex(bytes32 participantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersSession) GetParticipantIndex(participantId [32]byte) (uint8, error) {
+	return _ParticipantIdHelpers.Contract.GetParticipantIndex(&_ParticipantIdHelpers.CallOpts, participantId)
+}
+
+// GetParticipantIndex is a free data retrieval call binding the contract method 0x92c57b0c.
+//
+// Solidity: function getParticipantIndex(bytes32 participantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerSession) GetParticipantIndex(participantId [32]byte) (uint8, error) {
+	return _ParticipantIdHelpers.Contract.GetParticipantIndex(&_ParticipantIdHelpers.CallOpts, participantId)
+}
+
+// GetThreshold is a free data retrieval call binding the contract method 0x42acf119.
+//
+// Solidity: function getThreshold(bytes32 groupOrParticipantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCaller) GetThreshold(opts *bind.CallOpts, groupOrParticipantId [32]byte) (uint8, error) {
+	var out []interface{}
+	err := _ParticipantIdHelpers.contract.Call(opts, &out, "getThreshold", groupOrParticipantId)
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// GetThreshold is a free data retrieval call binding the contract method 0x42acf119.
+//
+// Solidity: function getThreshold(bytes32 groupOrParticipantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersSession) GetThreshold(groupOrParticipantId [32]byte) (uint8, error) {
+	return _ParticipantIdHelpers.Contract.GetThreshold(&_ParticipantIdHelpers.CallOpts, groupOrParticipantId)
+}
+
+// GetThreshold is a free data retrieval call binding the contract method 0x42acf119.
+//
+// Solidity: function getThreshold(bytes32 groupOrParticipantId) pure returns(uint8)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerSession) GetThreshold(groupOrParticipantId [32]byte) (uint8, error) {
+	return _ParticipantIdHelpers.Contract.GetThreshold(&_ParticipantIdHelpers.CallOpts, groupOrParticipantId)
+}
+
+// MakeGroupId is a free data retrieval call binding the contract method 0x0e52a729.
+//
+// Solidity: function makeGroupId(bytes32 groupHash, uint256 groupSize, uint256 threshold) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCaller) MakeGroupId(opts *bind.CallOpts, groupHash [32]byte, groupSize *big.Int, threshold *big.Int) ([32]byte, error) {
+	var out []interface{}
+	err := _ParticipantIdHelpers.contract.Call(opts, &out, "makeGroupId", groupHash, groupSize, threshold)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// MakeGroupId is a free data retrieval call binding the contract method 0x0e52a729.
+//
+// Solidity: function makeGroupId(bytes32 groupHash, uint256 groupSize, uint256 threshold) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersSession) MakeGroupId(groupHash [32]byte, groupSize *big.Int, threshold *big.Int) ([32]byte, error) {
+	return _ParticipantIdHelpers.Contract.MakeGroupId(&_ParticipantIdHelpers.CallOpts, groupHash, groupSize, threshold)
+}
+
+// MakeGroupId is a free data retrieval call binding the contract method 0x0e52a729.
+//
+// Solidity: function makeGroupId(bytes32 groupHash, uint256 groupSize, uint256 threshold) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerSession) MakeGroupId(groupHash [32]byte, groupSize *big.Int, threshold *big.Int) ([32]byte, error) {
+	return _ParticipantIdHelpers.Contract.MakeGroupId(&_ParticipantIdHelpers.CallOpts, groupHash, groupSize, threshold)
+}
+
+// MakeParticipantId is a free data retrieval call binding the contract method 0xe5e3601c.
+//
+// Solidity: function makeParticipantId(bytes32 groupId, uint256 participantIndex) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCaller) MakeParticipantId(opts *bind.CallOpts, groupId [32]byte, participantIndex *big.Int) ([32]byte, error) {
+	var out []interface{}
+	err := _ParticipantIdHelpers.contract.Call(opts, &out, "makeParticipantId", groupId, participantIndex)
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// MakeParticipantId is a free data retrieval call binding the contract method 0xe5e3601c.
+//
+// Solidity: function makeParticipantId(bytes32 groupId, uint256 participantIndex) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersSession) MakeParticipantId(groupId [32]byte, participantIndex *big.Int) ([32]byte, error) {
+	return _ParticipantIdHelpers.Contract.MakeParticipantId(&_ParticipantIdHelpers.CallOpts, groupId, participantIndex)
+}
+
+// MakeParticipantId is a free data retrieval call binding the contract method 0xe5e3601c.
+//
+// Solidity: function makeParticipantId(bytes32 groupId, uint256 participantIndex) pure returns(bytes32)
+func (_ParticipantIdHelpers *ParticipantIdHelpersCallerSession) MakeParticipantId(groupId [32]byte, participantIndex *big.Int) ([32]byte, error) {
+	return _ParticipantIdHelpers.Contract.MakeParticipantId(&_ParticipantIdHelpers.CallOpts, groupId, participantIndex)
+}
+
+// PausableMetaData contains all meta data concerning the Pausable contract.
+var PausableMetaData = &bind.MetaData{
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	Sigs: map[string]string{
+		"5c975abb": "paused()",
+	},
+}
+
+// PausableABI is the input ABI used to generate the binding from.
+// Deprecated: Use PausableMetaData.ABI instead.
+var PausableABI = PausableMetaData.ABI
+
+// Deprecated: Use PausableMetaData.Sigs instead.
+// PausableFuncSigs maps the 4-byte function signature to its string representation.
+var PausableFuncSigs = PausableMetaData.Sigs
+
+// Pausable is an auto generated Go binding around an Ethereum contract.
+type Pausable struct {
+	PausableCaller     // Read-only binding to the contract
+	PausableTransactor // Write-only binding to the contract
+	PausableFilterer   // Log filterer for contract events
+}
+
+// PausableCaller is an auto generated read-only Go binding around an Ethereum contract.
+type PausableCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// PausableTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type PausableTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// PausableFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type PausableFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// PausableSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type PausableSession struct {
+	Contract     *Pausable         // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts     // Call options to use throughout this session
+	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
+}
+
+// PausableCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type PausableCallerSession struct {
+	Contract *PausableCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts   // Call options to use throughout this session
+}
+
+// PausableTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type PausableTransactorSession struct {
+	Contract     *PausableTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts   // Transaction auth options to use throughout this session
+}
+
+// PausableRaw is an auto generated low-level Go binding around an Ethereum contract.
+type PausableRaw struct {
+	Contract *Pausable // Generic contract binding to access the raw methods on
+}
+
+// PausableCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type PausableCallerRaw struct {
+	Contract *PausableCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// PausableTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type PausableTransactorRaw struct {
+	Contract *PausableTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewPausable creates a new instance of Pausable, bound to a specific deployed contract.
+func NewPausable(address common.Address, backend bind.ContractBackend) (*Pausable, error) {
+	contract, err := bindPausable(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &Pausable{PausableCaller: PausableCaller{contract: contract}, PausableTransactor: PausableTransactor{contract: contract}, PausableFilterer: PausableFilterer{contract: contract}}, nil
+}
+
+// NewPausableCaller creates a new read-only instance of Pausable, bound to a specific deployed contract.
+func NewPausableCaller(address common.Address, caller bind.ContractCaller) (*PausableCaller, error) {
+	contract, err := bindPausable(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &PausableCaller{contract: contract}, nil
+}
+
+// NewPausableTransactor creates a new write-only instance of Pausable, bound to a specific deployed contract.
+func NewPausableTransactor(address common.Address, transactor bind.ContractTransactor) (*PausableTransactor, error) {
+	contract, err := bindPausable(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &PausableTransactor{contract: contract}, nil
+}
+
+// NewPausableFilterer creates a new log filterer instance of Pausable, bound to a specific deployed contract.
+func NewPausableFilterer(address common.Address, filterer bind.ContractFilterer) (*PausableFilterer, error) {
+	contract, err := bindPausable(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &PausableFilterer{contract: contract}, nil
+}
+
+// bindPausable binds a generic wrapper to an already deployed contract.
+func bindPausable(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(PausableABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_Pausable *PausableRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _Pausable.Contract.PausableCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_Pausable *PausableRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Pausable.Contract.PausableTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_Pausable *PausableRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Pausable.Contract.PausableTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_Pausable *PausableCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _Pausable.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_Pausable *PausableTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Pausable.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_Pausable *PausableTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Pausable.Contract.contract.Transact(opts, method, params...)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_Pausable *PausableCaller) Paused(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _Pausable.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_Pausable *PausableSession) Paused() (bool, error) {
+	return _Pausable.Contract.Paused(&_Pausable.CallOpts)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_Pausable *PausableCallerSession) Paused() (bool, error) {
+	return _Pausable.Contract.Paused(&_Pausable.CallOpts)
+}
+
+// PausablePausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the Pausable contract.
+type PausablePausedIterator struct {
+	Event *PausablePaused // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *PausablePausedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(PausablePaused)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(PausablePaused)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *PausablePausedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *PausablePausedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// PausablePaused represents a Paused event raised by the Pausable contract.
+type PausablePaused struct {
+	Account common.Address
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterPaused is a free log retrieval operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_Pausable *PausableFilterer) FilterPaused(opts *bind.FilterOpts) (*PausablePausedIterator, error) {
+
+	logs, sub, err := _Pausable.contract.FilterLogs(opts, "Paused")
+	if err != nil {
+		return nil, err
+	}
+	return &PausablePausedIterator{contract: _Pausable.contract, event: "Paused", logs: logs, sub: sub}, nil
+}
+
+// WatchPaused is a free log subscription operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_Pausable *PausableFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *PausablePaused) (event.Subscription, error) {
+
+	logs, sub, err := _Pausable.contract.WatchLogs(opts, "Paused")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(PausablePaused)
+				if err := _Pausable.contract.UnpackLog(event, "Paused", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParsePaused is a log parse operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_Pausable *PausableFilterer) ParsePaused(log types.Log) (*PausablePaused, error) {
+	event := new(PausablePaused)
+	if err := _Pausable.contract.UnpackLog(event, "Paused", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// PausableUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the Pausable contract.
+type PausableUnpausedIterator struct {
+	Event *PausableUnpaused // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *PausableUnpausedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(PausableUnpaused)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(PausableUnpaused)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *PausableUnpausedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *PausableUnpausedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// PausableUnpaused represents a Unpaused event raised by the Pausable contract.
+type PausableUnpaused struct {
+	Account common.Address
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterUnpaused is a free log retrieval operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_Pausable *PausableFilterer) FilterUnpaused(opts *bind.FilterOpts) (*PausableUnpausedIterator, error) {
+
+	logs, sub, err := _Pausable.contract.FilterLogs(opts, "Unpaused")
+	if err != nil {
+		return nil, err
+	}
+	return &PausableUnpausedIterator{contract: _Pausable.contract, event: "Unpaused", logs: logs, sub: sub}, nil
+}
+
+// WatchUnpaused is a free log subscription operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_Pausable *PausableFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *PausableUnpaused) (event.Subscription, error) {
+
+	logs, sub, err := _Pausable.contract.WatchLogs(opts, "Unpaused")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(PausableUnpaused)
+				if err := _Pausable.contract.UnpackLog(event, "Unpaused", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseUnpaused is a log parse operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_Pausable *PausableFilterer) ParseUnpaused(log types.Log) (*PausableUnpaused, error) {
+	event := new(PausableUnpaused)
+	if err := _Pausable.contract.UnpackLog(event, "Unpaused", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
