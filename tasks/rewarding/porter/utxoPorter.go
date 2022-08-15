@@ -257,9 +257,10 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 						{"exportedRewardUTXOs", totalRewards}}...)
 				}},
 			})
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to add UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
-			}
+			eh.Logger.ErrorOnError(err, "Failed to add UTXO export task", []logger.Field{
+				{"reqHash", reqHash.String()}, {"taskId", taskID}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
+			eh.Logger.InfoNilError(err, "Failed to add UTXO export task", []logger.Field{
+				{"reqHash", reqHash.String()}, {"taskId", taskID}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
 		}
 	}
 }
