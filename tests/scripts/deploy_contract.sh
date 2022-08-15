@@ -16,17 +16,30 @@ C_CHAIN_RPC_URL=http://127.0.0.1:9650/ext/bc/C/rpc
 
 LAST_WD=$(pwd)
 
-echo "Start deploying smart contracts"
-
 cd $HOME/mpctest/contracts/
 
+# Deploy ParticipantIdHelpers contract
+echo "Start deploying ParticipantIdHelpers smart contract"
+PARTICIPANT_ID_HELPERS=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK ParticipantIdHelpers | grep -i "deployed" | cut -d " " -f 3)
+
+# Deploy ConfirmationHelpers contract
+echo "Start deploying ConfirmationHelpers smart contract"
+CONFIRMATION_HELPERS=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK ConfirmationHelpers | grep -i "deployed" | cut -d " " -f 3)
+
+# Deploy KeygenStatusHelpers contract
+echo "Start deploying KeygenStatusHelpers smart contract"
+KEYGEN_STATUS_HELPERS=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK KeygenStatusHelpers | grep -i "deployed" | cut -d " " -f 3)
+
 # Deploy MpcManager contract
-MPC_MANAGER=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK MpcManager | grep -i "deployed" | cut -d " " -f 3)
+echo "Start deploying MpcManager smart contract"
+MPC_MANAGER=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK MpcManager --libraries src/MpcManager.sol:ParticipantIdHelpers:$PARTICIPANT_ID_HELPERS --libraries src/MpcManager.sol:ConfirmationHelpers:$CONFIRMATION_HELPERS --libraries src/MpcManager.sol:KeygenStatusHelpers:$KEYGEN_STATUS_HELPERS  | grep -i "deployed" | cut -d " " -f 3)
 
 # Deploy AvaLido contract
+echo "Start deploying AvaLido smart contract"
 AVALIDO=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK AvaLido --constructor-args  $MPC_MANAGER | grep -i "deployed" | cut -d " " -f 3)
 
 # Initialize MpcManager contract
+echo "Initializing MpcManager contract"
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK $MPC_MANAGER "initialize(address,address,address,address,address)" $ROLE_DEFAULT_ADMIN $ROLE_PAUSE_MANAGER $AVALIDO $RECEIVE_PRINCIPAL_ADDR $RECEIVE_REWARD_ADDR > /dev/null
 
 mkdir -p addresses
