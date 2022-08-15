@@ -2,6 +2,7 @@
 //go:generate abigen --sol src/MpcManager.sol --pkg contract --out MpcManager.go --type MpcManager
 //go:generate abigen --sol src/OracleManager.sol --pkg contract --out OracleManager.go --type OracleManager
 //go:generate abigen --sol src/Oracle.sol --pkg contract --out Oracle.go --type Oracle
+//go:generate abigen --sol src/ValidatorSelector.sol --pkg contract --out ValidatorSelector.go --type ValidatorSelector
 
 package contract
 
