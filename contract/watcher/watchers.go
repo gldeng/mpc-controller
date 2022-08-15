@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/bytes"
@@ -255,6 +256,14 @@ func (w *MpcManagerWatchers) watchStakeRequestAdded(ctx context.Context, opts *b
 func (w *MpcManagerWatchers) processStakeRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerStakeRequestAdded)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.StakeRequestAdded)(myEvt), nil))
+	w.Logger.Info("Stake request added", []logger.Field{
+		{"reqNo", myEvt.RequestNumber},
+		{"pubKeyHash", myEvt.PublicKey},
+		{"nodeId", myEvt.NodeID},
+		{"amount", myEvt.Amount},
+		{"startTime", myEvt.StartTime},
+		{"endTime", myEvt.EndTime}}...)
+	prom.StakeRequestAdded.Inc()
 	return nil
 }
 
