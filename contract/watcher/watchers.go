@@ -135,7 +135,7 @@ func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt in
 
 	// Publish events.ParticipantAdded
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.ParticipantAdded)(myEvt), nil))
-	w.Logger.Debug("Participant added", []logger.Field{{"participant", participant}}...)
+	w.Logger.Info("Participant added", []logger.Field{{"participant", participant}}...)
 	return nil
 }
 
@@ -200,7 +200,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	if err != nil {
 		return errors.Wrapf(err, "failed to report generated public key %v with participant id %v", dnmGenPubKeyBytes, partiId)
 	}
-	w.Logger.Debug("Reported generated public key", []logger.Field{{"genPubKey", bytes.BytesToHex(dnmGenPubKeyBytes)}}...)
+	w.Logger.Info("Reported generated public key", []logger.Field{{"genPubKey", bytes.BytesToHex(dnmGenPubKeyBytes)}}...)
 	return nil
 }
 
