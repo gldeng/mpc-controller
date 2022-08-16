@@ -19,6 +19,7 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
@@ -94,7 +95,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
-	myLogger.Info(fmt.Sprintf("MpcManager address: %v", config.MpcManagerAddress))
+	myLogger.Info(fmt.Sprintf("MpcManager address: %v\n", config.MpcManagerAddress))
 
 	// Create mpcClient
 	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl, config.ControllerId)
@@ -107,6 +108,9 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to parse private key %q", config.ControllerKey))
 	}
+
+	myAddr := addrs.PubkeyToAddresse(&myPrivKey.PublicKey)
+	myLogger.Info(fmt.Sprintf("%v address: %v\n", config.ControllerId, myAddr))
 
 	// Parse public key
 	myPubKeyBytes := myCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
