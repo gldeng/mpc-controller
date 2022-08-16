@@ -39,6 +39,21 @@ tasks:
       - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "lastGenAddress()"
     silent: false
 
+  avaLidoAddr:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "avaLidoAddress()"
+    silent: false
+
+  principalTreasuryAddr:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "principalTreasuryAddress()"
+    silent: false
+
+  rewardTreasuryAddr:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "rewardTreasuryAddress()"
+    silent: false
+
   requestStake:
     cmds:
       - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --value 1ether {{.CLI_ARGS}}  "requestStake(string,uint256,uint256,uint256)" "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5" 1ether 1 2
