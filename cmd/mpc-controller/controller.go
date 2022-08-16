@@ -95,7 +95,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
-	myLogger.Info(fmt.Sprintf("MpcManager address: %v\n", config.MpcManagerAddress))
+	myLogger.Info(fmt.Sprintf("MpcManager address: %v", config.MpcManagerAddress))
 
 	// Create mpcClient
 	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl, config.ControllerId)
@@ -110,7 +110,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	myAddr := addrs.PubkeyToAddresse(&myPrivKey.PublicKey)
-	myLogger.Info(fmt.Sprintf("%v address: %v\n", config.ControllerId, myAddr))
+	myLogger.Info(fmt.Sprintf("%v address: %v", config.ControllerId, myAddr))
 
 	// Parse public key
 	myPubKeyBytes := myCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
