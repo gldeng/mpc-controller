@@ -101,6 +101,7 @@ func (w *MpcManagerWatchers) watchParticipantAdded(ctx context.Context, opts *bi
 	}
 	w.participantAddedWatcher = participantAddedWatcher
 	err = participantAddedWatcher.Watch(ctx)
+	w.Logger.Info("Watching contract event", []logger.Field{{"event", EvtParticipantAdded}}...)
 	return errors.Wrapf(err, "failed to watch %v", EvtParticipantAdded)
 }
 
@@ -146,6 +147,7 @@ func (w *MpcManagerWatchers) watchKeygenRequestAdded(ctx context.Context, opts *
 	}
 	w.keygenRequestAddedWatcher = keygenRequestAddedWatcher
 	err = keygenRequestAddedWatcher.Watch(ctx)
+	w.Logger.Info("Watching contract event", []logger.Field{{"event", EvtKeygenRequestAdded}}...)
 	return errors.Wrapf(err, "failed to watch %v", EvtKeygenRequestAdded)
 }
 
@@ -210,6 +212,7 @@ func (w *MpcManagerWatchers) watchKeyGenerated(ctx context.Context, opts *bind.W
 	}
 	w.keyGeneratedWatcher = keyGeneratedWatcher
 	err = keyGeneratedWatcher.Watch(ctx)
+	w.Logger.Info("Watching contract event", []logger.Field{{"event", EvtKeyGenerated}}...)
 	return errors.Wrapf(err, "failed to watch %v", EvtKeyGenerated)
 }
 
@@ -250,6 +253,7 @@ func (w *MpcManagerWatchers) watchStakeRequestAdded(ctx context.Context, opts *b
 	}
 	w.stakeRequestAddedWatcher = stakeRequestAddedWatcher
 	err = stakeRequestAddedWatcher.Watch(ctx)
+	w.Logger.Info("Watching contract event", []logger.Field{{"event", EvtStakeRequestAdded}}...)
 	return errors.Wrapf(err, "failed to watch %v", EvtStakeRequestAdded)
 }
 
@@ -275,6 +279,7 @@ func (w *MpcManagerWatchers) watchRequestStarted(ctx context.Context, opts *bind
 	}
 	w.requestStartedWatcher = requestStartedWatcher
 	err = requestStartedWatcher.Watch(ctx)
+	w.Logger.Info("Watching contract event", []logger.Field{{"event", EvtRequestStarted}}...)
 	return errors.Wrapf(err, "failed to watch %v", EvtRequestStarted)
 }
 
