@@ -18,7 +18,7 @@ LAST_WD=$(pwd)
 
 cd $HOME/mpctest/contracts/
 
-echo "Start deploying contracts..."
+echo "----------Start deploying contracts----------"
 
 echo "Deploying ValidatorHelpers smart contract"
 VALIDATOR_HELPERS=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK ValidatorHelpers | grep -i "deployed" | cut -d " " -f 3)
@@ -54,7 +54,7 @@ mkdir -p addresses
 echo -n $MPC_MANAGER > addresses/MPC_MANAGER_ADDRESS
 echo -n $AVALIDO > addresses/AVALIDO_ADDRESS
 
-echo "Deployed contract addresses..."
+echo "----------Deployed contract addresses----------"
 
 echo "ValidatorHelpers address:     $VALIDATOR_HELPERS"
 echo "OracleManager address:        $ORACLE_MANAGER"
