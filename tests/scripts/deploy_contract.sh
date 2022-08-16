@@ -16,7 +16,7 @@ ORACLE_ALLOW_LIST=("0x03C1196617387899390d3a98fdBdfD407121BB67" "0x6C58f6E7DB68D
 # Pause manager address
 ROLE_PAUSE_MANAGER=$ROLE_DEFAULT_ADMIN
 
-# Addresses to receive principal and rewards after staking period ended
+# Default addresses to receive principal and rewards after staking period ended
 RECEIVE_PRINCIPAL_ADDR="0xd94fc5fd8812dde061f420d4146bc88e03b6787c"
 RECEIVE_REWARD_ADDR="0xe8025f13e6bf0db21212b0dd6aebc4f3d1fb03ce"
 
@@ -65,6 +65,15 @@ AVALIDO=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DE
 echo "Initializing AvaLido contract"
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK $AVALIDO "initialize(address,address,address,address)" $LIDO_FEE_ADDRESS $AUTHOR_FEE_ADDRESS $VALIDATOR_SELECTOR $MPC_MANAGER > /dev/null
 
+echo "Deploying principal Treasury smart contract"
+RECEIVE_PRINCIPAL_ADDR=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK Treasury --constructor-args  $AVALIDO | grep -i "deployed" | cut -d " " -f 3)
+echo "Deploying reward Treasury smart contract"
+RECEIVE_REWARD_ADDR=$(forge create --force --rpc-url $C_CHAIN_RPC_URL --private-key $ROLE_DEFAULT_ADMIN_PK Treasury --constructor-args  $AVALIDO | grep -i "deployed" | cut -d " " -f 3)
+
+echo "Set principal treasury address"
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK $AVALIDO "setPrincipalTreasuryAddress(address)" $RECEIVE_PRINCIPAL_ADDR
+echo "Set reward treasury address"
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK $AVALIDO "setPrincipalTreasuryAddress(address)" $RECEIVE_REWARD_ADDR
 
 echo "Initializing MpcManager contract"
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK $MPC_MANAGER "initialize(address,address,address,address,address)" $ROLE_DEFAULT_ADMIN $ROLE_PAUSE_MANAGER $AVALIDO $RECEIVE_PRINCIPAL_ADDR $RECEIVE_REWARD_ADDR > /dev/null
@@ -82,6 +91,8 @@ echo "ValidatorSelector address:    $VALIDATOR_SELECTOR"
 echo "ParticipantIdHelpers address: $PARTICIPANT_ID_HELPERS"
 echo "ConfirmationHelpers address:  $CONFIRMATION_HELPERS"
 echo "KeygenStatusHelpers address:  $KEYGEN_STATUS_HELPERS"
+echo "Receive principal address:    $RECEIVE_PRINCIPAL_ADDR"
+echo "Receive reward address:       $RECEIVE_REWARD_ADDR"
 echo "MpcManager address:           $MPC_MANAGER"
 echo "AvaLido address:              $AVALIDO"
 
