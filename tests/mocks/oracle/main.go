@@ -24,6 +24,7 @@ func main() {
 	var oracleManagerAddrFlag = flag.String("oracleManagerAddr", "", "OracleManager contract address")
 	flag.Parse()
 
+	logger.DevMode = true
 	myLogger := logger.Default()
 
 	contractAddr := common.HexToAddress(*oracleManagerAddrFlag)
