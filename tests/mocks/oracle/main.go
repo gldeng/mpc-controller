@@ -56,7 +56,9 @@ func main() {
 	for {
 		if err := o.ReceiveMemberReport(context.Background()); err != nil {
 			log.Error("Failed to ReceiveMemberReport:%+v\n", err)
+			continue
 		}
+		log.Info("Success to call ReceiveMemberReport")
 		time.Sleep(time.Hour * 24)
 	}
 }
