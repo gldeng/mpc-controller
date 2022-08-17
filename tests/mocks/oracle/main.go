@@ -4,13 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
@@ -23,6 +23,8 @@ func main() {
 	var oracleMemberPkFlag = flag.String("oracleMemberPkFlag", "56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027", "Oracle member private key")
 	var oracleManagerAddrFlag = flag.String("oracleManagerAddr", "", "OracleManager contract address")
 	flag.Parse()
+
+	myLogger := logger.Default()
 
 	contractAddr := common.HexToAddress(*oracleManagerAddrFlag)
 
@@ -52,18 +54,19 @@ func main() {
 		panic(err)
 	}
 
-	o := Oracle{client, signer, oracleManager}
+	o := Oracle{myLogger, client, signer, oracleManager}
 	for {
 		if err := o.ReceiveMemberReport(context.Background()); err != nil {
-			log.Error("Failed to ReceiveMemberReport:%+v\n", err)
+			myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
 			continue
 		}
-		log.Info("Success to call ReceiveMemberReport")
+		myLogger.Info("Success to call ReceiveMemberReport")
 		time.Sleep(time.Hour * 24)
 	}
 }
 
 type Oracle struct {
+	Logger        logger.Logger
 	EthClient     *ethclient.Client
 	Auth          *bind.TransactOpts
 	OracleManager *OracleManager
@@ -89,7 +92,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 			}
 
 			if rcpt.Status != 1 {
-				return true, errors.New("Transaction sent but failed")
+				return true, errors.New("Called ReceiveMemberReport but transaction failed")
 			}
 
 			return false, nil
