@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/pkg/errors"
 	"math/big"
+	"strings"
 	"time"
 )
 
@@ -71,6 +72,11 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 		epochId := big.NewInt(123456789)
 		tx, err := o.OracleManager.ReceiveMemberReport(o.Auth, epochId, o.validators())
 		if err != nil {
+			errMsg := err.Error()
+			switch {
+			case strings.Contains(errMsg, "execution reverted"):
+				return false, errors.Wrapf(err, "execution reverted")
+			}
 			return true, errors.WithStack(err)
 		}
 
