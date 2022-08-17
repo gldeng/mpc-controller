@@ -101,13 +101,13 @@ func (o *Oracle) packValidator(nodeIndex uint64, hasUptime bool, hasSpace bool, 
 	if nodeIndex >= 4096 {
 		panic("invalid nodeIndex")
 	}
-	nodeIndexBytes := new(big.Int).SetUint64(nodeIndex).Bytes()[:3]
+	nodeIndexBytes := new(big.Int).SetUint64(nodeIndex).Bytes()
 	nodeIndexBig := new(big.Int).SetBytes(nodeIndexBytes)
 
 	if hundredsOfAvax >= 1024 {
 		panic("invalid hundredsOfAvax")
 	}
-	hundredsOfAvaxBtes := new(big.Int).SetUint64(hundredsOfAvax).Bytes()[:3]
+	hundredsOfAvaxBtes := new(big.Int).SetUint64(hundredsOfAvax).Bytes()
 	data := new(big.Int).SetBytes(hundredsOfAvaxBtes)
 
 	if hasUptime {
