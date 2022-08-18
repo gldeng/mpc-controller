@@ -22,6 +22,6 @@ if [ ! -d "$HOME/mpctest/contracts" ]; then
   git clone git@github.com:AvaLido/contracts.git
   cd contracts
   git submodule update --init --recursive --remote
-  cp -n $LAST_WD/tests/contracts/deploy/Deploy.t.sol src/deploy/Deploy.t.sol
+  cp  $LAST_WD/tests/contracts/deploy/Deploy.t.sol ./src/deploy/
   cd $LAST_WD
 fi
