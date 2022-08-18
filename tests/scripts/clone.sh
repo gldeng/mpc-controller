@@ -17,16 +17,11 @@ if [ ! -d "$HOME/mpctest/mpc-server" ]; then
 fi
 
 if [ ! -d "$HOME/mpctest/contracts" ]; then
-  git submodule init
-  git submodule update
-
   LAST_WD=$(pwd)
   cd $HOME/mpctest/
-
-  forge init contracts
-  cp -a $LAST_WD/contract/src/. contracts/src/
-  cp -a $LAST_WD/contract/lib/. contracts/lib/
-
-  rm contracts/src/Contract.sol contracts/test/Contract.t.sol
+  git clone git@github.com:AvaLido/contracts.git
+  cd contracts
+  git submodule update --init --recursive --remote
+  cp -n $LAST_WD/tests/contracts/deploy/Deploy.t.sol src/deploy/Deploy.t.sol
   cd $LAST_WD
 fi
