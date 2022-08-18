@@ -2,6 +2,7 @@
 FROM golang:1.18 as build
 WORKDIR /go/src/github.com/avalido/
 COPY . .
+RUN ls -la
 RUN cd mpc-controller && go get -d ./...
 RUN cd mpc-controller/cmd/mpc-controller && CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o mpc-controller .
 
