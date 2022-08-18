@@ -105,7 +105,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 }
 
 func (o *Oracle) validators() []*big.Int {
-	validator := o.packValidator(0, true, true, 100)
+	validator := o.packValidator(2, true, true, 100)
 	return []*big.Int{validator}
 }
 
