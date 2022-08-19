@@ -59,7 +59,6 @@ func main() {
 	for {
 		if err := o.ReceiveMemberReport(context.Background()); err != nil {
 			myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
-			break
 		}
 		myLogger.Info("Success to call ReceiveMemberReport")
 		time.Sleep(time.Hour * 24)
@@ -98,6 +97,9 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 
 			return false, nil
 		})
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
 		return false, errors.WithStack(err)
 	})
 
