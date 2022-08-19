@@ -23,6 +23,12 @@ ORACLE_MANAGER_ADDRESS=$(cat $HOME/mpctest/contracts/addresses/ORACLE_MANAGER_AD
 
 oracle_dir=$HOME/mpctest/oracle_service
 
-$oracle_dir/oracle_service_mock -oracleManagerAddr $ORACLE_MANAGER_ADDRESS > log.log 2>&1 &
+mkdir -p logs
+
+$oracle_dir/oracle_service_mock --oracleMemberPK 0x03C1196617387899390d3a98fdBdfD407121BB67 -oracleManagerAddr $ORACLE_MANAGER_ADDRESS > logs/oracle1.log 2>&1 &
+$oracle_dir/oracle_service_mock --oracleMemberPK 0x6C58f6E7DB68D9F75F2E417aCbB67e7Dd4e413bf -oracleManagerAddr $ORACLE_MANAGER_ADDRESS > logs/oracle2.log 2>&1 &
+$oracle_dir/oracle_service_mock --oracleMemberPK 0xa7bB9405eAF98f36e2683Ba7F36828e260BD0018 -oracleManagerAddr $ORACLE_MANAGER_ADDRESS > logs/oracle3.log 2>&1 &
+$oracle_dir/oracle_service_mock --oracleMemberPK 0xE339767906891bEE026285803DA8d8F2f346842C -oracleManagerAddr $ORACLE_MANAGER_ADDRESS > logs/oracle4.log 2>&1 &
+$oracle_dir/oracle_service_mock --oracleMemberPK 0x0309a747a34befD1625b5dcae0B00625FAa30460 -oracleManagerAddr $ORACLE_MANAGER_ADDRESS > logs/oracle5.log 2>&1 &
 
 cd $LAST_WD
