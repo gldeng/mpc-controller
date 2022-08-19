@@ -50,6 +50,11 @@ tasks:
     silent: false
 
   # Oracle Manager
+  oracleContractAddress:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "oracleContractAddress()"
+    silent: false
+
   getWhitelistedOracles:
     cmds:
       - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "getWhitelistedOracles()"
@@ -64,6 +69,11 @@ tasks:
   getLatestValidators:
     cmds:
       - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "getLatestValidators()"
+    silent: false
+
+  oracleManagerContract:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "oracleManagerContract()"
     silent: false
 
   # Validator Selector
