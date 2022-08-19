@@ -23,6 +23,27 @@ tasks:
 
   # ----------Tasks to interact with contracts----------
 
+  # AvaLido
+  deposit:
+    cmds:
+      - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --gas-limit 900000 --value 100ether  {{.CLI_ARGS}} "deposit()"
+    silent: false
+
+  initiateStake:
+    cmds:
+      - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --gas-limit 900000 {{.CLI_ARGS}} "initiateStake()"
+    silent: false
+
+  amountStakedAVAX:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountStakedAVAX()"
+    silent: false
+
+  amountPendingAVAX:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountPendingAVAX()"
+    silent: false
+
   # Mpc Manager
   lastGenAddr:
     cmds:
