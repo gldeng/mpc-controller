@@ -24,7 +24,7 @@ MPC_MANAGER=$(echo $CONTRACTS  | grep -o 'Deployed MPC Manager, \w\w\w\w\w\w\w\w
 mkdir -p addresses
 echo -n $MPC_MANAGER > addresses/MPC_MANAGER_ADDRESS
 echo -n $AVALIDO > addresses/AVALIDO_ADDRESS
-echo -n $ORACLE_MANAGER > address/ORACLE_MANAGER_ADDRESS
+echo -n $ORACLE_MANAGER > addresses/ORACLE_MANAGER_ADDRESS
 
 #echo "----------Deployed contract addresses----------"
 
