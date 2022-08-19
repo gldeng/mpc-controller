@@ -18,9 +18,9 @@ import (
 )
 
 func main() {
-	var cChainIdFlag = flag.Int64("cChainIdFlag", 43112, "Oracle member private key")
-	var cChainUrlFlag = flag.String("cChainRpcUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
-	var oracleMemberPkFlag = flag.String("oracleMemberPkFlag", "a54a5d692d239287e8358f27caee92ab5756c0276a6db0a062709cd86451a855", "Oracle member private key")
+	var cChainIdFlag = flag.Int64("cChainId", 43112, "Oracle member private key")
+	var cChainUrlFlag = flag.String("cChainUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
+	var oracleMemberPkFlag = flag.String("oracleMemberPK", "a54a5d692d239287e8358f27caee92ab5756c0276a6db0a062709cd86451a855", "Oracle member private key")
 	var oracleManagerAddrFlag = flag.String("oracleManagerAddr", "", "OracleManager contract address")
 	flag.Parse()
 
