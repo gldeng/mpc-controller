@@ -105,8 +105,12 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 }
 
 func (o *Oracle) validators() []*big.Int {
-	validator := o.packValidator(2, true, true, 100)
-	return []*big.Int{validator}
+	var validators []*big.Int
+	for i := 0; i < 5; i++ {
+		validator := o.packValidator(uint64(i), true, true, 100)
+		validators = append(validators, validator)
+	}
+	return validators
 }
 
 func (o *Oracle) packValidator(nodeIndex uint64, hasUptime bool, hasSpace bool, hundredsOfAvax uint64) *big.Int {
