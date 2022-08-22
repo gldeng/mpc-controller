@@ -97,6 +97,16 @@ tasks:
       - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "oracleManagerContract()"
     silent: false
 
+  latestFinalizedEpochId:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "latestFinalizedEpochId()"
+    silent: false
+
+  epochDuration:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "epochDuration()"
+    silent: false
+
   # Validator Selector
   selectValidatorsForStake:
     cmds:
