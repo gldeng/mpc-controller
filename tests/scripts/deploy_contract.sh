@@ -12,7 +12,7 @@ ROLE_ORACLE_ADMIN_PK="a87518b3691061b9de6dd281d2dda06a4fe3a2c1b4621ac1e05d9026f7
 C_CHAIN_RPC_URL=http://127.0.0.1:9650/ext/bc/C/rpc
 
 # Node ID list
-NODE_ID_LIST=["NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5", "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5", "NodeID-NFBbbJ4qCmNaCzeW7sxErhvWqvEQMnYcN", "NodeID-MFrZFVCXPv5iCn6M9K6XduxGTYp891xXZ", "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"]
+NODE_ID_LIST=["NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5","NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5","NodeID-NFBbbJ4qCmNaCzeW7sxErhvWqvEQMnYcN","NodeID-MFrZFVCXPv5iCn6M9K6XduxGTYp891xXZ","NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"]
 
 LAST_WD=$(pwd)
 
@@ -39,7 +39,10 @@ echo "Oracle address:               $ORACLE"
 echo "OracleManager address:        $ORACLE_MANAGER"
 echo "MpcManager address:           $MPC_MANAGER"
 
-# Set node ID list
+# Setup Oracle address for Oracle Manager
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE_MANAGER "setOracleAddress(address)" $ORACLE > /dev/null
+
+# Set node ID list for Oracle
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setNodeIDList(string[])" $NODE_ID_LIST
 
 cd $LAST_WD
