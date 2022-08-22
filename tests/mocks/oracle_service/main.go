@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	var epochDuration = flag.Uint64("epochDur", 100, "Epoch duration")
 	var cChainIdFlag = flag.Int64("cChainId", 43112, "Oracle member private key")
 	var cChainUrlFlag = flag.String("cChainUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
 	var oracleMemberPkFlag = flag.String("oracleMemberPK", "a54a5d692d239287e8358f27caee92ab5756c0276a6db0a062709cd86451a855", "Oracle member private key")
@@ -55,7 +56,7 @@ func main() {
 		panic(err)
 	}
 
-	o := Oracle{myLogger, client, signer, oracleManager}
+	o := Oracle{myLogger, client, signer, oracleManager, *epochDuration}
 	for {
 		err := o.ReceiveMemberReport(context.Background())
 		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
@@ -69,12 +70,19 @@ type Oracle struct {
 	EthClient     *ethclient.Client
 	Auth          *bind.TransactOpts
 	OracleManager *OracleManager
+	EpochDur      uint64
 }
 
 func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
-		epochId := big.NewInt(123456789)
-		tx, err := o.OracleManager.ReceiveMemberReport(o.Auth, epochId, o.validators())
+		blockNumber, err := o.EthClient.BlockNumber(ctx)
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+		epochId := blockNumber - (blockNumber % o.EpochDur)
+		epochIdBig := new(big.Int).SetUint64(epochId)
+
+		tx, err := o.OracleManager.ReceiveMemberReport(o.Auth, epochIdBig, o.validators())
 		if err != nil {
 			errMsg := err.Error()
 			switch {
@@ -105,7 +113,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 	return errors.WithStack(err)
 }
 
-func (o *Oracle) validators() []*big.Int {
+func (o *Oracle) validators() []*big.Int { //todo: check on-chain validator state
 	var validators []*big.Int
 	for i := 0; i < 5; i++ {
 		validator := o.packValidator(uint64(i), true, true, 100)
