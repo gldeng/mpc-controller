@@ -17,8 +17,8 @@ contract Deploy is DSTest, Helpers {
     // TODO: This should be divided into roles rather than used for everything
     address admin = 0x27F957c465214d9C3AF0bf10e52e68bd839c66d4;
     address pauseAdmin = 0x27F957c465214d9C3AF0bf10e52e68bd839c66d4;
-    address oracleAdmin = 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC;
-    address mpcAdmin = 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC;
+    address oracleAdmin = 0x8e7D0f159e992cfC0ee28D55C600106482a818Ea;
+    address mpcAdmin = 0x8e7D0f159e992cfC0ee28D55C600106482a818Ea;
 
     // Address constants
     address lidoFeeAddress = 0x2000000000000000000000000000000000000001;
@@ -26,23 +26,15 @@ contract Deploy is DSTest, Helpers {
 
     // Constants
     address[] oracleAllowlist = [
-        0x03C1196617387899390d3a98fdBdfD407121BB67,
-        0x6C58f6E7DB68D9F75F2E417aCbB67e7Dd4e413bf,
-        0xa7bB9405eAF98f36e2683Ba7F36828e260BD0018,
-        0xE339767906891bEE026285803DA8d8F2f346842C,
-        0x0309a747a34befD1625b5dcae0B00625FAa30460
-    ];
-
-    string[] nodeIDList = [
-        "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5",
-        "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5",
-        "NodeID-NFBbbJ4qCmNaCzeW7sxErhvWqvEQMnYcN",
-        "NodeID-MFrZFVCXPv5iCn6M9K6XduxGTYp891xXZ",
-        "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"
+    0x03C1196617387899390d3a98fdBdfD407121BB67,
+    0x6C58f6E7DB68D9F75F2E417aCbB67e7Dd4e413bf,
+    0xa7bB9405eAF98f36e2683Ba7F36828e260BD0018,
+    0xE339767906891bEE026285803DA8d8F2f346842C,
+    0x0309a747a34befD1625b5dcae0B00625FAa30460
     ];
 
     // Deploy contracts
-    // Usage: forge script src/deploy/Deploy.t.sol --sig "deploy()" --broadcast --rpc-url <PRC URL> --private-key <PK>
+    // Usage: forge script src/deploy/Deploy.t.sol --sig "deploy()" --broadcast --rpc-url <RPC_URL> --private-key <PRIVATE_KEY>
     // Syntax is identical to `cast`
     function deploy() public {
         // Create a transaction
@@ -55,15 +47,15 @@ contract Deploy is DSTest, Helpers {
         // Oracle manager
         OracleManager _oracleManager = new OracleManager();
         OracleManager oracleManager = OracleManager(address(proxyWrapped(address(_oracleManager), admin)));
+        oracleManager.initialize(oracleAdmin, oracleAllowlist);
 
         // Oracle
+        uint256 epochDuration = 100;
         Oracle _oracle = new Oracle();
         Oracle oracle = Oracle(address(proxyWrapped(address(_oracle), admin)));
-        oracle.initialize(oracleAdmin, address(oracleManager));
-        oracle.setNodeIDList(nodeIDList);
+        oracle.initialize(oracleAdmin, address(oracleManager), epochDuration);
 
-        // Oracle manager setup
-        oracleManager.initialize(oracleAdmin, oracleAllowlist);
+        // Oracle manager setup Oracle address
         oracleManager.setOracleAddress(address(oracle));
 
         // Validator selector
