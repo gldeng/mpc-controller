@@ -39,9 +39,9 @@ tasks:
       - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountStakedAVAX()"
     silent: false
 
-  amountPendingAVAX:
+  amountPendingStakeAVAX:
     cmds:
-      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountPendingAVAX()"
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountPendingStakeAVAX()"
     silent: false
 
   # Mpc Manager
