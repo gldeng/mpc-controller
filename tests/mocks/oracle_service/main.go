@@ -57,9 +57,8 @@ func main() {
 
 	o := Oracle{myLogger, client, signer, oracleManager}
 	for {
-		if err := o.ReceiveMemberReport(context.Background()); err != nil {
-			myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
-		}
+		err := o.ReceiveMemberReport(context.Background())
+		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
 		myLogger.InfoNilError(err, "Success to call ReceiveMemberReport")
 		time.Sleep(time.Hour * 24)
 	}
