@@ -82,6 +82,8 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 		epochId := blockNumber - (blockNumber % o.EpochDur)
 		epochIdBig := new(big.Int).SetUint64(epochId)
 
+		o.Logger.Info("Epoch id info", []logger.Field{{"blockNumber", blockNumber}, {"epochId", epochId}}...)
+
 		tx, err := o.OracleManager.ReceiveMemberReport(o.Auth, epochIdBig, o.validators())
 		if err != nil {
 			errMsg := err.Error()
