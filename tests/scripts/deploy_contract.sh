@@ -8,6 +8,10 @@ ROLE_DEFAULT_ADMIN_PK="56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf5
 ROLE_ORACLE_ADMIN="0x8e7D0f159e992cfC0ee28D55C600106482a818Ea"
 ROLE_ORACLE_ADMIN_PK="a87518b3691061b9de6dd281d2dda06a4fe3a2c1b4621ac1e05d9026f73065bd"
 
+# Protocol manager and its PK
+ROLE_PROTOCOL_MANAGER=$ROLE_DEFAULT_ADMIN
+ROLE_PROTOCOL_MANAGER_PK=$ROLE_DEFAULT_ADMIN_PK
+
 # Network URLs
 C_CHAIN_RPC_URL=http://127.0.0.1:9650/ext/bc/C/rpc
 
@@ -43,6 +47,12 @@ echo "MpcManager address:           $MPC_MANAGER"
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE_MANAGER "setOracleAddress(address)" $ORACLE > /dev/null
 
 # Set node ID list for Oracle
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setNodeIDList(string[])" $NODE_ID_LIST
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setNodeIDList(string[])" $NODE_ID_LIST > /dev/null
+
+# Set stake period for AvaLido
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_PROTOCOL_MANAGER --private-key $ROLE_PROTOCOL_MANAGER_PK --gas-limit 900000 $AVALIDO "setStakePeriod(uint256)" 600 > /dev/null
+
+# Set P-Chain export buffer
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_PROTOCOL_MANAGER --private-key $ROLE_PROTOCOL_MANAGER_PK --gas-limit 900000 $AVALIDO "setPChainExportBuffer(uint256)" 300 > /dev/null
 
 cd $LAST_WD
