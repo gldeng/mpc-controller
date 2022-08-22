@@ -20,4 +20,4 @@ cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $R
 
 # Fund AvaLido address so that it have sufficient balance to initiate stake
 AVALIDO_ADDRESS=$(cat $HOME/mpctest/contracts/addresses/AVALIDO_ADDRESS)
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --gas-limit 900000 --value 100ether $AVALIDO_ADDRESS "deposit()" > /dev/null
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --gas-limit 900000 --value 10000ether $AVALIDO_ADDRESS "deposit()" > /dev/null
