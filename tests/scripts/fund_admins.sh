@@ -17,4 +17,4 @@ C_CHAIN_RPC_URL=http://127.0.0.1:9650/ext/bc/C/rpc
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --value 10ether $ROLE_ORACLE_ADMIN > /dev/null
 
 # fund the Mpc admin
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --value 10ether ROLE_MPC_ADMIN > /dev/null
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --value 10ether $ROLE_MPC_ADMIN > /dev/null
