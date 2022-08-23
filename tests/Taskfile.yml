@@ -13,16 +13,19 @@ tasks:
        - bash ./tests/scripts/test_wd.sh
        - bash ./tests/scripts/start_avalanche.sh
        - bash ./tests/scripts/start_mpc-server.sh
-       - sleep 20
+       - sleep 8
+       - bash ./tests/scripts/fund_admins.sh
+       - bash ./tests/scripts/fund_oracle_members.sh
        - bash ./tests/scripts/deploy_contract.sh
+       - bash ./tests/scripts/start_oracle_member_mock.sh
        - bash ./tests/scripts/start_mpc-controller.sh
+       - sleep 1
        - bash ./tests/scripts/fund_participants.sh
 
   createGroup:
     cmds:
       - task: init
       - venom run tests/testsuites/createGroup.yml
-      - sleep 5
 
   requestKeygen:
     cmds:
@@ -32,11 +35,10 @@ tasks:
   initiateStake:
     cmds:
       - task: requestKeygen
-      - sleep 120
+      - sleep 70 # todo: boost keygen process
       - bash ./tests/scripts/fund_initiateStake.sh
-      - sleep 5
       - venom run tests/testsuites/initiateStake.yml
-      - sleep 30
+      - sleep 60
 
   initiateStakeLoop:
     cmds:

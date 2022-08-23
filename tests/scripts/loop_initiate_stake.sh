@@ -7,10 +7,11 @@ echo Starting loop initiateStake request for $MAX_LOOPS_ALLOWED times
 
 while [ $LOOP_INITIATE_STAKE -lt $MAX_LOOPS_ALLOWED ]
 do
+    bash ./tests/scripts/fund_initiateStake.sh
     venom run tests/testsuites/initiateStake.yml
     LOOP_INITIATE_STAKE=$((LOOP_INITIATE_STAKE+1))
 
     echo Looped initiateStake at $(date +%Y-%m-%d/%H:%M:%S), total times: $LOOP_INITIATE_STAKE
 
-    sleep 13
+    sleep 20
 done

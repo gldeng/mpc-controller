@@ -8,8 +8,8 @@ read LAST_TEST_WD < $HOME/mpctest/testwd_last
 
 cd $LAST_TEST_WD/avalanchego
 
-mkdir logs
-mkdir db
+mkdir -p logs
+mkdir -p db
 
 AVALANCHEGO_REPO=$HOME/mpctest/avalanchego
 

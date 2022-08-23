@@ -9,6 +9,9 @@ type Field struct {
 }
 
 func AppendErrorFiled(err error, fields ...Field) []Field {
+	if err == nil {
+		return fields
+	}
 	var errorFields []Field
 	errorFields = append(errorFields, fields...)
 	errMsg := fmt.Sprintf("%v", err)

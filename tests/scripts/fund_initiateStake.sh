@@ -14,11 +14,10 @@ LAST_GEN_ADDRESS=$(cast call --rpc-url $C_CHAIN_RPC_URL $MPC_MANAGER_ADDRESS "la
 LAST_GEN_ADDRESS=0x${LAST_GEN_ADDRESS:26}
 
 echo -n $LAST_GEN_ADDRESS > $HOME/mpctest/contracts/addresses/LAST_GEN_ADDRESS
-echo "LastGenAddress: $LAST_GEN_ADDRESS"
 
 # Fund the LAST_GEN_ADDRESS so that they can afford gas fee
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --value 1000ether $LAST_GEN_ADDRESS > /dev/null
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --gas-limit 900000 --value 1ether $LAST_GEN_ADDRESS > /dev/null
 
 # Fund AvaLido address so that it have sufficient balance to initiate stake
 AVALIDO_ADDRESS=$(cat $HOME/mpctest/contracts/addresses/AVALIDO_ADDRESS)
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --value 49990000ether $AVALIDO_ADDRESS > /dev/null
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_DEFAULT_ADMIN --private-key $ROLE_DEFAULT_ADMIN_PK --gas-limit 900000 --value 100000ether $AVALIDO_ADDRESS "deposit()" > /dev/null
