@@ -9,7 +9,7 @@ testcases:
   - name: readAvaLidoAddress
     steps:
       - type: readfile
-        path: /tmp/mpctest/contracts/addresses/AVALIDO_ADDRESS
+        path: MYHOME/mpctest/contracts/addresses/AVALIDO_ADDRESS
         vars:
           content:
             from: result.content
@@ -18,6 +18,6 @@ testcases:
 
   - name: initiate stake
     steps:
-      - script: cast send --rpc-url {{.C_CHAIN_RPC_URL}} --from {{.ROLE_DEFAULT_ADMIN}} --private-key {{.ROLE_DEFAULT_ADMIN_PK}} --gas 900000 {{.readAvaLidoAddress.content}} "initiateStake()"
+      - script: cast send --rpc-url {{.C_CHAIN_RPC_URL}} --from {{.ROLE_DEFAULT_ADMIN}} --private-key {{.ROLE_DEFAULT_ADMIN_PK}} --gas-limit 900000 {{.readAvaLidoAddress.content}} "initiateStake()"
         assertions: # todo: to improve assertion
           - result.systemout ShouldNotBeEmpty

@@ -19,7 +19,11 @@ type Config struct {
 
 	NetworkConfig  `yaml:"networkConfig"`
 	DatabaseConfig `yaml:"databaseConfig"`
+
+	MonitorConfig `yaml:"monitorConfig"`
 }
+
+// todo: check fee digital places and simplify fee config
 
 type NetworkConfig struct {
 	NetworkId uint32 `yaml:"networkId"`
@@ -28,6 +32,7 @@ type NetworkConfig struct {
 	AvaxId    string `yaml:"avaxId"`
 
 	ImportFee  uint64 `yaml:"importFee"`
+	ExportFee  uint64 `yaml:"exportFee"`
 	GasPerByte uint64 `yaml:"gasPerByte"`
 	GasPerSig  uint64 `yaml:"gasPerSig"`
 	GasFixed   uint64 `yaml:"gasFixed"`
@@ -35,6 +40,10 @@ type NetworkConfig struct {
 
 type DatabaseConfig struct {
 	BadgerDbPath string `yaml:"badgerDbPath"`
+}
+
+type MonitorConfig struct {
+	MetricsServeAddr string `yaml:"metricsServeAddr"`
 }
 
 func ParseFile(filename string) *Config {

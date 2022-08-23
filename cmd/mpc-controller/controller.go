@@ -7,31 +7,31 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
-	"github.com/avalido/mpc-controller/cache"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/config"
-	"github.com/avalido/mpc-controller/contract/reconnector"
+	"github.com/avalido/mpc-controller/contract/caller"
+	"github.com/avalido/mpc-controller/contract/transactor"
+	"github.com/avalido/mpc-controller/contract/watcher"
 	"github.com/avalido/mpc-controller/core"
-	"github.com/avalido/mpc-controller/dispatcher"
-	"github.com/avalido/mpc-controller/support/keygen"
-	"github.com/avalido/mpc-controller/tasks/joining"
+	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/logger/adapter"
+	"github.com/avalido/mpc-controller/prom"
+	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/tasks/rewarding"
 	"github.com/avalido/mpc-controller/tasks/staking"
+	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/avalido/mpc-controller/utils/crypto/hash256"
-	"github.com/avalido/mpc-controller/utils/network"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
+	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"golang.org/x/sync/errgroup"
 	"math/big"
 	"reflect"
-	"time"
-
-	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/queue"
-	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/avalido/mpc-controller/storage/badgerDB"
-	"github.com/avalido/mpc-controller/support/participant"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -43,6 +43,7 @@ type Service interface {
 }
 
 type MpcController struct {
+	Logger   logger.Logger
 	ID       string
 	Services []Service
 }
@@ -54,11 +55,11 @@ func (c *MpcController) Run(ctx context.Context) error {
 
 		service := service
 		g.Go(func() error {
-			fmt.Printf("Service %q started at: %v \n", name, time.Now())
+			c.Logger.Info(fmt.Sprintf("%v service %v starting...", c.ID, name))
 			if err := service.Start(ctx); err != nil {
 				return errors.Wrapf(err, "failed starting service: %v", name)
 			}
-			fmt.Printf("Service %q stopped at: %v\n", name, time.Now())
+			c.Logger.Info(fmt.Sprintf("%v service %v stopped", c.ID, name))
 			return nil
 		})
 	}
@@ -73,44 +74,55 @@ func (c *MpcController) Run(ctx context.Context) error {
 func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Parse config
 	config := config.ParseFile(c.String(configFile))
+	pss := c.String(password)
 
 	// Create logger
 	logger.DevMode = config.EnableDevMode
 	myLogger := logger.Default()
 
+	// Create nonce manager
+	noncer := noncer.New(1, 0) // todo: config it
+
 	// Create database
+	badgerDBLogger := &adapter.BadgerDBLoggerAdapter{Logger: logger.DefaultWithCallerSkip(3)}
 	myDB := &badgerDB.BadgerDB{
 		Logger: myLogger,
-		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath),
+		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, badgerDBLogger),
 	}
 
 	// Create dispatcher
-	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, queue.NewArrayQueue(1024), 1024)
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, config.ControllerId+"_global", 1024)
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
+	myLogger.Info(fmt.Sprintf("MpcManager address: %v", config.MpcManagerAddress))
 
 	// Create mpcClient
-	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl)
+	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl, config.ControllerId)
 
-	// Parse private myPrivKey
+	// Decrypt private key
+	config.ControllerKey = decryptKey(config.ControllerId, pss, config.ControllerKey)
+
+	// Parse private key
 	myPrivKey, err := crypto.HexToECDSA(config.ControllerKey)
 	if err != nil {
-		panic(errors.Wrapf(err, "Failed to parse controller private key %q", config.ControllerKey))
+		panic(errors.Wrapf(err, "Failed to parse private key %q", config.ControllerKey))
 	}
 
-	// Parse public myPrivKey
+	myAddr := addrs.PubkeyToAddresse(&myPrivKey.PublicKey)
+	myLogger.Info(fmt.Sprintf("%v address: %v", config.ControllerId, myAddr))
+
+	// Parse public key
 	myPubKeyBytes := myCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
-	myPubKeyHex := bytes.BytesToHex(myPubKeyBytes)
-	myPubKeyHash := hash256.FromBytes(myPubKeyBytes)
+	myPartiPubKey := storage.PubKey(myPubKeyBytes)
 
 	// Convert chain ID
 	chainId := big.NewInt(config.ChainId)
 
-	// Create controller transaction signer
+	// Create transaction signer
 	signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
 	if err != nil {
-		panic(errors.Wrapf(err, "Failed to create controller transaction signer", logger.Field{"error", err}))
+		panic(errors.Wrapf(err, "Failed to create transaction signer", logger.Field{"error", err}))
 	}
 
 	// Create eth rpc client
@@ -118,86 +130,84 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	if err != nil {
 		panic(errors.Wrapf(err, "Failed to connect eth rpc client, url: %q", config.EthRpcUrl))
 	}
-
-	// Create eth ws client
-	ethWsClient, err := ethclient.Dial(config.EthWsUrl)
-	if err != nil {
-		panic(errors.Wrapf(err, "Failed to connect eth ws client, url: %q", config.EthWsUrl))
-	}
+	rpcEthCliWrapper := &chain.RpcEthClientWrapper{myLogger, ethRpcClient}
 
 	// Create C-Chain issue client
 	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
+	evmClientWrapper := &chain.EvmClientWrapper{myLogger, cChainIssueCli}
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
+	platformvmClientWrapper := &chain.PlatformvmClientWrapper{myLogger, pChainIssueCli}
 
-	// Create contract filterer reconnector
-	filterReconnector := reconnector.ContractFilterReconnector{
-		Logger:    myLogger,
-		Updater:   &network.EthClientDialerImpl{myLogger, config.EthWsUrl, ethWsClient},
-		Publisher: myDispatcher,
+	boundCaller := caller.MyCaller{
+		ContractAddr:   contractAddr,
+		ContractCaller: rpcEthCliWrapper,
+		Logger:         myLogger,
 	}
+	boundCaller.Init(ctx)
 
-	cacheWrapper := cache.CacheWrapper{
-		Dispatcher: myDispatcher,
+	boundTransactor := transactor.MyTransactor{
+		Auth:               signer,
+		ContractAddr:       contractAddr,
+		ContractTransactor: rpcEthCliWrapper,
+		EthClient:          rpcEthCliWrapper,
+		Logger:             myLogger,
 	}
+	boundTransactor.Init(ctx)
 
-	participantMaster := participant.ParticipantMaster{
-		Logger:          myLogger,
-		MyPubKeyHex:     myPubKeyHex,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyPubKeyBytes:   myPubKeyBytes,
+	watcherMaster := watcher.Master{
+		BoundCaller:     &boundCaller,
+		BoundTransactor: &boundTransactor,
 		ContractAddr:    contractAddr,
-		ContractCaller:  ethRpcClient,
-		Dispatcher:      myDispatcher,
-		Storer:          myDB,
-	}
-
-	keygenMaster := keygen.KeygenMaster{
+		DB:              myDB,
+		EthWsURL:        config.EthWsUrl,
+		KeyGeneratorMPC: mpcClient,
 		Logger:          myLogger,
-		ContractAddr:    contractAddr,
+		PartiPubKey:     myPartiPubKey,
 		Dispatcher:      myDispatcher,
-		KeygenDoner:     mpcClient,
-		Storer:          myDB,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		Transactor:      ethRpcClient,
-		Signer:          signer,
-		Receipter:       ethRpcClient,
 	}
 
-	joiningMaster := joining.JoiningMaster{
+	rewardMaster := rewarding.Master{
+		BoundCaller:     &boundCaller,
+		BoundTransactor: &boundTransactor,
+		ClientPChain:    pChainIssueCli,
+		DB:              myDB,
+		Dispatcher:      myDispatcher,
+		IssuerCChain:    evmClientWrapper,
+		IssuerPChain:    platformvmClientWrapper,
 		Logger:          myLogger,
-		ContractAddr:    contractAddr,
-		MyPubKeyHashHex: myPubKeyHash.Hex(),
-		MyIndexGetter:   &cacheWrapper,
-		Dispatcher:      myDispatcher,
-		Signer:          signer,
-		Receipter:       ethRpcClient,
-		Transactor:      ethRpcClient,
+		NetWorkCtx:      networkCtx(config),
+		PartiPubKey:     myPartiPubKey,
+		SignerMPC:       mpcClient,
 	}
 
-	stakingMaster := staking.StakingMaster{
-		Logger:            myLogger,
-		ContractAddr:      contractAddr,
-		MyPubKeyHashHex:   myPubKeyHash.Hex(),
-		Dispatcher:        myDispatcher,
-		NetworkContext:    networkCtx(config),
-		Cache:             &cacheWrapper,
-		SignDoner:         mpcClient,
-		Noncer:            ethRpcClient,
-		CChainIssueClient: cChainIssueCli,
-		PChainIssueClient: pChainIssueCli,
+	stakeMaster := staking.Master{
+		BoundTransactor: &boundTransactor,
+		DB:              myDB,
+		Dispatcher:      myDispatcher,
+		EthClient:       rpcEthCliWrapper,
+		IssuerCChain:    evmClientWrapper,
+		IssuerPChain:    platformvmClientWrapper,
+		Logger:          myLogger,
+		NetWorkCtx:      networkCtx(config),
+		NonceGiver:      noncer,
+		PartiPubKey:     myPartiPubKey,
+		SignerMPC:       mpcClient,
+	}
+
+	metricsService := prom.MetricsService{
+		ServeAddr: config.MetricsServeAddr,
 	}
 
 	controller := MpcController{
-		ID: config.ControllerId,
+		Logger: myLogger,
+		ID:     config.ControllerId,
 		Services: []Service{
-			&cacheWrapper,
-			&filterReconnector,
-			&participantMaster,
-			&keygenMaster,
-			&joiningMaster,
-			&stakingMaster,
+			&watcherMaster,
+			&stakeMaster,
+			&rewardMaster,
+			&metricsService,
 		},
 	}
 
@@ -229,9 +239,28 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 			ID: assetId,
 		},
 		config.ImportFee,
+		config.ExportFee,
 		config.GasPerByte,
 		config.GasPerSig,
 		config.GasFixed,
 	)
 	return networkCtx
+}
+
+func decryptKey(id, pss, cipherKey string) string {
+	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(cipherKey))
+	if err != nil {
+		err = errors.Wrapf(err, "%q failed to decrypt  key %q", id, cipherKey)
+		panic(fmt.Sprintf("%+v", err))
+	}
+
+	var privKey string
+	switch len(cipherKey) {
+	case 192:
+		privKey = string(keyBytes)
+	case 128:
+		privKey = bytes.BytesToHex(keyBytes)
+	}
+
+	return privKey
 }

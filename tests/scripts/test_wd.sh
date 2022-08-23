@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-mkdir -p /tmp/mpctest/testwd
+mkdir -p $HOME/mpctest/testwd
 
-LAST_TEST_WD=$(mktemp -d -t mpctest-$(date +%Y%m%d%H%M%S)-XXX --tmpdir=/tmp/mpctest/testwd)
+LAST_TEST_WD=$(mktemp -d -t mpctest-$(date +%Y%m%d%H%M%S)-XXX --tmpdir=$HOME/mpctest/testwd)
 
 echo "Working directory: "$LAST_TEST_WD
 
-echo $LAST_TEST_WD >  /tmp/mpctest/testwd_last
+echo $LAST_TEST_WD >  $HOME/mpctest/testwd_last
 
 cd $LAST_TEST_WD
 

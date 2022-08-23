@@ -1,28 +1,26 @@
 #!/usr/bin/env bash
 
-mkdir -p /tmp/mpctest
+mkdir -p $HOME/mpctest
+mkdir -p $HOME/mpctest/mpc-controller
 
-mkdir -p /tmp/mpctest/mpc-controller
-
-if [ ! -d "/tmp/mpctest/avalanchego" ]; then
-  git clone git@github.com:ava-labs/avalanchego.git /tmp/mpctest/avalanchego
-fi
-
-if [ ! -d "/tmp/mpctest/mpc-server" ]; then
-  git clone git@github.com:AvaLido/mpc-server.git /tmp/mpctest/mpc-server
-fi
-
-if [ ! -d "/tmp/mpctest/contracts" ]; then
-  git submodule init
-  git submodule update
-
+if [ ! -d "$HOME/mpctest/avalanchego" ]; then
+  git clone git@github.com:ava-labs/avalanchego.git $HOME/mpctest/avalanchego
   LAST_WD=$(pwd)
-  cd /tmp/mpctest/
+  cd $HOME/mpctest/avalanchego
+  git checkout tags/v1.7.14
+  cd $LAST_WD
+  cp ./tests/configs/genesis/genesis_local.go $HOME/mpctest/avalanchego/genesis/genesis_local.go
+fi
 
-  forge init contracts
-  cp -a $LAST_WD/contract/src/. contracts/src/
-  cp -a $LAST_WD/contract/lib/. contracts/lib/
+if [ ! -d "$HOME/mpctest/mpc-server" ]; then
+  git clone git@github.com:AvaLido/mpc-server.git $HOME/mpctest/mpc-server
+fi
 
-  rm contracts/src/Contract.sol contracts/test/Contract.t.sol
+if [ ! -d "$HOME/mpctest/contracts" ]; then
+  LAST_WD=$(pwd)
+  cd $HOME/mpctest/
+  git clone git@github.com:AvaLido/contracts.git
+  cd contracts
+  git submodule update --init --recursive --remote
   cd $LAST_WD
 fi

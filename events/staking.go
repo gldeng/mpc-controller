@@ -8,17 +8,23 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Events concerning staking
 
-type StakingTaskDoneEvent struct {
-	RequestID   uint64
+type StakeTaskDone struct {
+	RequestID uint64
+	Nonce     uint64
+	TaskID    common.Hash // TxHash
+
+	AddDelegatorTxID ids.ID
+	ExportTxID       ids.ID
+	ImportTxID       ids.ID
+
 	DelegateAmt uint64
 	StartTime   uint64
 	EndTime     uint64
-	NodeID      ids.ShortID
+	NodeID      ids.NodeID
 
 	PubKeyHex     string
 	CChainAddress common.Address
 	PChainAddress ids.ShortID
-	Nonce         uint64
 
 	ParticipantPubKeys []string
 }

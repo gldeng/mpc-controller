@@ -1,82 +1,105 @@
 // SPDX-FileCopyrightText: 2022 Hyperelliptic Labs and RockX
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.14;
+pragma solidity 0.8.10;
 
 import "../lib/openzeppelin-contracts/contracts/security/Pausable.sol";
-import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/access/AccessControlEnumerable.sol";
-import "./interfaces/IMpcManager.sol";
-import "./interfaces/IMpcCoordinator.sol";
+import "../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcManager, IMpcCoordinator {
-    // TODO:
-    // Key these statements for observation and testing purposes only
-    // Considering remove them later before everything fixed up and get into production mode.
+import "./Roles.sol";
+import "./Types.sol";
+import "./interfaces/IMpcManager.sol";
+
+contract MpcManager is Pausable, AccessControlEnumerable, IMpcManager, Initializable {
+    using IdHelpers for bytes32;
+    using ConfirmationHelpers for uint256;
+    enum KeygenStatus {
+        NOT_EXIST,
+        REQUESTED,
+        COMPLETED,
+        CANCELED
+    }
+    uint256 constant MAX_GROUP_SIZE = 248;
+    uint256 constant PUBKEY_LENGTH = 64;
+    // Errors
+    error AvaLidoOnly();
+
+    error InvalidGroupSize(); // A group requires 2 or more participants.
+    error InvalidThreshold(); // Threshold has to be in range [1, n - 1].
+    error InvalidPublicKey();
+    error GroupNotFound();
+    error InvalidGroupMembership();
+    error AttemptToReaddGroup();
+
+    error KeygenNotRequested();
+    error GotPendingKeygenRequest();
+    error NotInAuthorizedGroup();
+    error KeyNotGenerated();
+    error AttemptToReconfirmKey();
+
+    error InvalidAmount();
+    error QuorumAlreadyReached();
+    error AttemptToRejoin();
+
+    // Events
+    event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index);
+    event KeyGenerated(bytes32 indexed groupId, bytes publicKey);
+    event KeygenRequestAdded(bytes32 indexed groupId, uint256 requestNumber);
+    event KeygenRequestCanceled(bytes32 indexed groupId, uint256 requestNumber);
+    event StakeRequestAdded(
+        uint256 requestNumber,
+        bytes indexed publicKey,
+        string nodeID,
+        uint256 amount,
+        uint256 startTime,
+        uint256 endTime
+    );
+
+    event RequestStarted(bytes32 indexed requestHash, uint256 participantIndices);
+
+    // Types
+    struct ParticipantInfo {
+        bytes publicKey;
+        address ethAddress;
+    }
+
+    // State variables
+    uint256 public lastKeygenRequestNumber;
+    bytes32 public lastKeygenRequest;
     bytes public lastGenPubKey;
     address public lastGenAddress;
 
-    enum RequestStatus {
-        UNKNOWN,
-        STARTED,
-        COMPLETED
-    }
-    struct Request {
-        bytes publicKey;
-        bytes message;
-        uint256[] participantIndices;
-        RequestStatus status;
-    }
-    struct StakeRequestDetails {
-        string nodeID;
-        uint256 amount;
-        uint256 startTime;
-        uint256 endTime;
-    }
+    address public avaLidoAddress;
+    address public principalTreasuryAddress;
+    address public rewardTreasuryAddress;
 
-    address private _avaLidoAddress;
-    // groupId -> number of participants in the group
-    mapping(bytes32 => uint256) private _groupParticipantCount;
-    // groupId -> threshold
-    mapping(bytes32 => uint256) private _groupThreshold;
-    // groupId -> index -> participant
-    mapping(bytes32 => mapping(uint256 => bytes)) private _groupParticipants;
+    // participantId -> participant
+    mapping(bytes32 => ParticipantInfo) private _groupParticipants;
 
     // key -> groupId
-    mapping(bytes => KeyInfo) private _generatedKeys;
+    mapping(bytes => bytes32) private _keyToGroupIds;
 
-    // key -> index -> confirmed
-    mapping(bytes => mapping(uint256 => bool)) private _keyConfirmations;
+    // keygenRequestNumber -> key -> confirmation map
+    mapping(uint256 => mapping(bytes => uint256)) private _keyConfirmations;
 
-    // request status
-    mapping(uint256 => Request) private _requests;
-    mapping(uint256 => StakeRequestDetails) private _stakeRequestDetails;
-    uint256 private _lastRequestId;
+    // groupId -> requestHash -> request status
+    mapping(bytes32 => mapping(bytes32 => uint256)) private _requestConfirmations; // Last Byte = total-Confirmation, Rest = Confirmation flags (for max of 248 members)
 
-    event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index);
-    event KeyGenerated(bytes32 indexed groupId, bytes publicKey);
-    event KeygenRequestAdded(bytes32 indexed groupId);
-    event StakeRequestAdded(
-        uint256 requestId,
-        bytes indexed publicKey,
-        string nodeID,
-        uint256 amount,
-        uint256 startTime,
-        uint256 endTime
-    );
-    event StakeRequestStarted(
-        uint256 requestId,
-        bytes indexed publicKey,
-        uint256[] participantIndices,
-        string nodeID,
-        uint256 amount,
-        uint256 startTime,
-        uint256 endTime
-    );
-    event SignRequestAdded(uint256 requestId, bytes indexed publicKey, bytes message);
-    event SignRequestStarted(uint256 requestId, bytes indexed publicKey, bytes message);
+    uint256 private _lastStakeRequestNumber;
 
-    constructor() {
+    function initialize(
+        address _roleMpcAdmin, // Role that can add mpc group and request for keygen.
+        address _rolePauseManager,
+        address _avaLidoAddress,
+        address _principalTreasuryAddress,
+        address _rewardTreasuryAddress
+    ) public initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(ROLE_MPC_MANAGER, _roleMpcAdmin);
+        _setupRole(ROLE_PAUSE_MANAGER, _rolePauseManager);
+        avaLidoAddress = _avaLidoAddress;
+        principalTreasuryAddress = _principalTreasuryAddress;
+        rewardTreasuryAddress = _rewardTreasuryAddress;
     }
 
     // -------------------------------------------------------------------------
@@ -93,11 +116,14 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
         uint256 amount,
         uint256 startTime,
         uint256 endTime
-    ) external payable onlyAvaLido {
-        require(lastGenAddress != address(0), "Key has not been generated yet.");
-        require(msg.value == amount, "Incorrect value.");
+    ) external payable whenNotPaused onlyAvaLido {
+        if (lastGenAddress == address(0)) revert KeyNotGenerated();
+        if (msg.value != amount) revert InvalidAmount();
         payable(lastGenAddress).transfer(amount);
-        _handleStakeRequest(lastGenPubKey, nodeID, amount, startTime, endTime);
+
+        uint256 requestNumber = _getNextStakeRequestNumber();
+
+        emit StakeRequestAdded(requestNumber, lastGenPubKey, nodeID, amount, startTime, endTime);
     }
 
     /**
@@ -108,25 +134,26 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
      * @param threshold The threshold t. Note: t + 1 participants are required to complete a
      * signing.
      */
-    function createGroup(bytes[] calldata publicKeys, uint256 threshold) external onlyAdmin {
-        // TODO: Refine ACL
-        // TODO: Check public keys are valid
-        require(publicKeys.length > 1, "A group requires 2 or more participants.");
-        require(threshold >= 1 && threshold < publicKeys.length, "Invalid threshold");
+    function createGroup(bytes[] calldata publicKeys, uint8 threshold) external onlyRole(ROLE_MPC_MANAGER) {
+        uint256 groupSize = publicKeys.length;
+        if (groupSize < 2 || groupSize > MAX_GROUP_SIZE) revert InvalidGroupSize();
+        if (threshold < 1 || threshold >= groupSize) revert InvalidThreshold();
 
-        bytes memory b = bytes.concat(bytes32(threshold));
-        for (uint256 i = 0; i < publicKeys.length; i++) {
+        bytes memory b;
+        for (uint256 i = 0; i < groupSize; i++) {
+            if (publicKeys[i].length != PUBKEY_LENGTH) revert InvalidPublicKey();
             b = bytes.concat(b, publicKeys[i]);
         }
-        bytes32 groupId = keccak256(b);
+        bytes32 groupId = IdHelpers.makeGroupId(keccak256(b), groupSize, threshold);
 
-        uint256 count = _groupParticipantCount[groupId];
-        require(count == 0, "Group already exists.");
-        _groupParticipantCount[groupId] = publicKeys.length;
-        _groupThreshold[groupId] = threshold;
+        bytes32 participantId = groupId.makeParticipantId(1);
+        address knownFirstParticipantAddr = _groupParticipants[participantId].ethAddress;
+        if (knownFirstParticipantAddr != address(0)) revert AttemptToReaddGroup();
 
         for (uint256 i = 0; i < publicKeys.length; i++) {
-            _groupParticipants[groupId][i + 1] = publicKeys[i]; // Participant index is 1-based.
+            participantId = groupId.makeParticipantId(i + 1);
+            _groupParticipants[participantId].publicKey = publicKeys[i]; // Participant index is 1-based.
+            _groupParticipants[participantId].ethAddress = _calculateAddress(publicKeys[i]); // Participant index is 1-based.
             emit ParticipantAdded(publicKeys[i], groupId, i + 1);
         }
     }
@@ -137,144 +164,140 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
      * @param groupId The id of the group which is deterministically derived from the public keys
      * of the ordered group members and the threshold.
      */
-    function requestKeygen(bytes32 groupId) external onlyAdmin {
-        // TODO: Refine ACL
-        emit KeygenRequestAdded(groupId);
+    function requestKeygen(bytes32 groupId) external onlyRole(ROLE_MPC_MANAGER) {
+        if (KeygenStatusHelpers.getKeygenStatus(lastKeygenRequest) == uint8(KeygenStatus.REQUESTED))
+            revert GotPendingKeygenRequest();
+
+        lastKeygenRequest = KeygenStatusHelpers.makeKeygenRequest(groupId, uint8(KeygenStatus.REQUESTED));
+        uint256 requestNumber = _getNextKeygenRequestNumber();
+        emit KeygenRequestAdded(groupId, requestNumber);
+    }
+
+    /**
+     * @notice Admin may want to cancel the last keygen request if due to whatever reason the keygen
+     * request wasn't able to complete (e.g. timeout).
+     */
+    function cancelKeygen() external onlyRole(ROLE_MPC_MANAGER) {
+        if (KeygenStatusHelpers.getKeygenStatus(lastKeygenRequest) != uint8(KeygenStatus.REQUESTED)) return;
+        bytes32 groupId = KeygenStatusHelpers.getGroupId(lastKeygenRequest);
+        lastKeygenRequest = KeygenStatusHelpers.makeKeygenRequest(groupId, uint8(KeygenStatus.CANCELED));
+        emit KeygenRequestCanceled(groupId, lastKeygenRequestNumber);
     }
 
     /**
      * @notice All group members have to report the generated key which also serves as the proof.
-     * @param groupId The id of the mpc group.
-     * @param myIndex The index of the participant in the group. This is 1-based.
+     * @param participantId The id of a party in an mpc group.
      * @param generatedPublicKey The generated public key.
      */
-    function reportGeneratedKey(
-        bytes32 groupId,
-        uint256 myIndex,
-        bytes calldata generatedPublicKey
-    ) external onlyGroupMember(groupId, myIndex) {
-        KeyInfo storage info = _generatedKeys[generatedPublicKey];
+    function reportGeneratedKey(bytes32 participantId, bytes calldata generatedPublicKey)
+    external
+    onlyGroupMember(participantId)
+    {
+        if (KeygenStatusHelpers.getKeygenStatus(lastKeygenRequest) != uint8(KeygenStatus.REQUESTED))
+            revert KeygenNotRequested();
 
-        require(!info.confirmed, "Key has already been confirmed by all participants.");
+        bytes32 groupId = participantId.getGroupId();
+        bytes32 authGroupId = KeygenStatusHelpers.getGroupId(lastKeygenRequest);
+        if (groupId != authGroupId) revert NotInAuthorizedGroup();
 
-        // TODO: Check public key valid
-        _keyConfirmations[generatedPublicKey][myIndex] = true;
+        uint8 myIndex = participantId.getParticipantIndex();
+        uint8 groupSize = participantId.getGroupSize();
+        uint256 confirmation = _keyConfirmations[lastKeygenRequestNumber][generatedPublicKey];
+        uint256 myConfirm = ConfirmationHelpers.confirm(myIndex);
+        if ((confirmation & myConfirm) > 0) revert AttemptToReconfirmKey();
 
-        if (_generatedKeyConfirmedByAll(groupId, generatedPublicKey)) {
-            info.groupId = groupId;
-            info.confirmed = true;
-            // TODO: The two sentence below for naive testing purpose, to deal with them furher.
+        uint256 indices = confirmation.getIndices();
+        indices += myConfirm;
+        uint8 confirmationCount = confirmation.getConfirmationCount();
+        confirmationCount++;
+
+        if (confirmationCount == groupSize) {
+            _keyToGroupIds[generatedPublicKey] = groupId;
             lastGenPubKey = generatedPublicKey;
             lastGenAddress = _calculateAddress(generatedPublicKey);
             emit KeyGenerated(groupId, generatedPublicKey);
         }
-
-        // TODO: Removed _keyConfirmations data after all confirmed
-    }
-
-    /**
-     * @notice This is the primitive signing request. It may not be used in actual production.
-     * @param publicKey The publicKey used for signing.
-     * @param message An arbitrary message to be signed.
-     */
-    function requestSign(bytes calldata publicKey, bytes calldata message) external onlyAvaLido {
-        KeyInfo memory info = _generatedKeys[publicKey];
-        require(info.confirmed, "Key doesn't exist or has not been confirmed.");
-        uint256 requestId = _getNextRequestId();
-        Request storage status = _requests[requestId];
-        status.publicKey = publicKey;
-        status.message = message;
-        emit SignRequestAdded(requestId, publicKey, message);
+        _keyConfirmations[lastKeygenRequestNumber][generatedPublicKey] = ConfirmationHelpers.makeConfirmation(
+            indices,
+            confirmationCount
+        );
     }
 
     /**
      * @notice Participant has to call this function to join an MPC request. Each request
      * requires exactly t + 1 members to join.
      */
-    function joinRequest(uint256 requestId, uint256 myIndex) external {
-        // TODO: Add auth
+    function joinRequest(bytes32 participantId, bytes32 requestHash) external onlyGroupMember(participantId) {
+        bytes32 groupId = participantId.getGroupId();
+        uint8 myIndex = participantId.getParticipantIndex();
+        uint8 threshold = participantId.getThreshold();
 
-        Request storage status = _requests[requestId];
-        require(status.publicKey.length > 0, "Request doesn't exist.");
+        uint256 confirmation = _requestConfirmations[groupId][requestHash];
+        uint8 confirmationCount = confirmation.getConfirmationCount();
+        if (confirmationCount > threshold) revert QuorumAlreadyReached();
+        uint256 indices = confirmation.getIndices();
 
-        KeyInfo memory info = _generatedKeys[status.publicKey];
-        require(info.confirmed, "Public key doesn't exist or has not been confirmed.");
+        ConfirmationHelpers.confirm(myIndex);
+        uint256 myConfirm = ConfirmationHelpers.confirm(myIndex);
+        if (indices & myConfirm > 0) revert AttemptToRejoin();
 
-        uint256 threshold = _groupThreshold[info.groupId];
-        require(status.participantIndices.length <= threshold, "Cannot join anymore.");
+        indices += myConfirm;
+        confirmationCount++;
 
-        _ensureSenderIsClaimedParticipant(info.groupId, myIndex);
-
-        for (uint256 i = 0; i < status.participantIndices.length; i++) {
-            require(status.participantIndices[i] != myIndex, "Already joined.");
+        if (confirmationCount == threshold + 1) {
+            emit RequestStarted(requestHash, indices);
         }
-        status.participantIndices.push(myIndex);
-
-        if (status.participantIndices.length == threshold + 1) {
-            if (status.message.length > 0) {
-                emit SignRequestStarted(requestId, status.publicKey, status.message);
-            } else {
-                StakeRequestDetails memory details = _stakeRequestDetails[requestId];
-                if (details.amount > 0) {
-                    emit StakeRequestStarted(
-                        requestId,
-                        status.publicKey,
-                        status.participantIndices,
-                        details.nodeID,
-                        details.amount,
-                        details.startTime,
-                        details.endTime
-                    );
-                }
-            }
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    //  Admin functions
-    // -------------------------------------------------------------------------
-
-    function setAvaLidoAddress(address avaLidoAddress) external onlyAdmin {
-        _avaLidoAddress = avaLidoAddress;
+        _requestConfirmations[groupId][requestHash] = ConfirmationHelpers.makeConfirmation(indices, confirmationCount);
     }
 
     // -------------------------------------------------------------------------
     //  External view functions
     // -------------------------------------------------------------------------
 
-    function getGroup(bytes32 groupId) external view returns (bytes[] memory participants, uint256 threshold) {
-        uint256 count = _groupParticipantCount[groupId];
-        require(count > 0, "Group doesn't exist.");
+    function getGroup(bytes32 groupId) external view returns (bytes[] memory) {
+        uint256 count = groupId.getGroupSize();
+        if (count == 0) revert GroupNotFound();
         bytes[] memory participants = new bytes[](count);
-        threshold = _groupThreshold[groupId];
 
-        for (uint256 i = 0; i < count; i++) {
-            participants[i] = _groupParticipants[groupId][i + 1];
+        bytes32 participantId = groupId.makeParticipantId(1);
+        bytes memory participant1 = _groupParticipants[participantId].publicKey; // Participant index is 1-based.
+        if (participant1.length == 0) revert GroupNotFound();
+        participants[0] = participant1;
+
+        for (uint256 i = 1; i < count; i++) {
+            participantId = groupId.makeParticipantId(i + 1);
+            participants[i] = _groupParticipants[participantId].publicKey; // Participant index is 1-based.
         }
-        return (participants, threshold);
+        return (participants);
     }
 
-    function getKey(bytes calldata publicKey) external view returns (KeyInfo memory keyInfo) {
-        keyInfo = _generatedKeys[publicKey];
+    function getGroupIdByKey(bytes calldata publicKey) external view returns (bytes32) {
+        return _keyToGroupIds[publicKey];
+    }
+
+    // -------------------------------------------------------------------------
+    //  Admin functions
+    // -------------------------------------------------------------------------
+
+    function pause() external onlyRole(ROLE_PAUSE_MANAGER) {
+        _pause();
+    }
+
+    function resume() external onlyRole(ROLE_PAUSE_MANAGER) {
+        _unpause();
     }
 
     // -------------------------------------------------------------------------
     //  Modifiers
     // -------------------------------------------------------------------------
 
-    modifier onlyAdmin() {
-        // TODO: Define proper RBAC. For now just use deployer as admin.
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin.");
-        _;
-    }
-
     modifier onlyAvaLido() {
-        require(msg.sender == _avaLidoAddress, "Caller is not AvaLido.");
+        if (msg.sender != avaLidoAddress) revert AvaLidoOnly();
         _;
     }
 
-    modifier onlyGroupMember(bytes32 groupId, uint256 index) {
-        _ensureSenderIsClaimedParticipant(groupId, index);
+    modifier onlyGroupMember(bytes32 participantId) {
+        if (msg.sender != _groupParticipants[participantId].ethAddress) revert InvalidGroupMembership();
         _;
     }
 
@@ -282,69 +305,29 @@ contract MpcManager is Pausable, ReentrancyGuard, AccessControlEnumerable, IMpcM
     //  Internal functions
     // -------------------------------------------------------------------------
 
-    // TODO: to deal with publickey param type modifier, currently use memory for testing convinience.
-    function _handleStakeRequest(
-        bytes memory publicKey,
-        string calldata nodeID,
-        uint256 amount,
-        uint256 startTime,
-        uint256 endTime
-    ) internal {
-        KeyInfo memory info = _generatedKeys[publicKey];
-        require(info.confirmed, "Key doesn't exist or has not been confirmed.");
-
-        // TODO: Validate input
-
-        uint256 requestId = _getNextRequestId();
-        Request storage status = _requests[requestId];
-        status.publicKey = publicKey;
-        // status.message is intentionally not set to indicate it's a StakeRequest
-
-        StakeRequestDetails storage details = _stakeRequestDetails[requestId];
-
-        details.nodeID = nodeID;
-        details.amount = amount;
-        details.startTime = startTime;
-        details.endTime = endTime;
-        emit StakeRequestAdded(requestId, publicKey, nodeID, amount, startTime, endTime);
+    function _getNextKeygenRequestNumber() internal returns (uint256) {
+        lastKeygenRequestNumber += 1;
+        return lastKeygenRequestNumber;
     }
 
-    function _getNextRequestId() internal returns (uint256) {
-        _lastRequestId += 1;
-        return _lastRequestId;
+    function _getNextStakeRequestNumber() internal returns (uint256) {
+        _lastStakeRequestNumber += 1;
+        return _lastStakeRequestNumber;
     }
 
     // -------------------------------------------------------------------------
     //  Private functions
     // -------------------------------------------------------------------------
 
-    function _generatedKeyConfirmedByAll(bytes32 groupId, bytes calldata generatedPublicKey)
-        private
-        view
-        returns (bool)
-    {
-        uint256 count = _groupParticipantCount[groupId];
-
-        for (uint256 i = 0; i < count; i++) {
-            if (!_keyConfirmations[generatedPublicKey][i + 1]) return false;
-        }
-        return true;
-    }
-
+    /**
+     * @dev converts a public key to ethereum address.
+     * Reference: https://ethereum.stackexchange.com/questions/40897/get-address-from-public-key-in-solidity
+     */
     function _calculateAddress(bytes memory pub) private pure returns (address addr) {
         bytes32 hash = keccak256(pub);
         assembly {
             mstore(0, hash)
             addr := mload(0)
         }
-    }
-
-    function _ensureSenderIsClaimedParticipant(bytes32 groupId, uint256 index) private view {
-        bytes memory publicKey = _groupParticipants[groupId][index];
-        require(publicKey.length > 0, "Invalid groupId or index.");
-
-        address member = _calculateAddress(publicKey);
-
-        require(msg.sender == member, "Caller is not a group member");
     }
 }

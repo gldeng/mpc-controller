@@ -6,12 +6,15 @@ import (
 	"math/big"
 )
 
+// todo: use exported fields for convinience
+
 type NetworkContext struct {
 	chainID    *big.Int
 	networkID  uint32
 	cChainID   ids.ID
 	asset      avax.Asset
 	importFee  uint64
+	exportFee  uint64
 	gasPerByte uint64
 	gasPerSig  uint64
 	gasFixed   uint64
@@ -22,6 +25,7 @@ func NewNetworkContext(networkID uint32,
 	chainID *big.Int,
 	asset avax.Asset,
 	importFee uint64,
+	exportFee uint64,
 	gasPerByte uint64,
 	gasPerSig uint64,
 	gasFixed uint64) NetworkContext {
@@ -31,6 +35,7 @@ func NewNetworkContext(networkID uint32,
 		chainID:    chainID,
 		asset:      asset,
 		importFee:  importFee,
+		exportFee:  exportFee,
 		gasPerByte: gasPerByte,
 		gasPerSig:  gasPerSig,
 		gasFixed:   gasFixed,
@@ -55,6 +60,10 @@ func (c *NetworkContext) Asset() avax.Asset {
 
 func (c *NetworkContext) ImportFee() uint64 {
 	return c.importFee
+}
+
+func (c *NetworkContext) ExportFee() uint64 {
+	return c.exportFee
 }
 
 func (c *NetworkContext) GasPerByte() uint64 {

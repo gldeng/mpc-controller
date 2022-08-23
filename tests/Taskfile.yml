@@ -3,6 +3,9 @@ version: '3'
 tasks:
   init:
     cmds:
+       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/createGroup.yml
+       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/requestKeygen.yml
+       - cmd: sed -i "s|MYHOME|$HOME|g" ./tests/testsuites/initiateStake.yml
        - cmd: bash ./tests/scripts/kill.sh
          ignore_error: true
        - bash ./tests/scripts/clone.sh
@@ -10,33 +13,39 @@ tasks:
        - bash ./tests/scripts/test_wd.sh
        - bash ./tests/scripts/start_avalanche.sh
        - bash ./tests/scripts/start_mpc-server.sh
-       - sleep 20
+       - sleep 8
+       - bash ./tests/scripts/fund_admins.sh
+       - bash ./tests/scripts/fund_oracle_members.sh
        - bash ./tests/scripts/deploy_contract.sh
+       - bash ./tests/scripts/start_oracle_member_mock.sh
        - bash ./tests/scripts/start_mpc-controller.sh
+       - sleep 1
        - bash ./tests/scripts/fund_participants.sh
-       - sleep 10
 
   createGroup:
     cmds:
       - task: init
       - venom run tests/testsuites/createGroup.yml
-      - sleep 10
 
   requestKeygen:
     cmds:
       - task: createGroup
       - venom run tests/testsuites/requestKeygen.yml
-      - sleep 10
 
   initiateStake:
     cmds:
       - task: requestKeygen
+      - sleep 70 # todo: boost keygen process
       - bash ./tests/scripts/fund_initiateStake.sh
-      - sleep 10
       - venom run tests/testsuites/initiateStake.yml
-      - sleep 30
+      - sleep 60
 
-  cleanup: # todo: add more cleanup operation, such as rm -rf /tmp/mpctest if needed
+  initiateStakeLoop:
+    cmds:
+      - task: initiateStake
+      - bash ./tests/scripts/loop_initiate_stake.sh {{.CLI_ARGS}}
+
+  cleanup: # todo: add more cleanup operation, such as rm -rf $HOME/mpctest if needed
     cmds:
       - cmd: bash tests/scripts/kill.sh
         ignore_error: true

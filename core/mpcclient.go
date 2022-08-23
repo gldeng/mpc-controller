@@ -4,31 +4,35 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/crypto"
+	mpcErrors "github.com/avalido/mpc-controller/utils/errors"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type KeygenRequest struct {
-	RequestId       string   `json:"request_id"`
-	ParticipantKeys []string `json:"public_keys"`
-	Threshold       uint64   `json:"t"`
+	KeygenReqID            string   `json:"request_id"`
+	CompressedPartiPubKeys []string `json:"public_keys"`
+	Threshold              uint64   `json:"t"`
 }
 
 type SignRequest struct {
-	RequestId       string   `json:"request_id"`
-	PublicKey       string   `json:"public_key"`
-	ParticipantKeys []string `json:"participant_public_keys"`
-	Hash            string   `json:"message"`
+	SignReqID              string   `json:"request_id"`
+	CompressedGenPubKeyHex string   `json:"public_key"`
+	CompressedPartiPubKeys []string `json:"participant_public_keys"`
+	Hash                   string   `json:"message"`
 }
 
 type Result struct {
-	RequestId     string `json:"request_id"`
+	MPCReqID      string `json:"request_id"`
 	Result        string `json:"result"`
 	RequestType   string `json:"request_type"`
 	RequestStatus string `json:"request_status"`
@@ -43,138 +47,165 @@ type MpcClient interface {
 }
 
 type MpcClientImp struct {
-	url string
-	log logger.Logger
+	controllerID   string
+	url            string
+	log            logger.Logger
+	sentSignReqs   uint32
+	unsentSignReqs uint32
+	doneSignReqs   uint32
+	errorSignReqs  uint32
+	once           *sync.Once
 }
 
-func NewMpcClient(log logger.Logger, url string) (*MpcClientImp, error) {
-	return &MpcClientImp{url, log}, nil
+func NewMpcClient(log logger.Logger, url, controllerID string) (*MpcClientImp, error) {
+	c := &MpcClientImp{
+		controllerID: controllerID,
+		url:          url,
+		log:          log,
+		once:         new(sync.Once),
+	}
+
+	return c, nil
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Request
-
-func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) error {
-	normalized, err := crypto.NormalizePubKeys(request.ParticipantKeys)
-	if err != nil {
-		c.log.Error("Failed to normalize public keys", logger.Field{"error", err})
-		return errors.WithStack(err)
-	}
-	request.ParticipantKeys = normalized
-	payloadBytes, err := json.Marshal(request)
-	if err != nil {
-		c.log.Error("Failed to marshal KeygenRequest", logger.Field{"error", err})
-		return errors.WithStack(err)
-	}
-
-	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
-		if err != nil {
-			c.log.Error("Failed to post keygen request", logger.Field{"error", err})
-			return errors.WithStack(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) error {
-	payloadBytes, err := json.Marshal(request)
-	if err != nil {
-		c.log.Error("Failed to marshal SignRequest", logger.Field{"error", err})
-		return errors.WithStack(err)
-	}
-
-	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
-		if err != nil {
-			c.log.Error("Failed to post sign request", logger.Field{"error", err})
-			return errors.WithStack(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-func (c *MpcClientImp) Result(ctx context.Context, reqId string) (*Result, error) {
-	payload := strings.NewReader("")
-
-	var res *http.Response
-
-	err := backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		res_, err := http.Post(c.url+"/result/"+reqId, "application/json", payload)
-		if err != nil {
-			c.log.Error("Failed to post result request", logger.Field{"error", err})
-			return errors.WithStack(err)
-		}
-		res = res_
-		return nil
-	})
-
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	defer res.Body.Close()
-
-	var result Result
-	body, _ := ioutil.ReadAll(res.Body)
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		c.log.Error("Failed to unmarshal response body", logger.Field{"error", err})
-		return nil, errors.WithStack(err)
-
-	}
-	return &result, nil
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Request and wait until it's DONE
 
 func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (res *Result, err error) {
 	err = c.Keygen(ctx, request)
 	if err != nil {
-		return
+		return nil, errors.WithStack(err)
 	}
 
-	time.Sleep(time.Second * 2)
-	res, err = c.ResultDone(ctx, request.RequestId)
+	res, err = c.ResultDone(ctx, request.KeygenReqID)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return
+}
+
+func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err error) {
+	payloadBytes, err := json.Marshal(request)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal KeygenRequest")
+	}
+
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+		return false, nil
+	})
+	err = errors.Wrapf(err, "failed to post keygen request")
 	return
 }
 
 func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
+	defer func() {
+		c.log.Debug("Sign request stats", []logger.Field{
+			{"controllerID", c.controllerID},
+			{"sentSignReqs", atomic.LoadUint32(&c.sentSignReqs)},
+			{"doneSignReqs", atomic.LoadUint32(&c.doneSignReqs)},
+			{"unsentSignReqs", atomic.LoadUint32(&c.unsentSignReqs)},
+			{"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
+	}()
+
 	err = c.Sign(ctx, request)
+	if err != nil {
+		atomic.AddUint32(&c.unsentSignReqs, 1)
+		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.SignReqID))
+		return
+	}
+	atomic.AddUint32(&c.sentSignReqs, 1)
+
+	res, err = c.ResultDone(ctx, request.SignReqID)
+	if err != nil {
+		c.log.ErrorOnError(err, "Sign request got error", []logger.Field{{"signRes", res}, {"signReq", request}}...)
+		atomic.AddUint32(&c.errorSignReqs, 1)
+		return res, errors.WithStack(err)
+	}
+	if res == nil {
+		atomic.AddUint32(&c.errorSignReqs, 1)
+		return nil, errors.Errorf("Got nil result for sign request %v", request.SignReqID)
+	}
+	if res.Result == "" {
+		atomic.AddUint32(&c.errorSignReqs, 1)
+		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.SignReqID))
+	}
+
+	atomic.AddUint32(&c.doneSignReqs, 1)
+	return
+}
+
+func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err error) {
+	payloadBytes, err := json.Marshal(request)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal SignRequest")
+	}
+
+	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes)) // todo: check response?
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+		switch {
+		case strings.Contains(request.SignReqID, "STAKE"):
+			prom.StakeSignTaskAdded.Inc()
+		case strings.Contains(request.SignReqID, "PRINCIPAL"):
+			prom.PrincipalUTXOSignTaskAdded.Inc()
+		case strings.Contains(request.SignReqID, "REWARD"):
+			prom.RewardUTXOSignTaskAdded.Inc()
+		}
+		return false, nil
+	})
+
+	err = errors.Wrapf(err, "failed to request sign")
+	return
+}
+
+func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
+	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+		res, err = c.Result(ctx, mpcReqId)
+		if err != nil {
+			return false, errors.WithStack(err)
+		}
+		if strings.Contains(res.RequestStatus, "ERROR") {
+			return false, errors.Wrap(&ErrTypSignErr{ErrMsg: res.RequestStatus}, "error result")
+		}
+		if res.RequestStatus == "DONE" && res.Result != "" {
+			switch {
+			case strings.Contains(mpcReqId, "STAKE"):
+				prom.StakeSignTaskDone.Inc()
+			case strings.Contains(mpcReqId, "PRINCIPAL"):
+				prom.PrincipalUTXOSignTaskDone.Inc()
+			case strings.Contains(mpcReqId, "REWARD"):
+				prom.RewardUTXOSignTaskDone.Inc()
+			}
+			return false, nil
+		}
+		return true, errors.New(res.RequestStatus)
+	})
+	err = errors.Wrapf(err, "failed to request result or got error result for request controllerID %q", mpcReqId)
+	return
+}
+
+func (c *MpcClientImp) Result(ctx context.Context, reqId string) (res *Result, err error) {
+	payload := strings.NewReader("")
+	var resp *http.Response
+	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+		resp, err = http.Post(c.url+"/result/"+reqId, "application/json", payload)
+		if err != nil {
+			return true, errors.WithStack(err)
+		}
+		return false, nil
+	})
+	err = errors.Wrapf(err, "failed to request result")
 	if err != nil {
 		return
 	}
 
-	time.Sleep(time.Second * 2)
-	res, err = c.ResultDone(ctx, request.RequestId)
-	return
-}
-
-func (c *MpcClientImp) ResultDone(ctx context.Context, reqId string) (res *Result, err error) {
-	err = backoff.RetryFnExponentialForever(c.log, ctx, func() error {
-		res, err = c.Result(ctx, reqId)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		if res.RequestStatus != "DONE" {
-			c.log.Debug("Request not Done.", []logger.Field{{"reqId", reqId}}...)
-			return errors.Errorf("Request not DONE. ReqId: %q", reqId)
-		}
-		return nil
-	})
-
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	res = new(Result)
+	err = json.Unmarshal(body, &res)
+	err = errors.Wrapf(err, "failed to unmarshal response body")
 	return
 }

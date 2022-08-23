@@ -4,32 +4,163 @@ includes:
   tests: ./tests
 
 tasks:
-  abigen:
-    cmds:
-      - cd contract; rm AvaLido.go; rm MpcManager.go; go generate
-    silent: false
-  setAvaLidoAddr:
-    cmds:
-      - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 $MPC_MANAGER "setAvaLidoAddress(address)" $AVALIDO
-    silent: false
+  # ----------Tasks to interact with account----------
+
   fund:
     cmds:
       - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --value 100ether  {{.CLI_ARGS}}
     silent: false
+
   balance:
     cmds:
       - cast balance {{.CLI_ARGS}}  --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc
     silent: false
-  strlen:
+
+  nonce:
     cmds:
-      - string={{.CLI_ARGS}}; echo ${#string}
+      - cast nonce {{.CLI_ARGS}}  --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc
     silent: false
-  lastaddr:
+
+  # ----------Tasks to interact with contracts----------
+
+  # AvaLido
+  deposit:
+    cmds:
+      - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --gas-limit 900000 --value 100ether  {{.CLI_ARGS}} "deposit()"
+    silent: false
+
+  initiateStake:
+    cmds:
+      - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --gas-limit 900000 {{.CLI_ARGS}} "initiateStake()"
+    silent: false
+
+  amountStakedAVAX:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountStakedAVAX()"
+    silent: false
+
+  amountPendingStakeAVAX:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "amountPendingStakeAVAX()"
+    silent: false
+
+  # Mpc Manager
+  lastGenAddr:
     cmds:
       - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "lastGenAddress()"
     silent: false
+
+  avaLidoAddr:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "avaLidoAddress()"
+    silent: false
+
+  principalTreasuryAddr:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "principalTreasuryAddress()"
+    silent: false
+
+  rewardTreasuryAddr:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "rewardTreasuryAddress()"
+    silent: false
+
   requestStake:
     cmds:
       - cast send --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc --from 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC --private-key 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 --value 1ether {{.CLI_ARGS}}  "requestStake(string,uint256,uint256,uint256)" "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5" 1ether 1 2
     silent: false
 
+  # Oracle Manager
+  oracleContractAddress:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "oracleContractAddress()"
+    silent: false
+
+  getWhitelistedOracles:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "getWhitelistedOracles()"
+    silent: false
+
+  # Oracle
+  allValidatorNodeIds:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "allValidatorNodeIds()"
+    silent: false
+
+  getLatestValidators:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "getLatestValidators()"
+    silent: false
+
+  oracleManagerContract:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "oracleManagerContract()"
+    silent: false
+
+  latestFinalizedEpochId:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "latestFinalizedEpochId()"
+    silent: false
+
+  epochDuration:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "epochDuration()"
+    silent: false
+
+  # Validator Selector
+  selectValidatorsForStake:
+    cmds:
+      - cast call --rpc-url http://127.0.0.1:9650/ext/bc/C/rpc  {{.CLI_ARGS}} "selectValidatorsForStake(uint256)" 100ether
+    silent: false
+
+  # ----------Tasks for testings----------
+
+  startServerMock:
+    cmds:
+      - cmd: pkill -f mpc-server-mock
+        ignore_error: true
+      - bash tests/scripts/start_mpc-server-mock.sh
+    silent: false
+
+  killServerMock:
+    cmds:
+      - cmd: pkill -f mpc-server-mock
+        ignore_error: true
+    silent: false
+
+  lnavAvalanche:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/avalanchego/logs
+    silent: false
+
+  lnavController:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/mpc-controller/logs
+    silent: false
+
+  lnavServer:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/mpc-server/logs
+    silent: false
+
+  lnavServerMock:
+    cmds:
+      - read LAST_TEST_WD < $HOME/mpctest/testwd_last && lnav $LAST_TEST_WD/mpc-server-mock
+    silent: false
+
+  prom:
+    cmds:
+      - ./tests/scripts/start_prometheus.sh
+    silent: false
+
+  # ----------Misc. Tasks----------
+
+  abigen:
+    cmds:
+      - cd contract; rm AvaLido.go; rm MpcManager.go; go generate
+    silent: false
+
+  strlen:
+    cmds:
+      - string={{.CLI_ARGS}}; echo ${#string}
+    silent: false
