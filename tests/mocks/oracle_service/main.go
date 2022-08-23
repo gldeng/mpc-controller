@@ -58,9 +58,10 @@ func main() {
 
 	o := Oracle{myLogger, client, signer, oracleManager, *epochDuration}
 	for {
-		err := o.ReceiveMemberReport(context.Background())
+		blockNumber, epochId, err := o.ReceiveMemberReport(context.Background())
 		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
-		myLogger.InfoNilError(err, "Success to call ReceiveMemberReport")
+		myLogger.InfoNilError(err, "Success to call ReceiveMemberReport", []logger.Field{{"blockNumber", blockNumber}, {"epochId", epochId}}...)
+
 		time.Sleep(time.Hour * 24)
 	}
 }
@@ -73,16 +74,14 @@ type Oracle struct {
 	EpochDur      uint64
 }
 
-func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
-	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
-		blockNumber, err := o.EthClient.BlockNumber(ctx)
+func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, epochId uint64, err error) {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+		blockNumber, err = o.EthClient.BlockNumber(ctx)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		epochId := blockNumber - (blockNumber % o.EpochDur)
+		epochId = blockNumber - (blockNumber % o.EpochDur)
 		epochIdBig := new(big.Int).SetUint64(epochId)
-
-		o.Logger.Info("Epoch id info", []logger.Field{{"blockNumber", blockNumber}, {"epochId", epochId}}...)
 
 		tx, err := o.OracleManager.ReceiveMemberReport(o.Auth, epochIdBig, o.validators())
 		if err != nil {
@@ -112,7 +111,8 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) error {
 		return false, errors.WithStack(err)
 	})
 
-	return errors.WithStack(err)
+	err = errors.WithStack(err)
+	return
 }
 
 func (o *Oracle) validators() []*big.Int { //todo: check on-chain validator state
