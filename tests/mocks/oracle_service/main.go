@@ -19,7 +19,7 @@ import (
 
 func main() {
 	var nodeNoFlag = flag.Int("nodeNo", 5, "Node number")
-	var epochDuration = flag.Uint64("epochDur", 17, "Epoch duration")
+	var epochDurationFlag = flag.Uint64("epochDur", 17, "Epoch duration")
 	var cChainIdFlag = flag.Int64("cChainId", 43112, "Oracle member private key")
 	var cChainUrlFlag = flag.String("cChainUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
 	var oracleMemberPkFlag = flag.String("oracleMemberPK", "a54a5d692d239287e8358f27caee92ab5756c0276a6db0a062709cd86451a855", "Oracle member private key")
@@ -57,7 +57,7 @@ func main() {
 		panic(err)
 	}
 
-	o := Oracle{myLogger, client, signer, oracleManager, *nodeNoFlag, *epochDuration}
+	o := Oracle{myLogger, client, signer, oracleManager, *nodeNoFlag, *epochDurationFlag}
 	for {
 		blockNumber, epochId, err := o.ReceiveMemberReport(context.Background())
 		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
