@@ -50,7 +50,7 @@ cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $RO
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setNodeIDList(string[])" $NODE_ID_LIST > /dev/null
 
 # Set epoch duration for Oracle
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setEpochDuration(uint256)" 10 > /dev/null
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setEpochDuration(uint256)" 17 > /dev/null
 
 # Set stake period for AvaLido
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_PROTOCOL_MANAGER --private-key $ROLE_PROTOCOL_MANAGER_PK --gas-limit 900000 $AVALIDO "setStakePeriod(uint256)" 600 > /dev/null
