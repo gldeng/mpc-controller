@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	var nodeNoFlag = flag.Int("nodeNo", 5, "Node number")
 	var epochDuration = flag.Uint64("epochDur", 17, "Epoch duration")
 	var cChainIdFlag = flag.Int64("cChainId", 43112, "Oracle member private key")
 	var cChainUrlFlag = flag.String("cChainUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
@@ -56,7 +57,7 @@ func main() {
 		panic(err)
 	}
 
-	o := Oracle{myLogger, client, signer, oracleManager, *epochDuration}
+	o := Oracle{myLogger, client, signer, oracleManager, *nodeNoFlag, *epochDuration}
 	for {
 		blockNumber, epochId, err := o.ReceiveMemberReport(context.Background())
 		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
@@ -71,6 +72,7 @@ type Oracle struct {
 	EthClient     *ethclient.Client
 	Auth          *bind.TransactOpts
 	OracleManager *OracleManager
+	NodeNo        int
 	EpochDur      uint64
 }
 
@@ -117,7 +119,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, e
 
 func (o *Oracle) validators() []*big.Int { //todo: check on-chain validator state
 	var validators []*big.Int
-	for i := 0; i < 5; i++ {
+	for i := 0; i < o.NodeNo; i++ {
 		validator := o.packValidator(uint64(i), true, true, 100)
 		validators = append(validators, validator)
 	}
