@@ -48,7 +48,12 @@ func main() {
 	}
 
 	myAddr := addrs.PubkeyToAddresse(&myPrivKey.PublicKey)
+	fmt.Printf("Node number: %v\n", *nodeNoFlag)
+	fmt.Printf("Epoch duration: %v\n", *epochDurationFlag)
+	fmt.Printf("C-Chain ID: %v\n", *cChainIdFlag)
+	fmt.Printf("C-Chain URL: %v\n", *cChainUrlFlag)
 	fmt.Printf("Oracle member address: %v\n", myAddr)
+	fmt.Printf("Oracle Manager address: %v\n", *oracleManagerAddrFlag)
 
 	// Create transaction signer
 	chainId := big.NewInt(*cChainIdFlag)
