@@ -295,11 +295,11 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 			Args:    &stakeReq,
 		}
 		if err := w.DB.LoadModel(ctx, &joinReq); err != nil {
-			w.Logger.DebugOnError(err, "No JoinRequest load for stake", []logger.Field{{"reqHash", reqHash.String()}}...)
+			//w.Logger.DebugOnError(err, "No JoinRequest load for stake", []logger.Field{{"reqHash", reqHash.String()}}...)
 			break
 		}
 		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
-			w.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
+			//w.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
 			break
 		}
 		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
@@ -314,11 +314,11 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		}
 
 		if err := w.DB.LoadModel(ctx, &joinReq); err != nil {
-			w.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
+			//w.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
 			break
 		}
 		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
-			w.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
+			//w.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
 			break
 		}
 		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))

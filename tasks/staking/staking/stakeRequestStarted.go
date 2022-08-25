@@ -209,15 +209,20 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 					}
 					issueTx := &issueTx{stw, stakeReq}
 					eh.issueTxContainer.AddSort(issueTx)
+					reqHash := stakeReq.ReqHash()
+					eh.Logger.Info("Stake sign task done", []logger.Field{
+						{"reqNo", stakeReq.ReqNo},
+						{"reqHash", reqHash.String()},
+						{"taskId", taskID}}...)
 				}},
 			})
 			eh.Logger.ErrorOnError(err, "Failed to add sign stake task", []logger.Field{
-				{"reqHash", reqHash.String()},
 				{"reqNo", stakeReq.ReqNo},
+				{"reqHash", reqHash.String()},
 				{"taskId", taskID}}...)
 			eh.Logger.InfoNilError(err, "Stake sign task added", []logger.Field{
-				{"reqHash", reqHash.String()},
 				{"reqNo", stakeReq.ReqNo},
+				{"reqHash", reqHash.String()},
 				{"taskId", taskID}}...)
 		}
 	}
