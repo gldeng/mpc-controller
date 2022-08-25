@@ -19,8 +19,9 @@ tasks:
        - bash ./tests/scripts/deploy_contract.sh
        - bash ./tests/scripts/start_oracle_member_mock.sh
        - bash ./tests/scripts/start_mpc-controller.sh
-       - sleep 1
+       - sleep 10
        - bash ./tests/scripts/fund_participants.sh
+       - sleep 10
 
   createGroup:
     cmds:
@@ -35,7 +36,7 @@ tasks:
   initiateStake:
     cmds:
       - task: requestKeygen
-      - sleep 70 # todo: boost keygen process
+      - sleep 80 # todo: boost keygen process
       - bash ./tests/scripts/fund_initiateStake.sh
       - venom run tests/testsuites/initiateStake.yml
       - sleep 60

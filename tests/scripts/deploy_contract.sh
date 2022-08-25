@@ -16,7 +16,7 @@ ROLE_PROTOCOL_MANAGER_PK=$ROLE_DEFAULT_ADMIN_PK
 C_CHAIN_RPC_URL=http://127.0.0.1:9650/ext/bc/C/rpc
 
 # Node ID list
-NODE_ID_LIST=["NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5","NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5","NodeID-NFBbbJ4qCmNaCzeW7sxErhvWqvEQMnYcN","NodeID-MFrZFVCXPv5iCn6M9K6XduxGTYp891xXZ","NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"]
+NODE_ID_LIST=["NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5","NodeID-GWPcbFJZFfZreETSoWjPimr846mXEKCtu","NodeID-NFBbbJ4qCmNaCzeW7sxErhvWqvEQMnYcN","NodeID-MFrZFVCXPv5iCn6M9K6XduxGTYp891xXZ","NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg"]
 
 LAST_WD=$(pwd)
 
@@ -50,7 +50,7 @@ cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $RO
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setNodeIDList(string[])" $NODE_ID_LIST > /dev/null
 
 # Set epoch duration for Oracle
-cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setEpochDuration(uint256)" 10 > /dev/null
+cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_ORACLE_ADMIN --private-key $ROLE_ORACLE_ADMIN_PK --gas-limit 900000 $ORACLE "setEpochDuration(uint256)" 17 > /dev/null
 
 # Set stake period for AvaLido
 cast send --rpc-url $C_CHAIN_RPC_URL --from $ROLE_PROTOCOL_MANAGER --private-key $ROLE_PROTOCOL_MANAGER_PK --gas-limit 900000 $AVALIDO "setStakePeriod(uint256)" 600 > /dev/null

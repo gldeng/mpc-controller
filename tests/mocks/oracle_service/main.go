@@ -18,7 +18,8 @@ import (
 )
 
 func main() {
-	var epochDuration = flag.Uint64("epochDur", 10, "Epoch duration")
+	var nodeNoFlag = flag.Int("nodeNo", 5, "Node number")
+	var epochDurationFlag = flag.Uint64("epochDur", 17, "Epoch duration")
 	var cChainIdFlag = flag.Int64("cChainId", 43112, "Oracle member private key")
 	var cChainUrlFlag = flag.String("cChainUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
 	var oracleMemberPkFlag = flag.String("oracleMemberPK", "a54a5d692d239287e8358f27caee92ab5756c0276a6db0a062709cd86451a855", "Oracle member private key")
@@ -47,7 +48,12 @@ func main() {
 	}
 
 	myAddr := addrs.PubkeyToAddresse(&myPrivKey.PublicKey)
+	fmt.Printf("Node number: %v\n", *nodeNoFlag)
+	fmt.Printf("Epoch duration: %v\n", *epochDurationFlag)
+	fmt.Printf("C-Chain ID: %v\n", *cChainIdFlag)
+	fmt.Printf("C-Chain URL: %v\n", *cChainUrlFlag)
 	fmt.Printf("Oracle member address: %v\n", myAddr)
+	fmt.Printf("Oracle Manager address: %v\n", *oracleManagerAddrFlag)
 
 	// Create transaction signer
 	chainId := big.NewInt(*cChainIdFlag)
@@ -56,7 +62,7 @@ func main() {
 		panic(err)
 	}
 
-	o := Oracle{myLogger, client, signer, oracleManager, *epochDuration}
+	o := Oracle{myLogger, client, signer, oracleManager, *nodeNoFlag, *epochDurationFlag}
 	for {
 		blockNumber, epochId, err := o.ReceiveMemberReport(context.Background())
 		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
@@ -71,6 +77,7 @@ type Oracle struct {
 	EthClient     *ethclient.Client
 	Auth          *bind.TransactOpts
 	OracleManager *OracleManager
+	NodeNo        int
 	EpochDur      uint64
 }
 
@@ -117,8 +124,8 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, e
 
 func (o *Oracle) validators() []*big.Int { //todo: check on-chain validator state
 	var validators []*big.Int
-	for i := 0; i < 5; i++ {
-		validator := o.packValidator(uint64(i), true, true, 100)
+	for i := 0; i < o.NodeNo; i++ {
+		validator := o.packValidator(uint64(i), true, true, 20000)
 		validators = append(validators, validator)
 	}
 	return validators

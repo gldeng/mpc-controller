@@ -25,12 +25,12 @@ echo -n "0c56c3f0d5ae14d8853e964430f517b8016ac7e24dd15179d5d2657c38e7d6fa285ab0f
 pwd="RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL"
 
 RUST_BACKTRACE=full $MPC_SERVER_REPO/messenger/target/debug/messenger > logs/messenger.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p1.s -password $pwd --port 8001 -m http://127.0.0.1:8000  --db-path db/p1.db > logs/p1.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p2.s -password $pwd --port 8002 -m http://127.0.0.1:8000  --db-path db/p2.db > logs/p2.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p3.s -password $pwd --port 8003 -m http://127.0.0.1:8000  --db-path db/p3.db > logs/p3.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p4.s -password $pwd --port 8004 -m http://127.0.0.1:8000  --db-path db/p4.db > logs/p4.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p5.s -password $pwd --port 8005 -m http://127.0.0.1:8000  --db-path db/p5.db > logs/p5.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p6.s -password $pwd --port 8006 -m http://127.0.0.1:8000  --db-path db/p6.db > logs/p6.log 2>&1 &
-RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p7.s -password $pwd --port 8007 -m http://127.0.0.1:8000  --db-path db/p7.db > logs/p7.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p1.s --password $pwd --port 8001 -m http://127.0.0.1:8000  --db-path db/p1.db > logs/p1.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p2.s --password $pwd --port 8002 -m http://127.0.0.1:8000  --db-path db/p2.db > logs/p2.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p3.s --password $pwd --port 8003 -m http://127.0.0.1:8000  --db-path db/p3.db > logs/p3.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p4.s --password $pwd --port 8004 -m http://127.0.0.1:8000  --db-path db/p4.db > logs/p4.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p5.s --password $pwd --port 8005 -m http://127.0.0.1:8000  --db-path db/p5.db > logs/p5.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p6.s --password $pwd --port 8006 -m http://127.0.0.1:8000  --db-path db/p6.db > logs/p6.log 2>&1 &
+RUST_BACKTRACE=full $MPC_SERVER_REPO/target/debug/mpc-server -s secret/p7.s --password $pwd --port 8007 -m http://127.0.0.1:8000  --db-path db/p7.db > logs/p7.log 2>&1 &
 
 cd $LAST_WD

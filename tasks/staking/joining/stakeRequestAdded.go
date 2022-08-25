@@ -67,8 +67,6 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 
 			partiId := participant.ParticipantId()
 			txHash := evt.Raw.TxHash
-			reqHash := (storage.RequestHash)(txHash)
-			reqHash.SetTaskType(storage.TaskTypStake)
 
 			stakeReq := storage.StakeRequest{
 				ReqNo:              evt.RequestNumber.Uint64(),
@@ -80,6 +78,7 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 				GeneratedPublicKey: genPubKey,
 			}
 
+			reqHash := stakeReq.ReqHash()
 			joinReq := &storage.JoinRequest{
 				ReqHash: reqHash,
 				PartiId: partiId,
