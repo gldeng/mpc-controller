@@ -125,7 +125,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, e
 func (o *Oracle) validators() []*big.Int { //todo: check on-chain validator state
 	var validators []*big.Int
 	for i := 0; i < o.NodeNo; i++ {
-		validator := o.packValidator(uint64(i), true, true, 100)
+		validator := o.packValidator(uint64(i), true, true, 20000)
 		validators = append(validators, validator)
 	}
 	return validators
