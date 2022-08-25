@@ -291,7 +291,8 @@ type StakeRequest struct {
 }
 
 func (m *StakeRequest) ReqHash() RequestHash {
-	reqHash := RequestHash(m.TxHash)
+	reqNoHash := hash256.FromBytes(new(big.Int).SetUint64(m.ReqNo).Bytes())
+	reqHash := RequestHash(reqNoHash)
 	reqHash.SetTaskType(TaskTypStake)
 	return reqHash
 }
