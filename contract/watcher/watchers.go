@@ -285,15 +285,45 @@ func (w *MpcManagerWatchers) watchRequestStarted(ctx context.Context, opts *bind
 
 func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerRequestStarted)
-	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
 	reqHash := (storage.RequestHash)(myEvt.RequestHash)
 	indices := (*storage.Indices)(myEvt.ParticipantIndices)
 	switch {
 	case reqHash.IsTaskType(storage.TaskTypStake):
-		w.Logger.Info("Stake request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
+		stakeReq := storage.StakeRequest{}
+		joinReq := storage.JoinRequest{
+			ReqHash: reqHash,
+			Args:    &stakeReq,
+		}
+		if err := w.DB.LoadModel(ctx, &joinReq); err != nil {
+			w.Logger.DebugOnError(err, "No JoinRequest load for stake", []logger.Field{{"reqHash", reqHash.String()}}...)
+			break
+		}
+		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
+			w.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
+			break
+		}
+		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
+		w.Logger.Info("Stake request started", []logger.Field{{"reqHash", reqHash.String()},
+			{"partiIndices", indices.Indices()}, {"stakeReq", stakeReq}}...)
 		prom.StakeRequestStarted.Inc()
 	case reqHash.IsTaskType(storage.TaskTypReturn):
-		w.Logger.Info("Return request started", []logger.Field{{"reqHash", reqHash.String()}, {"partiIndices", indices.Indices()}}...)
+		utxoExportReq := storage.ExportUTXORequest{}
+		joinReq := storage.JoinRequest{
+			ReqHash: reqHash,
+			Args:    &utxoExportReq,
+		}
+
+		if err := w.DB.LoadModel(ctx, &joinReq); err != nil {
+			w.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
+			break
+		}
+		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
+			w.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
+			break
+		}
+		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
+		w.Logger.Info("Return request started", []logger.Field{{"reqHash", reqHash.String()},
+			{"partiIndices", indices.Indices()}, {"returnReq", utxoExportReq}}...)
 		prom.UTXOExportRequestStarted.Inc()
 	}
 	return nil
