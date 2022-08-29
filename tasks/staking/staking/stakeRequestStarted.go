@@ -136,14 +136,20 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 				break
 			}
 
+			var joinedCmpPartiPubKeys []string
+			indices := (*storage.Indices)(evt.ParticipantIndices).Indices()
+			for _, index := range indices {
+				joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
+			}
+
 			nonce := eh.NonceGiver.GetNonce(stakeReq.ReqNo) // todo: how should nonce base adjust in case of validation errors among all participants?
-			taskID := stakeTaskIDPrefix + evt.Raw.TxHash.Hex()
+			taskID := stakeTaskIDPrefix + reqHash.String()
 
 			signRequester := &SignRequester{
 				SignDoner: eh.SignerMPC,
 				SignRequestArgs: SignRequestArgs{
 					TaskID:                 taskID,
-					CompressedPartiPubKeys: cmpPartiPubKeys,
+					CompressedPartiPubKeys: joinedCmpPartiPubKeys,
 					CompressedGenPubKeyHex: cmpGenPubKeyHex,
 				},
 			}
@@ -151,7 +157,7 @@ func (eh *StakeRequestStarted) signTx(ctx context.Context) {
 			eh.Logger.Debug("Nonce fetched", []logger.Field{
 				{"requestID", stakeReq.ReqNo},
 				{"nonce", nonce},
-				{"taskID", evt.Raw.TxHash.Hex()}}...)
+				{"taskID", reqHash.String()}}...)
 
 			taskCreator := StakeTaskCreator{
 				TaskID:         taskID,
