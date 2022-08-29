@@ -55,6 +55,7 @@ type MpcClientImp struct {
 	doneSignReqs   uint32
 	errorSignReqs  uint32
 	once           *sync.Once
+	lock           sync.Mutex
 }
 
 func NewMpcClient(log logger.Logger, url, controllerID string) (*MpcClientImp, error) {
@@ -141,8 +142,11 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err erro
 		return errors.Wrapf(err, "failed to marshal SignRequest")
 	}
 
-	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+		c.lock.Lock()
+		defer c.lock.Unlock()
 		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes)) // todo: check response?
+		c.log.InfoNilError(err, "Posted sign request", []logger.Field{{"signReq", request}}...)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
@@ -162,7 +166,7 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err erro
 }
 
 func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
-	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		res, err = c.Result(ctx, mpcReqId)
 		if err != nil {
 			return false, errors.WithStack(err)
@@ -190,7 +194,7 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 func (c *MpcClientImp) Result(ctx context.Context, reqId string) (res *Result, err error) {
 	payload := strings.NewReader("")
 	var resp *http.Response
-	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		resp, err = http.Post(c.url+"/result/"+reqId, "application/json", payload)
 		if err != nil {
 			return true, errors.WithStack(err)
