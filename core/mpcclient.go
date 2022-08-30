@@ -90,6 +90,7 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err 
 
 	err = backoff.RetryFnExponential100Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
+		c.log.InfoNilError(err, "Posted keygen request", []logger.Field{{"keygenReq", request}}...)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
