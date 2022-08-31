@@ -18,16 +18,16 @@ func DefaultWithCallerSkip(skip int) Logger {
 	var logger *uberZap.Logger
 	var logConfig uberZap.Config
 
-	//if DevMode {
-	//	logConfig = uberZap.NewDevelopmentConfig()
-	//	logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
-	//	logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	//	logger, _ = logConfig.Build(uberZap.AddCallerSkip(skip))
-	//} else {
-	logConfig = uberZap.NewProductionConfig()
-	logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
-	logger, _ = logConfig.Build(uberZap.AddCallerSkip(skip))
-	//}
+	if DevMode {
+		logConfig = uberZap.NewDevelopmentConfig()
+		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
+		logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger, _ = logConfig.Build(uberZap.AddCallerSkip(skip))
+	} else {
+		logConfig = uberZap.NewProductionConfig()
+		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
+		logger, _ = logConfig.Build(uberZap.AddCallerSkip(skip))
+	}
 	return NewZap(logger)
 }
 
