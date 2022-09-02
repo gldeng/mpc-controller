@@ -78,6 +78,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Create logger
 	logger.DevMode = config.EnableDevMode
+	logger.UseConsoleEncoder = config.UseConsoleEncoder
 	myLogger := logger.Default()
 
 	// Create nonce manager

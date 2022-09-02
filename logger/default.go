@@ -7,7 +7,7 @@ import (
 )
 
 var DevMode bool
-var EncodingConsole bool
+var UseConsoleEncoder bool
 
 // Default return a Logger right depending on go.uber.org/zap Logger.
 func Default() Logger {
@@ -22,7 +22,7 @@ func DefaultWithCallerSkip(skip int) Logger {
 	if DevMode {
 		logConfig = uberZap.NewDevelopmentConfig()
 		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
-		if EncodingConsole {
+		if UseConsoleEncoder {
 			logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		} else {
 			logConfig.Encoding = "json"

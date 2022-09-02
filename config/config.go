@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	EnableDevMode     bool   `yaml:"enableDevMode"`
+	UseConsoleEncoder bool   `json:"useConsoleEncoder"`
 	ControllerId      string `yaml:"controllerId"`
 	ControllerKey     string `yaml:"controllerKey"` // todo: add secure keystore
 	MpcManagerAddress string `yaml:"mpcManagerAddress"`

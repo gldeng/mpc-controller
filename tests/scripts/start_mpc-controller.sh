@@ -26,6 +26,7 @@ function create_config(){
     metricsServeAddr=${METRICS_SERVE_ADDRS[$(expr ${id} - 1)]}
     read -r -d '' CFG <<- EOM
 enableDevMode: true
+useConsoleEncoder: true
 controllerId: "mpc-controller-0${id}"
 controllerKey: "${sk}"
 mpcManagerAddress: "${MPC_MANAGER_ADDRESS}"

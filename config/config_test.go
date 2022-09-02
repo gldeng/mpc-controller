@@ -10,6 +10,7 @@ func TestParseFile(t *testing.T) {
 	config := ParseFile("./config.yaml")
 	require.NotNil(t, config)
 	require.Equal(t, true, config.EnableDevMode)
+	require.Equal(t, true, config.UseConsoleEncoder)
 	require.Equal(t, "mpc-controller-01", config.ControllerId)
 	require.Equal(t, "e63b74641e6e46660a021e17a350d08c910ab7443272d53298cfdda27fd7cb74d946e05ac193cfaa9a91162c9a0bd5f3754368b0f325e83a56d85dd81fc3960cf3daafbedeb25a7db4e2046caf356a66bafe78d48ec21f5718939c28e2c9f12f", config.ControllerKey)
 	require.Equal(t, "0x273487EfaC011cfb62361f7b3E3763A54A03D1d3", config.MpcManagerAddress)
