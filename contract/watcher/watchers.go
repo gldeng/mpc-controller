@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
@@ -18,6 +19,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/network/redialer"
 	"github.com/avalido/mpc-controller/utils/network/redialer/adapter"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -76,6 +78,21 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 	w.Logger.FatalOnError(err, "Failed to watch ParticipantAdded")
 	err = w.watchRequestStarted(ctx, nil)
 	w.Logger.FatalOnError(err, "Failed to watch RequestStarted")
+
+	// read stored group and watch for keygenRequestAdded and keyGenerated contract events.
+	groupBytesArr, err := w.DB.List(ctx, storage.KeyPrefixGroup)
+	w.Logger.FatalOnTrue(err != nil && !errors.Is(err, badger.ErrKeyNotFound), "Failed to query group")
+	for _, groupBytes := range groupBytesArr {
+		var group storage.Group
+		err := json.Unmarshal(groupBytes, &group)
+		w.Logger.FatalOnError(err, "Failed to unmarshal group")
+		w.Logger.Info("Read group from storage", []logger.Field{{"groupId", group.ID.String()}}...)
+		groupIDs := [][32]byte{group.ID}
+		err = w.watchKeygenRequestAdded(ctx, nil, groupIDs)
+		w.Logger.FatalOnError(err, "Failed to watch KeygenRequestAdded")
+		err = w.watchKeyGenerated(ctx, nil, groupIDs)
+		w.Logger.FatalOnError(err, "Failed to watch KeyGenerated")
+	}
 }
 
 func (w *MpcManagerWatchers) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
