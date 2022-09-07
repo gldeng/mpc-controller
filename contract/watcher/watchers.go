@@ -3,6 +3,7 @@ package watcher
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
@@ -92,6 +93,28 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 		w.Logger.FatalOnError(err, "Failed to watch KeygenRequestAdded")
 		err = w.watchKeyGenerated(ctx, nil, groupIDs)
 		w.Logger.FatalOnError(err, "Failed to watch KeyGenerated")
+	}
+
+	// read stored generated key and watch for stakeRequestAdded contract event.
+	genKeyBytesArr, err := w.DB.List(ctx, storage.KeyPrefixGeneratedPublicKey)
+	w.Logger.FatalOnTrue(err != nil && !errors.Is(err, badger.ErrKeyNotFound), "Failed to query generated key")
+	for _, genKeyBytes := range genKeyBytesArr {
+		var genPubKey storage.GeneratedPublicKey
+		err := json.Unmarshal(genKeyBytes, &genPubKey)
+		w.Logger.FatalOnError(err, "Failed to unmarshal generated key")
+		genKey := [][]byte{genPubKey.GenPubKey}
+		err = w.watchStakeRequestAdded(ctx, nil, genKey)
+		w.Logger.FatalOnError(err, "Failed to watch StakeRequestAdded")
+
+		cChainAddr, err := genPubKey.GenPubKey.CChainAddress()
+		w.Logger.FatalOnError(err, fmt.Sprintf("Failed to get C-Chain address from %v", genPubKey.GenPubKey))
+		pChainAddr, err := genPubKey.GenPubKey.PChainAddress()
+		w.Logger.FatalOnError(err, fmt.Sprintf("Failed to get P-Chain address from %v", genPubKey.GenPubKey))
+		w.Logger.Info("Public key loaded", []logger.Field{
+			{"groupId", genPubKey.GroupId},
+			{"genPubKey", genPubKey.GenPubKey},
+			{"cChainAddr", cChainAddr},
+			{"pChainAddr", pChainAddr}}...)
 	}
 }
 
