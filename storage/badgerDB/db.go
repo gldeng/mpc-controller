@@ -10,7 +10,7 @@ func NewBadgerDBWithDefaultOptions(path string, logger logger.BadgerDBLogger) *b
 	opt.Logger = logger
 	db, err := badger.Open(opt)
 	if err != nil {
-		panic("Failed to open badger database")
+		panic("Failed to open badger database, error:" + err.Error())
 	}
 	return db
 }
