@@ -62,7 +62,35 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 }
 
 func (b *BadgerDB) List(ctx context.Context, prefix []byte) ([][]byte, error) {
-	return nil, errors.New("to to implemented") // todo
+	var valBytesArr [][]byte
+	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+		err := b.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			defer it.Close()
+			for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+				item := it.Item()
+				err := item.Value(func(v []byte) error {
+					var valBytes = make([]byte, len(v))
+					copy(valBytes, v)
+					valBytesArr = append(valBytesArr, valBytes)
+					return nil
+				})
+				if err != nil {
+					return errors.WithStack(err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return false, errors.WithStack(err)
+			}
+			return true, errors.WithStack(err)
+		}
+		return false, nil
+	})
+	err = errors.Wrapf(err, "failed to list values by prefix. prefix:%v", string(prefix))
+	return valBytesArr, nil
 }
 
 // With marshal and unmarshal support
