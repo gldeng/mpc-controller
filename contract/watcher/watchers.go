@@ -83,6 +83,7 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 	// read stored group and watch for keygenRequestAdded and keyGenerated contract events.
 	groupBytesArr, err := w.DB.List(ctx, storage.KeyPrefixGroup)
 	w.Logger.FatalOnTrue(err != nil && !errors.Is(err, badger.ErrKeyNotFound), "Failed to query group")
+	w.Logger.InfoOnTrue(len(groupBytesArr) == 0, fmt.Sprintf("No group loaded from db by key prefix %v", string(storage.KeyPrefixGroup)))
 	for _, groupBytes := range groupBytesArr {
 		var group storage.Group
 		err := json.Unmarshal(groupBytes, &group)
@@ -98,6 +99,7 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 	// read stored generated key and watch for stakeRequestAdded contract event.
 	genKeyBytesArr, err := w.DB.List(ctx, storage.KeyPrefixGeneratedPublicKey)
 	w.Logger.FatalOnTrue(err != nil && !errors.Is(err, badger.ErrKeyNotFound), "Failed to query generated key")
+	w.Logger.InfoOnTrue(len(groupBytesArr) == 0, fmt.Sprintf("No generated public key loaded from db by key prefix %v", string(storage.KeyPrefixGeneratedPublicKey)))
 	for _, genKeyBytes := range genKeyBytesArr {
 		var genPubKey storage.GeneratedPublicKey
 		err := json.Unmarshal(genKeyBytes, &genPubKey)
