@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	prefix = "mpc_"
+	prefix = "mpc_controller_"
 )
 
 var (
