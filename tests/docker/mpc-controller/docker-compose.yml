@@ -3,84 +3,91 @@ version: "2.4"
 services:
   controller1:
     image: avalido/mpc-controller
+    container_name: mpc_controller1
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller1.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7001:7001
+      - 8001:8001
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
 
   controller2:
     image: avalido/mpc-controller
+    container_name: mpc_controller2
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller2.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7002:7002
+      - 8002:8002
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
 
   controller3:
     image: avalido/mpc-controller
+    container_name: mpc_controller3
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller3.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7003:7003
+      - 8003:8003
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
 
   controller4:
     image: avalido/mpc-controller
+    container_name: mpc_controller4
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller4.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7004:7004
+      - 8004:8004
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
 
   controller5:
     image: avalido/mpc-controller
+    container_name: mpc_controller5
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller5.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7005:7005
+      - 8005:8005
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
 
   controller6:
     image: avalido/mpc-controller
+    container_name: mpc_controller6
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller6.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7006:7006
+      - 8006:8006
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
 
   controller7:
     image: avalido/mpc-controller
+    container_name: mpc_controller7
     command: |
       /app/mpc-controller
       --configFile /app/configs/controller7.yaml
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
     ports:
-      - 7007:7007
+      - 8007:8007
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
