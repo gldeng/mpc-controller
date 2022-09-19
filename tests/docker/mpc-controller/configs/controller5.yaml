@@ -1,0 +1,23 @@
+enableDevMode: true
+controllerId: "mpc-controller-05"
+controllerKey: "7aa717fdbb98618c438224df53b1de435932a831f430495a06f00b5c0aabfc63eaf7e9439361a46ecac4a42b5ba39779373c57d6c45ac9ac06b7bd42e03abaf8"
+mpcManagerAddress: "0xCaE41a35D2C0e526cbb27d7fa03B0535c2Cd7A46"
+mpcServerUrl: "http://43.129.206.179:9000"
+ethRpcUrl: "http://34.172.25.188:9650/ext/bc/C/rpc"
+ethWsUrl: "ws://34.172.25.188:9650/ext/bc/C/ws"
+cChainIssueUrl: "http://34.172.25.188:9650"
+pChainIssueUrl: "http://34.172.25.188:9650"
+networkConfig:
+  networkId: 1337
+  chainId: 43112
+  cChainId: "2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"
+  avaxId: "BUuypiq2wyuLMvyhzFXcPyxPMCgSp7eeDohhQRqTChoBjKziC"
+  importFee: 1000000
+  exportFee: 1000000
+  gasPerByte: 1
+  gasPerSig: 1000
+  gasFixed: 10000
+databaseConfig:
+  badgerDbPath: "/app/data/mpc_controller_db"
+monitorConfig:
+  metricsServeAddr: ":7000"
