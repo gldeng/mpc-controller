@@ -20,4 +20,4 @@ networkConfig:
 databaseConfig:
   badgerDbPath: "/app/data/mpc_controller_db1"
 monitorConfig:
-  metricsServeAddr: ":7000"
+  metricsServeAddr: ":7001"
