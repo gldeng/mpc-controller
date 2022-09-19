@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	checkUTXOInterval = time.Second * 1
+	checkUTXOInterval = time.Second * 15
 )
 
 // Subscribe event: *events.KeyGenerated
