@@ -3,6 +3,7 @@ version: "2.4"
 services:
   oracle1:
     image: avalido/oracle
+    container_name: oracle1
     environment:
       - LOG_LEVEL=DEBUG
     command: |
@@ -16,6 +17,7 @@ services:
 
   oracle2:
     image: avalido/oracle
+    container_name: oracle2
     environment:
       - LOG_LEVEL=DEBUG
     command: |
@@ -29,6 +31,7 @@ services:
 
   oracle3:
     image: avalido/oracle
+    container_name: oracle3
     environment:
       - LOG_LEVEL=DEBUG
     command: |
@@ -42,6 +45,7 @@ services:
 
   oracle4:
     image: avalido/oracle
+    container_name: oracle4
     environment:
       - LOG_LEVEL=DEBUG
     command: |
@@ -55,6 +59,7 @@ services:
 
   oracle5:
     image: avalido/oracle
+    container_name: oracle5
     environment:
       - LOG_LEVEL=DEBUG
     command: |
