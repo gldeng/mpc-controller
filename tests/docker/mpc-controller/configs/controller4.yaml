@@ -1,7 +1,7 @@
 enableDevMode: true
 controllerId: "mpc-controller-04"
 controllerKey: "a8f68535da081ab3818d9f00f64730583b4d31b918b44771526c925d833df96b8c258fff5e730f6c806a99edc24ad90ef177c0918517527f81e908ec7009feaa"
-mpcManagerAddress: "0xCaE41a35D2C0e526cbb27d7fa03B0535c2Cd7A46"
+mpcManagerAddress: "0x34aAe02798d6d18B4AD0c31bFbEc60fab9e3C5e4"
 mpcServerUrl: "http://43.129.206.179:9000"
 ethRpcUrl: "http://34.172.25.188:9650/ext/bc/C/rpc"
 ethWsUrl: "ws://34.172.25.188:9650/ext/bc/C/ws"
@@ -18,6 +18,6 @@ networkConfig:
   gasPerSig: 1000
   gasFixed: 10000
 databaseConfig:
-  badgerDbPath: "/app/data/mpc_controller_db"
+  badgerDbPath: "/app/data/mpc_controller_db4"
 monitorConfig:
   metricsServeAddr: ":7000"
