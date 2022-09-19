@@ -1,0 +1,67 @@
+version: "2.4"
+
+services:
+  oracle1:
+    image: avalido/oracle
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: |
+      /app/oracle
+      --rpc-url http://34.172.25.188:9650
+      --max-delegation-fee 10000
+      --min-uptime 9500 --max-stake-period 1209600
+      --oracle-address 0xc91d5b26cf4d8f9a0C03923a7e36a9BC00472725
+      --oracle-manager-address 0x4dA36838cbc6f4C9DdE29579da5b16AB0653808e
+      --private-key d876abc4ef78972fc733651bfc79676d9a6722626f9980e2db249c22ed57dbb2
+
+  oracle2:
+    image: avalido/oracle
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: |
+      /app/oracle
+      --rpc-url http://34.172.25.188:9650
+      --max-delegation-fee 10000
+      --min-uptime 9500 --max-stake-period 1209600
+      --oracle-address 0xc91d5b26cf4d8f9a0C03923a7e36a9BC00472725
+      --oracle-manager-address 0x4dA36838cbc6f4C9DdE29579da5b16AB0653808e
+      --private-key d876abc4ef78972fc733651bfc79676d9a6722626f9980e2db249c22ed57dbb2
+
+  oracle3:
+    image: avalido/oracle
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: |
+      /app/oracle
+      --rpc-url http://34.172.25.188:9650
+      --max-delegation-fee 10000
+      --min-uptime 9500 --max-stake-period 1209600
+      --oracle-address 0xc91d5b26cf4d8f9a0C03923a7e36a9BC00472725
+      --oracle-manager-address 0x4dA36838cbc6f4C9DdE29579da5b16AB0653808e
+      --private-key d876abc4ef78972fc733651bfc79676d9a6722626f9980e2db249c22ed57dbb2
+
+  oracle4:
+    image: avalido/oracle
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: |
+      /app/oracle
+      --rpc-url http://34.172.25.188:9650
+      --max-delegation-fee 10000
+      --min-uptime 9500 --max-stake-period 1209600
+      --oracle-address 0xc91d5b26cf4d8f9a0C03923a7e36a9BC00472725
+      --oracle-manager-address 0x4dA36838cbc6f4C9DdE29579da5b16AB0653808e
+      --private-key d876abc4ef78972fc733651bfc79676d9a6722626f9980e2db249c22ed57dbb2
+
+  oracle5:
+    image: avalido/oracle
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: |
+      /app/oracle
+      --rpc-url http://34.172.25.188:9650
+      --max-delegation-fee 10000
+      --min-uptime 9500 --max-stake-period 1209600
+      --oracle-address 0xc91d5b26cf4d8f9a0C03923a7e36a9BC00472725
+      --oracle-manager-address 0x4dA36838cbc6f4C9DdE29579da5b16AB0653808e
+      --private-key d876abc4ef78972fc733651bfc79676d9a6722626f9980e2db249c22ed57dbb2
