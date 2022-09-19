@@ -133,6 +133,8 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					genPubKey: genPubKey.PublicKey,
 				}
 
+				eh.Logger.Info("Fetched UTXOs to export", []logger.Field{{"utxosToExport", utxosToExport}}...)
+
 				select {
 				case <-ctx.Done():
 					return
