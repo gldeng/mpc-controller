@@ -10,6 +10,13 @@ const (
 )
 
 var (
+	// keygen
+
+	KeygenRequestPosted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "keygen_request_posted_total",
+		Help: "The total number of keygen request posted",
+	})
+
 	// stake
 
 	StakeRequestAdded = promauto.NewCounter(prometheus.CounterOpts{

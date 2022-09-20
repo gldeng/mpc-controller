@@ -94,6 +94,7 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err 
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
+		prom.KeygenRequestPosted.Add(1)
 		return false, nil
 	})
 	err = errors.Wrapf(err, "failed to post keygen request")
