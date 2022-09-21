@@ -128,6 +128,12 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				break
 			}
 
+			var joinedCmpPartiPubKeys []string
+			indices := (*storage.Indices)(evt.ParticipantIndices).Indices()
+			for _, index := range indices {
+				joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
+			}
+
 			cmpGenPubKeyHex, err := utxoExportReq.GenPubKey.CompressPubKeyHex()
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to compress generated public key")
@@ -177,7 +183,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				SignDoner: eh.SignerMPC,
 				SignReqArgs: &signer.SignRequestArgs{
 					TaskID:                 taskID + evt.Raw.TxHash.Hex(),
-					CompressedPartiPubKeys: cmpPartiPubKeys,
+					CompressedPartiPubKeys: joinedCmpPartiPubKeys,
 					CompressedGenPubKeyHex: cmpGenPubKeyHex,
 				},
 
