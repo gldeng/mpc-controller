@@ -87,7 +87,7 @@ func (c *MyCaller) RewardTreasuryAddress(ctx context.Context, opts *bind.CallOpt
 }
 
 func (c *MyCaller) RetryCall(ctx context.Context, fn Call) error {
-	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+	err := backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 		err, retry = fn()
 		if retry {
 			return true, errors.WithStack(err)

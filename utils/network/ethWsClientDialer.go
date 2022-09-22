@@ -29,7 +29,7 @@ type EthClientDialerImpl struct {
 }
 
 func (e *EthClientDialerImpl) GetEthWsClient(ctx context.Context) (cli *ethclient.Client, err error) {
-	err = backoff.RetryFn(ctx, backoff.ExponentialPolicy(10, time.Millisecond*100, time.Second*10), func() (bool, error) {
+	err = backoff.RetryFn(e.Logger, ctx, backoff.ExponentialPolicy(10, time.Millisecond*100, time.Second*10), func() (bool, error) {
 		_, err := e.EthWsClient.NetworkID(ctx)
 		if err == nil {
 			return false, nil
@@ -48,7 +48,7 @@ func (e *EthClientDialerImpl) GetEthWsClient(ctx context.Context) (cli *ethclien
 }
 
 func (e *EthClientDialerImpl) NewEthWsClient(ctx context.Context) (c *ethclient.Client, isUpdated bool, err error) {
-	err = backoff.RetryFn(ctx, backoff.ExponentialPolicy(10, time.Millisecond*100, time.Second*10), func() (bool, error) {
+	err = backoff.RetryFn(e.Logger, ctx, backoff.ExponentialPolicy(10, time.Millisecond*100, time.Second*10), func() (bool, error) {
 		_, err = e.EthWsClient.NetworkID(ctx)
 		if err == nil {
 			return false, nil

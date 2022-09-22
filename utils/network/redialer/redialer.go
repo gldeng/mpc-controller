@@ -56,7 +56,7 @@ func (d *ReDialer) GetClient(ctx context.Context) (client Client, clientCh chan 
 		return d.client, d.reDialedClientCh, nil
 	}
 
-	err = myBackOff.RetryFn(ctx, d.BackOffPolicy, func() (bool, error) {
+	err = myBackOff.RetryFn(d.Logger, ctx, d.BackOffPolicy, func() (bool, error) {
 		if atomic.LoadUint32(&d.disconnected) == 1 {
 			return true, errors.Wrapf(err, "client is disconnected")
 		}
@@ -102,7 +102,7 @@ func (d *ReDialer) redial(ctx context.Context) {
 }
 
 func (d *ReDialer) dial(ctx context.Context) (client Client, err error) {
-	err = myBackOff.RetryFn(ctx, d.BackOffPolicy, func() (bool, error) {
+	err = myBackOff.RetryFn(d.Logger, ctx, d.BackOffPolicy, func() (bool, error) {
 		if client, err = d.Dial(ctx); err != nil {
 			return true, errors.WithStack(err)
 		}

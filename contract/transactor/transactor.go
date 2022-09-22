@@ -98,7 +98,7 @@ func (t *MyTransactor) RetryTransact(ctx context.Context, fn Transact) (*types.T
 	var tx *types.Transaction
 	var rcpt *types.Receipt
 
-	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+	err := backoff.RetryFnExponential10Times(t.Logger, ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 		var checkReceipt bool
 		tx, err, retry, checkReceipt = fn()
 		if !retry && !checkReceipt {
@@ -112,7 +112,7 @@ func (t *MyTransactor) RetryTransact(ctx context.Context, fn Transact) (*types.T
 			return false, errors.WithStack(err)
 		}
 
-		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+		err = backoff.RetryFnExponential10Times(t.Logger, ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 			rcpt, err = t.EthClient.TransactionReceipt(ctx, tx.Hash())
 			if err != nil {
 				return true, errors.WithStack(err)

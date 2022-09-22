@@ -295,7 +295,7 @@ func (eh *UTXOTracker) requestUTXOsFromStake(ctx context.Context, addr ids.Short
 
 func (eh *UTXOTracker) getUTXOs(ctx context.Context, addr ids.ShortID) (utxos []*avax.UTXO, err error) {
 	var utxoBytesArr [][]byte
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(eh.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		utxoBytesArr, _, _, err = eh.ClientPChain.GetUTXOs(ctx, []ids.ShortID{addr}, 0, addr, ids.ID{})
 		if err != nil {
 			return true, errors.WithStack(err)

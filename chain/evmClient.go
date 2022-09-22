@@ -22,7 +22,7 @@ type EvmClientWrapper struct {
 // e.g. issue atomic tx after MPC signing stage
 
 func (c *EvmClientWrapper) IssueTx(ctx context.Context, txBytes []byte) (txID ids.ID, err error) {
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		txID, err = c.Client.IssueTx(ctx, txBytes)
 		if err != nil {
 			errMsg := err.Error()
@@ -78,7 +78,7 @@ func (c *EvmClientWrapper) AwaitTxDecided(ctx context.Context, txID ids.ID, freq
 }
 
 func (c *EvmClientWrapper) GetAtomicTxStatus(ctx context.Context, txID ids.ID) (status evm.Status, err error) {
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		status, err = c.Client.GetAtomicTxStatus(ctx, txID)
 		if err != nil {
 			return true, errors.WithStack(err)

@@ -16,7 +16,7 @@ type CorethClientWrapper struct {
 }
 
 func (c *CorethClientWrapper) EstimateBaseFee(ctx context.Context) (baseFee *big.Int, err error) {
-	err = backoff.RetryFnExponential10Times(ctx, time.Second*1, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second*1, time.Second*10, func() (bool, error) {
 		baseFee, err = c.Client.EstimateBaseFee(ctx)
 		if err != nil {
 			return true, errors.WithStack(err)

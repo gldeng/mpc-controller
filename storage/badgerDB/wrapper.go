@@ -21,7 +21,7 @@ type BadgerDB struct {
 // Classic k-v storage
 
 func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
-	err = backoff.RetryFnExponentialForever(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponentialForever(b.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		err = b.Update(func(txn *badger.Txn) error {
 			err := txn.Set(key, val)
 			return errors.WithStack(err)
@@ -36,7 +36,7 @@ func (b *BadgerDB) Set(ctx context.Context, key, val []byte) (err error) {
 }
 
 func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error) {
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential10Times(b.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		err = b.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(key)
 			if err != nil {
@@ -63,7 +63,7 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 
 func (b *BadgerDB) List(ctx context.Context, prefix []byte) ([][]byte, error) {
 	var valBytesArr [][]byte
-	err := backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err := backoff.RetryFnExponential10Times(b.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		err := b.View(func(txn *badger.Txn) error {
 			it := txn.NewIterator(badger.DefaultIteratorOptions)
 			defer it.Close()
