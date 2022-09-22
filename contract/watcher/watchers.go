@@ -302,13 +302,7 @@ func (w *MpcManagerWatchers) watchStakeRequestAdded(ctx context.Context, opts *b
 func (w *MpcManagerWatchers) processStakeRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerStakeRequestAdded)
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.StakeRequestAdded)(myEvt), nil))
-	w.Logger.Info("Stake request added", []logger.Field{
-		{"reqNo", myEvt.RequestNumber},
-		{"pubKeyHash", myEvt.PublicKey},
-		{"nodeId", myEvt.NodeID},
-		{"amount", myEvt.Amount},
-		{"startTime", myEvt.StartTime},
-		{"endTime", myEvt.EndTime}}...)
+	w.Logger.Info("Stake request added", []logger.Field{{"stakeReqAdded", myEvt}}...)
 	prom.StakeRequestAdded.Inc()
 	return nil
 }
