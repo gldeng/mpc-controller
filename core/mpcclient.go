@@ -168,7 +168,7 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err erro
 }
 
 func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (bool, error) {
+	err = backoff.RetryFnExponential30Times(ctx, time.Second, time.Second*10, func() (bool, error) {
 		res, err = c.Result(ctx, mpcReqId)
 		if err != nil {
 			return false, errors.WithStack(err)
