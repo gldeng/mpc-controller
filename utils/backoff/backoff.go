@@ -43,6 +43,11 @@ func RetryFnConstant100Times(ctx context.Context, dur time.Duration, fn Fn) erro
 	return RetryFn(ctx, policy, fn)
 }
 
+func RetryFnConstant30Times(ctx context.Context, dur time.Duration, fn Fn) error {
+	policy := ConstantPolicy(30, dur)
+	return RetryFn(ctx, policy, fn)
+}
+
 func RetryFnConstant10Times(ctx context.Context, dur time.Duration, fn Fn) error {
 	policy := ConstantPolicy(10, dur)
 	return RetryFn(ctx, policy, fn)
@@ -62,6 +67,11 @@ func RetryFnExponentialForever(ctx context.Context, minInterval, maxInterval tim
 
 func RetryFnExponential100Times(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
 	policy := ExponentialPolicy(100, minInterval, maxInterval)
+	return RetryFn(ctx, policy, fn)
+}
+
+func RetryFnExponential30Times(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
+	policy := ExponentialPolicy(30, minInterval, maxInterval)
 	return RetryFn(ctx, policy, fn)
 }
 
@@ -85,6 +95,10 @@ func ConstantPolicy100Times(dur time.Duration) backoff.Policy {
 	return ConstantPolicy(100, dur)
 }
 
+func ConstantPolicy30Times(dur time.Duration) backoff.Policy {
+	return ConstantPolicy(30, dur)
+}
+
 func ConstantPolicy10Times(dur time.Duration) backoff.Policy {
 	return ConstantPolicy(10, dur)
 }
@@ -104,6 +118,10 @@ func ExponentialPolicyForever(minInterval, maxInterval time.Duration) backoff.Po
 
 func ExponentialPolicy100Times(minInterval, maxInterval time.Duration) backoff.Policy {
 	return ExponentialPolicy(100, minInterval, maxInterval)
+}
+
+func ExponentialPolicy30Times(minInterval, maxInterval time.Duration) backoff.Policy {
+	return ExponentialPolicy(30, minInterval, maxInterval)
 }
 
 func ExponentialPolicy10Times(minInterval, maxInterval time.Duration) backoff.Policy {
