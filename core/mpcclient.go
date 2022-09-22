@@ -90,7 +90,7 @@ func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err 
 
 	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() (bool, error) {
 		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
-		c.log.InfoNilError(err, "Posted keygen request", []logger.Field{{"keygenReq", request}}...)
+		c.log.InfoNilError(err, "Posted keygen request", []logger.Field{{"postedKeygenReq", request}}...)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
@@ -148,7 +148,7 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err erro
 		c.lock.Lock()
 		defer c.lock.Unlock()
 		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes)) // todo: check response?
-		c.log.InfoNilError(err, "Posted sign request", []logger.Field{{"signReq", request}}...)
+		c.log.InfoNilError(err, "Posted sign request", []logger.Field{{"postedSignReq", request}}...)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
