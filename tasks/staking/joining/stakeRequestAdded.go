@@ -2,6 +2,7 @@ package joining
 
 import (
 	"context"
+	"fmt"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
@@ -112,8 +113,8 @@ func (eh *StakeRequestAdded) joinRequest(ctx context.Context) {
 
 			eh.Logger.WarnOnTrue(float64(len(eh.stakeRequestAddedChan)) > float64(cap(eh.stakeRequestAddedChan))*0.8, "Too many stake request PENDED to join",
 				[]logger.Field{{"pendedStakeReqs", len(eh.stakeRequestAddedChan)}}...)
-			eh.Logger.Debug("Joined stake request", []logger.Field{
-				{"reqNo", evt.RequestNumber}, {"reqHash", reqHash.String()}}...)
+			eh.Logger.Info("Joined stake request", []logger.Field{{"joinedStakeReq",
+				fmt.Sprintf("reqNo:%v, reqHash:%v", evt.RequestNumber, reqHash)}}...)
 		}
 	}
 }
