@@ -2,6 +2,7 @@ package backoff
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/lestrrat-go/backoff/v2"
 	"github.com/pkg/errors"
 	"time"
@@ -9,21 +10,21 @@ import (
 
 // Retry the retry function, with outer constant policy and inner exponential policy
 
-func RetryRetryFnForever(ctx context.Context, fn Fn) error {
-	return RetryRetryFn(ctx, ConstantPolicyForever(time.Minute*10), ExponentialPolicy10Times(time.Second, time.Second*10), fn)
+func RetryRetryFnForever(log logger.Logger, ctx context.Context, fn Fn) error {
+	return RetryRetryFn(log, ctx, ConstantPolicyForever(time.Minute*10), ExponentialPolicy10Times(time.Second, time.Second*10), fn)
 }
 
-func RetryRetryFn100Times(ctx context.Context, fn Fn) error {
-	return RetryRetryFn(ctx, ConstantPolicy(100, time.Minute*10), ExponentialPolicy10Times(time.Second, time.Second*10), fn)
+func RetryRetryFn100Times(log logger.Logger, ctx context.Context, fn Fn) error {
+	return RetryRetryFn(log, ctx, ConstantPolicy(100, time.Minute*10), ExponentialPolicy10Times(time.Second, time.Second*10), fn)
 }
 
-func RetryRetryFn10Times(ctx context.Context, fn Fn) error {
-	return RetryRetryFn(ctx, ConstantPolicy(10, time.Minute*10), ExponentialPolicy10Times(time.Second, time.Second*10), fn)
+func RetryRetryFn10Times(log logger.Logger, ctx context.Context, fn Fn) error {
+	return RetryRetryFn(log, ctx, ConstantPolicy(10, time.Minute*10), ExponentialPolicy10Times(time.Second, time.Second*10), fn)
 }
 
-func RetryRetryFn(ctx context.Context, policyOuter backoff.Policy, policyInner backoff.Policy, fn Fn) error {
-	err := RetryFn(ctx, policyOuter, func() (retry bool, err error) {
-		if err := RetryFn(ctx, policyInner, fn); err != nil {
+func RetryRetryFn(log logger.Logger, ctx context.Context, policyOuter backoff.Policy, policyInner backoff.Policy, fn Fn) error {
+	err := RetryFn(log, ctx, policyOuter, func() (retry bool, err error) {
+		if err := RetryFn(log, ctx, policyInner, fn); err != nil {
 			return true, errors.Wrapf(err, "inner retry error")
 		}
 		return false, nil
@@ -33,56 +34,56 @@ func RetryRetryFn(ctx context.Context, policyOuter backoff.Policy, policyInner b
 
 // Retry with constant policy
 
-func RetryFnConstantForever(ctx context.Context, dur time.Duration, fn Fn) error { // handy function
+func RetryFnConstantForever(log logger.Logger, ctx context.Context, dur time.Duration, fn Fn) error { // handy function
 	policy := ConstantPolicy(0, dur)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnConstant100Times(ctx context.Context, dur time.Duration, fn Fn) error {
+func RetryFnConstant100Times(log logger.Logger, ctx context.Context, dur time.Duration, fn Fn) error {
 	policy := ConstantPolicy(100, dur)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnConstant30Times(ctx context.Context, dur time.Duration, fn Fn) error {
+func RetryFnConstant30Times(log logger.Logger, ctx context.Context, dur time.Duration, fn Fn) error {
 	policy := ConstantPolicy(30, dur)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnConstant10Times(ctx context.Context, dur time.Duration, fn Fn) error {
+func RetryFnConstant10Times(log logger.Logger, ctx context.Context, dur time.Duration, fn Fn) error {
 	policy := ConstantPolicy(10, dur)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnConstant(ctx context.Context, maxRetries int, dur time.Duration, fn Fn) error {
+func RetryFnConstant(log logger.Logger, ctx context.Context, maxRetries int, dur time.Duration, fn Fn) error {
 	policy := ConstantPolicy(maxRetries, dur)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
 // Retry with exponential policy
 
-func RetryFnExponentialForever(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error { // handy function
+func RetryFnExponentialForever(log logger.Logger, ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error { // handy function
 	policy := ExponentialPolicy(0, minInterval, maxInterval)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnExponential100Times(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
+func RetryFnExponential100Times(log logger.Logger, ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
 	policy := ExponentialPolicy(100, minInterval, maxInterval)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnExponential30Times(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
+func RetryFnExponential30Times(log logger.Logger, ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
 	policy := ExponentialPolicy(30, minInterval, maxInterval)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnExponential10Times(ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
+func RetryFnExponential10Times(log logger.Logger, ctx context.Context, minInterval, maxInterval time.Duration, fn Fn) error {
 	policy := ExponentialPolicy(10, minInterval, maxInterval)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
-func RetryFnExponential(ctx context.Context, maxRetries int, minInterval, maxInterval time.Duration, fn Fn) error {
+func RetryFnExponential(log logger.Logger, ctx context.Context, maxRetries int, minInterval, maxInterval time.Duration, fn Fn) error {
 	policy := ExponentialPolicy(maxRetries, minInterval, maxInterval)
-	return RetryFn(ctx, policy, fn)
+	return RetryFn(log, ctx, policy, fn)
 }
 
 // Constant policy
@@ -143,11 +144,12 @@ func ExponentialPolicy(maxRetries int, minInterval, maxInterval time.Duration) b
 
 type Fn func() (retry bool, err error)
 
-func RetryFn(ctx context.Context, policy backoff.Policy, fn Fn) error {
+func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn Fn) error {
 	b := policy.Start(ctx)
 	var errStack error
 	var startAt = time.Now()
 	var retryNum = 0
+	var lastRetryAt = time.Now()
 	for backoff.Continue(b) {
 		retry, err := fn()
 		errStack = errors.WithStack(err)
@@ -155,6 +157,11 @@ func RetryFn(ctx context.Context, policy backoff.Policy, fn Fn) error {
 			break
 		}
 		retryNum++
+		log.Error("Retry", []logger.Field{
+			{"error", err},
+			{"retryNum", retryNum},
+			{"retryAfter", time.Now().Sub(lastRetryAt).Seconds()}}...)
+		lastRetryAt = time.Now()
 	}
 	retryDur := time.Now().Sub(startAt).Seconds()
 	return errors.Wrapf(errStack, "exited after retrying %v times in %v seconds", retryNum, retryDur)
