@@ -348,7 +348,7 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		}
 		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
 		w.Logger.Info("Stake request started", []logger.Field{{"stakeReqStarted",
-			fmt.Sprintf("reqHash:%v, partiIndices:%v, stakeReq:%v", reqHash.String(), indices.Indices(), stakeReq)}}...)
+			fmt.Sprintf("reqHash:%v, partiIndices:%v, stakeReq:%+v", reqHash.String(), indices.Indices(), stakeReq)}}...)
 		prom.StakeRequestStarted.Inc()
 	case reqHash.IsTaskType(storage.TaskTypReturn):
 		utxoExportReq := storage.ExportUTXORequest{}
@@ -367,7 +367,7 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		}
 		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
 		w.Logger.Info("Return request started", []logger.Field{{"returnReqStarted",
-			fmt.Sprintf("reqHash:%v, partiIndices:%v, returnReq:%v", reqHash.String(), indices.Indices(), utxoExportReq)}}...)
+			fmt.Sprintf("reqHash:%v, partiIndices:%v, returnReq:%+v", reqHash.String(), indices.Indices(), utxoExportReq)}}...)
 		prom.UTXOExportRequestStarted.Inc()
 	}
 	return nil
