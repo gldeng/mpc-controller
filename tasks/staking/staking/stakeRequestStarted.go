@@ -325,8 +325,7 @@ func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrap
 
 	eh.doneStakeTasks++
 	prom.StakeTaskDone.Inc()
-
-	eh.Logger.Info("Stake task DONE", []logger.Field{{"reqHash", stw.ReqHash.String()}, {"stakeTaskDoneEvent", newEvt}}...)
+	eh.Logger.Info("Stake task done", []logger.Field{{"stakeTaskDone", fmt.Sprintf("reqHash:%v, stakeTask:%+v", stw.ReqHash.String(), newEvt)}}...)
 	return nil
 }
 
