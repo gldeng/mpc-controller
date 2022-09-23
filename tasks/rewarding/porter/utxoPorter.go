@@ -2,6 +2,7 @@ package porter
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -251,11 +252,11 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 					case uint32(events.OutputIndexPrincipal):
 						atomic.AddUint64(&eh.exportedPrincipalUTXOs, 1)
 						prom.PrincipalUTXOExported.Inc()
-						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"UTXOExported", newEvt}}...)
+						eh.Logger.Info("Principal UTXO EXPORTED", []logger.Field{{"principalUTXOExported", fmt.Sprintf("%+v", newEvt)}}...)
 					case uint32(events.OutputIndexReward):
 						atomic.AddUint64(&eh.exportedRewardUTXOs, 1)
 						prom.RewardUTXOExported.Inc()
-						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"UTXOExported", newEvt}}...)
+						eh.Logger.Info("Reward UTXO EXPORTED", []logger.Field{{"rewardUTXOExported", fmt.Sprintf("%+v", newEvt)}}...)
 					}
 					totalPrincipals := atomic.LoadUint64(&eh.exportedPrincipalUTXOs)
 					totalRewards := atomic.LoadUint64(&eh.exportedRewardUTXOs)
