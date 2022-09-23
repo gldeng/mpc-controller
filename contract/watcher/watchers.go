@@ -56,9 +56,14 @@ type MpcManagerWatchers struct {
 	keyGeneratedWatcher       *watcher.Watcher
 	stakeRequestAddedWatcher  *watcher.Watcher
 	requestStartedWatcher     *watcher.Watcher
+
+	groupIDs   map[common.Hash]struct{}
+	genPubKeys map[string]storage.PubKey
 }
 
 func (w *MpcManagerWatchers) Init(ctx context.Context) {
+	w.groupIDs = make(map[common.Hash]struct{})
+	w.genPubKeys = make(map[string]storage.PubKey)
 	reDialer := adapter.EthClientReDialer{
 		Logger:        logger.Default(),
 		EthURL:        w.EthWsURL,
@@ -94,6 +99,7 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 		w.Logger.FatalOnError(err, "Failed to watch KeygenRequestAdded")
 		err = w.watchKeyGenerated(ctx, nil, groupIDs)
 		w.Logger.FatalOnError(err, "Failed to watch KeyGenerated")
+		w.groupIDs[group.ID] = struct{}{}
 	}
 
 	// read stored generated key and watch for stakeRequestAdded contract event.
@@ -117,7 +123,11 @@ func (w *MpcManagerWatchers) Init(ctx context.Context) {
 			{"genPubKey", genPubKey.GenPubKey},
 			{"cChainAddr", cChainAddr},
 			{"pChainAddr", pChainAddr}}...)
+		w.genPubKeys[genPubKey.GenPubKey.String()] = genPubKey.GenPubKey
 	}
+
+	// rewatch contract event upon ws reconnection
+	go w.reWatch(ctx)
 }
 
 func (w *MpcManagerWatchers) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
@@ -174,6 +184,8 @@ func (w *MpcManagerWatchers) processParticipantAdded(ctx context.Context, evt in
 	if err != nil {
 		return errors.Wrapf(err, "failed to save group %v", group)
 	}
+
+	w.groupIDs[group.ID] = struct{}{}
 
 	// Publish events.ParticipantAdded
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.ParticipantAdded)(myEvt), nil))
@@ -270,6 +282,7 @@ func (w *MpcManagerWatchers) processKeyGenerated(ctx context.Context, evt interf
 	if err != nil {
 		return errors.Wrapf(err, "failed to load generated public key %v", genPubKey)
 	}
+	w.genPubKeys[genPubKey.GenPubKey.String()] = genPubKey.GenPubKey
 	w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.KeyGenerated)(myEvt), nil))
 	cChainAddr, err := genPubKey.GenPubKey.CChainAddress()
 	if err != nil {
@@ -365,4 +378,58 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		prom.UTXOExportRequestStarted.Inc()
 	}
 	return nil
+}
+
+func (w *MpcManagerWatchers) reWatch(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ethClient := <-w.ethClientCh:
+			w.Logger.Info("EthClient reconnected")
+			w.closeSubWatchers()
+			w.contractFilterer = ethClient.(*ethclient.Client)
+			boundFilterer, err := contract.BindMpcManagerFilterer(w.ContractAddr, w.contractFilterer)
+			w.Logger.ErrorOnError(err, "Failed to rebind MpcManager filterer")
+			if err != nil {
+				break
+			}
+			watcherFactory := &MpcManagerWatcherFactory{w.Logger, boundFilterer}
+			w.watcherFactory = watcherFactory
+
+			err = w.watchParticipantAdded(ctx, nil, [][]byte{w.PartiPubKey})
+			w.Logger.ErrorOnError(err, "Failed to rewatch ParticipantAdded")
+			err = w.watchRequestStarted(ctx, nil)
+			w.Logger.ErrorOnError(err, "Failed to rewatch RequestStarted")
+
+			for groupID, _ := range w.groupIDs {
+				groupIDs := [][32]byte{groupID}
+				err = w.watchKeygenRequestAdded(ctx, nil, groupIDs)
+				w.Logger.ErrorOnError(err, "Failed to rewatch KeygenRequestAdded")
+				err = w.watchKeyGenerated(ctx, nil, groupIDs)
+				w.Logger.ErrorOnError(err, "Failed to rewatch KeyGenerated")
+			}
+			if err != nil {
+				break
+			}
+
+			for _, genPubKey := range w.genPubKeys {
+				genKey := [][]byte{genPubKey}
+				err = w.watchStakeRequestAdded(ctx, nil, genKey)
+				w.Logger.ErrorOnError(err, "Failed to rewatch StakeRequestAdded")
+			}
+			if err != nil {
+				break
+			}
+			w.Logger.Info("Contract events rewatched")
+		}
+	}
+}
+
+func (w *MpcManagerWatchers) closeSubWatchers() {
+	w.participantAddedWatcher.Close()
+	w.keygenRequestAddedWatcher.Close()
+	w.keyGeneratedWatcher.Close()
+	w.stakeRequestAddedWatcher.Close()
+	w.requestStartedWatcher.Close()
 }
