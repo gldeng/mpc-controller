@@ -182,6 +182,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		PartiPubKey:     myPartiPubKey,
 		SignerMPC:       mpcClient,
 	}
+	_ = rewardMaster
 
 	stakeMaster := staking.Master{
 		BoundTransactor: &boundTransactor,
@@ -207,7 +208,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Services: []Service{
 			&watcherMaster,
 			&stakeMaster,
-			&rewardMaster,
+			//&rewardMaster,
 			&metricsService,
 		},
 	}
