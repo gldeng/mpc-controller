@@ -61,20 +61,20 @@ type issueTx struct {
 	*storage.StakeRequest
 }
 
+func (eh *StakeRequestStarted) Init(ctx context.Context) {
+	eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
+
+	eh.requestStartedChan = make(chan *events.RequestStarted, 1024)
+
+	eh.issueTxChan = make(chan *issueTx)
+	eh.issueTxCache = make(map[uint64]*issueTx)
+	eh.issueTxContainer = new(issueTxContainer)
+
+	go eh.signTx(ctx)
+	go eh.issueTx(ctx)
+}
+
 func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
-	eh.once.Do(func() {
-		eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
-
-		eh.requestStartedChan = make(chan *events.RequestStarted, 1024)
-
-		eh.issueTxChan = make(chan *issueTx)
-		eh.issueTxCache = make(map[uint64]*issueTx)
-		eh.issueTxContainer = new(issueTxContainer)
-
-		go eh.signTx(ctx)
-		go eh.issueTx(ctx)
-	})
-
 	switch evt := evtObj.Event.(type) {
 	case *events.RequestStarted:
 		reqHash := (storage.RequestHash)(evt.RequestHash)
