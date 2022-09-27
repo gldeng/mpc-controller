@@ -11,7 +11,7 @@ import (
 // todo: consider reuse /mpc-controller/core/signer.Signer
 
 type SignRequester struct {
-	core.SignDoner
+	core.Signer
 	SignRequestArgs
 }
 
@@ -29,7 +29,7 @@ func (s *SignRequester) SignExportTx(ctx context.Context, exportTxHash []byte) (
 		Hash:                   bytes.BytesToHex(exportTxHash),
 	}
 
-	res, err := s.SignDone(ctx, &exportTxSignReq)
+	res, err := s.Sign(ctx, &exportTxSignReq)
 	if err != nil {
 		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestNo: %q", exportTxSignReq.ReqID)
 	}

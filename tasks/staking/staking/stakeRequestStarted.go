@@ -38,7 +38,7 @@ type StakeRequestStarted struct {
 	NetWorkCtx      chain.NetworkContext
 	NonceGiver      noncer.Noncer
 	PartiPubKey     storage.PubKey
-	SignerMPC       core.SignDoner
+	SignerMPC       core.Signer
 
 	requestStartedChan chan *events.RequestStarted
 	signStakeTxWs      *work.Workshop
@@ -76,6 +76,10 @@ func (eh *StakeRequestStarted) Init(ctx context.Context) {
 
 func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
+	case *events.MpcServerResultFetched:
+		if evt.ReqType == string(core.ReqTypSignSign) {
+
+		}
 	case *events.RequestStarted:
 		reqHash := (storage.RequestHash)(evt.RequestHash)
 		if !reqHash.IsTaskType(storage.TaskTypStake) {

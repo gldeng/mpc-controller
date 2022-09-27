@@ -222,7 +222,7 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 	}
 
 	keyGenReq := &core.KeygenRequest{
-		ReqID:                  string(core.ReqIDPrefixKeygen) + reqId,
+		ReqID:                  string(events.ReqIDPrefixKeygen) + reqId,
 		CompressedPartiPubKeys: normalized,
 		Threshold:              group.Threshold(),
 	}

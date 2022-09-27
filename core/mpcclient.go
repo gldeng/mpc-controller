@@ -11,7 +11,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	mpcErrors "github.com/avalido/mpc-controller/utils/errors"
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -20,28 +19,6 @@ import (
 	"sync/atomic"
 	"time"
 )
-
-const (
-	ReqTypKeygen   ReqType = "KEYGEN"
-	ReqTypSignSign ReqType = "SIGN"
-)
-
-const (
-	ReqStatusReceived   ReqStatus = "RECEIVED"
-	ReqStatusProcessing ReqStatus = "PROCESSING"
-	ReqStatusDone       ReqStatus = "DONE"
-)
-
-const (
-	ReqIDPrefixKeygen        ReqIDPrefix = "KEYGEN-"
-	ReqIDPrefixSignStake     ReqIDPrefix = "SIGN-STAKE-"
-	ReqIDPrefixSignPrincipal ReqIDPrefix = "SIGN-PRINCIPAL-"
-	ReqIDPrefixSignReward    ReqIDPrefix = "SIGN-REWARD-"
-)
-
-type ReqType string
-type ReqStatus string
-type ReqIDPrefix string
 
 type KeygenRequest struct {
 	ReqID                  string   `json:"request_id"`
@@ -57,10 +34,10 @@ type SignRequest struct {
 }
 
 type Result struct {
-	ReqID     string  `json:"request_id"`
-	Result    string  `json:"result"`
-	ReqType   ReqType `json:"request_type"`
-	ReqStatus string  `json:"request_status"`
+	ReqID     string           `json:"request_id"`
+	Result    string           `json:"result"`
+	ReqType   events.ReqType   `json:"request_type"`
+	ReqStatus events.ReqStatus `json:"request_status"`
 }
 
 var _ MpcClient = (*MpcClientImp)(nil)
@@ -197,8 +174,8 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 		if err != nil {
 			return false, errors.WithStack(err)
 		}
-		if strings.Contains(res.ReqStatus, "ERROR") {
-			return false, errors.Wrap(&ErrTypSignErr{ErrMsg: res.ReqStatus}, "error result")
+		if strings.Contains(string(res.ReqStatus), "ERROR") {
+			return false, errors.Wrap(&ErrTypSignErr{ErrMsg: string(res.ReqStatus)}, "error result")
 		}
 		if res.ReqStatus == "DONE" && res.Result != "" {
 			switch {
@@ -211,7 +188,7 @@ func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Re
 			}
 			return false, nil
 		}
-		return true, errors.New(res.ReqStatus)
+		return true, errors.New(string(res.ReqStatus))
 	})
 	err = errors.Wrapf(err, "failed to request result or got error result for request controllerID %q", mpcReqId)
 	return
@@ -238,23 +215,30 @@ func (c *MpcClientImp) checkResult(ctx context.Context) {
 				res := new(Result)
 				_ = json.Unmarshal(body, &res)
 
-				if res.ReqStatus == string(ReqStatusDone) && res.Result != "" {
+				if res.ReqStatus == events.ReqStatusDone && res.Result != "" {
+					// Publish result
+					var evt interface{}
+					switch {
+					case res.ReqType == events.ReqTypSignSign:
+						myEvt := events.SignDone{
+							ReqID:  res.ReqID,
+							Result: new(events.Signature).FromHex(res.Result),
+						}
+						evt = &myEvt
+					}
+					c.Publisher.Publish(ctx, dispatcher.NewEvtObj(evt, nil))
+
 					// Record metrics
 					switch {
-					case strings.Contains(reqId, string(ReqIDPrefixKeygen)):
+					case strings.Contains(reqId, string(events.ReqIDPrefixKeygen)):
 						prom.KeygenRequestDone.Inc()
-					case strings.Contains(reqId, string(ReqIDPrefixSignStake)):
+					case strings.Contains(reqId, string(events.ReqIDPrefixSignStake)):
 						prom.StakeSignTaskDone.Inc()
-					case strings.Contains(reqId, string(ReqIDPrefixSignPrincipal)):
+					case strings.Contains(reqId, string(events.ReqIDPrefixSignPrincipal)):
 						prom.PrincipalUTXOSignTaskDone.Inc()
-					case strings.Contains(reqId, string(ReqIDPrefixSignReward)):
+					case strings.Contains(reqId, string(events.ReqIDPrefixSignReward)):
 						prom.RewardUTXOSignTaskDone.Inc()
 					}
-
-					// Publish result
-					var evt events.MpcServerResultFetched
-					copier.Copy(&evt, res)
-					c.Publisher.Publish(ctx, dispatcher.NewEvtObj(&evt, nil))
 
 					// Delete pending requests
 					c.pendingReqs.Delete(reqId)
