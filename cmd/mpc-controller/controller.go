@@ -99,7 +99,12 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	myLogger.Info(fmt.Sprintf("MpcManager address: %v", config.MpcManagerAddress))
 
 	// Create mpcClient
-	mpcClient, _ := core.NewMpcClient(myLogger, config.MpcServerUrl, config.ControllerId)
+	mpcClient := &core.MpcClientImp{
+		Logger:       myLogger,
+		ControllerID: config.ControllerId,
+		MpcServerUrl: config.MpcServerUrl,
+		Publisher:    myDispatcher}
+	mpcClient.Init(ctx)
 
 	// Decrypt private key
 	config.ControllerKey = decryptKey(config.ControllerId, pss, config.ControllerKey)

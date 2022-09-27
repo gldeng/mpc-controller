@@ -112,13 +112,13 @@ func Sign() usecase.IOInteractor {
 			return nil
 		}
 
-		//reqIdParts := strings.Split(in.SignReqID, "-")
+		//reqIdParts := strings.Split(in.ReqID, "-")
 
 		//lastKeygenReq := storer.GetKeygenRequestModel(reqIdParts[0])
 		//if lastKeygenReq == nil || lastKeygenReq.status != StatusDone {
 		//	logger.Error("Mpc-server failed to get key to sign",
-		//		logger.Field{"reqId", in.SignReqID})
-		//	return errors.Errorf("Mpc-server failed to get key to sign, request id: %v", in.SignReqID)
+		//		logger.Field{"reqId", in.ReqID})
+		//	return errors.Errorf("Mpc-server failed to get key to sign, request id: %v", in.ReqID)
 		//}
 
 		lastSignReq.hits++

@@ -24,7 +24,7 @@ type SignRequestArgs struct {
 
 func (s *Signer) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byte, error) {
 	exportTxSignReq := core.SignRequest{
-		SignReqID:              s.TaskID + "-" + strconv.Itoa(0),
+		ReqID:                  s.TaskID + "-" + strconv.Itoa(0),
 		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(exportTxHash),
@@ -32,11 +32,11 @@ func (s *Signer) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byt
 
 	res, err := s.SignDone(ctx, &exportTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestNo: %q", exportTxSignReq.SignReqID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export tx, RequestNo: %q", exportTxSignReq.ReqID)
 	}
 
 	if res == nil || res.Result == "" {
-		return [65]byte{}, errors.Errorf("exportTx got no signing result, reqID: %q, hash: %q", exportTxSignReq.SignReqID, exportTxSignReq.Hash)
+		return [65]byte{}, errors.Errorf("exportTx got no signing result, reqID: %q, hash: %q", exportTxSignReq.ReqID, exportTxSignReq.Hash)
 	}
 
 	return bytes.BytesTo65Bytes(bytes.HexToBytes(res.Result)), nil
@@ -44,7 +44,7 @@ func (s *Signer) SignExportTx(ctx context.Context, exportTxHash []byte) ([65]byt
 
 func (s *Signer) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byte, error) {
 	importTxSignReq := core.SignRequest{
-		SignReqID:              s.TaskID + "-" + strconv.Itoa(1),
+		ReqID:                  s.TaskID + "-" + strconv.Itoa(1),
 		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(importTxHash),
@@ -52,11 +52,11 @@ func (s *Signer) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byt
 
 	res, err := s.SignDone(ctx, &importTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestNo: %q", importTxSignReq.SignReqID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestNo: %q", importTxSignReq.ReqID)
 	}
 
 	if res == nil || res.Result == "" {
-		return [65]byte{}, errors.Errorf("importTx got no signing result, reqID: %q, hash: %q", importTxSignReq.SignReqID, importTxSignReq.Hash)
+		return [65]byte{}, errors.Errorf("importTx got no signing result, reqID: %q, hash: %q", importTxSignReq.ReqID, importTxSignReq.Hash)
 	}
 
 	return bytes.BytesTo65Bytes(bytes.HexToBytes(res.Result)), nil
@@ -64,7 +64,7 @@ func (s *Signer) SignImportTx(ctx context.Context, importTxHash []byte) ([65]byt
 
 func (s *Signer) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHash []byte) ([65]byte, error) {
 	addDelegatorTxSignReq := core.SignRequest{
-		SignReqID:              s.TaskID + "-" + strconv.Itoa(2),
+		ReqID:                  s.TaskID + "-" + strconv.Itoa(2),
 		CompressedGenPubKeyHex: s.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: s.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(addDelegatorTxHash),
@@ -72,11 +72,11 @@ func (s *Signer) SignAddDelegatorTx(ctx context.Context, addDelegatorTxHash []by
 
 	res, err := s.SignDone(ctx, &addDelegatorTxSignReq)
 	if err != nil {
-		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestNo: %q", addDelegatorTxSignReq.SignReqID)
+		return [65]byte{}, errors.Wrapf(err, "failed to sign export RequestNo: %q", addDelegatorTxSignReq.ReqID)
 	}
 
 	if res == nil || res.Result == "" {
-		return [65]byte{}, errors.Errorf("addDelegatorTx got no signing result, reqID: %q, hash: %q", addDelegatorTxSignReq.SignReqID, addDelegatorTxSignReq.Hash)
+		return [65]byte{}, errors.Errorf("addDelegatorTx got no signing result, reqID: %q, hash: %q", addDelegatorTxSignReq.ReqID, addDelegatorTxSignReq.Hash)
 	}
 
 	return bytes.BytesTo65Bytes(bytes.HexToBytes(res.Result)), nil
