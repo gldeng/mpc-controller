@@ -1,8 +1,6 @@
 package staking
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"github.com/ava-labs/avalanchego/ids"
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/ava-labs/avalanchego/utils/hashing"
@@ -14,10 +12,8 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
 
@@ -29,51 +25,25 @@ const (
 )
 
 type StakeTask struct {
-	RequestNo          uint64
-	Nonce              uint64
-	TaskID             string
-	network            chain.NetworkContext
-	DelegateAmt        uint64
-	StartTime          uint64
-	EndTime            uint64
-	baseFeeGwei        uint64
-	CChainAddress      common.Address
-	PChainAddress      ids.ShortID
-	NodeID             ids.NodeID
-	exportTx           *evm.UnsignedExportTx
-	importTx           *txs.ImportTx
-	addDelegatorTx     *txs.AddDelegatorTx
+	ReqNo         uint64
+	Nonce         uint64
+	ReqHash       string
+	DelegateAmt   uint64
+	StartTime     uint64
+	EndTime       uint64
+	CChainAddress common.Address
+	PChainAddress ids.ShortID
+	NodeID        ids.NodeID
+	BaseFeeGwei   uint64
+	Network       chain.NetworkContext
+
+	exportTx       *evm.UnsignedExportTx
+	importTx       *txs.ImportTx
+	addDelegatorTx *txs.AddDelegatorTx
+
 	exportTxCred       *secp256k1fx.Credential
 	importTxCred       *secp256k1fx.Credential
 	addDelegatorTxCred *secp256k1fx.Credential
-	factory            avaCrypto.FactorySECP256K1R
-}
-
-func NewStakeTask(taskID string, networkContext chain.NetworkContext, reqId uint64, pubKey storage.PubKey, nonce uint64, nodeID ids.NodeID, delegateAmt uint64,
-	startTime uint64, endTime uint64,
-	baseFeeGwei uint64) (*StakeTask, error) {
-	cChainAddr, err := pubKey.CChainAddress()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get C-Chain address from %v", pubKey)
-	}
-	pChainAddr, err := pubKey.PChainAddress()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get P-Chain address from %v", pubKey)
-	}
-	return &StakeTask{
-		TaskID:        taskID,
-		network:       networkContext,
-		Nonce:         nonce,
-		DelegateAmt:   delegateAmt,
-		baseFeeGwei:   baseFeeGwei,
-		StartTime:     startTime,
-		EndTime:       endTime,
-		CChainAddress: cChainAddr,
-		PChainAddress: pChainAddr,
-		RequestNo:     reqId,
-		NodeID:        nodeID,
-		factory:       avaCrypto.FactorySECP256K1R{},
-	}, nil
 }
 
 func (t *StakeTask) ExportTxHash() ([]byte, error) {
@@ -264,16 +234,16 @@ func (t *StakeTask) buildUnsignedExportTx() (*evm.UnsignedExportTx, error) {
 	if t.exportTx != nil {
 		return t.exportTx, nil
 	}
-	exportAmt := t.DelegateAmt + t.network.ImportFee()
+	exportAmt := t.DelegateAmt + t.Network.ImportFee()
 	input := evm.EVMInput{
 		Address: t.CChainAddress,
 		Amount:  exportAmt,
-		AssetID: t.network.Asset().ID,
+		AssetID: t.Network.Asset().ID,
 		Nonce:   t.Nonce,
 	}
 	var outs []*avax.TransferableOutput
 	outs = append(outs, &avax.TransferableOutput{
-		Asset: t.network.Asset(),
+		Asset: t.Network.Asset(),
 		Out: &secp256k1fx.TransferOutput{
 			Amt: exportAmt,
 			OutputOwners: secp256k1fx.OutputOwners{
@@ -286,8 +256,8 @@ func (t *StakeTask) buildUnsignedExportTx() (*evm.UnsignedExportTx, error) {
 	})
 
 	tx := &evm.UnsignedExportTx{
-		NetworkID:        t.network.NetworkID(),
-		BlockchainID:     t.network.CChainID(),
+		NetworkID:        t.Network.NetworkID(),
+		BlockchainID:     t.Network.CChainID(),
 		DestinationChain: ids.Empty,
 		Ins: []evm.EVMInput{
 			input,
@@ -299,7 +269,7 @@ func (t *StakeTask) buildUnsignedExportTx() (*evm.UnsignedExportTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	exportFee := gas * t.baseFeeGwei
+	exportFee := gas * t.BaseFeeGwei
 	tx.Ins[0].Amount += exportFee
 
 	t.exportTx = tx
@@ -317,22 +287,22 @@ func (t *StakeTask) buildUnsignedImportTx() (*txs.ImportTx, error) {
 	exportTx := signedExportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx)
 	index := uint32(0)
 	amt := exportTx.ExportedOutputs[index].Out.Amount()
-	utxo := t.paySelf(amt - t.network.ImportFee())
+	utxo := t.paySelf(amt - t.Network.ImportFee())
 	t.importTx = &txs.ImportTx{
 		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
-			NetworkID:    t.network.NetworkID(),
+			NetworkID:    t.Network.NetworkID(),
 			BlockchainID: ids.Empty,
 			Outs: []*avax.TransferableOutput{
 				utxo,
 			},
 		}},
-		SourceChain: t.network.CChainID(),
+		SourceChain: t.Network.CChainID(),
 		ImportedInputs: []*avax.TransferableInput{{
 			UTXOID: avax.UTXOID{
 				TxID:        exportTx.ID(),
 				OutputIndex: index,
 			},
-			Asset: t.network.Asset(),
+			Asset: t.Network.Asset(),
 			In: &secp256k1fx.TransferInput{
 				Amt: amt,
 				Input: secp256k1fx.Input{
@@ -371,7 +341,7 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*txs.AddDelegatorTx, error) {
 	avax.SortTransferableInputsWithSigners(ins, signers)
 	t.addDelegatorTx = &txs.AddDelegatorTx{
 		BaseTx: txs.BaseTx{BaseTx: avax.BaseTx{
-			NetworkID:    t.network.NetworkID(),
+			NetworkID:    t.Network.NetworkID(),
 			BlockchainID: ids.Empty,
 			Ins:          ins,
 		}},
@@ -390,7 +360,7 @@ func (t *StakeTask) buildUnsignedAddDelegatorTx() (*txs.AddDelegatorTx, error) {
 
 func (t *StakeTask) paySelf(amt uint64) *avax.TransferableOutput {
 	return &avax.TransferableOutput{
-		Asset: t.network.Asset(),
+		Asset: t.Network.Asset(),
 		Out: &secp256k1fx.TransferOutput{
 			Amt: amt,
 			OutputOwners: secp256k1fx.OutputOwners{
@@ -404,7 +374,25 @@ func (t *StakeTask) paySelf(amt uint64) *avax.TransferableOutput {
 }
 
 func (t *StakeTask) getGas(tx *evm.UnsignedExportTx) uint64 {
-	return t.network.GasFixed() + uint64(len(tx.Ins))*t.network.GasPerSig() + uint64(len(tx.Bytes()))*t.network.GasPerByte()
+	return t.Network.GasFixed() + uint64(len(tx.Ins))*t.Network.GasPerSig() + uint64(len(tx.Bytes()))*t.Network.GasPerByte()
+}
+
+func (t *StakeTask) validateAndGetCred(hash []byte, sig [sigLength]byte) (*secp256k1fx.Credential, error) {
+	sigIndex := 0
+	numSigs := 1
+	cred := &secp256k1fx.Credential{
+		Sigs: make([][sigLength]byte, numSigs),
+	}
+	copy(cred.Sigs[sigIndex][:], sig[:])
+
+	pk, err := new(avaCrypto.FactorySECP256K1R).RecoverHashPublicKey(hash, sig[:])
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to recover public key with hash %q and signature %q", bytes.BytesToHex(hash), bytes.Bytes65ToHex(sig))
+	}
+	if t.PChainAddress != pk.Address() {
+		return nil, errors.Errorf("expected P-Chain address is %q, but got %q", t.PChainAddress, pk.Address())
+	}
+	return cred, nil
 }
 
 func spend(utxo *avax.UTXO) *avax.TransferableInput {
@@ -418,29 +406,4 @@ func spend(utxo *avax.UTXO) *avax.TransferableInput {
 			},
 		},
 	}
-}
-
-func serializeCompresed(pub *ecdsa.PublicKey) []byte {
-	if pub == nil || pub.X == nil || pub.Y == nil {
-		return nil
-	}
-	return elliptic.MarshalCompressed(crypto.S256(), pub.X, pub.Y)
-}
-
-func (t *StakeTask) validateAndGetCred(hash []byte, sig [sigLength]byte) (*secp256k1fx.Credential, error) {
-	sigIndex := 0
-	numSigs := 1
-	cred := &secp256k1fx.Credential{
-		Sigs: make([][sigLength]byte, numSigs),
-	}
-	copy(cred.Sigs[sigIndex][:], sig[:])
-
-	pk, err := t.factory.RecoverHashPublicKey(hash, sig[:])
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to recover public key with hash %q and signature %q", bytes.BytesToHex(hash), bytes.Bytes65ToHex(sig))
-	}
-	if t.PChainAddress != pk.Address() {
-		return nil, errors.Errorf("expected P-Chain address is %q, but got %q", t.PChainAddress, pk.Address())
-	}
-	return cred, nil
 }

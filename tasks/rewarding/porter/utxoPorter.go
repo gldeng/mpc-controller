@@ -81,7 +81,7 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 	switch evt := evtObj.Event.(type) {
 	case *events.RequestStarted:
-		reqHash := (storage.RequestHash)(evt.RequestHash)
+		reqHash := (storage.RequestHash)(evt.ReqHash)
 		if !reqHash.IsTaskType(storage.TaskTypReturn) {
 			break
 		}
@@ -99,7 +99,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.requestStartedChan:
-			reqHash := (storage.RequestHash)(evt.RequestHash)
+			reqHash := (storage.RequestHash)(evt.ReqHash)
 			utxoExportReq := storage.ExportUTXORequest{}
 			joinReq := storage.JoinRequest{
 				ReqHash: reqHash,
@@ -110,8 +110,8 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 				eh.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
 				break
 			}
-			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
-				eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.RequestHash}}...)
+			if !joinReq.PartiId.Joined(evt.PartiIndices) {
+				eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.ReqHash}}...)
 				break
 			}
 
@@ -130,7 +130,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			}
 
 			var joinedCmpPartiPubKeys []string
-			indices := (*storage.Indices)(evt.ParticipantIndices).Indices()
+			indices := (*storage.Indices)(evt.PartiIndices).Indices()
 			for _, index := range indices {
 				joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
 			}

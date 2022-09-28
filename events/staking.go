@@ -2,11 +2,10 @@ package events
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Events concerning staking
 
 type StakeTaskDone struct {
 	RequestID uint64
@@ -27,4 +26,10 @@ type StakeTaskDone struct {
 	PChainAddress ids.ShortID
 
 	ParticipantPubKeys []string
+}
+
+type StakeRequestStarted struct {
+	PartiIndices *storage.Indices
+	*storage.JoinRequest
+	Raw types.Log
 }

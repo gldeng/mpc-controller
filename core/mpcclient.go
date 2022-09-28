@@ -27,10 +27,11 @@ type KeygenRequest struct {
 }
 
 type SignRequest struct {
-	ReqID                  string   `json:"request_id"`
-	CompressedGenPubKeyHex string   `json:"public_key"`
-	CompressedPartiPubKeys []string `json:"participant_public_keys"`
-	Hash                   string   `json:"message"`
+	ID                     string          `json:"request_id"`
+	Kind                   events.SignKInd `json:"-"`
+	Hash                   string          `json:"message"`
+	CompressedGenPubKeyHex string          `json:"public_key"`
+	CompressedPartiPubKeys []string        `json:"participant_public_keys"`
 }
 
 type Result struct {
@@ -113,12 +114,12 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	err = c.Sign(ctx, request)
 	if err != nil {
 		atomic.AddUint32(&c.unsentSignReqs, 1)
-		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.ReqID))
+		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.ID))
 		return
 	}
 	atomic.AddUint32(&c.sentSignReqs, 1)
 
-	res, err = c.ResultDone(ctx, request.ReqID)
+	res, err = c.ResultDone(ctx, request.ID)
 	if err != nil {
 		c.Logger.ErrorOnError(err, "Sign request got error", []logger.Field{{"signRes", res}, {"signReq", request}}...)
 		atomic.AddUint32(&c.errorSignReqs, 1)
@@ -126,11 +127,11 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	}
 	if res == nil {
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		return nil, errors.Errorf("Got nil result for sign request %v", request.ReqID)
+		return nil, errors.Errorf("Got nil result for sign request %v", request.ID)
 	}
 	if res.Result == "" {
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.ReqID))
+		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.ID))
 	}
 
 	atomic.AddUint32(&c.doneSignReqs, 1)
@@ -152,15 +153,15 @@ func (c *MpcClientImp) Sign(ctx context.Context, req *SignRequest) (err error) {
 			return true, errors.WithStack(err)
 		}
 		switch {
-		case strings.Contains(req.ReqID, "STAKE"):
+		case strings.Contains(req.ID, "STAKE"):
 			prom.StakeSignTaskAdded.Inc()
-		case strings.Contains(req.ReqID, "PRINCIPAL"):
+		case strings.Contains(req.ID, "PRINCIPAL"):
 			prom.PrincipalUTXOSignTaskAdded.Inc()
-		case strings.Contains(req.ReqID, "REWARD"):
+		case strings.Contains(req.ID, "REWARD"):
 			prom.RewardUTXOSignTaskAdded.Inc()
 		}
 
-		c.pendingReqs.Store(req.ReqID, req)
+		c.pendingReqs.Store(req.ID, req)
 		return false, nil
 	})
 
@@ -221,7 +222,7 @@ func (c *MpcClientImp) checkResult(ctx context.Context) {
 					switch {
 					case res.ReqType == events.ReqTypSignSign:
 						myEvt := events.SignDone{
-							ReqID:  res.ReqID,
+							ID:     res.ReqID,
 							Result: new(events.Signature).FromHex(res.Result),
 						}
 						evt = &myEvt

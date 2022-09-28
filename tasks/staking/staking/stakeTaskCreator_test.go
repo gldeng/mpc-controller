@@ -27,7 +27,7 @@ package staking
 //	stakeReq := &contract.MpcManagerStakeRequestStarted{
 //		RequestId:          big.NewInt(1),
 //		PublicKey:          hash256.FromHex("0x46b91d758e85596319a847b6513ecd1c9f3cf34581ad7db2de77ebbec3dcac94"),
-//		ParticipantIndices: []*big.Int{big.NewInt(0), big.NewInt(1)},
+//		PartiIndices: []*big.Int{big.NewInt(0), big.NewInt(1)},
 //		NodeID:             "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5",
 //		Amount:             amountBigInt,
 //		StartTime:          big.NewInt(1655946748),

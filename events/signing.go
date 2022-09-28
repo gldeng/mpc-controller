@@ -14,25 +14,33 @@ const (
 )
 
 const (
-	ReqIDPrefixKeygen ReqIDPrefix = "KEYGEN-"
+	SignIDPrefixStakeExport       SignIDPrefix = "SIGN-STAKE-EXPORT-"
+	SignIDPrefixStakeImport       SignIDPrefix = "SIGN-STAKE-IMPORT-"
+	SignIDPrefixStakeAddDelegator SignIDPrefix = "SIGN-STAKE-ADD-DELEGATOR-"
 
-	ReqIDPrefixSignStake             ReqIDPrefix = "SIGN-STAKE-"
-	ReqIDPrefixSignStakeExport       ReqIDPrefix = "SIGN-STAKE-EXPORT-"
-	ReqIDPrefixSignStakeImport       ReqIDPrefix = "SIGN-STAKE-IMPORT-"
-	ReqIDPrefixSignStakeAddDelegator ReqIDPrefix = "SIGN-STAKE-ADD-DELEGATOR-"
+	SignIDPrefixSignPrincipalExport SignIDPrefix = "SIGN-PRINCIPAL-EXPORT-"
+	SignIDPrefixSignPrincipalImport SignIDPrefix = "SIGN-PRINCIPAL-IMPORT-"
 
-	ReqIDPrefixSignPrincipal       ReqIDPrefix = "SIGN-PRINCIPAL-"
-	ReqIDPrefixSignPrincipalExport ReqIDPrefix = "SIGN-PRINCIPAL-EXPORT-"
-	ReqIDPrefixSignPrincipalImport ReqIDPrefix = "SIGN-PRINCIPAL-IMPORT-"
+	SignIDPrefixSignRewardExport SignIDPrefix = "SIGN-REWARD-EXPORT-"
+	SignIDPrefixSignRewardImport SignIDPrefix = "SIGN-REWARD-IMPORT-"
+)
 
-	ReqIDPrefixSignReward       ReqIDPrefix = "SIGN-REWARD-"
-	ReqIDPrefixSignRewardExport ReqIDPrefix = "SIGN-REWARD-EXPORT-"
-	ReqIDPrefixSignRewardImport ReqIDPrefix = "SIGN-REWARD-IMPORT-"
+const (
+	SignKindStakeExport SignKInd = iota
+	SignKindStakeImport
+	SignKindStakeAddDelegator
+
+	SignKindPrincipalExport
+	SignKindPrincipalImport
+
+	SignKindRewardExport
+	SignKindRewardImport
 )
 
 type ReqType string
 type ReqStatus string
-type ReqIDPrefix string
+type SignIDPrefix string
+type SignKInd int
 
 type Signature [65]byte
 
@@ -48,6 +56,7 @@ func (s *Signature) String() string {
 // todo: KeygenDone
 
 type SignDone struct {
-	ReqID  string
+	ID     string
+	Kind   SignKInd
 	Result *Signature
 }

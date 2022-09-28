@@ -29,7 +29,7 @@ package staking
 //	stakeReq := &contract.MpcManagerStakeRequestStarted{
 //		RequestId:          big.NewInt(1),
 //		PublicKey:          hash256.FromHex("0x46b91d758e85596319a847b6513ecd1c9f3cf34581ad7db2de77ebbec3dcac94"),
-//		ParticipantIndices: []*big.Int{big.NewInt(0), big.NewInt(1)},
+//		PartiIndices: []*big.Int{big.NewInt(0), big.NewInt(1)},
 //		NodeID:             "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5",
 //		Amount:             amountBigInt,
 //		StartTime:          big.NewInt(1655946748),
@@ -95,14 +95,14 @@ package staking
 //	exportTxHash := "3273f531ba059c12f98b4cf7890608c66da392b8d5fc218d6d32041c76fdb674"
 //	exportTxsignature := "5b12ef4bf066a0d341f1bc4c47f597829a22f7b78dabbe1445a84b13053a2f334d7409466b993916dc0e4285911f21111460ea58da98ebe8fbb752bda74d77f301"
 //	exportTxSignReq := core.SignRequest{
-//		ReqID:              signRequestArgs.TaskID + "-" + strconv.Itoa(0),
+//		ID:              signRequestArgs.TaskID + "-" + strconv.Itoa(0),
 //		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 //		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 //		Hash:                   exportTxHash,
 //	}
 //	mockExportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result { // todo: use NewSignDoner() and Expecter Interfaces.
 //		output := &core.Result{
-//			ReqID:      request.ReqID,
+//			ID:      request.ID,
 //			Result:        exportTxsignature,
 //			ReqType:   "SIGN",
 //			ReqStatus: "DONE",
@@ -114,14 +114,14 @@ package staking
 //	importTxHash := "6c99c91ed157e0c2d7cbd790ed89561b7e4bd71f550d4f176a85122afa90c135"
 //	importTxsignature := "db5abfea3856cdb6013adae8b8ecd006146158b9d90a31f8aa9ea21b9a08274c71a8f52078236b35a76bc5b62686ae01bfdf585e1785d7be891d6e00d70fc58000"
 //	importTxSignReq := core.SignRequest{
-//		ReqID:              signRequestArgs.TaskID + "-" + strconv.Itoa(1),
+//		ID:              signRequestArgs.TaskID + "-" + strconv.Itoa(1),
 //		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 //		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 //		Hash:                   importTxHash,
 //	}
 //	mockImportTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 //		output := &core.Result{
-//			ReqID:      request.ReqID,
+//			ID:      request.ID,
 //			Result:        importTxsignature,
 //			ReqType:   "SIGN",
 //			ReqStatus: "DONE",
@@ -133,14 +133,14 @@ package staking
 //	addDelegatorTxHash := "5884ba92bb58372023c5fa3fe699e152188302f5b1e22ea4b8c9dd623e3b283c"
 //	addDelegatorTxsignature := "144b6137be716be2e8b22177fc3be4de99c18fc8b9e29fb3eecaa673961fc36e0cbc0449aeca034a10a2f52a31b245b0dcb032d06a317c63fd0adcc3862cb4fe01"
 //	addDelegatorTxSignReq := core.SignRequest{
-//		ReqID:              signRequestArgs.TaskID + "-" + strconv.Itoa(2),
+//		ID:              signRequestArgs.TaskID + "-" + strconv.Itoa(2),
 //		CompressedGenPubKeyHex: signRequestArgs.CompressedGenPubKeyHex,
 //		CompressedPartiPubKeys: signRequestArgs.CompressedPartiPubKeys,
 //		Hash:                   addDelegatorTxHash,
 //	}
 //	mockaddDelegatorTxSigResultFn := func(ctx context.Context, request *core.SignRequest) *core.Result {
 //		output := &core.Result{
-//			ReqID:      request.ReqID,
+//			ID:      request.ID,
 //			Result:        addDelegatorTxsignature,
 //			ReqType:   "SIGN",
 //			ReqStatus: "DONE",

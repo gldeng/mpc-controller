@@ -350,10 +350,10 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 			break
 		}
 		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
-			//w.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
+			//w.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", myEvt.ReqHash}}...)
 			break
 		}
-		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
+		w.Publisher.Publish(ctx, dispatcher.NewEvtObj(&events.RequestStarted{indices, &joinReq, myEvt.Raw}, nil))
 		w.Logger.Info("Stake request started", []logger.Field{{"stakeReqStarted",
 			fmt.Sprintf("reqHash:%v, partiIndices:%v, stakeReq:%+v", reqHash.String(), indices.Indices(), stakeReq)}}...)
 		prom.StakeRequestStarted.Inc()
@@ -369,10 +369,10 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 			break
 		}
 		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
-			//w.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", myEvt.RequestHash}}...)
+			//w.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", myEvt.ReqHash}}...)
 			break
 		}
-		w.Publisher.Publish(ctx, dispatcher.NewEvtObj((*events.RequestStarted)(myEvt), nil))
+		w.Publisher.Publish(ctx, dispatcher.NewEvtObj(&events.RequestStarted{indices, &joinReq, myEvt.Raw}, nil))
 		w.Logger.Info("Return request started", []logger.Field{{"returnReqStarted",
 			fmt.Sprintf("reqHash:%v, partiIndices:%v, returnReq:%+v", reqHash.String(), indices.Indices(), utxoExportReq)}}...)
 		prom.UTXOExportRequestStarted.Inc()

@@ -3,6 +3,7 @@ package staking
 import (
 	"context"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
@@ -10,8 +11,10 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -50,6 +53,8 @@ type StakeRequestStarted struct {
 	issueTxCacheLock sync.RWMutex
 	issueTxContainer *issueTxContainer
 
+	pendingStakeTasks *sync.Map
+
 	nextNonce uint64 // todo: future key-rotation influence
 
 	doneStakeTasks     uint64
@@ -61,6 +66,14 @@ type issueTx struct {
 	*storage.StakeRequest
 }
 
+type pendingStakeTask struct {
+	stakeTask *StakeTask
+
+	exportTxSignReq     *core.SignRequest
+	importTxSignReq     *core.SignRequest
+	addDelegatorSignReq *core.SignRequest
+}
+
 func (eh *StakeRequestStarted) Init(ctx context.Context) {
 	eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
 
@@ -70,172 +83,166 @@ func (eh *StakeRequestStarted) Init(ctx context.Context) {
 	eh.issueTxCache = make(map[uint64]*issueTx)
 	eh.issueTxContainer = new(issueTxContainer)
 
-	go eh.signTx(ctx)
 	go eh.issueTx(ctx)
 }
 
 func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.MpcServerResultFetched:
-		if evt.ReqType == string(core.ReqTypSignSign) {
+	case *events.StakeRequestStarted:
+		// Create stake task
+		stakeReq := evt.Args.(*storage.StakeRequest)
+		stakeTask, _ := eh.createStakeTask(stakeReq, evt.ReqHash)
 
-		}
-	case *events.RequestStarted:
-		reqHash := (storage.RequestHash)(evt.RequestHash)
-		if !reqHash.IsTaskType(storage.TaskTypStake) {
+		// Get generated key and participant keys
+		cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to compress public key")
 			break
 		}
-		select {
-		case <-ctx.Done():
-			return
-		case eh.requestStartedChan <- evt:
+
+		group := storage.Group{
+			ID: stakeReq.GroupId,
+		}
+		if err := eh.DB.LoadModel(ctx, &group); err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to load group")
+			break
+		}
+
+		cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
+			break
+		}
+
+		var joinedCmpPartiPubKeys []string
+		indices := evt.PartiIndices.Indices()
+		for _, index := range indices {
+			joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
+		}
+
+		// Sign ExportTx
+		txHash, err := stakeTask.ExportTxHash()
+		if err != nil {
+			eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate ExportTx hash")
+			break
+		}
+
+		signReq := core.SignRequest{
+			ID:                     string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
+			Kind:                   events.SignKindStakeExport,
+			CompressedGenPubKeyHex: cmpGenPubKeyHex,
+			CompressedPartiPubKeys: joinedCmpPartiPubKeys,
+			Hash:                   bytes.BytesToHex(txHash),
+		}
+
+		err = eh.SignerMPC.Sign(ctx, &signReq)
+		eh.Logger.ErrorOnError(err, "Failed to request sign of ExportTx")
+		var p pendingStakeTask
+		p.stakeTask = stakeTask
+		eh.pendingStakeTasks.Store(signReq.ID, &p)
+	case *events.SignDone:
+		switch evt.Kind {
+		case events.SignKindStakeExport:
+			// Set ExportTx signature
+			pVal, _ := eh.pendingStakeTasks.Load(evt.ID)
+			p := pVal.(pendingStakeTask)
+			err := p.stakeTask.SetExportTxSig(*evt.Result)
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to set ExportTx signature")
+				break
+			}
+			// Sign ImportTx
+			txHash, err := p.stakeTask.ImportTxHash()
+			if err != nil {
+				eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate ImportTx hash")
+				break
+			}
+
+			signReq := core.SignRequest{
+				ID:                     string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+				Kind:                   events.SignKindStakeImport,
+				CompressedGenPubKeyHex: p.exportTxSignReq.CompressedGenPubKeyHex,
+				CompressedPartiPubKeys: p.exportTxSignReq.CompressedPartiPubKeys,
+				Hash:                   bytes.BytesToHex(txHash),
+			}
+
+			err = eh.SignerMPC.Sign(ctx, &signReq)
+			eh.Logger.ErrorOnError(err, "Failed to request sign of ImportTx")
+			eh.pendingStakeTasks.Store(signReq.ID, &p)
+			eh.pendingStakeTasks.Delete(evt.ID)
+		case events.SignKindStakeImport:
+			// Set ImportTx signature
+			pVal, _ := eh.pendingStakeTasks.Load(evt.ID)
+			p := pVal.(pendingStakeTask)
+			err := p.stakeTask.SetImportTxSig(*evt.Result)
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to set ImportTx signature")
+				break
+			}
+			// Sign AddDelegatorTx
+			txHash, err := p.stakeTask.AddDelegatorTxHash()
+			if err != nil {
+				eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate AddDelegatorTx hash")
+				break
+			}
+
+			signReq := core.SignRequest{
+				ID:                     string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+				Kind:                   events.SignKindStakeAddDelegator,
+				CompressedGenPubKeyHex: p.importTxSignReq.CompressedGenPubKeyHex,
+				CompressedPartiPubKeys: p.importTxSignReq.CompressedPartiPubKeys,
+				Hash:                   bytes.BytesToHex(txHash),
+			}
+
+			err = eh.SignerMPC.Sign(ctx, &signReq)
+			eh.Logger.ErrorOnError(err, "Failed to request sign of AddDelegatorTx")
+			eh.pendingStakeTasks.Store(signReq.ID, &p)
+			eh.pendingStakeTasks.Delete(evt.ID)
+		case events.SignKindStakeAddDelegator:
+			// Set AddDelegatorTx signature
+			pVal, _ := eh.pendingStakeTasks.Load(evt.ID)
+			p := pVal.(pendingStakeTask)
+			err := p.stakeTask.SetAddDelegatorTxSig(*evt.Result)
+			if err != nil {
+				eh.Logger.ErrorOnError(err, "Failed to set AddDelegatorTx signature")
+				break
+			}
+			// issue ExportTx
 		}
 	}
 }
 
-func (eh *StakeRequestStarted) signTx(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case evt := <-eh.requestStartedChan:
-			reqHash := (storage.RequestHash)(evt.RequestHash)
-			stakeReq := storage.StakeRequest{}
-			joinReq := storage.JoinRequest{
-				ReqHash: reqHash,
-				Args:    &stakeReq,
-			}
-			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
-				eh.Logger.DebugOnError(err, "No JoinRequest load for stake", []logger.Field{{"reqHash", reqHash.String()}}...)
-				break
-			}
-			if !joinReq.PartiId.Joined(evt.ParticipantIndices) {
-				eh.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", evt.RequestHash}}...)
-				break
-			}
+func (eh *StakeRequestStarted) createStakeTask(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*StakeTask, error) {
+	nodeID, _ := ids.ShortFromPrefixedString(stakeReq.NodeID, ids.NodeIDPrefix)
+	amountBig := new(big.Int)
+	amount, _ := amountBig.SetString(stakeReq.Amount, 10)
 
-			cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to compress generated public key")
-				break
-			}
+	startTime := big.NewInt(stakeReq.StartTime)
+	endTIme := big.NewInt(stakeReq.EndTime)
 
-			cChainAddr, err := stakeReq.GenPubKey.CChainAddress()
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to get C-Chain address")
-				break
-			}
-
-			group := storage.Group{
-				ID: stakeReq.GroupId,
-			}
-			if err := eh.DB.LoadModel(ctx, &group); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to load group", []logger.Field{{"key", group.ID}}...)
-				break
-			}
-
-			cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
-				break
-			}
-
-			var joinedCmpPartiPubKeys []string
-			indices := (*storage.Indices)(evt.ParticipantIndices).Indices()
-			for _, index := range indices {
-				joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
-			}
-
-			nonce := eh.NonceGiver.GetNonce(stakeReq.ReqNo) // todo: how should nonce base adjust in case of validation errors among all participants?
-			taskID := stakeTaskIDPrefix + reqHash.String()
-
-			signRequester := &SignRequester{
-				SignDoner: eh.SignerMPC,
-				SignRequestArgs: SignRequestArgs{
-					TaskID:                 taskID,
-					CompressedPartiPubKeys: joinedCmpPartiPubKeys,
-					CompressedGenPubKeyHex: cmpGenPubKeyHex,
-				},
-			}
-
-			eh.Logger.Debug("Nonce fetched", []logger.Field{
-				{"requestID", stakeReq.ReqNo},
-				{"nonce", nonce},
-				{"taskID", reqHash.String()}}...)
-
-			taskCreator := StakeTaskCreator{
-				TaskID:         taskID,
-				StakeRequest:   &stakeReq,
-				NetworkContext: eh.NetWorkCtx,
-				Nonce:          nonce,
-			}
-			stakeTask, err := taskCreator.CreateStakeTask()
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to create stake task")
-				break
-			}
-
-			stw := &StakeTaskWrapper{
-				ReqHash:           reqHash,
-				CChainIssueClient: eh.IssuerCChain,
-				Logger:            eh.Logger,
-				PChainIssueClient: eh.IssuerPChain,
-				SignRequester:     signRequester,
-				StakeTask:         stakeTask,
-			}
-
-			amount := big.NewInt(int64(stw.DelegateAmt))
-
-			// params validation before request tx sign
-			if err := eh.checkBalance(ctx, cChainAddr, amount); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to check balance before request tx sign", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
-				break
-			}
-			if err := eh.checkStarTime(stakeReq.StartTime); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to check stake start time before request tx sign", []logger.Field{{"startTimeExpiredStakeTask", stw.StakeTask}}...)
-				break
-			}
-
-			err = eh.signStakeTxWs.AddTask(ctx, &work.Task{
-				Args: []interface{}{stw, &stakeReq},
-				Ctx:  ctx,
-				WorkFns: []work.WorkFn{func(ctx context.Context, args interface{}) {
-					stw := args.([]interface{})[0].(*StakeTaskWrapper)
-					stakeReq := args.([]interface{})[1].(*storage.StakeRequest)
-					if err := stw.SignTx(ctx); err != nil {
-						eh.Logger.ErrorOnError(err, "Failed to sign Tx", []logger.Field{{"errSignStakeTask", stw.StakeTask}}...)
-						return
-					}
-
-					// params validation after tx signed, check this because signing consume gas and time
-					amount := big.NewInt(int64(stw.DelegateAmt))
-					if err := eh.checkBalance(ctx, stw.CChainAddress, amount); err != nil {
-						eh.Logger.DebugOnError(err, "Failed to check balance after tx signed", []logger.Field{{"insufficientFundsStakeTask", stw.StakeTask}}...)
-						return
-					}
-					if err := eh.checkStarTime(stakeReq.StartTime); err != nil {
-						eh.Logger.ErrorOnError(err, "Failed to check stake start time after tx signed", []logger.Field{{"startTimeExpiredStakeTask", stw.StakeTask}}...)
-						return
-					}
-					issueTx := &issueTx{stw, stakeReq}
-					eh.issueTxContainer.AddSort(issueTx)
-					reqHash := stakeReq.ReqHash()
-					eh.Logger.Info("Stake sign task done", []logger.Field{
-						{"reqNo", stakeReq.ReqNo},
-						{"reqHash", reqHash.String()},
-						{"taskId", taskID}}...)
-				}},
-			})
-			eh.Logger.ErrorOnError(err, "Failed to add sign stake task", []logger.Field{
-				{"reqNo", stakeReq.ReqNo},
-				{"reqHash", reqHash.String()},
-				{"taskId", taskID}}...)
-			eh.Logger.InfoNilError(err, "Stake sign task added", []logger.Field{
-				{"reqNo", stakeReq.ReqNo},
-				{"reqHash", reqHash.String()},
-				{"taskId", taskID}}...)
-		}
+	nAVAXAmount := new(big.Int).Div(amount, big.NewInt(1_000_000_000))
+	if !nAVAXAmount.IsUint64() || !startTime.IsUint64() || !endTIme.IsUint64() {
+		return nil, errors.New("invalid uint64")
 	}
+
+	cChainAddr, _ := stakeReq.GenPubKey.CChainAddress()
+	pChainAddr, _ := stakeReq.GenPubKey.PChainAddress()
+
+	st := StakeTask{
+		ReqNo:         stakeReq.ReqNo,
+		Nonce:         eh.NonceGiver.GetNonce(stakeReq.ReqNo),
+		ReqHash:       reqHash.String(),
+		DelegateAmt:   nAVAXAmount.Uint64(),
+		StartTime:     startTime.Uint64(),
+		EndTime:       endTIme.Uint64(),
+		CChainAddress: cChainAddr,
+		PChainAddress: pChainAddr,
+		NodeID:        ids.NodeID(nodeID),
+		BaseFeeGwei:   cchain.BaseFeeGwei,
+		Network:       eh.NetWorkCtx,
+	}
+
+	return &st, nil
 }
 
 func (eh *StakeRequestStarted) issueTx(ctx context.Context) {
@@ -313,7 +320,7 @@ func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrap
 		ImportTxID:       ids[1],
 		AddDelegatorTxID: ids[2],
 
-		RequestID:   stakeTask.RequestNo,
+		RequestID:   stakeTask.ReqNo,
 		DelegateAmt: stakeTask.DelegateAmt,
 		StartTime:   stakeTask.StartTime,
 		EndTime:     stakeTask.EndTime,
