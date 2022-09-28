@@ -56,7 +56,7 @@ func (s *Signature) String() string {
 // todo: KeygenDone
 
 type SignDone struct {
-	ID     string
+	ReqID  string
 	Kind   SignKInd
 	Result *Signature
 }

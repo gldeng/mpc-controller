@@ -27,7 +27,7 @@ type KeygenRequest struct {
 }
 
 type SignRequest struct {
-	ID                     string          `json:"request_id"`
+	ReqID                  string          `json:"request_id"`
 	Kind                   events.SignKInd `json:"-"`
 	Hash                   string          `json:"message"`
 	CompressedGenPubKeyHex string          `json:"public_key"`
@@ -114,12 +114,12 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	err = c.Sign(ctx, request)
 	if err != nil {
 		atomic.AddUint32(&c.unsentSignReqs, 1)
-		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.ID))
+		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.ReqID))
 		return
 	}
 	atomic.AddUint32(&c.sentSignReqs, 1)
 
-	res, err = c.ResultDone(ctx, request.ID)
+	res, err = c.ResultDone(ctx, request.ReqID)
 	if err != nil {
 		c.Logger.ErrorOnError(err, "Sign request got error", []logger.Field{{"signRes", res}, {"signReq", request}}...)
 		atomic.AddUint32(&c.errorSignReqs, 1)
@@ -127,11 +127,11 @@ func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res 
 	}
 	if res == nil {
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		return nil, errors.Errorf("Got nil result for sign request %v", request.ID)
+		return nil, errors.Errorf("Got nil result for sign request %v", request.ReqID)
 	}
 	if res.Result == "" {
 		atomic.AddUint32(&c.errorSignReqs, 1)
-		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.ID))
+		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.ReqID))
 	}
 
 	atomic.AddUint32(&c.doneSignReqs, 1)
@@ -153,15 +153,15 @@ func (c *MpcClientImp) Sign(ctx context.Context, req *SignRequest) (err error) {
 			return true, errors.WithStack(err)
 		}
 		switch {
-		case strings.Contains(req.ID, "STAKE"):
+		case strings.Contains(req.ReqID, "STAKE"):
 			prom.StakeSignTaskAdded.Inc()
-		case strings.Contains(req.ID, "PRINCIPAL"):
+		case strings.Contains(req.ReqID, "PRINCIPAL"):
 			prom.PrincipalUTXOSignTaskAdded.Inc()
-		case strings.Contains(req.ID, "REWARD"):
+		case strings.Contains(req.ReqID, "REWARD"):
 			prom.RewardUTXOSignTaskAdded.Inc()
 		}
 
-		c.pendingReqs.Store(req.ID, req)
+		c.pendingReqs.Store(req.ReqID, req)
 		return false, nil
 	})
 
@@ -222,7 +222,7 @@ func (c *MpcClientImp) checkResult(ctx context.Context) {
 					switch {
 					case res.ReqType == events.ReqTypSignSign:
 						myEvt := events.SignDone{
-							ID:     res.ReqID,
+							ReqID:  res.ReqID,
 							Result: new(events.Signature).FromHex(res.Result),
 						}
 						evt = &myEvt

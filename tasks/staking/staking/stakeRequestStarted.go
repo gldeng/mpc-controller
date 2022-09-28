@@ -72,6 +72,10 @@ type pendingStakeTask struct {
 	exportTxSignReq     *core.SignRequest
 	importTxSignReq     *core.SignRequest
 	addDelegatorSignReq *core.SignRequest
+
+	ExportTxID       ids.ID
+	ImportTxID       ids.ID
+	AddDelegatorTxID ids.ID
 }
 
 func (eh *StakeRequestStarted) Init(ctx context.Context) {
@@ -128,7 +132,7 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 		}
 
 		signReq := core.SignRequest{
-			ID:                     string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
+			ReqID:                  string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
 			Kind:                   events.SignKindStakeExport,
 			CompressedGenPubKeyHex: cmpGenPubKeyHex,
 			CompressedPartiPubKeys: joinedCmpPartiPubKeys,
@@ -139,12 +143,12 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 		eh.Logger.ErrorOnError(err, "Failed to request sign of ExportTx")
 		var p pendingStakeTask
 		p.stakeTask = stakeTask
-		eh.pendingStakeTasks.Store(signReq.ID, &p)
+		eh.pendingStakeTasks.Store(signReq.ReqID, &p)
 	case *events.SignDone:
 		switch evt.Kind {
 		case events.SignKindStakeExport:
 			// Set ExportTx signature
-			pVal, _ := eh.pendingStakeTasks.Load(evt.ID)
+			pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
 			p := pVal.(pendingStakeTask)
 			err := p.stakeTask.SetExportTxSig(*evt.Result)
 			if err != nil {
@@ -159,7 +163,7 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 			}
 
 			signReq := core.SignRequest{
-				ID:                     string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+				ReqID:                  string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
 				Kind:                   events.SignKindStakeImport,
 				CompressedGenPubKeyHex: p.exportTxSignReq.CompressedGenPubKeyHex,
 				CompressedPartiPubKeys: p.exportTxSignReq.CompressedPartiPubKeys,
@@ -168,11 +172,11 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 
 			err = eh.SignerMPC.Sign(ctx, &signReq)
 			eh.Logger.ErrorOnError(err, "Failed to request sign of ImportTx")
-			eh.pendingStakeTasks.Store(signReq.ID, &p)
-			eh.pendingStakeTasks.Delete(evt.ID)
+			eh.pendingStakeTasks.Store(signReq.ReqID, &p)
+			eh.pendingStakeTasks.Delete(evt.ReqID)
 		case events.SignKindStakeImport:
 			// Set ImportTx signature
-			pVal, _ := eh.pendingStakeTasks.Load(evt.ID)
+			pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
 			p := pVal.(pendingStakeTask)
 			err := p.stakeTask.SetImportTxSig(*evt.Result)
 			if err != nil {
@@ -187,7 +191,7 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 			}
 
 			signReq := core.SignRequest{
-				ID:                     string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+				ReqID:                  string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
 				Kind:                   events.SignKindStakeAddDelegator,
 				CompressedGenPubKeyHex: p.importTxSignReq.CompressedGenPubKeyHex,
 				CompressedPartiPubKeys: p.importTxSignReq.CompressedPartiPubKeys,
@@ -196,11 +200,11 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 
 			err = eh.SignerMPC.Sign(ctx, &signReq)
 			eh.Logger.ErrorOnError(err, "Failed to request sign of AddDelegatorTx")
-			eh.pendingStakeTasks.Store(signReq.ID, &p)
-			eh.pendingStakeTasks.Delete(evt.ID)
+			eh.pendingStakeTasks.Store(signReq.ReqID, &p)
+			eh.pendingStakeTasks.Delete(evt.ReqID)
 		case events.SignKindStakeAddDelegator:
 			// Set AddDelegatorTx signature
-			pVal, _ := eh.pendingStakeTasks.Load(evt.ID)
+			pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
 			p := pVal.(pendingStakeTask)
 			err := p.stakeTask.SetAddDelegatorTxSig(*evt.Result)
 			if err != nil {
