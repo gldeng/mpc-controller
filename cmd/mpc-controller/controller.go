@@ -8,6 +8,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
@@ -146,6 +147,14 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
 	platformvmClientWrapper := &chain.PlatformvmClientWrapper{myLogger, pChainIssueCli}
 
+	// Create tx issuer
+	myTxIssuer := txissuer.MyTxIssuer{
+		Logger:       myLogger,
+		CChainClient: cChainIssueCli,
+		PChainClient: pChainIssueCli,
+		Publisher:    myDispatcher,
+	}
+
 	boundCaller := caller.MyCaller{
 		ContractAddr:   contractAddr,
 		ContractCaller: rpcEthCliWrapper,
@@ -194,8 +203,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		DB:              myDB,
 		Dispatcher:      myDispatcher,
 		EthClient:       rpcEthCliWrapper,
-		IssuerCChain:    evmClientWrapper,
-		IssuerPChain:    platformvmClientWrapper,
+		TxIssuer:        &myTxIssuer,
 		Logger:          myLogger,
 		NetWorkCtx:      networkCtx(config),
 		NonceGiver:      noncer,

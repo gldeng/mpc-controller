@@ -3,6 +3,7 @@ package staking
 import (
 	"context"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
@@ -19,13 +20,12 @@ type Master struct {
 	DB              storage.DB
 	Dispatcher      dispatcher.Dispatcher
 	EthClient       chain.EthClient
-	IssuerCChain    chain.CChainIssuer
-	IssuerPChain    chain.PChainIssuer
 	Logger          logger.Logger
 	NetWorkCtx      chain.NetworkContext
 	NonceGiver      noncer.Noncer
 	PartiPubKey     storage.PubKey
-	SignerMPC       core.SignDoner
+	SignerMPC       core.Signer
+	TxIssuer        txissuer.TxIssuer
 
 	stakeReqAddedH   *joining.StakeRequestAdded
 	stakeReqStartedH *staking.StakeRequestStarted
@@ -50,8 +50,6 @@ func (m *Master) subscribe() {
 		BoundTransactor: m.BoundTransactor,
 		DB:              m.DB,
 		EthClient:       m.EthClient,
-		IssuerCChain:    m.IssuerCChain,
-		IssuerPChain:    m.IssuerPChain,
 		Logger:          m.Logger,
 		NetWorkCtx:      m.NetWorkCtx,
 		NonceGiver:      m.NonceGiver,

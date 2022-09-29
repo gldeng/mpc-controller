@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
@@ -15,13 +16,9 @@ import (
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
-	"github.com/avalido/mpc-controller/utils/work"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"math/big"
-	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -35,8 +32,7 @@ type StakeRequestStarted struct {
 	BoundTransactor transactor.Transactor
 	DB              storage.DB
 	EthClient       chain.EthClient
-	IssuerCChain    chain.CChainIssuer
-	IssuerPChain    chain.PChainIssuer
+	TxIssuer        txissuer.TxIssuer
 	Logger          logger.Logger
 	NetWorkCtx      chain.NetworkContext
 	NonceGiver      noncer.Noncer
@@ -44,14 +40,13 @@ type StakeRequestStarted struct {
 	SignerMPC       core.Signer
 
 	requestStartedChan chan *events.RequestStarted
-	signStakeTxWs      *work.Workshop
 
-	issueTxChan chan *issueTx
+	issueTxChan chan *pendingStakeTask
 	once        sync.Once
 
-	issueTxCache     map[uint64]*issueTx
+	issueTxCache     map[uint64]*pendingStakeTask
 	issueTxCacheLock sync.RWMutex
-	issueTxContainer *issueTxContainer
+	exportTxSorter   *exportTxSorter
 
 	pendingStakeTasks *sync.Map
 
@@ -61,11 +56,6 @@ type StakeRequestStarted struct {
 	errIssueStakeTasks uint64
 }
 
-type issueTx struct {
-	*StakeTaskWrapper
-	*storage.StakeRequest
-}
-
 type pendingStakeTask struct {
 	stakeTask *StakeTask
 
@@ -73,147 +63,223 @@ type pendingStakeTask struct {
 	importTxSignReq     *core.SignRequest
 	addDelegatorSignReq *core.SignRequest
 
-	ExportTxID       ids.ID
-	ImportTxID       ids.ID
-	AddDelegatorTxID ids.ID
+	exportTxID       ids.ID
+	importTxID       ids.ID
+	addDelegatorTxID ids.ID
 }
 
 func (eh *StakeRequestStarted) Init(ctx context.Context) {
-	eh.signStakeTxWs = work.NewWorkshop(eh.Logger, "signStakeTx", time.Minute*10, 10)
-
 	eh.requestStartedChan = make(chan *events.RequestStarted, 1024)
 
-	eh.issueTxChan = make(chan *issueTx)
-	eh.issueTxCache = make(map[uint64]*issueTx)
-	eh.issueTxContainer = new(issueTxContainer)
+	eh.issueTxChan = make(chan *pendingStakeTask)
+	eh.issueTxCache = make(map[uint64]*pendingStakeTask)
+	eh.exportTxSorter = new(exportTxSorter)
 
-	go eh.issueTx(ctx)
+	go eh.issueSignedExportTx(ctx)
 }
 
 func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.StakeRequestStarted:
-		// Create stake task
-		stakeReq := evt.Args.(*storage.StakeRequest)
-		stakeTask, _ := eh.createStakeTask(stakeReq, evt.ReqHash)
+		eh.OnStakeReqStarted(ctx, evt)
+	case *events.SignDone:
+		eh.OnSignDone(ctx, evt)
+	case *events.TxCommitted:
+		eh.OnTxCommitted(ctx, evt)
+	}
+}
 
-		// Get generated key and participant keys
-		cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
+func (eh *StakeRequestStarted) OnStakeReqStarted(ctx context.Context, evt *events.StakeRequestStarted) {
+	// Create stake task
+	stakeReq := evt.Args.(*storage.StakeRequest)
+	stakeTask, _ := eh.createStakeTask(stakeReq, evt.ReqHash)
+
+	// Get generated key and participant keys
+	cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
+	if err != nil {
+		eh.Logger.ErrorOnError(err, "Failed to compress public key")
+		return
+	}
+
+	group := storage.Group{
+		ID: stakeReq.GroupId,
+	}
+	if err := eh.DB.LoadModel(ctx, &group); err != nil {
+		eh.Logger.ErrorOnError(err, "Failed to load group")
+		return
+	}
+
+	cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
+	if err != nil {
+		eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
+		return
+	}
+
+	var joinedCmpPartiPubKeys []string
+	indices := evt.PartiIndices.Indices()
+	for _, index := range indices {
+		joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
+	}
+
+	// Sign ExportTx
+	txHash, err := stakeTask.ExportTxHash()
+	if err != nil {
+		eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate ExportTx hash")
+		return
+	}
+
+	signReq := core.SignRequest{
+		ReqID:                  string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
+		Kind:                   events.SignKindStakeExport,
+		CompressedGenPubKeyHex: cmpGenPubKeyHex,
+		CompressedPartiPubKeys: joinedCmpPartiPubKeys,
+		Hash:                   bytes.BytesToHex(txHash),
+	}
+
+	err = eh.SignerMPC.Sign(ctx, &signReq)
+	eh.Logger.ErrorOnError(err, "Failed to request sign of ExportTx")
+	var p pendingStakeTask
+	p.stakeTask = stakeTask
+	eh.pendingStakeTasks.Store(signReq.ReqID, &p)
+}
+
+func (eh *StakeRequestStarted) OnSignDone(ctx context.Context, evt *events.SignDone) {
+	pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
+	p := pVal.(*pendingStakeTask)
+	switch evt.Kind {
+	case events.SignKindStakeExport:
+		// Set ExportTx signature
+		err := p.stakeTask.SetExportTxSig(*evt.Result)
 		if err != nil {
-			eh.Logger.ErrorOnError(err, "Failed to compress public key")
+			eh.Logger.ErrorOnError(err, "Failed to set ExportTx signature")
 			break
 		}
-
-		group := storage.Group{
-			ID: stakeReq.GroupId,
-		}
-		if err := eh.DB.LoadModel(ctx, &group); err != nil {
-			eh.Logger.ErrorOnError(err, "Failed to load group")
-			break
-		}
-
-		cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
+		// Sign ImportTx
+		txHash, err := p.stakeTask.ImportTxHash()
 		if err != nil {
-			eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
-			break
-		}
-
-		var joinedCmpPartiPubKeys []string
-		indices := evt.PartiIndices.Indices()
-		for _, index := range indices {
-			joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
-		}
-
-		// Sign ExportTx
-		txHash, err := stakeTask.ExportTxHash()
-		if err != nil {
-			eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate ExportTx hash")
+			eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate ImportTx hash")
 			break
 		}
 
 		signReq := core.SignRequest{
-			ReqID:                  string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
-			Kind:                   events.SignKindStakeExport,
-			CompressedGenPubKeyHex: cmpGenPubKeyHex,
-			CompressedPartiPubKeys: joinedCmpPartiPubKeys,
+			ReqID:                  string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+			Kind:                   events.SignKindStakeImport,
+			CompressedGenPubKeyHex: p.exportTxSignReq.CompressedGenPubKeyHex,
+			CompressedPartiPubKeys: p.exportTxSignReq.CompressedPartiPubKeys,
 			Hash:                   bytes.BytesToHex(txHash),
 		}
 
 		err = eh.SignerMPC.Sign(ctx, &signReq)
-		eh.Logger.ErrorOnError(err, "Failed to request sign of ExportTx")
-		var p pendingStakeTask
-		p.stakeTask = stakeTask
-		eh.pendingStakeTasks.Store(signReq.ReqID, &p)
-	case *events.SignDone:
-		switch evt.Kind {
-		case events.SignKindStakeExport:
-			// Set ExportTx signature
-			pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
-			p := pVal.(pendingStakeTask)
-			err := p.stakeTask.SetExportTxSig(*evt.Result)
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to set ExportTx signature")
-				break
-			}
-			// Sign ImportTx
-			txHash, err := p.stakeTask.ImportTxHash()
-			if err != nil {
-				eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate ImportTx hash")
-				break
-			}
-
-			signReq := core.SignRequest{
-				ReqID:                  string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
-				Kind:                   events.SignKindStakeImport,
-				CompressedGenPubKeyHex: p.exportTxSignReq.CompressedGenPubKeyHex,
-				CompressedPartiPubKeys: p.exportTxSignReq.CompressedPartiPubKeys,
-				Hash:                   bytes.BytesToHex(txHash),
-			}
-
-			err = eh.SignerMPC.Sign(ctx, &signReq)
-			eh.Logger.ErrorOnError(err, "Failed to request sign of ImportTx")
-			eh.pendingStakeTasks.Store(signReq.ReqID, &p)
-			eh.pendingStakeTasks.Delete(evt.ReqID)
-		case events.SignKindStakeImport:
-			// Set ImportTx signature
-			pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
-			p := pVal.(pendingStakeTask)
-			err := p.stakeTask.SetImportTxSig(*evt.Result)
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to set ImportTx signature")
-				break
-			}
-			// Sign AddDelegatorTx
-			txHash, err := p.stakeTask.AddDelegatorTxHash()
-			if err != nil {
-				eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate AddDelegatorTx hash")
-				break
-			}
-
-			signReq := core.SignRequest{
-				ReqID:                  string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
-				Kind:                   events.SignKindStakeAddDelegator,
-				CompressedGenPubKeyHex: p.importTxSignReq.CompressedGenPubKeyHex,
-				CompressedPartiPubKeys: p.importTxSignReq.CompressedPartiPubKeys,
-				Hash:                   bytes.BytesToHex(txHash),
-			}
-
-			err = eh.SignerMPC.Sign(ctx, &signReq)
-			eh.Logger.ErrorOnError(err, "Failed to request sign of AddDelegatorTx")
-			eh.pendingStakeTasks.Store(signReq.ReqID, &p)
-			eh.pendingStakeTasks.Delete(evt.ReqID)
-		case events.SignKindStakeAddDelegator:
-			// Set AddDelegatorTx signature
-			pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
-			p := pVal.(pendingStakeTask)
-			err := p.stakeTask.SetAddDelegatorTxSig(*evt.Result)
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to set AddDelegatorTx signature")
-				break
-			}
-			// issue ExportTx
+		eh.Logger.ErrorOnError(err, "Failed to request sign of ImportTx")
+		eh.pendingStakeTasks.Store(signReq.ReqID, p)
+	case events.SignKindStakeImport:
+		// Set ImportTx signature
+		err := p.stakeTask.SetImportTxSig(*evt.Result)
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to set ImportTx signature")
+			break
 		}
+		// Sign AddDelegatorTx
+		txHash, err := p.stakeTask.AddDelegatorTxHash()
+		if err != nil {
+			eh.Logger.ErrorOnError(errors.WithStack(err), "Failed to generate AddDelegatorTx hash")
+			break
+		}
+
+		signReq := core.SignRequest{
+			ReqID:                  string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+			Kind:                   events.SignKindStakeAddDelegator,
+			CompressedGenPubKeyHex: p.importTxSignReq.CompressedGenPubKeyHex,
+			CompressedPartiPubKeys: p.importTxSignReq.CompressedPartiPubKeys,
+			Hash:                   bytes.BytesToHex(txHash),
+		}
+
+		err = eh.SignerMPC.Sign(ctx, &signReq)
+		eh.Logger.ErrorOnError(err, "Failed to request sign of AddDelegatorTx")
+		eh.pendingStakeTasks.Store(signReq.ReqID, p)
+	case events.SignKindStakeAddDelegator:
+		// Set AddDelegatorTx signature
+		err := p.stakeTask.SetAddDelegatorTxSig(*evt.Result)
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to set AddDelegatorTx signature")
+			break
+		}
+		eh.exportTxSorter.AddSort(p)
+		eh.pendingStakeTasks.Store(evt.ReqID, p)
 	}
+}
+
+func (eh *StakeRequestStarted) OnTxCommitted(ctx context.Context, evt *events.TxCommitted) {
+	pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
+	p := pVal.(*pendingStakeTask)
+	switch evt.Kind {
+	case events.TxKindCChainExport:
+		// Issue signed ImportTx
+		importTx, err := p.stakeTask.GetSignedImportTx()
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to get signed ImportTx")
+			break
+		}
+
+		tx := txissuer.Tx{
+			ReqID: p.importTxSignReq.ReqID,
+			Kind:  events.TxKindPChainImport,
+			Bytes: importTx.Bytes(),
+		}
+		err = eh.TxIssuer.IssueTx(ctx, &tx)
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to issue signed ImportTx")
+			break
+		}
+		p.exportTxID = evt.TxID
+		eh.pendingStakeTasks.Store(evt.ReqID, p)
+	case events.TxKindPChainImport:
+		// Issue signed ImportTx
+		addDelegatorTx, err := p.stakeTask.GetSignedAddDelegatorTx()
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to get signed ImportTx")
+			break
+		}
+
+		tx := txissuer.Tx{
+			ReqID: p.addDelegatorSignReq.ReqID,
+			Kind:  events.TxKindPChainAddDelegator,
+			Bytes: addDelegatorTx.Bytes(),
+		}
+		err = eh.TxIssuer.IssueTx(ctx, &tx)
+		if err != nil {
+			eh.Logger.ErrorOnError(err, "Failed to issue signed AddDelegatorImportTx")
+			break
+		}
+		p.importTxID = evt.TxID
+		eh.pendingStakeTasks.Store(evt.ReqID, p)
+	case events.TxKindPChainAddDelegator:
+		p.addDelegatorTxID = evt.TxID
+		eh.pendingStakeTasks.Store(evt.ReqID, p)
+		prom.StakeTaskDone.Inc()
+		std := events.StakeTaskDone{
+			ReqNo:   p.stakeTask.ReqNo,
+			Nonce:   p.stakeTask.Nonce,
+			ReqHash: p.stakeTask.ReqHash,
+
+			DelegateAmt: p.stakeTask.DelegateAmt,
+			StartTime:   p.stakeTask.StartTime,
+			EndTime:     p.stakeTask.EndTime,
+			NodeID:      p.stakeTask.NodeID,
+
+			ExportTxID:       p.exportTxID,
+			ImportTxID:       p.importTxID,
+			AddDelegatorTxID: p.addDelegatorTxID,
+
+			PubKeyHex:     p.exportTxSignReq.CompressedGenPubKeyHex,
+			CChainAddress: p.stakeTask.CChainAddress,
+			PChainAddress: p.stakeTask.PChainAddress,
+
+			ParticipantPubKeys: p.exportTxSignReq.CompressedPartiPubKeys,
+		}
+		eh.Logger.Info("Stake task done", []logger.Field{{"stakeTaskDone", std}}...)
+	}
+	eh.pendingStakeTasks.Delete(evt.ReqID)
 }
 
 func (eh *StakeRequestStarted) createStakeTask(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*StakeTask, error) {
@@ -249,7 +315,7 @@ func (eh *StakeRequestStarted) createStakeTask(stakeReq *storage.StakeRequest, r
 	return &st, nil
 }
 
-func (eh *StakeRequestStarted) issueTx(ctx context.Context) {
+func (eh *StakeRequestStarted) issueSignedExportTx(ctx context.Context) {
 	issueT := time.NewTicker(time.Second)
 	defer issueT.Stop()
 
@@ -258,129 +324,41 @@ func (eh *StakeRequestStarted) issueTx(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-issueT.C:
-			if eh.issueTxContainer.IsEmpty() {
+			// Sync address nonce
+			if eh.exportTxSorter.IsEmpty() {
 				break
 			}
-			addressNonce, err := eh.EthClient.NonceAt(ctx, eh.issueTxContainer.Address(), nil)
+			addressNonce, err := eh.EthClient.NonceAt(ctx, eh.exportTxSorter.Address(), nil)
 			if err != nil {
 				eh.Logger.ErrorOnError(err, "Failed to query nonce")
 				break
 			}
 
-			txs := eh.issueTxContainer.ContinuousTxs(addressNonce)
-			if len(txs) == 0 {
+			ps := eh.exportTxSorter.ContinuousTxs(addressNonce)
+			if len(ps) == 0 {
 				break
 			}
-			for _, tx := range txs {
-				eh.doIssueTx(ctx, tx.StakeTaskWrapper)
+			for _, p := range ps {
+				// Issue signed ExportTx
+				exportTx, err := p.stakeTask.GetSignedExportTx()
+				if err != nil {
+					eh.Logger.ErrorOnError(err, "Failed to get signed ExportTx")
+					break
+				}
+
+				tx := txissuer.Tx{
+					ReqID: p.exportTxSignReq.ReqID,
+					Kind:  events.TxKindCChainExport,
+					Bytes: exportTx.SignedBytes(),
+				}
+				err = eh.TxIssuer.IssueTx(ctx, &tx)
+				if err != nil {
+					eh.Logger.ErrorOnError(err, "Failed to issue signed ExportTx")
+					break
+				}
 			}
 
-			eh.issueTxContainer.TrimLeft(txs[len(txs)-1].Nonce)
-
-			nonces := eh.issueTxContainer.Nonces()
-			eh.Logger.Debug("Stake tasks stats", []logger.Field{
-				{"cachedStakeTasks", len(nonces)},
-				{"doneStakeTasks", eh.doneStakeTasks},
-				{"errIssueStakeTasks", eh.errIssueStakeTasks},
-				{"cachedNonces", nonces}}...)
+			eh.exportTxSorter.TrimLeft(ps[len(ps)-1].stakeTask.Nonce)
 		}
 	}
-}
-
-func (eh *StakeRequestStarted) doIssueTx(ctx context.Context, stw *StakeTaskWrapper) error {
-	stakeTask := stw.StakeTask
-	ids, err := stw.IssueTx(ctx)
-	signRequester := stw.SignRequester
-
-	if err != nil { // todo: simplify error handling
-		switch errors.Cause(err).(type) { // todo: exploring more concrete error types
-		case *chain.ErrTypSharedMemoryNotFound:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgSharedMemoryNotFound, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypInsufficientFunds:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgInsufficientFunds, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypInvalidNonce:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgInvalidNonce, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypConflictAtomicInputs:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgConflictAtomicInputs, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypTxHasNoImportedInputs:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgTxHasNoImportedInputs, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypConsumedUTXONotFound:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgConsumedUTXOsNotFound, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypNotFound:
-			eh.Logger.DebugOnError(err, "Stake task not done for "+chain.ErrMsgNotFound, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		case *chain.ErrTypStakeStartTimeExpired: // todo: more measures for this kind of error?
-			eh.Logger.ErrorOnError(err, "Failed to stake for "+chain.ErrMsgStakeStartTimeExpired, []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		default:
-			eh.Logger.ErrorOnError(err, "Failed to stake", []logger.Field{{"errIssueStakeTask", stakeTask}}...)
-		}
-		atomic.AddUint64(&eh.errIssueStakeTasks, 1)
-		return err
-	}
-
-	newEvt := events.StakeTaskDone{
-		TaskID: common.HexToHash(strings.TrimPrefix(stakeTask.TaskID, stakeTaskIDPrefix)),
-
-		ExportTxID:       ids[0],
-		ImportTxID:       ids[1],
-		AddDelegatorTxID: ids[2],
-
-		RequestID:   stakeTask.ReqNo,
-		DelegateAmt: stakeTask.DelegateAmt,
-		StartTime:   stakeTask.StartTime,
-		EndTime:     stakeTask.EndTime,
-		NodeID:      stakeTask.NodeID,
-
-		PubKeyHex:     signRequester.CompressedGenPubKeyHex,
-		CChainAddress: stakeTask.CChainAddress,
-		PChainAddress: stakeTask.PChainAddress,
-		Nonce:         stakeTask.Nonce,
-
-		ParticipantPubKeys: signRequester.CompressedPartiPubKeys,
-	}
-
-	eh.doneStakeTasks++
-	prom.StakeTaskDone.Inc()
-	eh.Logger.Info("Stake task done", []logger.Field{{"stakeTaskDone", fmt.Sprintf("reqHash:%v, stakeTask:%+v", stw.ReqHash.String(), newEvt)}}...)
-	return nil
-}
-
-func (eh *StakeRequestStarted) checkBalance(ctx context.Context, addr common.Address, stakeAmt *big.Int) error {
-	bl, err := eh.EthClient.BalanceAt(ctx, addr, nil)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	switch bl.Cmp(stakeAmt) {
-	case -1:
-		fallthrough
-	case 0: // take gas fee into account
-		return errors.WithStack(&chain.ErrTypInsufficientFunds{
-			ErrMsg: fmt.Sprintf("Insufficient funds for stake. address:%v, balance:%v, stakeAmt:%v", addr, bl, stakeAmt)})
-	default:
-		return nil
-	}
-}
-
-func (eh *StakeRequestStarted) checkStarTime(startTime int64) error {
-	startTime_ := time.Unix(startTime, 0)
-	now := time.Now()
-	switch {
-	case startTime_.Before(now):
-		return errors.WithStack(&chain.ErrTypStakeStartTimeExpired{})
-	case startTime_.Add(time.Second * 5).Before(now):
-		eh.Logger.Warn("Stake start time will expired in 5 seconds, continue to issue may fail")
-		//return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn5Seconds{})
-	case startTime_.Add(time.Second * 10).Before(now):
-		eh.Logger.Warn("Stake start time will expired in 10 seconds, continue to issue may fail")
-		//return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn10Seconds{})
-	case startTime_.Add(time.Second * 20).Before(now):
-		eh.Logger.Warn("Stake start time will expired in 20 seconds, continue to issue may fail")
-		//return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn20Seconds{})
-	case startTime_.Add(time.Second * 40).Before(now):
-		eh.Logger.Warn("Stake start time will expired in 40 seconds, continue to issue may fail")
-		//return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn40Seconds{})
-	case startTime_.Add(time.Second * 60).Before(now):
-		eh.Logger.Warn("Stake start time will expired in 60 seconds, continue to issue may fail")
-		//return errors.WithStack(&ErrTypStakeStartTimeWillExpireIn60Seconds{})
-	}
-	return nil
 }
