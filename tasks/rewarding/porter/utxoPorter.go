@@ -52,7 +52,7 @@ type UTXOPorter struct {
 	IssuerPChain           chain.PChainIssuer
 	Logger                 logger.Logger
 	NetWorkCtx             chain.NetworkContext
-	SignerMPC              core.SignDoner
+	SignerMPC              core.Signer
 	UTXOExportedEventCache *ristretto.Cache
 	UTXOsFetchedEventCache *ristretto.Cache
 
@@ -81,16 +81,27 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 	switch evt := evtObj.Event.(type) {
 	case *events.RequestStarted:
-		reqHash := (storage.RequestHash)(evt.ReqHash)
-		if !reqHash.IsTaskType(storage.TaskTypReturn) {
-			break
+		if evt.TaskType == storage.TaskTypReturn {
+			eh.onReqStarted(ctx, evt)
 		}
-		select {
-		case <-ctx.Done():
-			return
-		case eh.requestStartedChan <- evt:
-		}
+	case *events.SignDone:
+		eh.OnSignDone(ctx, evt)
+	case *events.TxApproved:
+		eh.OnTxApproved(ctx, evt)
 	}
+}
+
+func (eh *UTXOPorter) onReqStarted(ctx context.Context, evt *events.RequestStarted) {
+}
+
+func (eh *UTXOPorter) OnSignDone(ctx context.Context, evt *events.SignDone) {
+
+}
+
+func (eh *UTXOPorter) OnTxApproved(ctx context.Context, evt *events.TxApproved) {}
+
+func (eh *UTXOPorter) buildTxs(ctx context.Context) {
+
 }
 
 func (eh *UTXOPorter) exportUTXO(ctx context.Context) {

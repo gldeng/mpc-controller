@@ -28,7 +28,7 @@ type KeygenRequest struct {
 
 type SignRequest struct {
 	ReqID                  string          `json:"request_id"`
-	Kind                   events.SignKInd `json:"-"`
+	Kind                   events.SignKind `json:"-"`
 	Hash                   string          `json:"message"`
 	CompressedGenPubKeyHex string          `json:"public_key"`
 	CompressedPartiPubKeys []string        `json:"participant_public_keys"`

@@ -86,7 +86,7 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 					case evm.Processing:
 						t.Logger.Debug("C-Chain tx processing", []logger.Field{{"processingTx", tx}}...)
 					case evm.Accepted:
-						txAcc := events.TxAccepted{
+						txAcc := events.TxApproved{
 							ReqID: tx.ReqID,
 							Kind:  tx.Kind,
 							TxID:  tx.txID,
@@ -111,7 +111,7 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 						t.Logger.Warn("P-Chain tx dropped", []logger.Field{{"droppedTx", tx}}...)
 						t.pendingTx.Delete(tx.txID)
 					case status.Committed:
-						txCmt := events.TxCommitted{
+						txCmt := events.TxApproved{
 							ReqID: tx.ReqID,
 							Kind:  tx.Kind,
 							TxID:  tx.txID,

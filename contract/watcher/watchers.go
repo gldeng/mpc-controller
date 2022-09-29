@@ -28,14 +28,6 @@ import (
 	"time"
 )
 
-// Subscribe event: *events.ParticipantAdded
-// Subscribe event: *events.KeyGenerated
-
-// Publish event: *events.ParticipantAdded
-// Publish event: *events.KeyGenerated
-// Publish event: *events.StakeRequestAdded
-// Publish event: *events.RequestStarted
-
 type MpcManagerWatchers struct {
 	BoundCaller     caller.Caller
 	BoundTransactor transactor.Transactor
@@ -346,16 +338,27 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 			Args:    &stakeReq,
 		}
 		if err := w.DB.LoadModel(ctx, &joinReq); err != nil {
-			//w.Logger.DebugOnError(err, "No JoinRequest load for stake", []logger.Field{{"reqHash", reqHash.String()}}...)
 			break
 		}
 		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
-			//w.Logger.Debug("Not joined stake request", []logger.Field{{"reqHash", myEvt.ReqHash}}...)
 			break
 		}
-		w.Publisher.Publish(ctx, dispatcher.NewEvtObj(&events.RequestStarted{indices, &joinReq, myEvt.Raw}, nil))
-		w.Logger.Info("Stake request started", []logger.Field{{"stakeReqStarted",
-			fmt.Sprintf("reqHash:%v, partiIndices:%v, stakeReq:%+v", reqHash.String(), indices.Indices(), stakeReq)}}...)
+		cmpGenPubKeyHex, joinedCmpPartiPubKeys, err := w.getKeyInfo(ctx, stakeReq.GeneratedPublicKey, indices)
+		if err != nil {
+			w.Logger.ErrorOnError(err, "Failed to get key info")
+			break
+		}
+		evt := events.RequestStarted{
+			ReqHash:                &reqHash,
+			TaskType:               storage.TaskTypStake,
+			PartiIndices:           indices,
+			JoinedReq:              &joinReq,
+			CompressedPartiPubKeys: joinedCmpPartiPubKeys,
+			CompressedGenPubKeyHex: cmpGenPubKeyHex,
+			Raw:                    myEvt.Raw,
+		}
+		w.Publisher.Publish(ctx, dispatcher.NewEvtObj(&evt, nil))
+		w.Logger.Info("Stake request started", []logger.Field{{"stakeReqStarted", evt}}...)
 		prom.StakeRequestStarted.Inc()
 	case reqHash.IsTaskType(storage.TaskTypReturn):
 		utxoExportReq := storage.ExportUTXORequest{}
@@ -378,6 +381,34 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		prom.UTXOExportRequestStarted.Inc()
 	}
 	return nil
+}
+
+func (w *MpcManagerWatchers) getKeyInfo(ctx context.Context, genPubKey *storage.GeneratedPublicKey, partiIndices *storage.Indices) (string, []string, error) {
+	// Get generated key and participant keys
+	cmpGenPubKeyHex, err := genPubKey.GenPubKey.CompressPubKeyHex()
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "failed to compress public key")
+	}
+
+	group := storage.Group{
+		ID: genPubKey.GroupId,
+	}
+	if err := w.DB.LoadModel(ctx, &group); err != nil {
+		return "", nil, errors.Wrapf(err, "failed to load group")
+	}
+
+	cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "failed to comporess participant public keys")
+	}
+
+	var joinedCmpPartiPubKeys []string
+	indices := partiIndices.Indices()
+	for _, index := range indices {
+		joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
+	}
+
+	return cmpGenPubKeyHex, joinedCmpPartiPubKeys, nil
 }
 
 func (w *MpcManagerWatchers) reWatch(ctx context.Context) {

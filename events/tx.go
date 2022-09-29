@@ -14,13 +14,7 @@ const (
 type TxKind int
 type Chain int
 
-type TxCommitted struct { // P-Chain
-	ReqID string
-	Kind  TxKind
-	TxID  ids.ID
-}
-
-type TxAccepted struct { // C-Chain
+type TxApproved struct {
 	ReqID string
 	Kind  TxKind
 	TxID  ids.ID

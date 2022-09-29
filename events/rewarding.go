@@ -15,9 +15,6 @@ const (
 	OutputIndexReward
 )
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Events concerning rewarding
-
 type UTXOsFetched struct {
 	NativeUTXOs []*avax.UTXO `json:"-"`
 	MpcUTXOs    []*myAvax.MpcUTXO

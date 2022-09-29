@@ -22,12 +22,6 @@ import (
 	"time"
 )
 
-const (
-	stakeTaskIDPrefix = "STAKE-"
-)
-
-// Subscribe event: *events.RequestStarted
-
 type Staking struct {
 	BoundTransactor transactor.Transactor
 	DB              storage.DB
@@ -80,46 +74,21 @@ func (eh *Staking) Init(ctx context.Context) {
 
 func (eh *Staking) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
-	case *events.StakeRequestStarted:
-		eh.OnStakeReqStarted(ctx, evt)
+	case *events.RequestStarted:
+		if evt.TaskType == storage.TaskTypStake {
+			eh.OnReqStarted(ctx, evt)
+		}
 	case *events.SignDone:
 		eh.OnSignDone(ctx, evt)
-	case *events.TxCommitted:
-		eh.OnTxCommitted(ctx, evt)
+	case *events.TxApproved:
+		eh.OnTxApproved(ctx, evt)
 	}
 }
 
-func (eh *Staking) OnStakeReqStarted(ctx context.Context, evt *events.StakeRequestStarted) {
+func (eh *Staking) OnReqStarted(ctx context.Context, evt *events.RequestStarted) {
 	// Create stake task
-	stakeReq := evt.Args.(*storage.StakeRequest)
-	stakeTask, _ := eh.createStakeTask(stakeReq, evt.ReqHash)
-
-	// Get generated key and participant keys
-	cmpGenPubKeyHex, err := stakeReq.GenPubKey.CompressPubKeyHex()
-	if err != nil {
-		eh.Logger.ErrorOnError(err, "Failed to compress public key")
-		return
-	}
-
-	group := storage.Group{
-		ID: stakeReq.GroupId,
-	}
-	if err := eh.DB.LoadModel(ctx, &group); err != nil {
-		eh.Logger.ErrorOnError(err, "Failed to load group")
-		return
-	}
-
-	cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
-	if err != nil {
-		eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
-		return
-	}
-
-	var joinedCmpPartiPubKeys []string
-	indices := evt.PartiIndices.Indices()
-	for _, index := range indices {
-		joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
-	}
+	stakeReq := evt.JoinedReq.Args.(*storage.StakeRequest)
+	stakeTask, _ := eh.createStakeTask(stakeReq, *evt.ReqHash)
 
 	// Sign ExportTx
 	txHash, err := stakeTask.ExportTxHash()
@@ -131,8 +100,8 @@ func (eh *Staking) OnStakeReqStarted(ctx context.Context, evt *events.StakeReque
 	signReq := core.SignRequest{
 		ReqID:                  string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
 		Kind:                   events.SignKindStakeExport,
-		CompressedGenPubKeyHex: cmpGenPubKeyHex,
-		CompressedPartiPubKeys: joinedCmpPartiPubKeys,
+		CompressedGenPubKeyHex: evt.CompressedGenPubKeyHex,
+		CompressedPartiPubKeys: evt.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(txHash),
 	}
 
@@ -209,7 +178,7 @@ func (eh *Staking) OnSignDone(ctx context.Context, evt *events.SignDone) {
 	}
 }
 
-func (eh *Staking) OnTxCommitted(ctx context.Context, evt *events.TxCommitted) {
+func (eh *Staking) OnTxApproved(ctx context.Context, evt *events.TxApproved) {
 	pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
 	p := pVal.(*pendingStakeTask)
 	switch evt.Kind {

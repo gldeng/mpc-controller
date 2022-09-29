@@ -26,7 +26,7 @@ const (
 )
 
 const (
-	SignKindStakeExport SignKInd = iota
+	SignKindStakeExport SignKind = iota
 	SignKindStakeImport
 	SignKindStakeAddDelegator
 
@@ -40,7 +40,7 @@ const (
 type ReqType string
 type ReqStatus string
 type SignIDPrefix string
-type SignKInd int
+type SignKind int
 
 type Signature [65]byte
 
@@ -57,6 +57,6 @@ func (s *Signature) String() string {
 
 type SignDone struct {
 	ReqID  string
-	Kind   SignKInd
+	Kind   SignKind
 	Result *Signature
 }
