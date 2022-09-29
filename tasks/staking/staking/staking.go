@@ -28,7 +28,7 @@ const (
 
 // Subscribe event: *events.RequestStarted
 
-type StakeRequestStarted struct {
+type Staking struct {
 	BoundTransactor transactor.Transactor
 	DB              storage.DB
 	EthClient       chain.EthClient
@@ -46,7 +46,7 @@ type StakeRequestStarted struct {
 
 	issueTxCache     map[uint64]*pendingStakeTask
 	issueTxCacheLock sync.RWMutex
-	exportTxSorter   *exportTxSorter
+	exportTxSorter   *txSorter
 
 	pendingStakeTasks *sync.Map
 
@@ -68,17 +68,17 @@ type pendingStakeTask struct {
 	addDelegatorTxID ids.ID
 }
 
-func (eh *StakeRequestStarted) Init(ctx context.Context) {
+func (eh *Staking) Init(ctx context.Context) {
 	eh.requestStartedChan = make(chan *events.RequestStarted, 1024)
 
 	eh.issueTxChan = make(chan *pendingStakeTask)
 	eh.issueTxCache = make(map[uint64]*pendingStakeTask)
-	eh.exportTxSorter = new(exportTxSorter)
+	eh.exportTxSorter = new(txSorter)
 
 	go eh.issueSignedExportTx(ctx)
 }
 
-func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
+func (eh *Staking) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	switch evt := evtObj.Event.(type) {
 	case *events.StakeRequestStarted:
 		eh.OnStakeReqStarted(ctx, evt)
@@ -89,7 +89,7 @@ func (eh *StakeRequestStarted) Do(ctx context.Context, evtObj *dispatcher.EventO
 	}
 }
 
-func (eh *StakeRequestStarted) OnStakeReqStarted(ctx context.Context, evt *events.StakeRequestStarted) {
+func (eh *Staking) OnStakeReqStarted(ctx context.Context, evt *events.StakeRequestStarted) {
 	// Create stake task
 	stakeReq := evt.Args.(*storage.StakeRequest)
 	stakeTask, _ := eh.createStakeTask(stakeReq, evt.ReqHash)
@@ -143,7 +143,7 @@ func (eh *StakeRequestStarted) OnStakeReqStarted(ctx context.Context, evt *event
 	eh.pendingStakeTasks.Store(signReq.ReqID, &p)
 }
 
-func (eh *StakeRequestStarted) OnSignDone(ctx context.Context, evt *events.SignDone) {
+func (eh *Staking) OnSignDone(ctx context.Context, evt *events.SignDone) {
 	pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
 	p := pVal.(*pendingStakeTask)
 	switch evt.Kind {
@@ -209,7 +209,7 @@ func (eh *StakeRequestStarted) OnSignDone(ctx context.Context, evt *events.SignD
 	}
 }
 
-func (eh *StakeRequestStarted) OnTxCommitted(ctx context.Context, evt *events.TxCommitted) {
+func (eh *Staking) OnTxCommitted(ctx context.Context, evt *events.TxCommitted) {
 	pVal, _ := eh.pendingStakeTasks.Load(evt.ReqID)
 	p := pVal.(*pendingStakeTask)
 	switch evt.Kind {
@@ -282,7 +282,7 @@ func (eh *StakeRequestStarted) OnTxCommitted(ctx context.Context, evt *events.Tx
 	eh.pendingStakeTasks.Delete(evt.ReqID)
 }
 
-func (eh *StakeRequestStarted) createStakeTask(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*StakeTask, error) {
+func (eh *Staking) createStakeTask(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*StakeTask, error) {
 	nodeID, _ := ids.ShortFromPrefixedString(stakeReq.NodeID, ids.NodeIDPrefix)
 	amountBig := new(big.Int)
 	amount, _ := amountBig.SetString(stakeReq.Amount, 10)
@@ -315,7 +315,7 @@ func (eh *StakeRequestStarted) createStakeTask(stakeReq *storage.StakeRequest, r
 	return &st, nil
 }
 
-func (eh *StakeRequestStarted) issueSignedExportTx(ctx context.Context) {
+func (eh *Staking) issueSignedExportTx(ctx context.Context) {
 	issueT := time.NewTicker(time.Second)
 	defer issueT.Stop()
 

@@ -6,19 +6,19 @@ import (
 	"sync"
 )
 
-type exportTxSorter struct {
+type txSorter struct {
 	sync.Mutex
 	tasks pendingStakeTasks
 }
 
-func (p *exportTxSorter) AddSort(st *pendingStakeTask) {
+func (p *txSorter) AddSort(st *pendingStakeTask) {
 	p.Lock()
 	defer p.Unlock()
 	p.tasks = append(p.tasks, st)
 	p.sort()
 }
 
-func (c *exportTxSorter) ContinuousTxs(nonce uint64) []*pendingStakeTask {
+func (c *txSorter) ContinuousTxs(nonce uint64) []*pendingStakeTask {
 	c.Lock()
 	defer c.Unlock()
 	indices := c.continuousIndices(nonce)
@@ -29,7 +29,7 @@ func (c *exportTxSorter) ContinuousTxs(nonce uint64) []*pendingStakeTask {
 	return txs
 }
 
-func (c *exportTxSorter) TrimLeft(nonce uint64) {
+func (c *txSorter) TrimLeft(nonce uint64) {
 	c.Lock()
 	defer c.Unlock()
 	if !c.containNonce(nonce) {
@@ -39,13 +39,13 @@ func (c *exportTxSorter) TrimLeft(nonce uint64) {
 	c.tasks = c.tasks[i+1:]
 }
 
-func (c *exportTxSorter) IsEmpty() bool {
+func (c *txSorter) IsEmpty() bool {
 	c.Lock()
 	defer c.Unlock()
 	return len(c.tasks) == 0
 }
 
-func (c *exportTxSorter) Nonces() []uint64 {
+func (c *txSorter) Nonces() []uint64 {
 	c.Lock()
 	defer c.Unlock()
 	var nonces []uint64
@@ -55,15 +55,15 @@ func (c *exportTxSorter) Nonces() []uint64 {
 	return nonces
 }
 
-func (c *exportTxSorter) Address() common.Address {
+func (c *txSorter) Address() common.Address {
 	return c.tasks[0].stakeTask.CChainAddress // todo: take key-rotation into consideration
 }
 
-func (c *exportTxSorter) sort() {
+func (c *txSorter) sort() {
 	sort.Sort(c.tasks)
 }
 
-func (c *exportTxSorter) continuousIndices(nonce uint64) []int {
+func (c *txSorter) continuousIndices(nonce uint64) []int {
 	if !c.containNonce(nonce) {
 		return nil
 	}
@@ -81,7 +81,7 @@ func (c *exportTxSorter) continuousIndices(nonce uint64) []int {
 	return indices
 }
 
-func (c *exportTxSorter) containNonce(nonce uint64) bool {
+func (c *txSorter) containNonce(nonce uint64) bool {
 	for _, tx := range c.tasks {
 		if tx.stakeTask.Nonce == nonce {
 			return true
@@ -90,7 +90,7 @@ func (c *exportTxSorter) containNonce(nonce uint64) bool {
 	return false
 }
 
-func (c *exportTxSorter) nonceIndex(nonce uint64) int {
+func (c *txSorter) nonceIndex(nonce uint64) int {
 	var index = -1
 	for i, tx := range c.tasks {
 		if tx.stakeTask.Nonce == nonce {

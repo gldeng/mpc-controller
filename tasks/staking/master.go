@@ -28,7 +28,7 @@ type Master struct {
 	TxIssuer        txissuer.TxIssuer
 
 	stakeReqAddedH   *joining.StakeRequestAdded
-	stakeReqStartedH *staking.StakeRequestStarted
+	stakeReqStartedH *staking.Staking
 }
 
 func (m *Master) Start(ctx context.Context) error {
@@ -46,7 +46,7 @@ func (m *Master) subscribe() {
 		PartiPubKey:     m.PartiPubKey,
 	}
 
-	taskStartedDealer := staking.StakeRequestStarted{
+	taskStartedDealer := staking.Staking{
 		BoundTransactor: m.BoundTransactor,
 		DB:              m.DB,
 		EthClient:       m.EthClient,
