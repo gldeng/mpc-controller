@@ -92,6 +92,55 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 }
 
 func (eh *UTXOPorter) onReqStarted(ctx context.Context, evt *events.RequestStarted) {
+	// Build txs
+	req := evt.JoinedReq.Args.(*storage.ExportUTXORequest)
+	utxoID := req.TxID.String() + strconv.Itoa(int(req.OutputIndex))
+	_, ok := eh.exportUTXOTaskAddedCache.Get(utxoID)
+	if ok {
+		return
+	}
+	val, ok := eh.UTXOsFetchedEventCache.Get(utxoID)
+	if !ok {
+		eh.Logger.Warn("No local reported UTXO found", []logger.Field{
+			{"txID", req.TxID}, {"outputIndex", req.OutputIndex}}...)
+		return
+	}
+	utxo := val.(*avax.UTXO)
+	amountToExport := utxo.Out.(*secp256k1fx.TransferOutput).Amount()
+	exportFee := eh.NetWorkCtx.ExportFee()
+	networkID := eh.NetWorkCtx.NetworkID()
+	cChainID := eh.NetWorkCtx.CChainID()
+	if amountToExport < exportFee {
+		eh.Logger.Error("Insufficient UTXO amount to export.", []logger.Field{{"insufficientUTXOAmount",
+			fmt.Sprintf("txID:%v, outputIndex:%v, amount:%v", utxo.TxID, utxo.OutputIndex, amountToExport)}}...)
+		return
+	}
+	outAmount := amountToExport - exportFee // todo: consider batch export to reduce fee
+
+	pChainAddr, _ := req.GenPubKey.PChainAddress()
+	treasureAddr, _ := eh.treasuryAddress(ctx, utxoOutputIndex(req.OutputIndex))
+
+	myExportTxArgs := &pchain.ExportTxArgs{
+		NetworkID:          networkID,
+		BlockchainID:       ids.Empty,
+		DestinationChainID: cChainID,
+		OutAmount:          outAmount,
+		To:                 pChainAddr,
+		UTXOs:              []*avax.UTXO{utxo},
+	}
+	myImportTxArgs := &cchain.ImportTxArgs{
+		NetworkID:     networkID,
+		BlockchainID:  cChainID,
+		OutAmount:     outAmount,
+		SourceChainID: ids.Empty,
+		To:            treasureAddr,
+	}
+	myTxs := &Txs{
+		ExportTxArgs: myExportTxArgs,
+		ImportTxArgs: myImportTxArgs,
+	}
+
+	// Sign ExportTx
 }
 
 func (eh *UTXOPorter) OnSignDone(ctx context.Context, evt *events.SignDone) {
@@ -110,41 +159,41 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case evt := <-eh.requestStartedChan:
-			reqHash := (storage.RequestHash)(evt.ReqHash)
-			utxoExportReq := storage.ExportUTXORequest{}
-			joinReq := storage.JoinRequest{
-				ReqHash: reqHash,
-				Args:    &utxoExportReq,
-			}
-
-			if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
-				eh.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
-				break
-			}
-			if !joinReq.PartiId.Joined(evt.PartiIndices) {
-				eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.ReqHash}}...)
-				break
-			}
-
-			group := storage.Group{
-				ID: utxoExportReq.GroupId,
-			}
-			if err := eh.DB.LoadModel(ctx, &group); err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to load group", []logger.Field{{"key", group.ID}}...)
-				break
-			}
-
-			cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
-			if err != nil {
-				eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
-				break
-			}
-
-			var joinedCmpPartiPubKeys []string
-			indices := (*storage.Indices)(evt.PartiIndices).Indices()
-			for _, index := range indices {
-				joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
-			}
+			//reqHash := (storage.RequestHash)(evt.ReqHash)
+			//utxoExportReq := storage.ExportUTXORequest{}
+			//joinReq := storage.JoinRequest{
+			//	ReqHash: reqHash,
+			//	Args:    &utxoExportReq,
+			//}
+			//
+			//if err := eh.DB.LoadModel(ctx, &joinReq); err != nil {
+			//	eh.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
+			//	break
+			//}
+			//if !joinReq.PartiId.Joined(evt.PartiIndices) {
+			//	eh.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", evt.ReqHash}}...)
+			//	break
+			//}
+			//
+			//group := storage.Group{
+			//	ID: utxoExportReq.GroupId,
+			//}
+			//if err := eh.DB.LoadModel(ctx, &group); err != nil {
+			//	eh.Logger.ErrorOnError(err, "Failed to load group", []logger.Field{{"key", group.ID}}...)
+			//	break
+			//}
+			//
+			//cmpPartiPubKeys, err := group.Group.CompressPubKeyHexs()
+			//if err != nil {
+			//	eh.Logger.ErrorOnError(err, "Failed to compress participant public keys")
+			//	break
+			//}
+			//
+			//var joinedCmpPartiPubKeys []string
+			//indices := (*storage.Indices)(evt.PartiIndices).Indices()
+			//for _, index := range indices {
+			//	joinedCmpPartiPubKeys = append(joinedCmpPartiPubKeys, cmpPartiPubKeys[index-1])
+			//}
 
 			cmpGenPubKeyHex, err := utxoExportReq.GenPubKey.CompressPubKeyHex()
 			if err != nil {
