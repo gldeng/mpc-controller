@@ -8,7 +8,7 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/dispatcher"
+	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
@@ -31,7 +31,8 @@ type MyTxIssuer struct {
 	Logger       logger.Logger
 	CChainClient evm.Client
 	PChainClient platformvm.Client
-	Publisher    dispatcher.Publisher
+
+	dispatcher kbcevents.Dispatcher[*events.TxApproved]
 
 	pendingTx *sync.Map
 	once      *sync.Once
@@ -91,7 +92,7 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 							Kind:  tx.Kind,
 							TxID:  tx.txID,
 						}
-						t.Publisher.Publish(ctx, dispatcher.NewEvtObj(&txAcc, nil))
+						t.dispatcher.Dispatch(&txAcc)
 						t.Logger.Info("C-Chain tx accepted", []logger.Field{{"acceptedTx", tx}}...)
 						t.pendingTx.Delete(tx.txID)
 					}
@@ -116,7 +117,7 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 							Kind:  tx.Kind,
 							TxID:  tx.txID,
 						}
-						t.Publisher.Publish(ctx, dispatcher.NewEvtObj(&txCmt, nil))
+						t.dispatcher.Dispatch(&txCmt)
 						t.Logger.Info("Tx committed", []logger.Field{{"acceptedTx", tx}}...)
 						t.pendingTx.Delete(tx.txID)
 					}
