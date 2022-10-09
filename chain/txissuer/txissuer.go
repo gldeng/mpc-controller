@@ -26,6 +26,7 @@ type Tx struct {
 }
 
 // todo: add retry mechanism
+// todo: close dispatchers when they no longer needed.
 
 type MyTxIssuer struct {
 	Logger       logger.Logger
