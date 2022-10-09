@@ -8,7 +8,7 @@ import (
 type Sequencer interface {
 	AddThenSort(o Obj)
 	Objs() Objs
-	ObjsFromNonce(nonce uint64) Objs
+	ContinuousObjs(nonce uint64) Objs
 	TrimLeft(nonce uint64)
 	IsEmpty() bool
 }
@@ -35,7 +35,7 @@ func (s *AscendingSequencer) Objs() Objs {
 	return s.objs
 }
 
-func (s *AscendingSequencer) ObjsFromNonce(nonce uint64) Objs {
+func (s *AscendingSequencer) ContinuousObjs(nonce uint64) Objs {
 	s.Lock()
 	defer s.Unlock()
 	indices := s.continuousIndices(nonce)
