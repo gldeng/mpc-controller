@@ -361,7 +361,7 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		w.Logger.Info("Stake request started", []logger.Field{{"stakeReqStarted", evt}}...)
 		prom.StakeRequestStarted.Inc()
 	case reqHash.IsTaskType(storage.TaskTypReturn):
-		utxoExportReq := storage.ExportUTXORequest{}
+		utxoExportReq := storage.RecoverRequest{}
 		joinReq := storage.JoinRequest{
 			ReqHash: reqHash,
 			Args:    &utxoExportReq,

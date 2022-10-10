@@ -172,7 +172,7 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 					break
 				}
 
-				exportUTXOReq := storage.ExportUTXORequest{
+				exportUTXOReq := storage.RecoverRequest{
 					TxID:               utxo.TxID,
 					OutputIndex:        utxo.OutputIndex,
 					GeneratedPublicKey: &genPubKey,
@@ -201,11 +201,11 @@ func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
 							joinReq := args.(*storage.JoinRequest)
 							partiId := joinReq.PartiId
 							reqHash := joinReq.ReqHash
-							reqArgs := joinReq.Args.(*storage.ExportUTXORequest)
+							reqArgs := joinReq.Args.(*storage.RecoverRequest)
 							txID := reqArgs.TxID
 							outputIndex := reqArgs.OutputIndex
 
-							exportUTXOReq := joinReq.Args.(*storage.ExportUTXORequest)
+							exportUTXOReq := joinReq.Args.(*storage.RecoverRequest)
 							utxoID := exportUTXOReq.TxID.String() + strconv.Itoa(int(exportUTXOReq.OutputIndex))
 							_, ok := eh.joinedUTXOExportCache.Get(utxoID)
 							if ok {

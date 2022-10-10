@@ -93,7 +93,7 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 func (eh *UTXOPorter) onReqStarted(ctx context.Context, evt *events.RequestStarted) {
 	// Build txs
-	req := evt.JoinedReq.Args.(*storage.ExportUTXORequest)
+	req := evt.JoinedReq.Args.(*storage.RecoverRequest)
 	utxoID := req.TxID.String() + strconv.Itoa(int(req.OutputIndex))
 	_, ok := eh.exportUTXOTaskAddedCache.Get(utxoID)
 	if ok {
@@ -160,7 +160,7 @@ func (eh *UTXOPorter) exportUTXO(ctx context.Context) {
 			return
 		case evt := <-eh.requestStartedChan:
 			//reqHash := (storage.RequestHash)(evt.ReqHash)
-			//utxoExportReq := storage.ExportUTXORequest{}
+			//utxoExportReq := storage.RecoverRequest{}
 			//joinReq := storage.JoinRequest{
 			//	ReqHash: reqHash,
 			//	Args:    &utxoExportReq,
