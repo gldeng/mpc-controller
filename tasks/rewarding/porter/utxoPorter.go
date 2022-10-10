@@ -81,7 +81,7 @@ func (eh *UTXOPorter) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 
 	switch evt := evtObj.Event.(type) {
 	case *events.RequestStarted:
-		if evt.TaskType == storage.TaskTypReturn {
+		if evt.TaskType == storage.TaskTypRecover {
 			eh.onReqStarted(ctx, evt)
 		}
 	case *events.SignDone:

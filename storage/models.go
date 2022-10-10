@@ -224,7 +224,7 @@ func (m *GeneratedPublicKey) KeyFromHash(hash common.Hash) []byte {
 const (
 	TaskTypUnknown TaskType = iota
 	TaskTypStake
-	TaskTypReturn
+	TaskTypRecover
 )
 
 const (
@@ -241,7 +241,7 @@ func (m *RequestHash) TaskType() TaskType {
 	case n == 1:
 		return TaskTypStake
 	case n == 2:
-		return TaskTypReturn
+		return TaskTypRecover
 	default:
 		return TaskTypUnknown
 	}
@@ -309,6 +309,6 @@ type RecoverRequest struct {
 func (m *RecoverRequest) ReqHash() RequestHash {
 	bs := new(big.Int).SetUint64(uint64(m.OutputIndex)).Bytes()
 	reqHash := RequestHash(hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs})))
-	reqHash.SetTaskType(TaskTypReturn)
+	reqHash.SetTaskType(TaskTypRecover)
 	return reqHash
 }
