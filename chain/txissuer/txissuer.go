@@ -14,9 +14,20 @@ import (
 	"time"
 )
 
+const (
+	StatusIssued Status = iota
+	StatusApproved
+	StatusFailed
+)
+
+// todo: modify implementation for new architecture.
+
 type TxIssuer interface {
 	IssueTx(ctx context.Context, tx *Tx) error
+	TrackTx(ctx context.Context, tx *Tx) (Status, error)
 }
+
+type Status int
 
 type Tx struct {
 	ReqID string
