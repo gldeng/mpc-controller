@@ -8,6 +8,7 @@ const (
 )
 
 const (
+	ReqStatusSubmitted  ReqStatus = "SUBMITTED"
 	ReqStatusReceived   ReqStatus = "RECEIVED"
 	ReqStatusProcessing ReqStatus = "PROCESSING"
 	ReqStatusDone       ReqStatus = "DONE"
