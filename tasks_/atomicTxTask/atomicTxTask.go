@@ -4,10 +4,10 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/core"
-	"github.com/avalido/mpc-controller/dispatcher"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
+	kbcevents "github.com/kubecost/events"
 )
 
 const (
@@ -44,7 +44,7 @@ type AtomicTxTask struct {
 	TxIssuer  txissuer.TxIssuer
 
 	Pool       pool.WorkerPool
-	Dispatcher dispatcher.EventDispatcher
+	Dispatcher kbcevents.Dispatcher[any]
 }
 
 func (t *AtomicTxTask) Do() {
