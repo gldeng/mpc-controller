@@ -1,17 +1,25 @@
 package signingTask
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"github.com/alitto/pond"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/backoff"
+	kbcevents "github.com/kubecost/events"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
 )
 
 const (
 	StatusCreated Status = iota
 	StatusSubmitted
-	StatusOK
-	StatusFailed
 )
 
 type Status int
@@ -20,57 +28,64 @@ type SigningTask struct {
 	Status Status
 	Ctx    context.Context
 	Logger logger.Logger
-	Signer core.Signer
 
+	SignURL string
 	SignReq *core.SignRequest
 
-	*pond.WorkerPool
+	WorkPool   *pond.WorkerPool
+	Dispatcher kbcevents.Dispatcher[*core.Result]
 }
 
 func (t *SigningTask) Do() {
 	switch t.Status {
 	case StatusCreated:
-		//err := t.Signer.Sign(t.Ctx, t.SignReq)
-		//if err != nil {
-		//	t.Logger.ErrorOnError(err, "")
-		//}
-		//
-		//// Store data for later reuse
-		//joinReq := &storage.JoinRequest{
-		//	ReqHash: t.ReqHash,
-		//	PartiId: t.PartiID,
-		//}
-		//
-		//if t.Type == storage.TaskTypStake && t.StakeReq != nil {
-		//	joinReq.Args = t.StakeReq
-		//} else if t.Type == storage.TaskTypRecover && t.RecoverReq != nil {
-		//	joinReq.Args = t.RecoverReq
-		//}
-		//
-		//if joinReq.Args == nil {
-		//	t.Logger.Error("Joining data not provided")
-		//	return
-		//}
-		//
-		//if err := t.DB.SaveModel(t.Ctx, joinReq); err != nil {
-		//	t.Logger.ErrorOnError(err, "Failed to save joining request data")
-		//	return
-		//}
-		//
-		//// Send request
-		//_, _, err := t.Transactor.JoinRequest(t.Ctx, t.PartiID, t.ReqHash)
-		//if err != nil {
-		//	t.Logger.DebugOnError(err, "Joining task failed", []logger.Field{{"joiningTaskFailed",
-		//		fmt.Sprintf("type:%v reqHash:%v args:%v", t.Type, t.ReqHash, joinReq.Args)}}...)
-		//	return
-		//}
+		// Submit signing task for mpc-server to process
+		payloadBytes, _ := json.Marshal(t.SignReq)
+		err := backoff.RetryFnExponential10Times(t.Logger, t.Ctx, time.Second, time.Second*10, func() (bool, error) {
+			_, err := http.Post(t.SignURL+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
+			return false, nil
+		})
 
-		t.Status = StatusOK
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to submit signing request")
+			t.WorkPool.Submit(t.Do)
+			return
+		}
 
-		// todo: make it async
-
-		// todo: consider adding metrics
+		t.Status = StatusSubmitted
+		t.WorkPool.Submit(t.Do)
 	case StatusSubmitted:
-		// todo: check async status
+		// Check signing result
+		var resp *http.Response
+		err := backoff.RetryFnExponential10Times(t.Logger, t.Ctx, time.Second, time.Second*10, func() (bool, error) {
+			var err error
+			resp, err = http.Post(t.SignURL+"/result/"+t.SignReq.ReqID, "application/json", strings.NewReader(""))
+			if err != nil {
+				return true, errors.WithStack(err)
+			}
+			return false, nil
+		})
+
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to check signing result")
+			t.WorkPool.Submit(t.Do)
+			return
+		}
+
+		defer resp.Body.Close()
+		body, _ := ioutil.ReadAll(resp.Body)
+		res := new(core.Result)
+		_ = json.Unmarshal(body, &res)
+
+		if res.ReqStatus != events.ReqStatusDone {
+			t.Logger.Debug("Signing task not done")
+			t.WorkPool.Submit(t.Do)
+		}
+
+		// Emit signing result
+		t.Dispatcher.Dispatch(res)
 	}
 }
