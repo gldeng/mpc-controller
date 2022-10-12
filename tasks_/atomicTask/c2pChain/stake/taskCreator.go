@@ -50,6 +50,10 @@ func (c *TaskCreator) Init() {
 	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
 }
 
+func (c *TaskCreator) Close() {
+	c.Pool.StopAndWait()
+}
+
 func (c *TaskCreator) createTask(joined *events.RequestStarted) (*Task, error) {
 	stakeReq := joined.JoinedReq.Args.(*storage.StakeRequest)
 	txs, err := c.createTxs(stakeReq, *joined.ReqHash)
