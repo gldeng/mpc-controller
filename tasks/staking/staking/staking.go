@@ -226,7 +226,7 @@ func (eh *Staking) OnTxApproved(ctx context.Context, evt *events.TxApproved) {
 		p.addDelegatorTxID = evt.TxID
 		eh.pendingStakeTasks.Store(evt.ReqID, p)
 		prom.StakeTaskDone.Inc()
-		std := events.StakeTaskDone{
+		std := events.StakeAddDelegatorTaskDone{
 			ReqNo:   p.stakeTask.ReqNo,
 			Nonce:   p.stakeTask.Nonce,
 			ReqHash: p.stakeTask.ReqHash,

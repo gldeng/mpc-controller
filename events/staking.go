@@ -25,7 +25,7 @@ type StakeAtomicTaskDone struct {
 	ParticipantPubKeys []string
 }
 
-type StakeTaskDone struct {
+type StakeAddDelegatorTaskDone struct {
 	ReqNo   uint64
 	Nonce   uint64
 	ReqHash string
@@ -36,8 +36,6 @@ type StakeTaskDone struct {
 	NodeID      ids.NodeID
 
 	AddDelegatorTxID ids.ID
-	ExportTxID       ids.ID
-	ImportTxID       ids.ID
 
 	PubKeyHex     string
 	CChainAddress common.Address
