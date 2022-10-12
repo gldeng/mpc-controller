@@ -18,7 +18,7 @@ func (t *RecoverAtomicTx) ExportTxHash() ([]byte, error) {
 	return nil, nil
 }
 
-func (t *RecoverAtomicTx) SetExportTxSig(sig [65]byte) error {
+func (t *RecoverAtomicTx) SetExportTxSig(sig [SigLength]byte) error {
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (t *RecoverAtomicTx) ImportTxHash() ([]byte, error) {
 	return nil, nil
 }
 
-func (t *RecoverAtomicTx) SetImportTxSig(sig [65]byte) error {
+func (t *RecoverAtomicTx) SetImportTxSig(sig [SigLength]byte) error {
 	return nil
 }
 

@@ -18,7 +18,7 @@ func (t *StakeAtomicTx) ExportTxHash() ([]byte, error) {
 	return nil, nil
 }
 
-func (t *StakeAtomicTx) SetExportTxSig(sig [65]byte) error {
+func (t *StakeAtomicTx) SetExportTxSig(sig [SigLength]byte) error {
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (t *StakeAtomicTx) ImportTxHash() ([]byte, error) {
 	return nil, nil
 }
 
-func (t *StakeAtomicTx) SetImportTxSig(sig [65]byte) error {
+func (t *StakeAtomicTx) SetImportTxSig(sig [SigLength]byte) error {
 	return nil
 }
 
