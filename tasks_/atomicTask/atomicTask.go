@@ -2,6 +2,7 @@ package atomicTask
 
 import (
 	"context"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
@@ -24,7 +25,28 @@ const (
 	StatusImportTxApproved
 )
 
+const (
+	SourceChainCChain SourceChain = iota
+	SourceChainPChain
+)
+
 type Status int
+type SourceChain int
+
+type AtomicTx interface {
+	RequestID() string
+	SourceChain() SourceChain
+
+	ExportTxHash() ([]byte, error)
+	SetExportTxSig(sig [65]byte) error
+	SignedExportTxBytes() ([]byte, error)
+	SetExportTxID(id ids.ID)
+
+	ImportTxHash() ([]byte, error)
+	SetImportTxSig(sig [65]byte) error
+	SignedImportTxBytes() ([]byte, error)
+	SetImportTxID(id ids.ID)
+}
 
 type AtomicTask struct {
 	Status Status
