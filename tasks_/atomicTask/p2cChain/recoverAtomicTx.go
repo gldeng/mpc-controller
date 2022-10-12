@@ -1,8 +1,11 @@
-package atomicTask
+package p2cChain
 
-import "github.com/ava-labs/avalanchego/ids"
+import (
+	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/tasks_/atomicTask/c2pChain/stake"
+)
 
-var _ AtomicTx = (*RecoverAtomicTx)(nil)
+var _ stake.AtomicTx = (*RecoverAtomicTx)(nil)
 
 type RecoverAtomicTx struct{}
 
@@ -10,15 +13,15 @@ func (t *RecoverAtomicTx) RequestID() string {
 	return ""
 }
 
-func (t *RecoverAtomicTx) SourceChain() SourceChain {
-	return SourceChainCChain
+func (t *RecoverAtomicTx) SourceChain() stake.SourceChain {
+	return stake.SourceChainCChain
 }
 
 func (t *RecoverAtomicTx) ExportTxHash() ([]byte, error) {
 	return nil, nil
 }
 
-func (t *RecoverAtomicTx) SetExportTxSig(sig [SigLength]byte) error {
+func (t *RecoverAtomicTx) SetExportTxSig(sig [stake.SigLength]byte) error {
 	return nil
 }
 
@@ -34,7 +37,7 @@ func (t *RecoverAtomicTx) ImportTxHash() ([]byte, error) {
 	return nil, nil
 }
 
-func (t *RecoverAtomicTx) SetImportTxSig(sig [SigLength]byte) error {
+func (t *RecoverAtomicTx) SetImportTxSig(sig [stake.SigLength]byte) error {
 	return nil
 }
 

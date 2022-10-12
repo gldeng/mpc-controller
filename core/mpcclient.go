@@ -35,10 +35,10 @@ type SignRequest struct {
 }
 
 type Result struct {
-	ReqID     string           `json:"request_id"`
-	Result    string           `json:"result"`
-	ReqType   events.ReqType   `json:"request_type"`
-	ReqStatus events.ReqStatus `json:"request_status"`
+	ReqID     string            `json:"request_id"`
+	Result    string            `json:"result"`
+	ReqType   events.ReqType    `json:"request_type"`
+	ReqStatus events.SignStatus `json:"request_status"`
 }
 
 var _ MpcClient = (*MpcClientImp)(nil)

@@ -8,22 +8,22 @@ const (
 )
 
 const (
-	ReqStatusSubmitted  ReqStatus = "SUBMITTED"
-	ReqStatusReceived   ReqStatus = "RECEIVED"
-	ReqStatusProcessing ReqStatus = "PROCESSING"
-	ReqStatusDone       ReqStatus = "DONE"
+	ReqStatusSubmitted  SignStatus = "SUBMITTED"
+	ReqStatusReceived   SignStatus = "RECEIVED"
+	ReqStatusProcessing SignStatus = "PROCESSING"
+	ReqStatusDone       SignStatus = "DONE"
 )
 
 const (
-	SignIDPrefixStakeExport       SignIDPrefix = "SIGN-STAKE-EXPORT-"
-	SignIDPrefixStakeImport       SignIDPrefix = "SIGN-STAKE-IMPORT-"
-	SignIDPrefixStakeAddDelegator SignIDPrefix = "SIGN-STAKE-ADD-DELEGATOR-"
+	SignIDPrefixStakeExport       IDPrefix = "STAKE-EXPORT-"
+	SignIDPrefixStakeImport       IDPrefix = "STAKE-IMPORT-"
+	SignIDPrefixStakeAddDelegator IDPrefix = "STAKE-ADD-DELEGATOR-"
 
-	SignIDPrefixSignPrincipalExport SignIDPrefix = "SIGN-PRINCIPAL-EXPORT-"
-	SignIDPrefixSignPrincipalImport SignIDPrefix = "SIGN-PRINCIPAL-IMPORT-"
+	SignIDPrefixSignPrincipalExport IDPrefix = "RECOVER-PRINCIPAL-EXPORT-"
+	SignIDPrefixSignPrincipalImport IDPrefix = "RECOVER-PRINCIPAL-IMPORT-"
 
-	SignIDPrefixSignRewardExport SignIDPrefix = "SIGN-REWARD-EXPORT-"
-	SignIDPrefixSignRewardImport SignIDPrefix = "SIGN-REWARD-IMPORT-"
+	SignIDPrefixSignRewardExport IDPrefix = "RECOVER-REWARD-EXPORT-"
+	SignIDPrefixSignRewardImport IDPrefix = "RECOVER-REWARD-IMPORT-"
 )
 
 const (
@@ -39,8 +39,8 @@ const (
 )
 
 type ReqType string
-type ReqStatus string
-type SignIDPrefix string
+type SignStatus string
+type IDPrefix string
 type SignKind int
 
 type Signature [65]byte

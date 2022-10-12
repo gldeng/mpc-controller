@@ -27,13 +27,15 @@ type TxIssuer interface {
 	TrackTx(ctx context.Context, tx *Tx) (Status, error)
 }
 
+// Facade
+
 type Status int
 
 type Tx struct {
 	ReqID string
 	Kind  events.TxKind
 	Bytes []byte
-	txID  ids.ID
+	TxID  ids.ID // TxIssuer updates this field
 }
 
 // todo: add retry mechanism
@@ -70,7 +72,7 @@ func (t *MyTxIssuer) IssueTx(ctx context.Context, tx *Tx) error {
 		}
 		t.Logger.Info("Issued P-Chain tx", []logger.Field{{"issuedTx", tx}}...)
 	}
-	tx.txID = txID
+	tx.TxID = txID
 	t.pendingTx.Store(txID, tx)
 	return nil
 }
@@ -87,7 +89,7 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 				tx := value.(*Tx)
 				switch tx.Kind {
 				case events.TxKindCChainExport, events.TxKindCChainImport:
-					status, err := t.CChainClient.GetAtomicTxStatus(ctx, tx.txID)
+					status, err := t.CChainClient.GetAtomicTxStatus(ctx, tx.TxID)
 					if err != nil {
 						t.Logger.ErrorOnError(err, "Failed to check C-Chain tx")
 						break
@@ -95,21 +97,21 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 					switch status {
 					case evm.Dropped:
 						t.Logger.Warn("C-Chain tx dropped", []logger.Field{{"droppedTx", tx}}...)
-						t.pendingTx.Delete(tx.txID)
+						t.pendingTx.Delete(tx.TxID)
 					case evm.Processing:
 						t.Logger.Debug("C-Chain tx processing", []logger.Field{{"processingTx", tx}}...)
 					case evm.Accepted:
 						txAcc := events.TxApproved{
 							ReqID: tx.ReqID,
 							Kind:  tx.Kind,
-							TxID:  tx.txID,
+							TxID:  tx.TxID,
 						}
 						t.dispatcher.Dispatch(&txAcc)
 						t.Logger.Info("C-Chain tx accepted", []logger.Field{{"acceptedTx", tx}}...)
-						t.pendingTx.Delete(tx.txID)
+						t.pendingTx.Delete(tx.TxID)
 					}
 				case events.TxKindPChainExport, events.TxKindPChainImport, events.TxKindPChainAddDelegator:
-					statusResp, err := t.PChainClient.GetTxStatus(ctx, tx.txID)
+					statusResp, err := t.PChainClient.GetTxStatus(ctx, tx.TxID)
 					if err != nil {
 						t.Logger.ErrorOnError(err, "Failed to check P-Chain tx")
 						break
@@ -117,21 +119,21 @@ func (t *MyTxIssuer) trackTx(ctx context.Context) {
 					switch statusResp.Status {
 					case status.Aborted:
 						t.Logger.Warn("P-Chain tx aborted", []logger.Field{{"abortedTx", tx}}...)
-						t.pendingTx.Delete(tx.txID)
+						t.pendingTx.Delete(tx.TxID)
 					case status.Processing:
 						t.Logger.Debug("P-Chain tx processing", []logger.Field{{"processingTx", tx}}...)
 					case status.Dropped:
 						t.Logger.Warn("P-Chain tx dropped", []logger.Field{{"droppedTx", tx}}...)
-						t.pendingTx.Delete(tx.txID)
+						t.pendingTx.Delete(tx.TxID)
 					case status.Committed:
 						txCmt := events.TxApproved{
 							ReqID: tx.ReqID,
 							Kind:  tx.Kind,
-							TxID:  tx.txID,
+							TxID:  tx.TxID,
 						}
 						t.dispatcher.Dispatch(&txCmt)
 						t.Logger.Info("Tx committed", []logger.Field{{"acceptedTx", tx}}...)
-						t.pendingTx.Delete(tx.txID)
+						t.pendingTx.Delete(tx.TxID)
 					}
 				}
 				return true

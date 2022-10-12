@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -38,6 +39,8 @@ type MpcManagerWatchers struct {
 	Logger          logger.Logger
 	PartiPubKey     storage.PubKey
 	Publisher       dispatcher.Publisher
+
+	ReqStartedDispatcher kbcevents.Dispatcher[*events.RequestStarted]
 
 	contractFilterer bind.ContractFilterer
 	ethClientCh      chan redialer.Client // todo: handle reconnection
@@ -357,7 +360,7 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 			CompressedGenPubKeyHex: cmpGenPubKeyHex,
 			Raw:                    myEvt.Raw,
 		}
-		w.Publisher.Publish(ctx, dispatcher.NewEvtObj(&evt, nil))
+		w.ReqStartedDispatcher.Dispatch(&evt)
 		w.Logger.Info("Stake request started", []logger.Field{{"stakeReqStarted", evt}}...)
 		prom.StakeRequestStarted.Inc()
 	case reqHash.IsTaskType(storage.TaskTypRecover):
