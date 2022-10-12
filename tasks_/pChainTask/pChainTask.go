@@ -1,4 +1,4 @@
-package generalTxTask
+package pChainTask
 
 import (
 	"context"
@@ -21,7 +21,7 @@ const (
 
 type Status int
 
-type GeneralTxTask struct {
+type pChainTask struct {
 	Status Status
 
 	Tx        *txissuer.Tx
@@ -38,13 +38,13 @@ type GeneralTxTask struct {
 	Dispatcher kbcevents.Dispatcher[any]
 }
 
-func (t *GeneralTxTask) Do() {
+func (t *pChainTask) Do() {
 	if t.do() {
 		t.Pool.Submit(t.Do)
 	}
 }
 
-func (t *GeneralTxTask) do() bool {
+func (t *pChainTask) do() bool {
 	switch t.Status {
 	case StatusCreated:
 		err := t.MpcClient.Sign(t.Ctx, t.TxSignReq)

@@ -1,4 +1,4 @@
-package atomicTxTask
+package atomicTask
 
 import (
 	"github.com/avalido/mpc-controller/events"

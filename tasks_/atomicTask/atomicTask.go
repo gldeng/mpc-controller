@@ -1,4 +1,4 @@
-package atomicTxTask
+package atomicTask
 
 import (
 	"context"
@@ -26,7 +26,7 @@ const (
 
 type Status int
 
-type AtomicTxTask struct {
+type AtomicTask struct {
 	Status Status
 
 	ExportTx        *txissuer.Tx
@@ -47,13 +47,13 @@ type AtomicTxTask struct {
 	Dispatcher kbcevents.Dispatcher[any]
 }
 
-func (t *AtomicTxTask) Do() {
+func (t *AtomicTask) Do() {
 	if t.do() {
 		t.Pool.Submit(t.Do)
 	}
 }
 
-func (t *AtomicTxTask) do() bool {
+func (t *AtomicTask) do() bool {
 	switch t.Status {
 	case StatusCreated:
 		err := t.MpcClient.Sign(t.Ctx, t.ExportTxSignReq)
