@@ -112,6 +112,7 @@ func (t *Task) do() bool {
 
 		if err == nil && status == txissuer.StatusApproved {
 			t.status = StatusExportTxAccepted
+			t.Txs.SetExportTxID(t.exportTx.TxID)
 		}
 		return true
 	case StatusExportTxAccepted:
@@ -169,6 +170,7 @@ func (t *Task) do() bool {
 
 		if err == nil && status == txissuer.StatusApproved {
 			t.status = StatusImportTxCommitted
+			t.Txs.SetImportTxID(t.importTx.TxID)
 		}
 
 		evt := events.StakeAtomicTaskDone{
@@ -182,7 +184,7 @@ func (t *Task) do() bool {
 			NodeID:      t.Txs.NodeID,
 
 			ExportTxID: t.exportTx.TxID,
-			ImportTxID: t.exportTx.TxID,
+			ImportTxID: t.importTx.TxID,
 
 			PubKeyHex:     t.ExportTxSignReq.CompressedGenPubKeyHex,
 			CChainAddress: t.Txs.CChainAddress,
