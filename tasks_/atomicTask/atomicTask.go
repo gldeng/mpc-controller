@@ -30,6 +30,10 @@ const (
 	SourceChainPChain
 )
 
+const (
+	SigLength = 65
+)
+
 type Status int
 type SourceChain int
 
@@ -38,12 +42,12 @@ type AtomicTx interface {
 	SourceChain() SourceChain
 
 	ExportTxHash() ([]byte, error)
-	SetExportTxSig(sig [65]byte) error
+	SetExportTxSig(sig [SigLength]byte) error
 	SignedExportTxBytes() ([]byte, error)
 	SetExportTxID(id ids.ID)
 
 	ImportTxHash() ([]byte, error)
-	SetImportTxSig(sig [65]byte) error
+	SetImportTxSig(sig [SigLength]byte) error
 	SignedImportTxBytes() ([]byte, error)
 	SetImportTxID(id ids.ID)
 
