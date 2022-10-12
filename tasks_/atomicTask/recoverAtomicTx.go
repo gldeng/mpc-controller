@@ -45,3 +45,7 @@ func (t *RecoverAtomicTx) SignedImportTxBytes() ([]byte, error) {
 func (t *RecoverAtomicTx) SetImportTxID(id ids.ID) {
 
 }
+
+func (t *RecoverAtomicTx) String() string {
+	return ""
+}

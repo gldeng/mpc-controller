@@ -45,3 +45,7 @@ func (t *StakeAtomicTx) SignedImportTxBytes() ([]byte, error) {
 func (t *StakeAtomicTx) SetImportTxID(id ids.ID) {
 
 }
+
+func (t *StakeAtomicTx) String() string {
+	return ""
+}

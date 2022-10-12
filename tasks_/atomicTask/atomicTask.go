@@ -46,6 +46,8 @@ type AtomicTx interface {
 	SetImportTxSig(sig [65]byte) error
 	SignedImportTxBytes() ([]byte, error)
 	SetImportTxID(id ids.ID)
+
+	String() string
 }
 
 type AtomicTask struct {
