@@ -81,6 +81,11 @@ func (t *AddDelegatorTx) SetTxID(id ids.ID) {
 	t.addDelegatorTxID = id
 }
 
+func (t *AddDelegatorTx) String() string {
+	// todo:
+	return ""
+}
+
 // ---
 
 func (t *AddDelegatorTx) buildUnsignedTx() (*txs.AddDelegatorTx, error) {
