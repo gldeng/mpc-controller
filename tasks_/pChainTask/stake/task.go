@@ -33,7 +33,7 @@ type Task struct {
 
 	status Status
 
-	Tx        *Tx
+	Tx        *AddDelegatorTx
 	TxSignReq *core.SignRequest
 
 	tx        *txissuer.Tx
@@ -68,13 +68,13 @@ func (t *Task) do() bool {
 		return true
 	case StatusTxSigningDone: // todo: set signature
 		sig := new(events.Signature).FromHex(t.txSignRes.Result)
-		err := t.Tx.SetAddDelegatorTxSig(*sig)
+		err := t.Tx.SetTxSig(*sig)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "Failed to set signature")
 			return false
 		}
 
-		signedBytes, err := t.Tx.SignedAddDelegatorTxBytes()
+		signedBytes, err := t.Tx.SignedTxBytes()
 		if err != nil {
 			t.Logger.ErrorOnError(err, "Failed to get signed bytes")
 			return false
@@ -103,26 +103,12 @@ func (t *Task) do() bool {
 
 		if err == nil && status == txissuer.StatusApproved {
 			t.status = StatusImportTxCommitted
-			t.Tx.SetAddDelegatorTxID(t.tx.TxID)
+			t.Tx.SetTxID(t.tx.TxID)
 		}
 
 		evt := events.StakeAddDelegatorTaskDone{
-			ReqNo:   t.Tx.ReqNo,
-			Nonce:   t.Tx.Nonce,
-			ReqHash: t.Tx.ReqHash,
-
-			DelegateAmt: t.Tx.DelegateAmt,
-			StartTime:   t.Tx.StartTime,
-			EndTime:     t.Tx.EndTime,
-			NodeID:      t.Tx.NodeID,
-
+			StakeTaskBasic:   t.Tx.StakeTaskBasic,
 			AddDelegatorTxID: t.Tx.addDelegatorTxID,
-
-			PubKeyHex:     t.TxSignReq.CompressedGenPubKeyHex,
-			CChainAddress: t.Tx.CChainAddress,
-			PChainAddress: t.Tx.PChainAddress,
-
-			ParticipantPubKeys: t.TxSignReq.CompressedPartiPubKeys,
 		}
 
 		t.Dispatcher.Dispatch(&evt)

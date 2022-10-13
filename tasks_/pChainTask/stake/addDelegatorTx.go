@@ -10,7 +10,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/platformvm/validator"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/avalido/mpc-controller/events"
 	"github.com/pkg/errors"
 )
 
@@ -18,23 +18,11 @@ const (
 	SigLength = 65 // todo: consider reuse
 )
 
-type Tx struct {
-	ReqNo         uint64
-	Nonce         uint64
-	ReqHash       string
-	DelegateAmt   uint64
-	StartTime     uint64
-	EndTime       uint64
-	CChainAddress common.Address
-	PChainAddress ids.ShortID
-	NodeID        ids.NodeID
+type AddDelegatorTx struct {
+	*events.StakeAtomicTaskDone
 
-	BaseFeeGwei uint64
-	NetworkID   uint32
-	CChainID    ids.ID
-	Asset       avax.Asset
-
-	UTXOsToPay []*avax.UTXO
+	NetworkID uint32
+	Asset     avax.Asset
 
 	addDelegatorTx     *txs.AddDelegatorTx
 	addDelegatorTxCred *secp256k1fx.Credential
@@ -43,8 +31,8 @@ type Tx struct {
 
 // ---
 
-func (t *Tx) AddDelegatorTxHash() ([]byte, error) {
-	unsignedTx, err := t.buildUnsignedAddDelegatorTx()
+func (t *AddDelegatorTx) TxHash() ([]byte, error) {
+	unsignedTx, err := t.buildUnsignedTx()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -63,12 +51,12 @@ func (t *Tx) AddDelegatorTxHash() ([]byte, error) {
 	return hash, nil
 }
 
-func (t *Tx) SetAddDelegatorTxSig(sig [SigLength]byte) error {
+func (t *AddDelegatorTx) SetTxSig(sig [SigLength]byte) error {
 	if t.addDelegatorTxCred != nil {
 		return errors.New(ErrMsgSignatureAlreadySet)
 	}
 
-	hash, err := t.AddDelegatorTxHash()
+	hash, err := t.TxHash()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -80,8 +68,8 @@ func (t *Tx) SetAddDelegatorTxSig(sig [SigLength]byte) error {
 	return nil
 }
 
-func (t *Tx) SignedAddDelegatorTxBytes() ([]byte, error) {
-	tx, err := t.getSignedAddDelegatorTx()
+func (t *AddDelegatorTx) SignedTxBytes() ([]byte, error) {
+	tx, err := t.getSignedTx()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -89,13 +77,13 @@ func (t *Tx) SignedAddDelegatorTxBytes() ([]byte, error) {
 	return tx.Bytes(), nil
 }
 
-func (t *Tx) SetAddDelegatorTxID(id ids.ID) {
+func (t *AddDelegatorTx) SetTxID(id ids.ID) {
 	t.addDelegatorTxID = id
 }
 
 // ---
 
-func (t *Tx) buildUnsignedAddDelegatorTx() (*txs.AddDelegatorTx, error) {
+func (t *AddDelegatorTx) buildUnsignedTx() (*txs.AddDelegatorTx, error) {
 	if t.addDelegatorTx != nil {
 		return t.addDelegatorTx, nil
 	}
@@ -106,7 +94,7 @@ func (t *Tx) buildUnsignedAddDelegatorTx() (*txs.AddDelegatorTx, error) {
 		stakedOuts         []*avax.TransferableOutput
 	)
 
-	utxo := t.UTXOsToPay[0]
+	utxo := t.UTXOsToStake[0]
 
 	stakedOuts = append(stakedOuts, t.paySelf(utxo.Out.(*secp256k1fx.TransferOutput).Amt))
 	ins = append(ins, spend(utxo))
@@ -133,8 +121,8 @@ func (t *Tx) buildUnsignedAddDelegatorTx() (*txs.AddDelegatorTx, error) {
 	return t.addDelegatorTx, nil
 }
 
-func (t *Tx) getSignedAddDelegatorTx() (*txs.Tx, error) {
-	unsignedTx, err := t.buildUnsignedAddDelegatorTx()
+func (t *AddDelegatorTx) getSignedTx() (*txs.Tx, error) {
+	unsignedTx, err := t.buildUnsignedTx()
 
 	if err != nil {
 		return nil, errors.Wrapf(err, ErrMsgMissingCredential)
@@ -172,7 +160,7 @@ func spend(utxo *avax.UTXO) *avax.TransferableInput {
 
 // ---
 
-func (t *Tx) paySelf(amt uint64) *avax.TransferableOutput { // todo: reuse across packages
+func (t *AddDelegatorTx) paySelf(amt uint64) *avax.TransferableOutput { // todo: reuse across packages
 	return &avax.TransferableOutput{
 		Asset: t.Asset,
 		Out: &secp256k1fx.TransferOutput{
@@ -187,7 +175,7 @@ func (t *Tx) paySelf(amt uint64) *avax.TransferableOutput { // todo: reuse acros
 	}
 }
 
-func (t *Tx) validateAndGetCred(hash []byte, sig [SigLength]byte) (*secp256k1fx.Credential, error) { // todo: reuse across packages
+func (t *AddDelegatorTx) validateAndGetCred(hash []byte, sig [SigLength]byte) (*secp256k1fx.Credential, error) { // todo: reuse across packages
 	sigIndex := 0
 	numSigs := 1
 	cred := &secp256k1fx.Credential{

@@ -7,5 +7,4 @@ const (
 	ErrMsgPubKeyCannotRecover = "public key cannot recover"
 	ErrMsgSignatureInvalid    = "invalid signature"
 	ErrMsgMissingCredential   = "missing credential"
-	ErrMsgInvalidUint64       = "invalid uint64"
 )
