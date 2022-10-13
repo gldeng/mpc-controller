@@ -173,6 +173,8 @@ func (t *Task) do() bool {
 			t.Txs.SetImportTxID(t.importTx.TxID)
 		}
 
+		utxos, _ := t.Txs.SingedImportTxUTXOs()
+
 		evt := events.StakeAtomicTaskDone{
 			ReqNo:   t.Txs.ReqNo,
 			Nonce:   t.Txs.Nonce,
@@ -185,6 +187,8 @@ func (t *Task) do() bool {
 
 			ExportTxID: t.exportTx.TxID,
 			ImportTxID: t.importTx.TxID,
+
+			UTXOsToStake: utxos,
 
 			PubKeyHex:     t.ExportTxSignReq.CompressedGenPubKeyHex,
 			CChainAddress: t.Txs.CChainAddress,

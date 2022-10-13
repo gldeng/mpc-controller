@@ -139,6 +139,15 @@ func (t *Txs) SignedImportTxBytes() ([]byte, error) {
 	return tx.Bytes(), nil
 }
 
+func (t *Txs) SingedImportTxUTXOs() ([]*avax.UTXO, error) {
+	signedImportTx, err := t.getSignedImportTx()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return signedImportTx.UTXOs(), nil
+}
+
 func (t *Txs) SetImportTxID(id ids.ID) {
 	t.importTxID = id
 }

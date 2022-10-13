@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -17,6 +18,8 @@ type StakeAtomicTaskDone struct {
 
 	ExportTxID ids.ID
 	ImportTxID ids.ID
+
+	UTXOsToStake []*avax.UTXO
 
 	PubKeyHex     string
 	CChainAddress common.Address
