@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Tx(unsignedTx evm.UnsignedAtomicTx, sig [65]byte) (*evm.Tx, error) {
+func SignedTx(unsignedTx evm.UnsignedAtomicTx, sig [65]byte) (*evm.Tx, error) {
 	tx := &evm.Tx{
 		UnsignedAtomicTx: unsignedTx,
 		Creds: []verify.Verifiable{
