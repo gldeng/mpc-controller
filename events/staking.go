@@ -7,28 +7,21 @@ import (
 )
 
 type StakeAtomicTaskDone struct {
-	ReqNo   uint64
-	Nonce   uint64
-	ReqHash string
-
-	DelegateAmt uint64
-	StartTime   uint64
-	EndTime     uint64
-	NodeID      ids.NodeID
+	StakeTaskBasic
 
 	ExportTxID ids.ID
 	ImportTxID ids.ID
 
 	UTXOsToStake []*avax.UTXO
-
-	PubKeyHex     string
-	CChainAddress common.Address
-	PChainAddress ids.ShortID
-
-	ParticipantPubKeys []string
 }
 
 type StakeAddDelegatorTaskDone struct {
+	StakeTaskBasic
+
+	AddDelegatorTxID ids.ID
+}
+
+type StakeTaskBasic struct {
 	ReqNo   uint64
 	Nonce   uint64
 	ReqHash string
@@ -37,8 +30,6 @@ type StakeAddDelegatorTaskDone struct {
 	StartTime   uint64
 	EndTime     uint64
 	NodeID      ids.NodeID
-
-	AddDelegatorTxID ids.ID
 
 	PubKeyHex     string
 	CChainAddress common.Address
