@@ -176,25 +176,27 @@ func (t *Task) do() bool {
 		utxos, _ := t.Txs.SingedImportTxUTXOs()
 
 		evt := events.StakeAtomicTaskDone{
-			ReqNo:   t.Txs.ReqNo,
-			Nonce:   t.Txs.Nonce,
-			ReqHash: t.Txs.ReqHash,
+			StakeTaskBasic: events.StakeTaskBasic{
+				ReqNo:   t.Txs.ReqNo,
+				Nonce:   t.Txs.Nonce,
+				ReqHash: t.Txs.ReqHash,
 
-			DelegateAmt: t.Txs.DelegateAmt,
-			StartTime:   t.Txs.StartTime,
-			EndTime:     t.Txs.EndTime,
-			NodeID:      t.Txs.NodeID,
+				DelegateAmt: t.Txs.DelegateAmt,
+				StartTime:   t.Txs.StartTime,
+				EndTime:     t.Txs.EndTime,
+				NodeID:      t.Txs.NodeID,
+
+				PubKeyHex:     t.ExportTxSignReq.CompressedGenPubKeyHex,
+				CChainAddress: t.Txs.CChainAddress,
+				PChainAddress: t.Txs.PChainAddress,
+
+				ParticipantPubKeys: t.ExportTxSignReq.CompressedPartiPubKeys,
+			},
 
 			ExportTxID: t.exportTx.TxID,
 			ImportTxID: t.importTx.TxID,
 
 			UTXOsToStake: utxos,
-
-			PubKeyHex:     t.ExportTxSignReq.CompressedGenPubKeyHex,
-			CChainAddress: t.Txs.CChainAddress,
-			PChainAddress: t.Txs.PChainAddress,
-
-			ParticipantPubKeys: t.ExportTxSignReq.CompressedPartiPubKeys,
 		}
 
 		t.Dispatcher.Dispatch(&evt)
