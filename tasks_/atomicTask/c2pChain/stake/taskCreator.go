@@ -27,7 +27,7 @@ type TaskCreator struct {
 	Dispatcher kbcevents.Dispatcher[*events.RequestStarted]
 }
 
-func (c *TaskCreator) Init() {
+func (c *TaskCreator) Start() {
 	reqStartedEvtHandler := func(evt *events.RequestStarted) {
 		t := Task{
 			Ctx:    c.Ctx,
