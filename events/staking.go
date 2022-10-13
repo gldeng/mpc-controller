@@ -31,9 +31,9 @@ type StakeTaskBasic struct {
 	EndTime     uint64
 	NodeID      ids.NodeID
 
-	PubKeyHex     string
+	StakePubKey   string // compressed hex string
 	CChainAddress common.Address
 	PChainAddress ids.ShortID
 
-	ParticipantPubKeys []string
+	JoinedPubKeys []string // compressed hex string
 }

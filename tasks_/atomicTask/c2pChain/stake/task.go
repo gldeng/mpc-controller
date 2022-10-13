@@ -186,11 +186,11 @@ func (t *Task) do() bool {
 				EndTime:     t.Txs.EndTime,
 				NodeID:      t.Txs.NodeID,
 
-				PubKeyHex:     t.ExportTxSignReq.CompressedGenPubKeyHex,
+				StakePubKey:   t.ExportTxSignReq.CompressedGenPubKeyHex,
 				CChainAddress: t.Txs.CChainAddress,
 				PChainAddress: t.Txs.PChainAddress,
 
-				ParticipantPubKeys: t.ExportTxSignReq.CompressedPartiPubKeys,
+				JoinedPubKeys: t.ExportTxSignReq.CompressedPartiPubKeys,
 			},
 
 			ExportTxID: t.exportTx.TxID,
