@@ -15,15 +15,15 @@ const (
 )
 
 const (
-	SignIDPrefixStakeExport       IDPrefix = "STAKE-EXPORT-"
-	SignIDPrefixStakeImport       IDPrefix = "STAKE-IMPORT-"
-	SignIDPrefixStakeAddDelegator IDPrefix = "STAKE-ADD-DELEGATOR-"
+	ReqIDPrefixStakeExport       ReqIDPrefix = "STAKE-EXPORT-"
+	ReqIDPrefixStakeImport       ReqIDPrefix = "STAKE-IMPORT-"
+	ReqIDPrefixStakeAddDelegator ReqIDPrefix = "STAKE-ADD-DELEGATOR-"
 
-	SignIDPrefixSignPrincipalExport IDPrefix = "RECOVER-PRINCIPAL-EXPORT-"
-	SignIDPrefixSignPrincipalImport IDPrefix = "RECOVER-PRINCIPAL-IMPORT-"
+	ReqIDPrefixRecoverPrincipalExport ReqIDPrefix = "RECOVER-PRINCIPAL-EXPORT-"
+	ReqIDPrefixRecoverPrincipalImport ReqIDPrefix = "RECOVER-PRINCIPAL-IMPORT-"
 
-	SignIDPrefixSignRewardExport IDPrefix = "RECOVER-REWARD-EXPORT-"
-	SignIDPrefixSignRewardImport IDPrefix = "RECOVER-REWARD-IMPORT-"
+	ReqIDPrefixRecoverRewardExport ReqIDPrefix = "RECOVER-REWARD-EXPORT-"
+	ReqIDPrefixRecoverRewardImport ReqIDPrefix = "RECOVER-REWARD-IMPORT-"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 
 type ReqType string
 type SignStatus string
-type IDPrefix string
+type ReqIDPrefix string
 type SignKind int
 
 type Signature [65]byte

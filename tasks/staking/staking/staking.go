@@ -98,7 +98,7 @@ func (eh *Staking) OnReqStarted(ctx context.Context, evt *events.RequestStarted)
 	}
 
 	signReq := core.SignRequest{
-		ReqID:                  string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
+		ReqID:                  string(events.ReqIDPrefixStakeExport) + fmt.Sprintf("%v", stakeTask.ReqNo) + "-" + stakeTask.ReqHash,
 		Kind:                   events.SignKindStakeExport,
 		CompressedGenPubKeyHex: evt.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: evt.CompressedPartiPubKeys,
@@ -131,7 +131,7 @@ func (eh *Staking) OnSignDone(ctx context.Context, evt *events.SignDone) {
 		}
 
 		signReq := core.SignRequest{
-			ReqID:                  string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+			ReqID:                  string(events.ReqIDPrefixStakeImport) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
 			Kind:                   events.SignKindStakeImport,
 			CompressedGenPubKeyHex: p.exportTxSignReq.CompressedGenPubKeyHex,
 			CompressedPartiPubKeys: p.exportTxSignReq.CompressedPartiPubKeys,
@@ -156,7 +156,7 @@ func (eh *Staking) OnSignDone(ctx context.Context, evt *events.SignDone) {
 		}
 
 		signReq := core.SignRequest{
-			ReqID:                  string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
+			ReqID:                  string(events.ReqIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", p.stakeTask.ReqNo) + "-" + p.stakeTask.ReqHash,
 			Kind:                   events.SignKindStakeAddDelegator,
 			CompressedGenPubKeyHex: p.importTxSignReq.CompressedGenPubKeyHex,
 			CompressedPartiPubKeys: p.importTxSignReq.CompressedPartiPubKeys,

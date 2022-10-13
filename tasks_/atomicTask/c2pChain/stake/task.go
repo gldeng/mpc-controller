@@ -247,7 +247,7 @@ func (t *Task) buildSignReqs(txs *Txs) ([]*core.SignRequest, error) {
 	}
 
 	exportTxSignReq := core.SignRequest{
-		ReqID:                  string(events.SignIDPrefixStakeExport) + fmt.Sprintf("%v", txs.ReqNo) + "-" + txs.ReqHash,
+		ReqID:                  string(events.ReqIDPrefixStakeExport) + fmt.Sprintf("%v", txs.ReqNo) + "-" + txs.ReqHash,
 		Kind:                   events.SignKindStakeExport,
 		CompressedGenPubKeyHex: t.Joined.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,
@@ -260,7 +260,7 @@ func (t *Task) buildSignReqs(txs *Txs) ([]*core.SignRequest, error) {
 	}
 
 	importTxSignReq := core.SignRequest{
-		ReqID:                  string(events.SignIDPrefixStakeImport) + fmt.Sprintf("%v", txs.ReqNo) + "-" + txs.ReqHash,
+		ReqID:                  string(events.ReqIDPrefixStakeImport) + fmt.Sprintf("%v", txs.ReqNo) + "-" + txs.ReqHash,
 		Kind:                   events.SignKindStakeImport,
 		CompressedGenPubKeyHex: t.Joined.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,

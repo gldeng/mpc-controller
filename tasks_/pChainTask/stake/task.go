@@ -157,7 +157,7 @@ func (t *Task) buildSignReqs(tx *AddDelegatorTx) (*core.SignRequest, error) {
 	}
 
 	signReq := core.SignRequest{
-		ReqID:                  string(events.SignIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", tx.ReqNo) + "-" + tx.ReqHash,
+		ReqID:                  string(events.ReqIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", tx.ReqNo) + "-" + tx.ReqHash,
 		Kind:                   events.SignKindStakeAddDelegator,
 		CompressedGenPubKeyHex: tx.StakePubKey,
 		CompressedPartiPubKeys: tx.JoinedPubKeys,
