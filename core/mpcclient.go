@@ -147,8 +147,15 @@ func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err erro
 	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() (bool, error) {
 		c.lock.Lock()
 		defer c.lock.Unlock()
-		_, err = http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes)) // todo: check response?
+		resp, err := http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes)) // todo: check response?
 		c.log.InfoNilError(err, "Posted sign request", []logger.Field{{"postedSignReq", request}}...)
+
+		if resp.StatusCode != 200 {
+			defer resp.Body.Close()
+			body, _ := ioutil.ReadAll(resp.Body)
+			c.log.Info("Failed post sign request", []logger.Field{{"error", body}}...)
+		}
+
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
