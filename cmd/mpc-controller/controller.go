@@ -12,14 +12,10 @@ import (
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
-	"github.com/avalido/mpc-controller/contract/watcher"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/logger/adapter"
-	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/avalido/mpc-controller/tasks/rewarding"
-	"github.com/avalido/mpc-controller/tasks/staking"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
@@ -172,60 +168,60 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 	boundTransactor.Init(ctx)
 
-	watcherMaster := watcher.Master{
-		BoundCaller:     &boundCaller,
-		BoundTransactor: &boundTransactor,
-		ContractAddr:    contractAddr,
-		DB:              myDB,
-		EthWsURL:        config.EthWsUrl,
-		KeyGeneratorMPC: mpcClient,
-		Logger:          myLogger,
-		PartiPubKey:     myPartiPubKey,
-		Dispatcher:      myDispatcher,
-	}
-
-	rewardMaster := rewarding.Master{
-		BoundCaller:     &boundCaller,
-		BoundTransactor: &boundTransactor,
-		ClientPChain:    pChainIssueCli,
-		DB:              myDB,
-		Dispatcher:      myDispatcher,
-		IssuerCChain:    evmClientWrapper,
-		IssuerPChain:    platformvmClientWrapper,
-		Logger:          myLogger,
-		NetWorkCtx:      networkCtx(config),
-		PartiPubKey:     myPartiPubKey,
-		SignerMPC:       mpcClient,
-	}
-	_ = rewardMaster
-
-	stakeMaster := staking.Master{
-		BoundTransactor: &boundTransactor,
-		DB:              myDB,
-		Dispatcher:      myDispatcher,
-		EthClient:       rpcEthCliWrapper,
-		TxIssuer:        &myTxIssuer,
-		Logger:          myLogger,
-		NetWorkCtx:      networkCtx(config),
-		NonceGiver:      noncer,
-		PartiPubKey:     myPartiPubKey,
-		SignerMPC:       mpcClient,
-	}
-
-	metricsService := prom.MetricsService{
-		ServeAddr: config.MetricsServeAddr,
-	}
-
-	controller := MpcController{
-		Logger: myLogger,
-		ID:     config.ControllerId,
-		Services: []Service{
-			&watcherMaster,
-			&stakeMaster,
-			//&rewardMaster,
-			&metricsService,
-		},
-	}
+	//watcherMaster := watcher.Master{
+	//	BoundCaller:     &boundCaller,
+	//	BoundTransactor: &boundTransactor,
+	//	ContractAddr:    contractAddr,
+	//	DB:              myDB,
+	//	EthWsURL:        config.EthWsUrl,
+	//	KeyGeneratorMPC: mpcClient,
+	//	Logger:          myLogger,
+	//	PartiPubKey:     myPartiPubKey,
+	//	Dispatcher:      myDispatcher,
+	//}
+	//
+	//rewardMaster := rewarding.Master{
+	//	BoundCaller:     &boundCaller,
+	//	BoundTransactor: &boundTransactor,
+	//	ClientPChain:    pChainIssueCli,
+	//	DB:              myDB,
+	//	Dispatcher:      myDispatcher,
+	//	IssuerCChain:    evmClientWrapper,
+	//	IssuerPChain:    platformvmClientWrapper,
+	//	Logger:          myLogger,
+	//	NetWorkCtx:      networkCtx(config),
+	//	PartiPubKey:     myPartiPubKey,
+	//	SignerMPC:       mpcClient,
+	//}
+	//_ = rewardMaster
+	//
+	//stakeMaster := staking.Master{
+	//	BoundTransactor: &boundTransactor,
+	//	DB:              myDB,
+	//	Dispatcher:      myDispatcher,
+	//	EthClient:       rpcEthCliWrapper,
+	//	TxIssuer:        &myTxIssuer,
+	//	Logger:          myLogger,
+	//	NetWorkCtx:      networkCtx(config),
+	//	NonceGiver:      noncer,
+	//	PartiPubKey:     myPartiPubKey,
+	//	SignerMPC:       mpcClient,
+	//}
+	//
+	//metricsService := prom.MetricsService{
+	//	ServeAddr: config.MetricsServeAddr,
+	//}
+	//
+	//controller := MpcController{
+	//	Logger: myLogger,
+	//	ID:     config.ControllerId,
+	//	Services: []Service{
+	//		&watcherMaster,
+	//		&stakeMaster,
+	//		//&rewardMaster,
+	//		&metricsService,
+	//	},
+	//}
 
 	return &controller
 }
