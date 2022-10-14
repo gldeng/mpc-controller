@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/alitto/pond"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
@@ -13,17 +14,21 @@ import (
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/tasks_/joinTask/stake"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
+	kbcevents "github.com/kubecost/events"
 	"golang.org/x/sync/errgroup"
 	"math/big"
 	"reflect"
@@ -97,7 +102,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	myLogger.Info(fmt.Sprintf("MpcManager address: %v", config.MpcManagerAddress))
 
 	// Create mpcClient
-	mpcClient := &core.MpcClientImp{
+	mpcClient := &core.MyMpcClient{
 		Logger:       myLogger,
 		ControllerID: config.ControllerId,
 		MpcServerUrl: config.MpcServerUrl,
@@ -167,6 +172,30 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Logger:             myLogger,
 	}
 	boundTransactor.Init(ctx)
+
+	// Create global dispatcher
+	stakeReqAddedDispatcher := kbcevents.GlobalDispatcherFor[*events.StakeRequestAdded]()
+
+	// Create global cache
+	globalCache, _ := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,
+		MaxCost:     1 << 30,
+		BufferItems: 64,
+	})
+
+	joinStakeTaskCreator := stake.TaskCreator{
+		Ctx:         ctx,
+		Logger:      myLogger,
+		PartiPubKey: myPartiPubKey,
+		DB:          myDB,
+		MpcClient:   mpcClient,
+		TxIssuer:    &myTxIssuer,
+		Network:     networkCtx(config),
+		Bound:       &boundTransactor,
+		Pool:        pond.New(3, 1000),
+		Dispatcher:  stakeReqAddedDispatcher,
+		UTXOsCache:  globalCache,
+	}
 
 	//watcherMaster := watcher.Master{
 	//	BoundCaller:     &boundCaller,
