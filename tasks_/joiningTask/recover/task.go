@@ -1,4 +1,4 @@
-package joiningTask
+package stake
 
 import (
 	"context"
