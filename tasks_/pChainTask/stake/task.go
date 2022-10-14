@@ -78,7 +78,7 @@ func (t *Task) do() bool {
 		res, err := t.MpcClient.Result(t.Ctx, t.txSignReq.ReqID)
 		t.Logger.ErrorOnError(err, "Failed to check signing result")
 
-		if res.ReqStatus != events.ReqStatusDone {
+		if res.Status != core.StatusDone {
 			t.Logger.Debug("Signing task not done")
 			return true
 		}
@@ -159,7 +159,6 @@ func (t *Task) buildSignReqs(tx *AddDelegatorTx) (*core.SignRequest, error) {
 
 	signReq := core.SignRequest{
 		ReqID:                  string(events.ReqIDPrefixStakeAddDelegator) + fmt.Sprintf("%v", tx.ReqNo) + "-" + tx.ReqHash,
-		Kind:                   events.SignKindStakeAddDelegator,
 		CompressedGenPubKeyHex: tx.StakePubKey,
 		CompressedPartiPubKeys: tx.JoinedPubKeys,
 		Hash:                   bytes.BytesToHex(txHash),

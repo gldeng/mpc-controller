@@ -35,15 +35,15 @@ type MpcManagerWatchers struct {
 	ContractAddr    common.Address
 	DB              storage.DB
 	EthWsURL        string
-	KeyGeneratorMPC core.KeygenDoner
+	MpcClient       core.MpcClient
 	Logger          logger.Logger
 	PartiPubKey     storage.PubKey
-	Publisher       dispatcher.Publisher
+	Publisher       dispatcher.Publisher // todo: use kbcevents.Dispatcher
 
 	ReqStartedDispatcher kbcevents.Dispatcher[*events.RequestStarted]
 
 	contractFilterer bind.ContractFilterer
-	ethClientCh      chan redialer.Client // todo: handle reconnection
+	ethClientCh      chan redialer.Client
 	watcherFactory   *MpcManagerWatcherFactory
 
 	participantAddedWatcher   *watcher.Watcher
@@ -222,10 +222,23 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 		Threshold:              group.Threshold(),
 	}
 
-	res, err := w.KeyGeneratorMPC.KeygenDone(ctx, keyGenReq)
+	err = w.MpcClient.Keygen(ctx, keyGenReq)
 	if err != nil {
-		return errors.Wrapf(err, "failed to request key generation %v", keyGenReq)
+		return errors.Wrapf(err, "failed to request key generation%v", keyGenReq)
 	}
+
+	var res *core.Result
+	err = backoff.RetryFnExponential10Times(w.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
+		res, err = w.MpcClient.Result(ctx, keyGenReq.ReqID)
+		if err != nil {
+			return false, errors.WithStack(err)
+		}
+
+		if res.Status != core.StatusDone {
+			return true, nil
+		}
+		return false, nil
+	})
 
 	// Report generated public key
 	genPubKeyHex := res.Result
@@ -371,14 +384,28 @@ func (w *MpcManagerWatchers) processRequestStarted(ctx context.Context, evt inte
 		}
 
 		if err := w.DB.LoadModel(ctx, &joinReq); err != nil {
-			//w.Logger.DebugOnError(err, "No JoinRequest load for UTXO export", []logger.Field{{"reqHash", joinReq.ReqHash}}...)
 			break
 		}
 		if !joinReq.PartiId.Joined(myEvt.ParticipantIndices) {
-			//w.Logger.Debug("Not joined UTXO export request", []logger.Field{{"reqHash", myEvt.ReqHash}}...)
 			break
 		}
-		w.Publisher.Publish(ctx, dispatcher.NewEvtObj(&events.RequestStarted{indices, &joinReq, myEvt.Raw}, nil))
+
+		cmpGenPubKeyHex, joinedCmpPartiPubKeys, err := w.getKeyInfo(ctx, utxoExportReq.GeneratedPublicKey, indices)
+		if err != nil {
+			w.Logger.ErrorOnError(err, "Failed to get key info")
+			break
+		}
+		evt := events.RequestStarted{
+			ReqHash:                &reqHash,
+			TaskType:               storage.TaskTypRecover,
+			PartiIndices:           indices,
+			JoinedReq:              &joinReq,
+			CompressedPartiPubKeys: joinedCmpPartiPubKeys,
+			CompressedGenPubKeyHex: cmpGenPubKeyHex,
+			Raw:                    myEvt.Raw,
+		}
+		w.ReqStartedDispatcher.Dispatch(&evt)
+
 		w.Logger.Info("Return request started", []logger.Field{{"returnReqStarted",
 			fmt.Sprintf("reqHash:%v, partiIndices:%v, returnReq:%+v", reqHash.String(), indices.Indices(), utxoExportReq)}}...)
 		prom.UTXOExportRequestStarted.Inc()

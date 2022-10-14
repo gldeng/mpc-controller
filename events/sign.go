@@ -15,6 +15,8 @@ const (
 )
 
 const (
+	ReqIDPrefixKeygen ReqIDPrefix = "KEYGEN-"
+
 	ReqIDPrefixStakeExport       ReqIDPrefix = "STAKE-EXPORT-"
 	ReqIDPrefixStakeImport       ReqIDPrefix = "STAKE-IMPORT-"
 	ReqIDPrefixStakeAddDelegator ReqIDPrefix = "STAKE-ADD-DELEGATOR-"

@@ -109,7 +109,7 @@ func (t *Task) do() bool {
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[0].ReqID)
 		t.Logger.ErrorOnError(err, "Failed to check signing result")
 
-		if res.ReqStatus != events.ReqStatusDone {
+		if res.Status != core.StatusDone {
 			t.Logger.Debug("Signing task not done")
 			return true
 		}
@@ -171,7 +171,7 @@ func (t *Task) do() bool {
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[1].ReqID)
 		t.Logger.ErrorOnError(err, "Failed to check signing result")
 
-		if res.ReqStatus != events.ReqStatusDone {
+		if res.Status != core.StatusDone {
 			t.Logger.Debug("Signing task not done")
 			return true
 		}
@@ -281,7 +281,6 @@ func (t *Task) buildSignReqs(reqHash string, exportTx *ExportTx, importTx *Impor
 	exportReqPrefix := t.reqIDPrefix(utxoOutputIndex(exportTx.Args.UTXOs[0].OutputIndex), true)
 	exportTxSignReq := core.SignRequest{
 		ReqID:                  string(exportReqPrefix) + reqHash,
-		Kind:                   events.SignKindStakeExport,
 		CompressedGenPubKeyHex: t.Joined.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(exportTxHash),
@@ -295,7 +294,6 @@ func (t *Task) buildSignReqs(reqHash string, exportTx *ExportTx, importTx *Impor
 	importReqPrefix := t.reqIDPrefix(utxoOutputIndex(exportTx.Args.UTXOs[0].OutputIndex), true)
 	importTxSignReq := core.SignRequest{
 		ReqID:                  string(importReqPrefix) + reqHash,
-		Kind:                   events.SignKindStakeImport,
 		CompressedGenPubKeyHex: t.Joined.CompressedGenPubKeyHex,
 		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(importTxHash),
