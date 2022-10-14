@@ -142,7 +142,7 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[0].ReqID,
-			Kind:  txissuer.ChainC,
+			Chain: txissuer.ChainC,
 			Bytes: signedBytes,
 		}
 		t.exportIssueTx = &tx
@@ -204,7 +204,7 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[1].ReqID,
-			Kind:  txissuer.ChainP,
+			Chain: txissuer.ChainP,
 			Bytes: signedBytes,
 		}
 		t.importIssueTx = &tx

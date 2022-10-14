@@ -44,10 +44,13 @@ type Task struct {
 	txSignReq *core.SignRequest
 	txSignRes *core.Result
 
-	tx_ *txissuer.Tx
+	issueTx *txissuer.Tx
 
 	status Status
 }
+
+// todo: function extraction
+// todo: add task failure log
 
 func (t *Task) Do() {
 	if t.do() {
@@ -82,7 +85,7 @@ func (t *Task) do() bool {
 		t.status = StatusTxSigningDone
 		t.txSignRes = res
 		return true
-	case StatusTxSigningDone: // todo: set signature
+	case StatusTxSigningDone:
 		sig := new(events.Signature).FromHex(t.txSignRes.Result)
 		err := t.tx.SetTxSig(*sig)
 		if err != nil {
@@ -98,28 +101,26 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.txSignReq.ReqID,
-			Kind:  events.TxKindPChainAddDelegator,
+			Chain: txissuer.ChainP,
 			Bytes: signedBytes,
 		}
-		t.tx_ = &tx
+		t.issueTx = &tx
 
-		err = t.TxIssuer.IssueTx(t.Ctx, t.tx_)
+		err = t.TxIssuer.IssueTx(t.Ctx, t.issueTx)
 		t.Logger.ErrorOnError(err, "Failed to issue tx")
 		if err == nil {
 			t.status = StatusTxIssued
 		}
 		return true
 	case StatusTxIssued:
-		status, err := t.TxIssuer.TrackTx(t.Ctx, t.tx_)
-		t.Logger.ErrorOnError(err, "Failed to track tx")
-		if err == nil && status == txissuer.StatusFailed {
-			t.Logger.ErrorOnError(err, "Tx failed")
+		err := t.TxIssuer.TrackTx(t.Ctx, t.issueTx)
+		if err == nil && t.issueTx.Status == txissuer.StatusFailed {
 			return false
 		}
 
-		if err == nil && status == txissuer.StatusApproved {
+		if err == nil && t.issueTx.Status == txissuer.StatusApproved {
 			t.status = StatusImportTxCommitted
-			t.tx.SetTxID(t.tx_.TxID)
+			t.tx.SetTxID(t.issueTx.TxID)
 		}
 
 		evt := events.StakeAddDelegatorTaskDone{

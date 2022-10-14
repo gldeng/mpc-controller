@@ -36,7 +36,7 @@ type Chain int
 type Tx struct {
 	ReqID string
 	TxID  ids.ID
-	Kind  Chain
+	Chain Chain
 	Bytes []byte
 	Result
 }
@@ -54,7 +54,7 @@ type MyTxIssuer struct {
 
 func (t *MyTxIssuer) IssueTx(ctx context.Context, tx *Tx) error {
 	err := backoff.RetryFnExponential10Times(t.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
-		switch tx.Kind {
+		switch tx.Chain {
 		case ChainC:
 			_, err := t.CChainClient.IssueTx(ctx, tx.Bytes)
 			if err != nil {
@@ -77,7 +77,7 @@ func (t *MyTxIssuer) IssueTx(ctx context.Context, tx *Tx) error {
 
 func (t *MyTxIssuer) TrackTx(ctx context.Context, tx *Tx) error {
 	err := backoff.RetryFnExponential10Times(t.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
-		switch tx.Kind {
+		switch tx.Chain {
 		case ChainC:
 			status, err := t.CChainClient.GetAtomicTxStatus(ctx, tx.TxID)
 			if err != nil {
