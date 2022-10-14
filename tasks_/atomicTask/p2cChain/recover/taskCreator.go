@@ -31,7 +31,7 @@ type TaskCreator struct {
 	UTXOsCache *ristretto.Cache
 }
 
-func (c *TaskCreator) Start() {
+func (c *TaskCreator) Start() error {
 	reqStartedEvtHandler := func(evt *events.RequestStarted) {
 		t := Task{
 			Ctx:    c.Ctx,
@@ -59,8 +59,10 @@ func (c *TaskCreator) Start() {
 	}
 
 	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
+	return nil
 }
 
-func (c *TaskCreator) Close() {
+func (c *TaskCreator) Close() error {
 	c.Pool.StopAndWait()
+	return nil
 }

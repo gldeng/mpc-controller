@@ -40,7 +40,8 @@ import (
 )
 
 type Service interface {
-	Start(ctx context.Context) error
+	Start() error
+	Close() error
 }
 
 type MpcController struct {
