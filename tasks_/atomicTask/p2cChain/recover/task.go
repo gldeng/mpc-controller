@@ -32,12 +32,12 @@ const (
 	StatusExportTxSigningPosted
 	StatusExportTxSigningDone
 	StatusExportTxIssued
-	StatusExportTxCommitted
+	StatusExportTxApproved
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
 	StatusImportTxIssued
-	StatusImportTxAccepted
+	StatusImportTxApproved
 )
 
 const (
@@ -72,10 +72,10 @@ type Task struct {
 	signReqs    []*core.SignRequest
 	sigVerifier *secp256k1r.Verifier
 
-	exportTx_       *txissuer.Tx
+	exportIssueTx   *txissuer.Tx
 	exportTxSignRes *core.Result
 
-	importTx_       *txissuer.Tx
+	importIssueTx   *txissuer.Tx
 	importTxSignRes *core.Result
 
 	status Status
@@ -88,6 +88,7 @@ func (t *Task) Do() {
 }
 
 // todo: function extraction
+// todo: add task failure log
 
 func (t *Task) do() bool {
 	switch t.status {
@@ -141,28 +142,26 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[0].ReqID,
-			Kind:  events.TxKindPChainExport,
+			Kind:  txissuer.ChainC,
 			Bytes: signedBytes,
 		}
-		t.exportTx_ = &tx
+		t.exportIssueTx = &tx
 
-		err = t.TxIssuer.IssueTx(t.Ctx, t.exportTx_)
+		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
 		t.Logger.ErrorOnError(err, "Failed to issue tx")
 		if err == nil {
 			t.status = StatusExportTxIssued
 		}
 	case StatusExportTxIssued:
-		status, err := t.TxIssuer.TrackTx(t.Ctx, t.exportTx_)
-		t.Logger.ErrorOnError(err, "Failed to track tx")
-		if err == nil && status == txissuer.StatusFailed {
-			t.Logger.ErrorOnError(err, "Tx failed")
+		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
+		if err == nil && t.exportIssueTx.Status == txissuer.StatusFailed {
 			return false
 		}
 
-		if err == nil && status == txissuer.StatusApproved {
-			t.status = StatusExportTxCommitted
+		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
+			t.status = StatusExportTxApproved
 		}
-	case StatusExportTxCommitted:
+	case StatusExportTxApproved:
 		err := t.MpcClient.Sign(t.Ctx, t.signReqs[1])
 		t.Logger.ErrorOnError(err, "Failed to post signing request")
 		if err == nil {
@@ -205,26 +204,23 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[1].ReqID,
-			Kind:  events.TxKindPChainImport,
+			Kind:  txissuer.ChainP,
 			Bytes: signedBytes,
 		}
-		t.importTx_ = &tx
+		t.importIssueTx = &tx
 
-		err = t.TxIssuer.IssueTx(t.Ctx, t.importTx_)
-		t.Logger.ErrorOnError(err, "Failed to issue tx")
+		err = t.TxIssuer.IssueTx(t.Ctx, t.importIssueTx)
 		if err == nil {
 			t.status = StatusImportTxIssued
 		}
 	case StatusImportTxIssued:
-		status, err := t.TxIssuer.TrackTx(t.Ctx, t.importTx_)
-		t.Logger.ErrorOnError(err, "Failed to track tx")
-		if err == nil && status == txissuer.StatusFailed {
-			t.Logger.ErrorOnError(err, "Tx failed")
+		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
+		if err == nil && t.importIssueTx.Status == txissuer.StatusFailed {
 			return false
 		}
 
-		if err == nil && status == txissuer.StatusApproved {
-			t.status = StatusImportTxAccepted
+		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
+			t.status = StatusImportTxApproved
 		}
 
 		utxo := t.exportTx.Args.UTXOs[0]
