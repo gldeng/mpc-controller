@@ -1,6 +1,6 @@
 package pool
 
 type WorkerPool interface {
-	Submit(task func( ())
+	Submit(task func())
 	StopAndWait()
 }
