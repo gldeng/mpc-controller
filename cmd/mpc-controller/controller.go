@@ -13,12 +13,17 @@ import (
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
+	"github.com/avalido/mpc-controller/contract/watcher"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/logger/adapter"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/avalido/mpc-controller/tasks_/joinTask/stake"
+	c2pChainStake "github.com/avalido/mpc-controller/tasks_/atomicTask/c2pChain/stake"
+	p2cChainRecover "github.com/avalido/mpc-controller/tasks_/atomicTask/p2cChain/recover"
+	joinTaskRecover "github.com/avalido/mpc-controller/tasks_/joinTask/recover"
+	joinTaskStake "github.com/avalido/mpc-controller/tasks_/joinTask/stake"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
@@ -59,10 +64,10 @@ func (c *MpcController) Run(ctx context.Context) error {
 		service := service
 		g.Go(func() error {
 			c.Logger.Info(fmt.Sprintf("%v service %v starting...", c.ID, name))
-			if err := service.Start(ctx); err != nil {
+			if err := service.Start(); err != nil {
 				return errors.Wrapf(err, "failed starting service: %v", name)
 			}
-			c.Logger.Info(fmt.Sprintf("%v service %v stopped", c.ID, name))
+			//c.Logger.Info(fmt.Sprintf("%v service %v stopped", c.ID, name)) // todo: use CLOSE()
 			return nil
 		})
 	}
@@ -87,15 +92,15 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Create nonce manager
 	noncer := noncer.New(1, 0) // todo: config it
 
+	// Create dispatcher
+	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, config.ControllerId+"_global", 1024)
+
 	// Create database
 	badgerDBLogger := &adapter.BadgerDBLoggerAdapter{Logger: logger.DefaultWithCallerSkip(3)}
 	myDB := &badgerDB.BadgerDB{
 		Logger: myLogger,
 		DB:     badgerDB.NewBadgerDBWithDefaultOptions(config.BadgerDbPath, badgerDBLogger),
 	}
-
-	// Create dispatcher
-	myDispatcher := dispatcher.NewDispatcher(ctx, myLogger, config.ControllerId+"_global", 1024)
 
 	// Get MpcManager contract address
 	contractAddr := common.HexToAddress(config.MpcManagerAddress)
@@ -104,10 +109,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Create mpcClient
 	mpcClient := &core.MyMpcClient{
 		Logger:       myLogger,
-		ControllerID: config.ControllerId,
-		MpcServerUrl: config.MpcServerUrl,
-		Publisher:    myDispatcher}
-	mpcClient.Init(ctx)
+		MpcServerUrl: config.MpcServerUrl}
 
 	// Decrypt private key
 	config.ControllerKey = decryptKey(config.ControllerId, pss, config.ControllerKey)
@@ -143,18 +145,15 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Create C-Chain issue client
 	cChainIssueCli := evm.NewClient(config.CChainIssueUrl, "C")
-	evmClientWrapper := &chain.EvmClientWrapper{myLogger, cChainIssueCli}
 
 	// Create P-Chain issue client
 	pChainIssueCli := platformvm.NewClient(config.PChainIssueUrl)
-	platformvmClientWrapper := &chain.PlatformvmClientWrapper{myLogger, pChainIssueCli}
 
 	// Create tx issuer
 	myTxIssuer := txissuer.MyTxIssuer{
 		Logger:       myLogger,
 		CChainClient: cChainIssueCli,
 		PChainClient: pChainIssueCli,
-		Publisher:    myDispatcher,
 	}
 
 	boundCaller := caller.MyCaller{
@@ -175,6 +174,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 
 	// Create global dispatcher
 	stakeReqAddedDispatcher := kbcevents.GlobalDispatcherFor[*events.StakeRequestAdded]()
+	requestStartedDispatcher := kbcevents.GlobalDispatcherFor[*events.RequestStarted]()
 
 	// Create global cache
 	globalCache, _ := ristretto.NewCache(&ristretto.Config{
@@ -183,7 +183,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		BufferItems: 64,
 	})
 
-	joinStakeTaskCreator := stake.TaskCreator{
+	joinTaskRecoverTaskCreator := joinTaskRecover.TaskCreator{
 		Ctx:         ctx,
 		Logger:      myLogger,
 		PartiPubKey: myPartiPubKey,
@@ -194,63 +194,74 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Bound:       &boundTransactor,
 		Pool:        pond.New(3, 1000),
 		Dispatcher:  stakeReqAddedDispatcher,
-		UTXOsCache:  globalCache,
+
+		UTXOsCache: globalCache,
 	}
 
-	//watcherMaster := watcher.Master{
-	//	BoundCaller:     &boundCaller,
-	//	BoundTransactor: &boundTransactor,
-	//	ContractAddr:    contractAddr,
-	//	DB:              myDB,
-	//	EthWsURL:        config.EthWsUrl,
-	//	KeyGeneratorMPC: mpcClient,
-	//	Logger:          myLogger,
-	//	PartiPubKey:     myPartiPubKey,
-	//	Dispatcher:      myDispatcher,
-	//}
-	//
-	//rewardMaster := rewarding.Master{
-	//	BoundCaller:     &boundCaller,
-	//	BoundTransactor: &boundTransactor,
-	//	ClientPChain:    pChainIssueCli,
-	//	DB:              myDB,
-	//	Dispatcher:      myDispatcher,
-	//	IssuerCChain:    evmClientWrapper,
-	//	IssuerPChain:    platformvmClientWrapper,
-	//	Logger:          myLogger,
-	//	NetWorkCtx:      networkCtx(config),
-	//	PartiPubKey:     myPartiPubKey,
-	//	SignerMPC:       mpcClient,
-	//}
-	//_ = rewardMaster
-	//
-	//stakeMaster := staking.Master{
-	//	BoundTransactor: &boundTransactor,
-	//	DB:              myDB,
-	//	Dispatcher:      myDispatcher,
-	//	EthClient:       rpcEthCliWrapper,
-	//	TxIssuer:        &myTxIssuer,
-	//	Logger:          myLogger,
-	//	NetWorkCtx:      networkCtx(config),
-	//	NonceGiver:      noncer,
-	//	PartiPubKey:     myPartiPubKey,
-	//	SignerMPC:       mpcClient,
-	//}
-	//
-	//metricsService := prom.MetricsService{
-	//	ServeAddr: config.MetricsServeAddr,
-	//}
-	//
-	//controller := MpcController{
-	//	Logger: myLogger,
-	//	ID:     config.ControllerId,
-	//	Services: []Service{
-	//		&watcherMaster,
-	//		&stakeMaster,
-	//		//&rewardMaster,
-	//		&metricsService,
-	//	},
-	//}
+	joinTaskStakeTaskCreator := joinTaskStake.TaskCreator{
+		Ctx:         ctx,
+		Logger:      myLogger,
+		PartiPubKey: myPartiPubKey,
+		DB:          myDB,
+		Bound:       &boundTransactor,
+		Pool:        pond.New(3, 1000),
+		Dispatcher:  stakeReqAddedDispatcher,
+	}
+
+	c2pChainStakeTaskCreator := c2pChainStake.TaskCreator{
+		Ctx:        ctx,
+		Logger:     myLogger,
+		MpcClient:  mpcClient,
+		TxIssuer:   &myTxIssuer,
+		Network:    networkCtx(config),
+		NonceGiver: noncer,
+		Pool:       pond.New(3, 1000),
+		Dispatcher: requestStartedDispatcher,
+	}
+
+	p2cChainRecoverTaskCreator := p2cChainRecover.TaskCreator{
+		Ctx:            ctx,
+		Logger:         myLogger,
+		MpcClient:      mpcClient,
+		TxIssuer:       &myTxIssuer,
+		Network:        networkCtx(config),
+		ContractCaller: &boundCaller,
+		Pool:           pond.New(3, 1000),
+		Dispatcher:     requestStartedDispatcher,
+		UTXOsCache:     globalCache,
+	}
+
+	watcherMaster := watcher.Master{
+		Ctx:                  ctx,
+		BoundCaller:          &boundCaller,
+		BoundTransactor:      &boundTransactor,
+		ContractAddr:         contractAddr,
+		DB:                   myDB,
+		EthWsURL:             config.EthWsUrl,
+		MpcClient:            mpcClient,
+		Logger:               myLogger,
+		PartiPubKey:          myPartiPubKey,
+		Dispatcher:           myDispatcher,
+		ReqStartedDispatcher: requestStartedDispatcher,
+	}
+
+	metricsService := prom.MetricsService{
+		Ctx:       ctx,
+		ServeAddr: config.MetricsServeAddr,
+	}
+
+	controller := MpcController{
+		Logger: myLogger,
+		ID:     config.ControllerId,
+		Services: []Service{
+			&watcherMaster,
+			&joinTaskRecoverTaskCreator,
+			&joinTaskStakeTaskCreator,
+			&c2pChainStakeTaskCreator,
+			&p2cChainRecoverTaskCreator,
+			&metricsService,
+		},
+	}
 
 	return &controller
 }

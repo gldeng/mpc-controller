@@ -9,10 +9,13 @@ import (
 )
 
 type MetricsService struct {
+	Ctx       context.Context
 	ServeAddr string
 }
 
-func (p *MetricsService) Start(ctx context.Context) error {
+// todo: add Close() eror method
+
+func (p *MetricsService) Start() error {
 	http.Handle("/metrics", promhttp.Handler())
 	srv := http.Server{
 		Addr:    p.ServeAddr,
@@ -31,10 +34,15 @@ func (p *MetricsService) Start(ctx context.Context) error {
 		return errors.Wrapf(err, "got an error to start MetricsService")
 	}
 
-	<-ctx.Done()
+	<-p.Ctx.Done()
 	if err = srv.Shutdown(context.Background()); err != nil {
 		err = errors.Wrapf(err, "got an error to shutdown MetricsService")
 	}
 	wg.Wait()
 	return err
+}
+
+func (p *MetricsService) Close() error {
+	// todo:
+	return nil
 }
