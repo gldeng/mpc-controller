@@ -85,7 +85,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, e
 	err = backoff.RetryFnExponential10Times(o.Logger, ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 		blockNumber, err = o.EthClient.BlockNumber(ctx)
 		if err != nil {
-			return true, errors.WithStack(err)
+			return true, errors.Wrapf(err, "failed to query block number")
 		}
 		epochId = blockNumber - (blockNumber % o.EpochDur)
 		epochIdBig := new(big.Int).SetUint64(epochId)
