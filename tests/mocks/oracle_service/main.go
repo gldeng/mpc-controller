@@ -19,7 +19,7 @@ import (
 
 func main() {
 	var nodeNoFlag = flag.Int("nodeNo", 5, "Node number")
-	var epochDurationFlag = flag.Uint64("epochDur", 17, "Epoch duration")
+	var epochDurationFlag = flag.Uint64("epochDur", 100, "Epoch duration")
 	var cChainIdFlag = flag.Int64("cChainId", 43112, "Oracle member private key")
 	var cChainUrlFlag = flag.String("cChainUrl", "http://localhost:9650/ext/bc/C/rpc", "C-Chain rpc url")
 	var oracleMemberPkFlag = flag.String("oracleMemberPK", "a54a5d692d239287e8358f27caee92ab5756c0276a6db0a062709cd86451a855", "Oracle member private key")
@@ -82,7 +82,7 @@ type Oracle struct {
 }
 
 func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, epochId uint64, err error) {
-	err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+	err = backoff.RetryFnExponential10Times(o.Logger, ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 		blockNumber, err = o.EthClient.BlockNumber(ctx)
 		if err != nil {
 			return true, errors.WithStack(err)
@@ -100,7 +100,7 @@ func (o *Oracle) ReceiveMemberReport(ctx context.Context) (blockNumber uint64, e
 			return true, errors.WithStack(err)
 		}
 
-		err = backoff.RetryFnExponential10Times(ctx, time.Second, time.Second*10, func() (retry bool, err error) {
+		err = backoff.RetryFnExponential10Times(o.Logger, ctx, time.Second, time.Second*10, func() (retry bool, err error) {
 			rcpt, err := o.EthClient.TransactionReceipt(ctx, tx.Hash())
 			if err != nil {
 				return true, errors.WithStack(err)
