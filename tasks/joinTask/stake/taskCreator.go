@@ -25,7 +25,7 @@ type TaskCreator struct {
 }
 
 func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.StakeRequestAdded) {
+	stakeReqAddedEvtHandler := func(evt *events.StakeRequestAdded) {
 		t := Task{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
@@ -45,7 +45,7 @@ func (c *TaskCreator) Start() error {
 		return true
 	}
 
-	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
+	c.Dispatcher.AddFilteredEventHandler(stakeReqAddedEvtHandler, reqStartedEvtFilter)
 	return nil
 }
 

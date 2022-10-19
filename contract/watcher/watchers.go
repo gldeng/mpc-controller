@@ -40,7 +40,7 @@ type MpcManagerWatchers struct {
 	PartiPubKey     storage.PubKey
 	Publisher       dispatcher.Publisher // todo: use kbcevents.Dispatcher
 
-	stakeReqAddedDispatcher kbcevents.Dispatcher[*events.StakeRequestAdded]
+	StakeReqAddedDispatcher kbcevents.Dispatcher[*events.StakeRequestAdded]
 	ReqStartedDispatcher    kbcevents.Dispatcher[*events.RequestStarted]
 
 	contractFilterer bind.ContractFilterer
@@ -332,7 +332,7 @@ func (w *MpcManagerWatchers) watchStakeRequestAdded(ctx context.Context, opts *b
 func (w *MpcManagerWatchers) processStakeRequestAdded(ctx context.Context, evt interface{}) error { // todo: further process
 	myEvt := evt.(*contract.MpcManagerStakeRequestAdded)
 	w.Logger.Info("Stake request added", []logger.Field{{"stakeReqAdded", myEvt}}...)
-	w.stakeReqAddedDispatcher.Dispatch((*events.StakeRequestAdded)(myEvt))
+	w.StakeReqAddedDispatcher.Dispatch((*events.StakeRequestAdded)(myEvt))
 	prom.StakeRequestAdded.Inc()
 	return nil
 }
