@@ -2,6 +2,7 @@ package stake
 
 import (
 	"context"
+	"fmt"
 	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
@@ -65,12 +66,14 @@ func (t *Task) do() bool {
 		}
 
 		t.status = StatusOK
-
+		t.Logger.Info("Joined stake request", []logger.Field{{"joinedStakeReq",
+			fmt.Sprintf("reqNo:%v, reqHash:%v", t.TriggerReq.RequestNumber.Uint64(), t.joinReq.ReqHash.String())}}...)
+		return false
 	// todo: make it async
 	case StatusSent:
 		// todo: check async status
 	}
-	return false
+	return true
 }
 
 func (t *Task) buildTask() error {
