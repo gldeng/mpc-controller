@@ -240,6 +240,14 @@ func (w *MpcManagerWatchers) processKeygenRequestAdded(ctx context.Context, evt 
 		return false, nil
 	})
 
+	if err != nil {
+		return errors.Wrapf(err, "failed to check keygen result")
+	}
+
+	if res == nil || res.Result == "" {
+		return errors.New("empty keygen result")
+	}
+
 	// Report generated public key
 	genPubKeyHex := res.Result
 	dnmGenPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility

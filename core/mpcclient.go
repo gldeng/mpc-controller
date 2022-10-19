@@ -106,7 +106,7 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*Result, error)
 	var resp *http.Response
 	var err error
 	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
-		resp, err = http.Post(c.MpcServerUrl+"/Result/"+reqId, "application/json", payload)
+		resp, err = http.Post(c.MpcServerUrl+"/result/"+reqId, "application/json", payload)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
