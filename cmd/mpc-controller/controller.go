@@ -232,17 +232,18 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	watcherMaster := watcher.Master{
-		Ctx:                  ctx,
-		BoundCaller:          &boundCaller,
-		BoundTransactor:      &boundTransactor,
-		ContractAddr:         contractAddr,
-		DB:                   myDB,
-		EthWsURL:             config.EthWsUrl,
-		MpcClient:            mpcClient,
-		Logger:               myLogger,
-		PartiPubKey:          myPartiPubKey,
-		Dispatcher:           myDispatcher,
-		ReqStartedDispatcher: requestStartedDispatcher,
+		Ctx:                     ctx,
+		BoundCaller:             &boundCaller,
+		BoundTransactor:         &boundTransactor,
+		ContractAddr:            contractAddr,
+		DB:                      myDB,
+		EthWsURL:                config.EthWsUrl,
+		MpcClient:               mpcClient,
+		Logger:                  myLogger,
+		PartiPubKey:             myPartiPubKey,
+		Dispatcher:              myDispatcher,
+		StakeReqAddedDispatcher: stakeReqAddedDispatcher,
+		ReqStartedDispatcher:    requestStartedDispatcher,
 	}
 
 	metricsService := prom.MetricsService{

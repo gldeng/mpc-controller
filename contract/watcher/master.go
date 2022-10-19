@@ -14,17 +14,18 @@ import (
 )
 
 type Master struct {
-	Ctx                  context.Context
-	BoundCaller          caller.Caller
-	BoundTransactor      transactor.Transactor
-	ContractAddr         common.Address
-	DB                   storage.DB
-	Dispatcher           dispatcher.Dispatcher // TODO: use kubecost/events instead
-	ReqStartedDispatcher kbcevents.Dispatcher[*events.RequestStarted]
-	EthWsURL             string
-	MpcClient            core.MpcClient
-	Logger               logger.Logger
-	PartiPubKey          storage.PubKey
+	Ctx                     context.Context
+	BoundCaller             caller.Caller
+	BoundTransactor         transactor.Transactor
+	ContractAddr            common.Address
+	DB                      storage.DB
+	Dispatcher              dispatcher.Dispatcher // TODO: use kubecost/events instead
+	StakeReqAddedDispatcher kbcevents.Dispatcher[*events.StakeRequestAdded]
+	ReqStartedDispatcher    kbcevents.Dispatcher[*events.RequestStarted]
+	EthWsURL                string
+	MpcClient               core.MpcClient
+	Logger                  logger.Logger
+	PartiPubKey             storage.PubKey
 
 	watcher *MpcManagerWatchers
 }
@@ -42,16 +43,17 @@ func (m *Master) Close() error {
 
 func (m *Master) subscribe() {
 	watcher := MpcManagerWatchers{
-		BoundCaller:          m.BoundCaller,
-		BoundTransactor:      m.BoundTransactor,
-		ContractAddr:         m.ContractAddr,
-		DB:                   m.DB,
-		EthWsURL:             m.EthWsURL,
-		MpcClient:            m.MpcClient,
-		Logger:               m.Logger,
-		PartiPubKey:          m.PartiPubKey,
-		Publisher:            m.Dispatcher,
-		ReqStartedDispatcher: m.ReqStartedDispatcher,
+		BoundCaller:             m.BoundCaller,
+		BoundTransactor:         m.BoundTransactor,
+		ContractAddr:            m.ContractAddr,
+		DB:                      m.DB,
+		EthWsURL:                m.EthWsURL,
+		MpcClient:               m.MpcClient,
+		Logger:                  m.Logger,
+		PartiPubKey:             m.PartiPubKey,
+		Publisher:               m.Dispatcher,
+		stakeReqAddedDispatcher: m.StakeReqAddedDispatcher,
+		ReqStartedDispatcher:    m.ReqStartedDispatcher,
 	}
 
 	m.watcher = &watcher
