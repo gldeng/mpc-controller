@@ -12,7 +12,7 @@ type StakeAtomicTaskDone struct {
 	ExportTxID ids.ID
 	ImportTxID ids.ID
 
-	UTXOsToStake []*avax.UTXO
+	UTXOsToStake []*avax.UTXO `json:"-"`
 }
 
 type StakeAddDelegatorTaskDone struct {

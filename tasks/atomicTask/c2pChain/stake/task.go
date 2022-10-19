@@ -113,6 +113,7 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[0].ReqID,
+			TxID:  t.txs.ExportTxID(),
 			Chain: txissuer.ChainC,
 			Bytes: signedBytes,
 		}
@@ -130,10 +131,17 @@ func (t *Task) do() bool {
 
 		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
 			t.status = StatusExportTxApproved
-			t.txs.SetExportTxID(t.exportIssueTx.TxID)
 		}
 	case StatusExportTxApproved:
-		err := t.MpcClient.Sign(t.Ctx, t.signReqs[1])
+		signReq, err := t.buildImportTxSignReq(t.txs)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "failed to build ImportTx signing request")
+			return false
+		}
+
+		t.signReqs[1] = signReq
+
+		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
 		t.Logger.ErrorOnError(err, "Failed to post signing request")
 		if err == nil {
 			t.status = StatusImportTxSigningPosted
@@ -164,6 +172,7 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[1].ReqID,
+			TxID:  t.txs.ImportTxID(),
 			Chain: txissuer.ChainP,
 			Bytes: signedBytes,
 		}
@@ -181,7 +190,6 @@ func (t *Task) do() bool {
 
 		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
 			t.status = StatusImportTxApproved
-			t.txs.SetImportTxID(t.importIssueTx.TxID)
 		}
 
 		utxos, _ := t.txs.SingedImportTxUTXOs()
@@ -211,6 +219,7 @@ func (t *Task) do() bool {
 		}
 
 		t.Dispatcher.Dispatch(&evt)
+		t.Logger.Info("Stake atomic task done", []logger.Field{{"stakeAtomicTaskDone", evt}}...)
 		return false
 	}
 	return true
@@ -222,23 +231,24 @@ func (t *Task) buildTask() error {
 	stakeReq := t.Joined.JoinedReq.Args.(*storage.StakeRequest)
 	txs, err := t.buildTxs(stakeReq, *t.Joined.ReqHash)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to build txs")
 	}
 
-	signReqs, err := t.buildSignReqs(txs)
+	signReq, err := t.buildExportTxSignReq(txs)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to build ExportTx signing request")
 	}
 
 	t.txs = txs
-	t.signReqs = signReqs
+	t.signReqs = make([]*core.SignRequest, 2)
+	t.signReqs[0] = signReq
 	return nil
 }
 
-func (t *Task) buildSignReqs(txs *Txs) ([]*core.SignRequest, error) {
+func (t *Task) buildExportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	exportTxHash, err := txs.ExportTxHash()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrapf(err, "failed to get ExportTx hash")
 	}
 
 	exportTxSignReq := core.SignRequest{
@@ -248,9 +258,13 @@ func (t *Task) buildSignReqs(txs *Txs) ([]*core.SignRequest, error) {
 		Hash:                   bytes.BytesToHex(exportTxHash),
 	}
 
+	return &exportTxSignReq, nil
+}
+
+func (t *Task) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	importTxHash, err := txs.ImportTxHash()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrapf(err, "failed to get ImportTx hash")
 	}
 
 	importTxSignReq := core.SignRequest{
@@ -260,7 +274,7 @@ func (t *Task) buildSignReqs(txs *Txs) ([]*core.SignRequest, error) {
 		Hash:                   bytes.BytesToHex(importTxHash),
 	}
 
-	return []*core.SignRequest{&exportTxSignReq, &importTxSignReq}, nil
+	return &importTxSignReq, nil
 }
 
 func (t *Task) buildTxs(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*Txs, error) {

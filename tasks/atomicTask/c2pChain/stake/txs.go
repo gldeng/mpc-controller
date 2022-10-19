@@ -35,13 +35,13 @@ type Txs struct {
 	Asset       avax.Asset
 	ImportFee   uint64
 
-	exportTx     *evm.UnsignedExportTx
-	exportTxCred *secp256k1fx.Credential
-	exportTxID   ids.ID
+	exportTx       *evm.UnsignedExportTx
+	exportTxCred   *secp256k1fx.Credential
+	signedExportTx *evm.Tx
 
-	importTx     *txs.ImportTx
-	importTxCred *secp256k1fx.Credential
-	importTxID   ids.ID
+	importTx       *txs.ImportTx
+	importTxCred   *secp256k1fx.Credential
+	signedImportTx *txs.Tx
 }
 
 // ---
@@ -88,11 +88,13 @@ func (t *Txs) SignedExportTxBytes() ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 
+	t.signedExportTx = tx
+
 	return tx.SignedBytes(), nil
 }
 
-func (t *Txs) SetExportTxID(id ids.ID) {
-	t.exportTxID = id
+func (t *Txs) ExportTxID() ids.ID {
+	return t.signedExportTx.ID()
 }
 
 func (t *Txs) ImportTxHash() ([]byte, error) {
@@ -136,6 +138,7 @@ func (t *Txs) SignedImportTxBytes() ([]byte, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	t.signedImportTx = tx
 	return tx.Bytes(), nil
 }
 
@@ -148,8 +151,8 @@ func (t *Txs) SingedImportTxUTXOs() ([]*avax.UTXO, error) {
 	return signedImportTx.UTXOs(), nil
 }
 
-func (t *Txs) SetImportTxID(id ids.ID) {
-	t.importTxID = id
+func (t *Txs) ImportTxID() ids.ID {
+	return t.signedImportTx.ID()
 }
 
 func (t *Txs) String() string {
