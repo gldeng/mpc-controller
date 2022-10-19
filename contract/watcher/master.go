@@ -52,7 +52,7 @@ func (m *Master) subscribe() {
 		Logger:                  m.Logger,
 		PartiPubKey:             m.PartiPubKey,
 		Publisher:               m.Dispatcher,
-		stakeReqAddedDispatcher: m.StakeReqAddedDispatcher,
+		StakeReqAddedDispatcher: m.StakeReqAddedDispatcher,
 		ReqStartedDispatcher:    m.ReqStartedDispatcher,
 	}
 
