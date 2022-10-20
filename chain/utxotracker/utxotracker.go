@@ -12,8 +12,10 @@ import (
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
+	"github.com/dgraph-io/ristretto"
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -27,6 +29,8 @@ const (
 type UTXOTracker struct {
 	ClientPChain platformvm.Client
 	Logger       logger.Logger
+
+	UTXOCache *ristretto.Cache
 
 	Dispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
 
@@ -74,12 +78,20 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 				}
 
 				for _, utxo := range utxosFromStake {
+					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
+					_, ok := eh.UTXOCache.Get(utxoID)
+					if ok {
+						continue
+					}
+
 					utxoToRecover := events.UTXOToRecover{
 						UTXO:      utxo,
 						GenPubKey: genPubKey.PublicKey,
 					}
 
 					eh.Dispatcher.Dispatch(&utxoToRecover)
+					eh.UTXOCache.SetWithTTL(utxoID, utxo, 1, time.Hour)
+					eh.UTXOCache.Wait()
 					eh.Logger.Info("Dispatched UTXO to recover", []logger.Field{{"utxoToRecover", myAvax.MpcUTXOFromUTXO(utxo)}}...)
 				}
 			}
