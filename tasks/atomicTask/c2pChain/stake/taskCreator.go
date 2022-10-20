@@ -23,8 +23,9 @@ type TaskCreator struct {
 	NonceGiver noncer.Noncer
 	Network    chain.NetworkContext
 
-	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.RequestStarted]
+	Pool                     pool.WorkerPool
+	ReqStartedEvtDispatcher  kbcevents.Dispatcher[*events.RequestStarted]
+	StakeAtomicEvtDispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
 }
 
 func (c *TaskCreator) Start() error {
@@ -40,7 +41,7 @@ func (c *TaskCreator) Start() error {
 			TxIssuer:  c.TxIssuer,
 
 			Pool:       c.Pool,
-			Dispatcher: kbcevents.NewDispatcher[*events.StakeAtomicTaskDone](),
+			Dispatcher: c.StakeAtomicEvtDispatcher,
 
 			Joined: evt,
 		}
@@ -51,7 +52,7 @@ func (c *TaskCreator) Start() error {
 		return evt.TaskType == storage.TaskTypStake
 	}
 
-	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
+	c.ReqStartedEvtDispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
 	return nil
 }
 
