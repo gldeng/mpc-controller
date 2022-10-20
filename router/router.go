@@ -8,9 +8,8 @@ import (
 type Queue interface {
 	DequeueOrWaitForNextElementContext(ctx context.Context) (interface{}, error)
 }
-type Publisher interface {
-	Publish(ctx context.Context, evt interface{})
-}
+
+type EventHandler = func(interface{})
 
 type Router struct {
 	unsub            chan struct{}
@@ -18,10 +17,10 @@ type Router struct {
 	onCloseCtx       context.Context
 	onCloseCtxCancel func()
 	incomingQueue    Queue
-	publisher        Publisher
+	handlers         []EventHandler
 }
 
-func NewRouter(incomingQueue Queue, publisher Publisher) (*Router, error) {
+func NewRouter(incomingQueue Queue) (*Router, error) {
 	onCloseCtx, cancel := context.WithCancel(context.Background())
 	return &Router{
 		unsub:            make(chan struct{}),
@@ -29,16 +28,22 @@ func NewRouter(incomingQueue Queue, publisher Publisher) (*Router, error) {
 		onCloseCtx:       onCloseCtx,
 		onCloseCtxCancel: cancel,
 		incomingQueue:    incomingQueue,
-		publisher:        publisher,
+		handlers:         make([]EventHandler, 0),
 	}, nil
 }
 
 func (r *Router) Start() error {
 	go func() {
 		event, _ := r.incomingQueue.DequeueOrWaitForNextElementContext(r.onCloseCtx) // TODO: Handle error
-		r.publisher.Publish(r.onCloseCtx, event)
+		for _, handler := range r.handlers {
+			handler(event)
+		}
 	}()
 	return nil
+}
+
+func (r *Router) AddHandler(handler EventHandler) {
+	r.handlers = append(r.handlers, handler)
 }
 
 func (r *Router) Close() error {
