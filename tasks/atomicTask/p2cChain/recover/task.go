@@ -309,7 +309,7 @@ func (t *Task) buildTxs(req *storage.RecoverRequest) (*ExportTx, *ImportTx, erro
 	utxoID := req.TxID.String() + strconv.Itoa(int(req.OutputIndex))
 	val, ok := t.UTXOsCache.Get(utxoID)
 	if !ok {
-		return nil, nil, errors.Errorf("UTXO(%v) to pay not cached", utxoID)
+		return nil, nil, errors.Errorf("UTXO(%v) to pay not cached", utxoID) // todo: to fix
 	}
 	utxo := val.(*avax.UTXO)
 

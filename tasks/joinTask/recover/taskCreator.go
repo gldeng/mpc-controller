@@ -10,7 +10,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/dgraph-io/ristretto"
 	kbcevents "github.com/kubecost/events"
 )
 
@@ -30,13 +29,11 @@ type TaskCreator struct {
 	Bound transactor.Transactor
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeRequestAdded]
-
-	UTXOsCache *ristretto.Cache
+	Dispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
 }
 
 func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.StakeRequestAdded) {
+	reqStartedEvtHandler := func(evt *events.UTXOToRecover) {
 		t := Task{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
@@ -46,13 +43,13 @@ func (c *TaskCreator) Start() error {
 
 			Bound: c.Bound,
 
-			TriggerReq:  evt,
-			PartiPubKey: c.PartiPubKey,
+			UTXOToRecover: evt,
+			PartiPubKey:   c.PartiPubKey,
 		}
 		c.Pool.Submit(t.Do)
 	}
 
-	reqStartedEvtFilter := func(evt *events.StakeRequestAdded) bool {
+	reqStartedEvtFilter := func(evt *events.UTXOToRecover) bool {
 		return true
 	}
 

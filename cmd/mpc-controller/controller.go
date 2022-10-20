@@ -10,6 +10,7 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/chain/txissuer"
+	"github.com/avalido/mpc-controller/chain/utxotracker"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
@@ -29,7 +30,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
-	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/avalido/mpc-controller/utils/dispatcher" // todo: apply kubecost/events instead
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -177,6 +178,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	stakeReqAddedDispatcher := kbcevents.GlobalDispatcherFor[*events.StakeRequestAdded]()
 	requestStartedDispatcher := kbcevents.GlobalDispatcherFor[*events.RequestStarted]()
 	stakeAtomicDispatcher := kbcevents.NewDispatcher[*events.StakeAtomicTaskHandled]()
+	utxoToRecoverDispatcher := kbcevents.NewDispatcher[*events.UTXOToRecover]()
 
 	// Create global cache
 	globalCache, _ := ristretto.NewCache(&ristretto.Config{
@@ -195,9 +197,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Network:     networkCtx(config),
 		Bound:       &boundTransactor,
 		Pool:        pond.New(3, 1000),
-		Dispatcher:  stakeReqAddedDispatcher,
-
-		UTXOsCache: globalCache,
+		Dispatcher:  utxoToRecoverDispatcher,
 	}
 
 	joinTaskStakeTaskCreator := joinTaskStake.TaskCreator{
@@ -260,6 +260,14 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		ReqStartedDispatcher:    requestStartedDispatcher,
 	}
 
+	utxoTrackerMaster := utxotracker.Master{
+		Ctx:                     ctx,
+		Logger:                  myLogger,
+		ClientPChain:            pChainIssueCli,
+		Dispatcher:              myDispatcher,
+		UTXOToRecoverDispatcher: utxoToRecoverDispatcher,
+	}
+
 	metricsService := prom.MetricsService{
 		Ctx:       ctx,
 		ServeAddr: config.MetricsServeAddr,
@@ -274,6 +282,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 			&joinTaskStakeTaskCreator,
 			&c2pChainStakeTaskCreator,
 			&pChainStakeTaskCreator,
+			&utxoTrackerMaster,
 			&p2cChainRecoverTaskCreator,
 			&metricsService,
 		},
