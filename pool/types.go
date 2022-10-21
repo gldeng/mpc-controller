@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	kbcevents "github.com/kubecost/events"
 )
 
 // TODO: Deprecate
@@ -24,8 +25,9 @@ type TaskContext struct { // TODO: Convert it to TaskApi interface instead of di
 	NonceGiver noncer.Noncer
 	Network    chain.NetworkContext
 
-	MpcClient core.MpcClient
-	TxIssuer  txissuer.TxIssuer
+	MpcClient  core.MpcClient
+	TxIssuer   txissuer.TxIssuer
+	Dispatcher kbcevents.Dispatcher[interface{}]
 }
 
 type TaskContextFactory = func() *TaskContext
