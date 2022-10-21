@@ -10,7 +10,6 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/avalido/mpc-controller/tasks/atomicTask/c2pChain/stake"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/pkg/errors"
@@ -43,13 +42,27 @@ type Status int
 type TransferC2P struct {
 	Status          Status
 	Joined          events.RequestStarted
-	Txs             *stake.Txs
+	Quorum          QuorumInfo
+	Txs             *Txs
 	SignReqs        []*core.SignRequest
 	ExportIssueTx   *txissuer.Tx
 	ExportTxSignRes *core.Result
 
 	ImportIssueTx   *txissuer.Tx
 	ImportTxSignRes *core.Result
+}
+
+func New(quorum QuorumInfo) (*TransferC2P, error) {
+	return &TransferC2P{
+		Status:          0,
+		Quorum:          quorum,
+		Txs:             nil,
+		SignReqs:        nil,
+		ExportIssueTx:   nil,
+		ExportTxSignRes: nil,
+		ImportIssueTx:   nil,
+		ImportTxSignRes: nil,
+	}, nil
 }
 
 func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
@@ -228,7 +241,7 @@ func (t *TransferC2P) buildTask(ctx *pool.TaskContext) error {
 	return nil
 }
 
-func (t *TransferC2P) buildExportTxSignReq(txs *stake.Txs) (*core.SignRequest, error) {
+func (t *TransferC2P) buildExportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	exportTxHash, err := txs.ExportTxHash()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ExportTx hash")
@@ -244,7 +257,7 @@ func (t *TransferC2P) buildExportTxSignReq(txs *stake.Txs) (*core.SignRequest, e
 	return &exportTxSignReq, nil
 }
 
-func (t *TransferC2P) buildImportTxSignReq(txs *stake.Txs) (*core.SignRequest, error) {
+func (t *TransferC2P) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	importTxHash, err := txs.ImportTxHash()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ImportTx hash")
@@ -260,7 +273,7 @@ func (t *TransferC2P) buildImportTxSignReq(txs *stake.Txs) (*core.SignRequest, e
 	return &importTxSignReq, nil
 }
 
-func (t *TransferC2P) buildTxs(ctx *pool.TaskContext, stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*stake.Txs, error) {
+func (t *TransferC2P) buildTxs(ctx *pool.TaskContext, stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*Txs, error) {
 	nodeID, _ := ids.ShortFromPrefixedString(stakeReq.NodeID, ids.NodeIDPrefix)
 	amountBig := new(big.Int)
 	amount, _ := amountBig.SetString(stakeReq.Amount, 10)
@@ -270,13 +283,13 @@ func (t *TransferC2P) buildTxs(ctx *pool.TaskContext, stakeReq *storage.StakeReq
 
 	nAVAXAmount := new(big.Int).Div(amount, big.NewInt(1_000_000_000))
 	if !nAVAXAmount.IsUint64() || !startTime.IsUint64() || !endTIme.IsUint64() {
-		return nil, errors.New(stake.ErrMsgInvalidUint64)
+		return nil, errors.New(ErrMsgInvalidUint64)
 	}
 
 	cChainAddr, _ := stakeReq.GenPubKey.CChainAddress()
 	pChainAddr, _ := stakeReq.GenPubKey.PChainAddress()
 
-	st := stake.Txs{
+	st := Txs{
 		ReqNo:         stakeReq.ReqNo,
 		Nonce:         ctx.NonceGiver.GetNonce(stakeReq.ReqNo),
 		ReqHash:       reqHash.String(),
