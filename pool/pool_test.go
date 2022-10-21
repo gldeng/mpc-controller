@@ -10,13 +10,13 @@ type IncrementTask struct {
 	Counter int
 }
 
-func (i *IncrementTask) Next(resources *Resources) ([]Task, error) {
+func (i *IncrementTask) Next(ctx *TaskContext) ([]Task, error) {
 	i.Counter = i.Counter + 1
 	return nil, nil
 }
 
-func MockResourcesFactory() *Resources {
-	return &Resources{
+func MockTaskContextFactory() *TaskContext {
+	return &TaskContext{
 		Logger:     nil,
 		NonceGiver: nil,
 		Network:    chain.NetworkContext{},
@@ -26,7 +26,7 @@ func MockResourcesFactory() *Resources {
 }
 
 func TestPool(t *testing.T) {
-	p, err := New(1, MockResourcesFactory)
+	p, err := New(1, MockTaskContextFactory)
 	require.NoError(t, err)
 	task := &IncrementTask{Counter: 0}
 	p.Submit(task)

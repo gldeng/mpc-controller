@@ -10,19 +10,19 @@ var (
 )
 
 type ExtendedWorkerPool struct {
-	inner     *pond.WorkerPool
-	resources *goconcurrentqueue.FIFO
+	inner    *pond.WorkerPool
+	contexts *goconcurrentqueue.FIFO
 }
 
-func New(size int, makeResources ResourcesFactory) (*ExtendedWorkerPool, error) {
+func New(size int, makeContext TaskContextFactory) (*ExtendedWorkerPool, error) {
 	inner := pond.New(size, 1024)
-	resources := goconcurrentqueue.NewFIFO()
+	contexts := goconcurrentqueue.NewFIFO()
 	for i := 0; i < size; i++ {
-		resources.Enqueue(makeResources()) // TODO: Construct resources
+		contexts.Enqueue(makeContext())
 	}
 	return &ExtendedWorkerPool{
-		inner:     inner,
-		resources: resources,
+		inner:    inner,
+		contexts: contexts,
 	}, nil
 }
 
@@ -38,9 +38,9 @@ func (e *ExtendedWorkerPool) Close() error {
 
 func (e *ExtendedWorkerPool) Submit(task Task) error {
 	taskWrapper := func() {
-		res, _ := e.resources.Dequeue()        // TODO: Handle error
-		next, _ := task.Next(res.(*Resources)) // TODO: Handle error
-		e.resources.Enqueue(res)
+		ctx, _ := e.contexts.Dequeue()           // TODO: Handle error
+		next, _ := task.Next(ctx.(*TaskContext)) // TODO: Handle error
+		e.contexts.Enqueue(ctx)
 		if next != nil {
 			for _, t := range next {
 				e.Submit(t) // Task needs to continue with itself or succeeding tasks

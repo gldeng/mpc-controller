@@ -15,10 +15,10 @@ type WorkerPool interface {
 }
 
 type Task interface {
-	Next(resources *Resources) ([]Task, error)
+	Next(ctx *TaskContext) ([]Task, error)
 }
 
-type Resources struct { // TODO: Convert it to TaskApi interface instead of directly giving the underlying resources
+type TaskContext struct { // TODO: Convert it to TaskApi interface instead of directly giving the underlying resources
 	Logger logger.Logger
 
 	NonceGiver noncer.Noncer
@@ -28,7 +28,7 @@ type Resources struct { // TODO: Convert it to TaskApi interface instead of dire
 	TxIssuer  txissuer.TxIssuer
 }
 
-type ResourcesFactory = func() *Resources
+type TaskContextFactory = func() *TaskContext
 type TaskSubmitter interface {
 	Submit(task Task) error
 }
