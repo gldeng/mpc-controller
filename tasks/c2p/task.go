@@ -67,28 +67,28 @@ func New(id string, amount big.Int, quorum QuorumInfo) (*TransferC2P, error) {
 	}, nil
 }
 
-func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
+func (t *TransferC2P) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	self := []pool.Task{t}
 	switch t.Status {
 	case StatusStarted:
 		err := t.buildTask(ctx)
 		if err != nil {
-			ctx.Logger.ErrorOnError(err, "Failed to build task")
+			ctx.GetLogger().ErrorOnError(err, "Failed to build task")
 			return nil, err
 		}
 		t.Status = StatusBuilt
 	case StatusBuilt:
-		err := ctx.MpcClient.Sign(context.Background(), t.SignReqs[0])
-		ctx.Logger.ErrorOnError(err, "Failed to post signing request")
+		err := ctx.GetMpcClient().Sign(context.Background(), t.SignReqs[0])
+		ctx.GetLogger().ErrorOnError(err, "Failed to post signing request")
 		if err == nil {
 			t.Status = StatusExportTxSigningPosted
 		}
 	case StatusExportTxSigningPosted:
-		res, err := ctx.MpcClient.Result(context.Background(), t.SignReqs[0].ReqID)
-		ctx.Logger.ErrorOnError(err, "Failed to check signing result")
+		res, err := ctx.GetMpcClient().Result(context.Background(), t.SignReqs[0].ReqID)
+		ctx.GetLogger().ErrorOnError(err, "Failed to check signing result")
 
 		if res.Status != core.StatusDone {
-			ctx.Logger.Debug("Signing task not done")
+			ctx.GetLogger().Debug("Signing task not done")
 			return self, nil
 		}
 		t.Status = StatusExportTxSigningDone
@@ -97,13 +97,13 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 		sig := new(events.Signature).FromHex(t.ExportTxSignRes.Result)
 		err := t.Txs.SetExportTxSig(*sig)
 		if err != nil {
-			ctx.Logger.ErrorOnError(err, "Failed to set signature")
+			ctx.GetLogger().ErrorOnError(err, "Failed to set signature")
 			return nil, nil
 		}
 
 		signedBytes, err := t.Txs.SignedExportTxBytes()
 		if err != nil {
-			ctx.Logger.ErrorOnError(err, "Failed to get signed bytes")
+			ctx.GetLogger().ErrorOnError(err, "Failed to get signed bytes")
 			return nil, nil
 		}
 
@@ -115,12 +115,12 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 		}
 		t.ExportIssueTx = &tx
 
-		err = ctx.TxIssuer.IssueTx(context.Background(), t.ExportIssueTx)
+		err = ctx.GetTxIssuer().IssueTx(context.Background(), t.ExportIssueTx)
 		if err == nil {
 			t.Status = StatusExportTxIssued
 		}
 	case StatusExportTxIssued:
-		err := ctx.TxIssuer.TrackTx(context.Background(), t.ExportIssueTx)
+		err := ctx.GetTxIssuer().TrackTx(context.Background(), t.ExportIssueTx)
 		if err == nil && t.ExportIssueTx.Status == txissuer.StatusFailed {
 			t.Status = StatusExportTxFailed
 		}
@@ -133,23 +133,23 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 	case StatusExportTxApproved:
 		signReq, err := t.buildImportTxSignReq(t.Txs)
 		if err != nil {
-			ctx.Logger.ErrorOnError(err, "failed to build ImportTx signing request")
+			ctx.GetLogger().ErrorOnError(err, "failed to build ImportTx signing request")
 			return nil, nil
 		}
 
 		t.SignReqs[1] = signReq
 
-		err = ctx.MpcClient.Sign(context.Background(), t.SignReqs[1])
-		ctx.Logger.ErrorOnError(err, "Failed to post signing request")
+		err = ctx.GetMpcClient().Sign(context.Background(), t.SignReqs[1])
+		ctx.GetLogger().ErrorOnError(err, "Failed to post signing request")
 		if err == nil {
 			t.Status = StatusImportTxSigningPosted
 		}
 	case StatusImportTxSigningPosted:
-		res, err := ctx.MpcClient.Result(context.Background(), t.SignReqs[1].ReqID)
-		ctx.Logger.ErrorOnError(err, "Failed to check signing result")
+		res, err := ctx.GetMpcClient().Result(context.Background(), t.SignReqs[1].ReqID)
+		ctx.GetLogger().ErrorOnError(err, "Failed to check signing result")
 
 		if res.Status != core.StatusDone {
-			ctx.Logger.Debug("Signing task not done")
+			ctx.GetLogger().Debug("Signing task not done")
 			return self, nil
 		}
 		t.Status = StatusImportTxSigningDone
@@ -158,13 +158,13 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 		sig := new(events.Signature).FromHex(t.ImportTxSignRes.Result)
 		err := t.Txs.SetImportTxSig(*sig)
 		if err != nil {
-			ctx.Logger.ErrorOnError(err, "Failed to set signature")
+			ctx.GetLogger().ErrorOnError(err, "Failed to set signature")
 			return nil, nil
 		}
 
 		signedBytes, err := t.Txs.SignedImportTxBytes()
 		if err != nil {
-			ctx.Logger.ErrorOnError(err, "Failed to get signed bytes")
+			ctx.GetLogger().ErrorOnError(err, "Failed to get signed bytes")
 			return nil, nil
 		}
 
@@ -176,12 +176,12 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 		}
 		t.ImportIssueTx = &tx
 
-		err = ctx.TxIssuer.IssueTx(context.Background(), t.ImportIssueTx)
+		err = ctx.GetTxIssuer().IssueTx(context.Background(), t.ImportIssueTx)
 		if err == nil {
 			t.Status = StatusImportTxIssued
 		}
 	case StatusImportTxIssued:
-		err := ctx.TxIssuer.TrackTx(context.Background(), t.ImportIssueTx)
+		err := ctx.GetTxIssuer().TrackTx(context.Background(), t.ImportIssueTx)
 		if err == nil && t.ImportIssueTx.Status == txissuer.StatusFailed {
 			t.Status = StatusImportTxFailed
 		}
@@ -193,14 +193,14 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 		fallthrough
 	case StatusImportTxApproved:
 		evt := ImportedEvent{Tx: t.Txs.importTx}
-		ctx.Dispatcher.Dispatch(&evt)
-		ctx.Logger.Info("Stake atomic task handled", []logger.Field{{"stakeAtomicTaskHandled", evt}}...)
+		ctx.Emit(&evt)
+		ctx.GetLogger().Info("Stake atomic task handled", []logger.Field{{"stakeAtomicTaskHandled", evt}}...)
 		return nil, nil
 	}
 	return self, nil
 }
 
-func (t *TransferC2P) buildTask(ctx *pool.TaskContext) error {
+func (t *TransferC2P) buildTask(ctx pool.TaskContext) error {
 	txs, err := t.buildTxs(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build txs")
@@ -248,7 +248,7 @@ func (t *TransferC2P) buildSignReq(id string, hash []byte) (*core.SignRequest, e
 	}, nil
 }
 
-func (t *TransferC2P) buildTxs(ctx *pool.TaskContext) (*Txs, error) {
+func (t *TransferC2P) buildTxs(ctx pool.TaskContext) (*Txs, error) {
 
 	nAVAXAmount := new(big.Int).Div(&t.Amount, big.NewInt(1_000_000_000))
 	if !nAVAXAmount.IsUint64() {
@@ -257,7 +257,7 @@ func (t *TransferC2P) buildTxs(ctx *pool.TaskContext) (*Txs, error) {
 
 	cChainAddr, _ := (storage.PubKey(t.Quorum.PubKey)).CChainAddress()
 	pChainAddr, _ := (storage.PubKey(t.Quorum.PubKey)).PChainAddress()
-	nonce, _ := ctx.EthClient.NonceAt(context.Background(), cChainAddr, nil)
+	nonce, _ := ctx.NonceAt(cChainAddr)
 
 	st := Txs{
 		Nonce:         nonce,
@@ -266,10 +266,10 @@ func (t *TransferC2P) buildTxs(ctx *pool.TaskContext) (*Txs, error) {
 		PChainAddress: pChainAddr,
 
 		BaseFeeGwei: cchain.BaseFeeGwei,
-		NetworkID:   ctx.Network.NetworkID(),
-		CChainID:    ctx.Network.CChainID(),
-		Asset:       ctx.Network.Asset(),
-		ImportFee:   ctx.Network.ImportFee(),
+		NetworkID:   ctx.GetNetwork().NetworkID(),
+		CChainID:    ctx.GetNetwork().CChainID(),
+		Asset:       ctx.GetNetwork().Asset(),
+		ImportFee:   ctx.GetNetwork().ImportFee(),
 	}
 
 	return &st, nil

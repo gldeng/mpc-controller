@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
 )
@@ -33,6 +34,11 @@ type TaskContextImp struct { // TODO: Convert it to TaskApi interface instead of
 
 type TaskContext interface {
 	GetLogger() logger.Logger
+	GetNetwork() *chain.NetworkContext
+	GetMpcClient() core.MpcClient
+	GetTxIssuer() txissuer.TxIssuer
+	NonceAt(account common.Address) (uint64, error)
+	Emit(event interface{})
 }
 
 type TaskContextFactory = func() TaskContext
