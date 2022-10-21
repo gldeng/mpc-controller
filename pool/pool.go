@@ -38,8 +38,8 @@ func (e *ExtendedWorkerPool) Close() error {
 
 func (e *ExtendedWorkerPool) Submit(task Task) error {
 	taskWrapper := func() {
-		ctx, _ := e.contexts.Dequeue()           // TODO: Handle error
-		next, _ := task.Next(ctx.(*TaskContext)) // TODO: Handle error
+		ctx, _ := e.contexts.Dequeue()          // TODO: Handle error
+		next, _ := task.Next(ctx.(TaskContext)) // TODO: Handle error
 		e.contexts.Enqueue(ctx)
 		if next != nil {
 			for _, t := range next {

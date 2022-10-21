@@ -17,10 +17,10 @@ type WorkerPool interface {
 }
 
 type Task interface {
-	Next(ctx *TaskContext) ([]Task, error)
+	Next(ctx TaskContext) ([]Task, error)
 }
 
-type TaskContext struct { // TODO: Convert it to TaskApi interface instead of directly giving the underlying resources
+type TaskContextImp struct { // TODO: Convert it to TaskApi interface instead of directly giving the underlying resources
 	Logger logger.Logger
 
 	NonceGiver noncer.Noncer
@@ -31,7 +31,11 @@ type TaskContext struct { // TODO: Convert it to TaskApi interface instead of di
 	Dispatcher kbcevents.Dispatcher[interface{}]
 }
 
-type TaskContextFactory = func() *TaskContext
+type TaskContext interface {
+	GetLogger() logger.Logger
+}
+
+type TaskContextFactory = func() TaskContext
 type TaskSubmitter interface {
 	Submit(task Task) error
 }
