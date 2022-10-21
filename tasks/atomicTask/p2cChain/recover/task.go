@@ -33,11 +33,13 @@ const (
 	StatusExportTxSigningDone
 	StatusExportTxIssued
 	StatusExportTxApproved
+	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
 	StatusImportTxIssued
 	StatusImportTxApproved
+	StatusImportTxFailed
 )
 
 const (
@@ -64,7 +66,7 @@ type Task struct {
 
 	Joined *events.RequestStarted
 
-	UTXOsCache *ristretto.Cache
+	Cache *ristretto.Cache
 
 	exportTx *ExportTx
 	importTx *ImportTx
@@ -155,14 +157,24 @@ func (t *Task) do() bool {
 	case StatusExportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
 		if err == nil && t.exportIssueTx.Status == txissuer.StatusFailed {
-			return false
+			t.status = StatusExportTxFailed
 		}
 
 		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
 			t.status = StatusExportTxApproved
 		}
+	case StatusExportTxFailed:
+		fallthrough
 	case StatusExportTxApproved:
-		err := t.MpcClient.Sign(t.Ctx, t.signReqs[1])
+		signReq, err := t.buildImportTxSignReq(t.Joined.Raw.TxHash.Hex(), t.exportTx, t.importTx)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "failed to build ImportTx signing request")
+			return false
+		}
+
+		t.signReqs[1] = signReq
+
+		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
 		t.Logger.ErrorOnError(err, "Failed to post signing request")
 		if err == nil {
 			t.status = StatusImportTxSigningPosted
@@ -216,13 +228,15 @@ func (t *Task) do() bool {
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
 		if err == nil && t.importIssueTx.Status == txissuer.StatusFailed {
-			return false
+			t.status = StatusImportTxFailed
 		}
 
 		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
 			t.status = StatusImportTxApproved
 		}
-
+	case StatusImportTxFailed:
+		fallthrough
+	case StatusImportTxApproved:
 		utxo := t.exportTx.Args.UTXOs[0]
 		evt := events.UTXOExported{
 			NativeUTXO:   utxo,
@@ -232,6 +246,7 @@ func (t *Task) do() bool {
 		}
 
 		t.Dispatcher.Dispatch(&evt)
+		t.Logger.Info("UTXO exported", []logger.Field{{"utxoExported", evt}}...)
 		return false
 	}
 	return true
@@ -251,14 +266,15 @@ func (t *Task) buildTask() error {
 		return errors.WithStack(err)
 	}
 
-	signReqs, err := t.buildSignReqs(t.Joined.Raw.TxHash.Hex(), exportTx, importTx)
+	signReq, err := t.buildExportTxSignReq(t.Joined.Raw.TxHash.Hex(), exportTx)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	t.exportTx = exportTx
 	t.importTx = importTx
-	t.signReqs = signReqs
+	t.signReqs = make([]*core.SignRequest, 2)
+	t.signReqs[0] = signReq
 	t.sigVerifier = sigVerifier
 	return nil
 }
@@ -272,7 +288,7 @@ func (t *Task) buildSigVerifier(signPubKey storage.PubKey) (*secp256k1r.Verifier
 	return &secp256k1r.Verifier{PChainAddress: pChainAddr}, nil
 }
 
-func (t *Task) buildSignReqs(reqHash string, exportTx *ExportTx, importTx *ImportTx) ([]*core.SignRequest, error) {
+func (t *Task) buildExportTxSignReq(reqHash string, exportTx *ExportTx) (*core.SignRequest, error) {
 	exportTxHash, err := exportTx.Hash()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -285,7 +301,10 @@ func (t *Task) buildSignReqs(reqHash string, exportTx *ExportTx, importTx *Impor
 		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,
 		Hash:                   bytes.BytesToHex(exportTxHash),
 	}
+	return &exportTxSignReq, nil
+}
 
+func (t *Task) buildImportTxSignReq(reqHash string, exportTx *ExportTx, importTx *ImportTx) (*core.SignRequest, error) {
 	importTxHash, err := importTx.Hash()
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -299,7 +318,8 @@ func (t *Task) buildSignReqs(reqHash string, exportTx *ExportTx, importTx *Impor
 		Hash:                   bytes.BytesToHex(importTxHash),
 	}
 
-	return []*core.SignRequest{&exportTxSignReq, &importTxSignReq}, nil
+	return &importTxSignReq, nil
+
 }
 
 func (t *Task) buildTxs(req *storage.RecoverRequest) (*ExportTx, *ImportTx, error) {
@@ -307,9 +327,9 @@ func (t *Task) buildTxs(req *storage.RecoverRequest) (*ExportTx, *ImportTx, erro
 	treasureAddr, _ := t.treasuryAddress(t.Ctx, utxoOutputIndex(req.OutputIndex))
 
 	utxoID := req.TxID.String() + strconv.Itoa(int(req.OutputIndex))
-	val, ok := t.UTXOsCache.Get(utxoID)
+	val, ok := t.Cache.Get(utxoID)
 	if !ok {
-		return nil, nil, errors.Errorf("UTXO(%v) to pay not cached", utxoID)
+		return nil, nil, errors.Errorf("UTXO(%v) to pay not cached", utxoID) // todo: to fix
 	}
 	utxo := val.(*avax.UTXO)
 

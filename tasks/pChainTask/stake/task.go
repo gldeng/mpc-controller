@@ -22,6 +22,7 @@ const (
 	StatusTxSigningDone
 	StatusTxIssued
 	StatusImportTxCommitted
+	StatusImportTxFailed
 )
 
 type Status int
@@ -38,7 +39,7 @@ type Task struct {
 	MpcClient core.MpcClient
 	TxIssuer  txissuer.TxIssuer
 
-	Atomic *events.StakeAtomicTaskDone
+	Atomic *events.StakeAtomicTaskHandled
 
 	tx        *AddDelegatorTx
 	txSignReq *core.SignRequest
@@ -73,18 +74,15 @@ func (t *Task) do() bool {
 		if err == nil {
 			t.status = StatusTxSigningPosted
 		}
-		return true
 	case StatusTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.txSignReq.ReqID)
 		t.Logger.ErrorOnError(err, "Failed to check signing result")
 
 		if res.Status != core.StatusDone {
 			t.Logger.Debug("Signing task not done")
-			return true
 		}
 		t.status = StatusTxSigningDone
 		t.txSignRes = res
-		return true
 	case StatusTxSigningDone:
 		sig := new(events.Signature).FromHex(t.txSignRes.Result)
 		err := t.tx.SetTxSig(*sig)
@@ -101,6 +99,7 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.txSignReq.ReqID,
+			TxID:  t.tx.ID(),
 			Chain: txissuer.ChainP,
 			Bytes: signedBytes,
 		}
@@ -111,26 +110,28 @@ func (t *Task) do() bool {
 		if err == nil {
 			t.status = StatusTxIssued
 		}
-		return true
 	case StatusTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.issueTx)
 		if err == nil && t.issueTx.Status == txissuer.StatusFailed {
+			t.status = StatusImportTxFailed
+			t.Logger.Debug("Stake addDelegator task failed")
 			return false
 		}
 
 		if err == nil && t.issueTx.Status == txissuer.StatusApproved {
 			t.status = StatusImportTxCommitted
-			t.tx.SetTxID(t.issueTx.TxID)
 		}
 
 		evt := events.StakeAddDelegatorTaskDone{
 			StakeTaskBasic:   t.tx.StakeTaskBasic,
-			AddDelegatorTxID: t.tx.addDelegatorTxID,
+			AddDelegatorTxID: t.tx.ID(),
 		}
 
 		t.Dispatcher.Dispatch(&evt)
+		t.Logger.Info("Stake addDelegator task done", []logger.Field{{"stakeAddDelegatorTaskDone", evt}}...)
+		return false
 	}
-	return false
+	return true
 }
 
 // Build task
@@ -169,9 +170,9 @@ func (t *Task) buildSignReqs(tx *AddDelegatorTx) (*core.SignRequest, error) {
 
 func (t *Task) buildTx() (*AddDelegatorTx, error) {
 	st := AddDelegatorTx{
-		StakeAtomicTaskDone: t.Atomic,
-		NetworkID:           t.Network.NetworkID(),
-		Asset:               t.Network.Asset(),
+		StakeAtomicTaskHandled: t.Atomic,
+		NetworkID:              t.Network.NetworkID(),
+		Asset:                  t.Network.Asset(),
 	}
 
 	return &st, nil

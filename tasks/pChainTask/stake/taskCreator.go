@@ -23,11 +23,11 @@ type TaskCreator struct {
 	Network    chain.NetworkContext
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskDone]
+	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
 }
 
 func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.StakeAtomicTaskDone) {
+	reqStartedEvtHandler := func(evt *events.StakeAtomicTaskHandled) {
 		t := Task{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
@@ -45,7 +45,7 @@ func (c *TaskCreator) Start() error {
 		c.Pool.Submit(t.Do)
 	}
 
-	reqStartedEvtFilter := func(evt *events.StakeAtomicTaskDone) bool {
+	reqStartedEvtFilter := func(evt *events.StakeAtomicTaskHandled) bool {
 		return evt.UTXOsToStake != nil
 	}
 

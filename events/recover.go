@@ -3,6 +3,7 @@ package events
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/avalido/mpc-controller/storage"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -15,6 +16,12 @@ const (
 	OutputIndexReward
 )
 
+const (
+	UTXOTypeRecover UTXOType = iota
+)
+
+type UTXOType int
+
 type UTXOsFetched struct {
 	NativeUTXOs []*avax.UTXO `json:"-"`
 	MpcUTXOs    []*myAvax.MpcUTXO
@@ -25,6 +32,11 @@ type UTXOsFetched struct {
 	GenPubKeyHashHex string         `copier:"must"` // key
 	CChainAddress    common.Address `copier:"must"`
 	PChainAddress    ids.ShortID    `copier:"must"`
+}
+
+type UTXOToRecover struct {
+	UTXO      *avax.UTXO
+	GenPubKey storage.PubKey
 }
 
 type UTXOReported struct {

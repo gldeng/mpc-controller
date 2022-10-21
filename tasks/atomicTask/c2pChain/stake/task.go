@@ -27,11 +27,13 @@ const (
 	StatusExportTxSigningDone
 	StatusExportTxIssued
 	StatusExportTxApproved
+	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
 	StatusImportTxIssued
 	StatusImportTxApproved
+	StatusImportTxFailed
 )
 
 type Status int
@@ -47,7 +49,7 @@ type Task struct {
 	TxIssuer  txissuer.TxIssuer
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskDone]
+	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
 
 	Joined *events.RequestStarted
 
@@ -126,12 +128,14 @@ func (t *Task) do() bool {
 	case StatusExportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
 		if err == nil && t.exportIssueTx.Status == txissuer.StatusFailed {
-			return false
+			t.status = StatusExportTxFailed
 		}
 
 		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
 			t.status = StatusExportTxApproved
 		}
+	case StatusExportTxFailed:
+		fallthrough
 	case StatusExportTxApproved:
 		signReq, err := t.buildImportTxSignReq(t.txs)
 		if err != nil {
@@ -185,16 +189,18 @@ func (t *Task) do() bool {
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
 		if err == nil && t.importIssueTx.Status == txissuer.StatusFailed {
-			return false
+			t.status = StatusImportTxFailed
 		}
 
 		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
 			t.status = StatusImportTxApproved
 		}
-
+	case StatusImportTxFailed:
+		fallthrough
+	case StatusImportTxApproved:
 		utxos, _ := t.txs.SingedImportTxUTXOs()
 
-		evt := events.StakeAtomicTaskDone{
+		evt := events.StakeAtomicTaskHandled{
 			StakeTaskBasic: events.StakeTaskBasic{
 				ReqNo:   t.txs.ReqNo,
 				Nonce:   t.txs.Nonce,
@@ -219,7 +225,7 @@ func (t *Task) do() bool {
 		}
 
 		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("Stake atomic task done", []logger.Field{{"stakeAtomicTaskDone", evt}}...)
+		t.Logger.Info("Stake atomic task handled", []logger.Field{{"stakeAtomicTaskHandled", evt}}...)
 		return false
 	}
 	return true

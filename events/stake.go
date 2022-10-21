@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type StakeAtomicTaskDone struct {
+type StakeAtomicTaskHandled struct {
 	StakeTaskBasic
 
 	ExportTxID ids.ID

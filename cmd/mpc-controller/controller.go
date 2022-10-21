@@ -10,6 +10,7 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/chain/txissuer"
+	"github.com/avalido/mpc-controller/chain/utxotracker"
 	"github.com/avalido/mpc-controller/config"
 	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/contract/transactor"
@@ -24,11 +25,12 @@ import (
 	p2cChainRecover "github.com/avalido/mpc-controller/tasks/atomicTask/p2cChain/recover"
 	joinTaskRecover "github.com/avalido/mpc-controller/tasks/joinTask/recover"
 	joinTaskStake "github.com/avalido/mpc-controller/tasks/joinTask/stake"
+	pChainTaskStake "github.com/avalido/mpc-controller/tasks/pChainTask/stake"
 	"github.com/avalido/mpc-controller/utils/addrs"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
-	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/avalido/mpc-controller/utils/dispatcher" // todo: apply kubecost/events instead
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -175,6 +177,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Create global dispatcher
 	stakeReqAddedDispatcher := kbcevents.GlobalDispatcherFor[*events.StakeRequestAdded]()
 	requestStartedDispatcher := kbcevents.GlobalDispatcherFor[*events.RequestStarted]()
+	stakeAtomicDispatcher := kbcevents.NewDispatcher[*events.StakeAtomicTaskHandled]()
+	utxoToRecoverDispatcher := kbcevents.NewDispatcher[*events.UTXOToRecover]()
 
 	// Create global cache
 	globalCache, _ := ristretto.NewCache(&ristretto.Config{
@@ -193,9 +197,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Network:     networkCtx(config),
 		Bound:       &boundTransactor,
 		Pool:        pond.New(3, 1000),
-		Dispatcher:  stakeReqAddedDispatcher,
-
-		UTXOsCache: globalCache,
+		Dispatcher:  utxoToRecoverDispatcher,
 	}
 
 	joinTaskStakeTaskCreator := joinTaskStake.TaskCreator{
@@ -209,14 +211,26 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	}
 
 	c2pChainStakeTaskCreator := c2pChainStake.TaskCreator{
+		Ctx:                      ctx,
+		Logger:                   myLogger,
+		MpcClient:                mpcClient,
+		TxIssuer:                 &myTxIssuer,
+		Network:                  networkCtx(config),
+		NonceGiver:               noncer,
+		Pool:                     pond.New(3, 1000),
+		ReqStartedEvtDispatcher:  requestStartedDispatcher,
+		StakeAtomicEvtDispatcher: stakeAtomicDispatcher,
+	}
+
+	pChainStakeTaskCreator := pChainTaskStake.TaskCreator{
 		Ctx:        ctx,
 		Logger:     myLogger,
 		MpcClient:  mpcClient,
 		TxIssuer:   &myTxIssuer,
-		Network:    networkCtx(config),
 		NonceGiver: noncer,
+		Network:    networkCtx(config),
 		Pool:       pond.New(3, 1000),
-		Dispatcher: requestStartedDispatcher,
+		Dispatcher: stakeAtomicDispatcher,
 	}
 
 	p2cChainRecoverTaskCreator := p2cChainRecover.TaskCreator{
@@ -228,7 +242,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		ContractCaller: &boundCaller,
 		Pool:           pond.New(3, 1000),
 		Dispatcher:     requestStartedDispatcher,
-		UTXOsCache:     globalCache,
+		Cache:          globalCache,
 	}
 
 	watcherMaster := watcher.Master{
@@ -246,6 +260,15 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		ReqStartedDispatcher:    requestStartedDispatcher,
 	}
 
+	utxoTrackerMaster := utxotracker.Master{
+		Ctx:                     ctx,
+		Logger:                  myLogger,
+		Cache:                   globalCache,
+		ClientPChain:            pChainIssueCli,
+		Dispatcher:              myDispatcher,
+		UTXOToRecoverDispatcher: utxoToRecoverDispatcher,
+	}
+
 	metricsService := prom.MetricsService{
 		Ctx:       ctx,
 		ServeAddr: config.MetricsServeAddr,
@@ -259,6 +282,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 			&joinTaskRecoverTaskCreator,
 			&joinTaskStakeTaskCreator,
 			&c2pChainStakeTaskCreator,
+			&pChainStakeTaskCreator,
+			&utxoTrackerMaster,
 			&p2cChainRecoverTaskCreator,
 			&metricsService,
 		},

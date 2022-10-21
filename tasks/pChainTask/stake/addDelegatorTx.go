@@ -19,14 +19,14 @@ const (
 )
 
 type AddDelegatorTx struct {
-	*events.StakeAtomicTaskDone
+	*events.StakeAtomicTaskHandled
 
 	NetworkID uint32
 	Asset     avax.Asset
 
-	addDelegatorTx     *txs.AddDelegatorTx
-	addDelegatorTxCred *secp256k1fx.Credential
-	addDelegatorTxID   ids.ID
+	addDelegatorTx       *txs.AddDelegatorTx
+	addDelegatorTxCred   *secp256k1fx.Credential
+	signedAddDelegatorTx *txs.Tx
 }
 
 // ---
@@ -74,11 +74,12 @@ func (t *AddDelegatorTx) SignedTxBytes() ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 
+	t.signedAddDelegatorTx = tx
 	return tx.Bytes(), nil
 }
 
-func (t *AddDelegatorTx) SetTxID(id ids.ID) {
-	t.addDelegatorTxID = id
+func (t *AddDelegatorTx) ID() ids.ID {
+	return t.signedAddDelegatorTx.ID()
 }
 
 func (t *AddDelegatorTx) String() string {

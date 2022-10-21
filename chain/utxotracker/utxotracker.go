@@ -6,17 +6,14 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
-	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
 	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
-	"github.com/avalido/mpc-controller/utils/work"
 	"github.com/dgraph-io/ristretto"
+	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
 	"strconv"
 	"sync"
@@ -30,51 +27,23 @@ const (
 // Subscribe event: *events.KeyGenerated
 
 type UTXOTracker struct {
-	BoundTransactor        transactor.Transactor
-	ClientPChain           platformvm.Client
-	DB                     storage.DB
-	Logger                 logger.Logger
-	PartiPubKey            storage.PubKey
-	UTXOExportedEventCache *ristretto.Cache
-	UTXOsFetchedEventCache *ristretto.Cache
+	ClientPChain platformvm.Client
+	Logger       logger.Logger
 
-	genPubKeyCache               map[ids.ShortID]*events.KeyGenerated
-	utxosToExportCh              chan *utxosToExport
-	joinUTXOExportTaskAddedCache *ristretto.Cache
-	joinedUTXOExportCache        *ristretto.Cache
-	joinUTXOExportWs             *work.Workshop
-	once                         sync.Once
+	Cache *ristretto.Cache
+
+	Dispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
+
+	genPubKeyCache map[ids.ShortID]*events.KeyGenerated
+	once           sync.Once
 }
 
-type utxosToExport struct {
-	utxos     []*avax.UTXO
-	genPubKey storage.PubKey
-}
+// todo: apply kubecost/events for dispatcher
 
 func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 	eh.once.Do(func() {
-		//eh.genPubKeyChan = make(chan *events.KeyGenerated)
 		eh.genPubKeyCache = make(map[ids.ShortID]*events.KeyGenerated)
-
-		eh.joinUTXOExportWs = work.NewWorkshop(eh.Logger, "utxosToExport", time.Minute*10, 10)
-		eh.utxosToExportCh = make(chan *utxosToExport, 256)
-
-		reportUTXOTaskAddedCache, _ := ristretto.NewCache(&ristretto.Config{
-			NumCounters: 1e7,     // number of keys to track frequency of (10M).
-			MaxCost:     1 << 30, // maximum cost of cache (1GB).
-			BufferItems: 64,      // number of keys per Get buffer.
-		})
-		eh.joinUTXOExportTaskAddedCache = reportUTXOTaskAddedCache
-
-		utxoReportedEventCache, _ := ristretto.NewCache(&ristretto.Config{
-			NumCounters: 1e7,     // number of keys to track frequency of (10M).
-			MaxCost:     1 << 30, // maximum cost of cache (1GB).
-			BufferItems: 64,      // number of keys per Get buffer.
-		})
-		eh.joinedUTXOExportCache = utxoReportedEventCache
-
 		go eh.fetchUTXOs(ctx)
-		go eh.joinExportUTXOs(ctx)
 	})
 
 	switch evt := evtObj.Event.(type) {
@@ -88,6 +57,8 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 		eh.genPubKeyCache[pChainAddr] = evt
 	}
 }
+
+// todo: apply Tx memo for filter
 
 func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 	t := time.NewTicker(checkUTXOInterval)
@@ -106,154 +77,23 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					continue
 				}
 
-				var nativeUTXOsToExport []*avax.UTXO
 				for _, utxo := range utxosFromStake {
 					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-					_, ok := eh.joinUTXOExportTaskAddedCache.Get(utxoID)
+					_, ok := eh.Cache.Get(utxoID)
 					if ok {
 						continue
 					}
-					_, ok = eh.joinedUTXOExportCache.Get(utxoID)
-					if ok {
-						continue
+
+					utxoToRecover := events.UTXOToRecover{
+						UTXO:      utxo,
+						GenPubKey: genPubKey.PublicKey,
 					}
-					_, ok = eh.UTXOExportedEventCache.Get(utxoID)
-					if ok {
-						continue
-					}
-					nativeUTXOsToExport = append(nativeUTXOsToExport, utxo)
+
+					eh.Dispatcher.Dispatch(&utxoToRecover)
+					eh.Cache.SetWithTTL(utxoID, utxo, 1, time.Hour)
+					eh.Cache.Wait()
+					eh.Logger.Info("Dispatched UTXOToRecover", []logger.Field{{"utxoToRecover", myAvax.MpcUTXOFromUTXO(utxo)}}...)
 				}
-
-				if len(nativeUTXOsToExport) == 0 {
-					continue
-				}
-
-				utxosToExport := &utxosToExport{
-					utxos:     nativeUTXOsToExport,
-					genPubKey: genPubKey.PublicKey,
-				}
-
-				eh.Logger.Info("Fetched UTXOs to export", []logger.Field{{"utxosToExport", utxosToExport}}...)
-
-				select {
-				case <-ctx.Done():
-					return
-				case eh.utxosToExportCh <- utxosToExport:
-				}
-			}
-		}
-	}
-}
-
-func (eh *UTXOTracker) joinExportUTXOs(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case utxosToExport := <-eh.utxosToExportCh:
-			for _, utxo := range utxosToExport.utxos {
-				genPubKey := storage.GeneratedPublicKey{
-					GenPubKey: utxosToExport.genPubKey,
-				}
-				err := eh.DB.LoadModel(ctx, &genPubKey)
-				if err != nil {
-					eh.Logger.ErrorOnError(err, "failed to load generated public key", []logger.Field{{"key", genPubKey.Key()}}...)
-					break
-				}
-
-				participant := storage.Participant{
-					PubKey:  hash256.FromBytes(eh.PartiPubKey),
-					GroupId: genPubKey.GroupId,
-				}
-
-				err = eh.DB.LoadModel(ctx, &participant)
-				if err != nil {
-					eh.Logger.ErrorOnError(err, "failed to load participant", []logger.Field{{"key", participant.Key()}}...)
-					break
-				}
-
-				exportUTXOReq := storage.RecoverRequest{
-					TxID:               utxo.TxID,
-					OutputIndex:        utxo.OutputIndex,
-					GeneratedPublicKey: &genPubKey,
-				}
-
-				partiId := participant.ParticipantId()
-				reqHash := exportUTXOReq.ReqHash()
-
-				joinReq := storage.JoinRequest{
-					ReqHash: reqHash,
-					PartiId: partiId,
-					Args:    &exportUTXOReq,
-				}
-
-				utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-				eh.UTXOsFetchedEventCache.SetWithTTL(utxoID, utxo, 1, time.Hour)
-				eh.UTXOsFetchedEventCache.Wait()
-				eh.joinUTXOExportTaskAddedCache.SetWithTTL(utxoID, " ", 1, time.Hour)
-				eh.joinUTXOExportTaskAddedCache.Wait()
-
-				err = eh.joinUTXOExportWs.AddTask(ctx, &work.Task{
-					Args: &joinReq,
-					Ctx:  ctx,
-					WorkFns: []work.WorkFn{
-						func(ctx context.Context, args interface{}) {
-							joinReq := args.(*storage.JoinRequest)
-							partiId := joinReq.PartiId
-							reqHash := joinReq.ReqHash
-							reqArgs := joinReq.Args.(*storage.RecoverRequest)
-							txID := reqArgs.TxID
-							outputIndex := reqArgs.OutputIndex
-
-							exportUTXOReq := joinReq.Args.(*storage.RecoverRequest)
-							utxoID := exportUTXOReq.TxID.String() + strconv.Itoa(int(exportUTXOReq.OutputIndex))
-							_, ok := eh.joinedUTXOExportCache.Get(utxoID)
-							if ok {
-								return
-							}
-							_, ok = eh.UTXOExportedEventCache.Get(utxoID)
-							if ok {
-								return
-							}
-
-							if err = eh.DB.SaveModel(ctx, joinReq); err != nil {
-								eh.Logger.ErrorOnError(err, "Failed to save JoinRequest for UTXO export", []logger.Field{{"joinReq", joinReq}}...)
-								return
-							}
-
-							_, _, err := eh.BoundTransactor.JoinRequest(ctx, partiId, reqHash)
-							if err != nil {
-								switch errors.Cause(err).(type) {
-								case *transactor.ErrTypQuorumAlreadyReached:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
-								case *transactor.ErrTypAttemptToRejoin:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
-								case *transactor.ErrTypExecutionReverted:
-									eh.Logger.DebugOnError(err, "Join UTXO export request not accepted", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
-								default:
-									eh.Logger.ErrorOnError(err, "Failed to join UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
-								}
-								return
-							}
-
-							eh.joinedUTXOExportCache.SetWithTTL(utxoID, " ", 1, time.Hour)
-							eh.joinedUTXOExportCache.Wait()
-
-							prom.UTXOExportRequestJoined.Inc()
-							switch outputIndex {
-							case 0:
-								eh.Logger.Debug("Joined principal UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
-								prom.PrincipalUTXOExportRequestJoined.Inc()
-							case 1:
-								eh.Logger.Debug("Joined reward UTXO export request", []logger.Field{{"reqHash", reqHash.String()}, {"txID", txID}, {"outputIndex", outputIndex}}...)
-								prom.RewardUTXOExportRequestJoined.Inc()
-							}
-							return
-						},
-					},
-				})
-				eh.Logger.ErrorOnError(err, "Failed to add join UTXO export task", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
-				eh.Logger.InfoNilError(err, "Join UTXO export task added", []logger.Field{{"reqHash", reqHash.String()}, {"txID", utxo.TxID}, {"outputIndex", utxo.OutputIndex}}...)
 			}
 		}
 	}

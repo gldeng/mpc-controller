@@ -29,8 +29,8 @@ type Task struct {
 
 	Bound transactor.Transactor
 
-	TriggerReq  *events.StakeRequestAdded
-	PartiPubKey storage.PubKey
+	UTXOToRecover *events.UTXOToRecover
+	PartiPubKey   storage.PubKey
 
 	status Status
 
@@ -66,19 +66,22 @@ func (t *Task) do() bool {
 
 		t.status = StatusOK
 
+		t.Logger.Info("Joined UTXO recover")
+		return false
 	// todo: make it async
 	case StatusSent:
 		// todo: check async status
 	}
-	return false
+	return true
 }
 
 func (t *Task) buildTask() error {
-	genPubKey := &storage.GeneratedPublicKey{}
-	key := genPubKey.KeyFromHash(t.TriggerReq.PublicKey)
-	err := t.DB.MGet(t.Ctx, key, genPubKey)
+	genPubKey := storage.GeneratedPublicKey{
+		GenPubKey: t.UTXOToRecover.GenPubKey,
+	}
+	err := t.DB.LoadModel(t.Ctx, &genPubKey)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to load generated public key")
 	}
 
 	participant := storage.Participant{
@@ -88,27 +91,22 @@ func (t *Task) buildTask() error {
 
 	err = t.DB.LoadModel(t.Ctx, &participant)
 	if err != nil {
-		return errors.WithStack(err)
+		return errors.Wrapf(err, "failed to load participant")
+	}
+
+	recoverUTXOReq := storage.RecoverRequest{
+		TxID:               t.UTXOToRecover.UTXO.TxID,
+		OutputIndex:        t.UTXOToRecover.UTXO.OutputIndex,
+		GeneratedPublicKey: &genPubKey,
 	}
 
 	partiId := participant.ParticipantId()
-	txHash := t.TriggerReq.Raw.TxHash
+	reqHash := recoverUTXOReq.ReqHash()
 
-	stakeReq := storage.StakeRequest{
-		ReqNo:              t.TriggerReq.RequestNumber.Uint64(),
-		TxHash:             txHash,
-		NodeID:             t.TriggerReq.NodeID,
-		Amount:             t.TriggerReq.Amount.String(),
-		StartTime:          t.TriggerReq.StartTime.Int64(),
-		EndTime:            t.TriggerReq.EndTime.Int64(),
-		GeneratedPublicKey: genPubKey,
-	}
-
-	reqHash := stakeReq.ReqHash()
 	joinReq := &storage.JoinRequest{
 		ReqHash: reqHash,
 		PartiId: partiId,
-		Args:    &stakeReq,
+		Args:    &recoverUTXOReq,
 	}
 	t.joinReq = joinReq
 	return nil
