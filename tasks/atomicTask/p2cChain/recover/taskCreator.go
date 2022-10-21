@@ -28,7 +28,7 @@ type TaskCreator struct {
 	Pool       pool.WorkerPool
 	Dispatcher kbcevents.Dispatcher[*events.RequestStarted]
 
-	UTXOsCache *ristretto.Cache
+	Cache *ristretto.Cache
 }
 
 func (c *TaskCreator) Start() error {
@@ -49,7 +49,7 @@ func (c *TaskCreator) Start() error {
 
 			Joined: evt,
 
-			UTXOsCache: c.UTXOsCache,
+			Cache: c.Cache,
 		}
 		c.Pool.Submit(t.Do)
 	}

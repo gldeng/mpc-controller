@@ -242,7 +242,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		ContractCaller: &boundCaller,
 		Pool:           pond.New(3, 1000),
 		Dispatcher:     requestStartedDispatcher,
-		UTXOsCache:     globalCache,
+		Cache:          globalCache,
 	}
 
 	watcherMaster := watcher.Master{
@@ -263,6 +263,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	utxoTrackerMaster := utxotracker.Master{
 		Ctx:                     ctx,
 		Logger:                  myLogger,
+		Cache:                   globalCache,
 		ClientPChain:            pChainIssueCli,
 		Dispatcher:              myDispatcher,
 		UTXOToRecoverDispatcher: utxoToRecoverDispatcher,

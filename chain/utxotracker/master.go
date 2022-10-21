@@ -6,12 +6,14 @@ import (
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/dispatcher"
+	"github.com/dgraph-io/ristretto"
 	kbcevents "github.com/kubecost/events"
 )
 
 type Master struct {
 	Ctx                     context.Context
 	ClientPChain            platformvm.Client
+	Cache                   *ristretto.Cache
 	Dispatcher              dispatcher.Dispatcher
 	UTXOToRecoverDispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
 	Logger                  logger.Logger
@@ -28,6 +30,7 @@ func (m *Master) subscribe() {
 	utxoTracker := UTXOTracker{
 		ClientPChain: m.ClientPChain,
 		Logger:       m.Logger,
+		Cache:        m.Cache,
 		Dispatcher:   m.UTXOToRecoverDispatcher,
 	}
 

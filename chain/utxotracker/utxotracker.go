@@ -30,7 +30,7 @@ type UTXOTracker struct {
 	ClientPChain platformvm.Client
 	Logger       logger.Logger
 
-	UTXOCache *ristretto.Cache
+	Cache *ristretto.Cache
 
 	Dispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
 
@@ -79,7 +79,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 
 				for _, utxo := range utxosFromStake {
 					utxoID := utxo.TxID.String() + strconv.Itoa(int(utxo.OutputIndex))
-					_, ok := eh.UTXOCache.Get(utxoID)
+					_, ok := eh.Cache.Get(utxoID)
 					if ok {
 						continue
 					}
@@ -90,9 +90,9 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					}
 
 					eh.Dispatcher.Dispatch(&utxoToRecover)
-					eh.UTXOCache.SetWithTTL(utxoID, utxo, 1, time.Hour)
-					eh.UTXOCache.Wait()
-					eh.Logger.Info("Dispatched UTXO to recover", []logger.Field{{"utxoToRecover", myAvax.MpcUTXOFromUTXO(utxo)}}...)
+					eh.Cache.SetWithTTL(utxoID, utxo, 1, time.Hour)
+					eh.Cache.Wait()
+					eh.Logger.Info("Dispatched UTXOToRecover", []logger.Field{{"utxoToRecover", myAvax.MpcUTXOFromUTXO(utxo)}}...)
 				}
 			}
 		}
