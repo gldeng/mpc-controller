@@ -10,10 +10,15 @@ type ExtendedWorkerPool struct {
 	resources *goconcurrentqueue.FIFO
 }
 
-func New(size int) (*ExtendedWorkerPool, error) {
+func New(size int, makeResources ResourcesFactory) (*ExtendedWorkerPool, error) {
 	inner := pond.New(size, 1024)
+	resources := goconcurrentqueue.NewFIFO()
+	for i := 0; i < size; i++ {
+		resources.Enqueue(makeResources()) // TODO: Construct resources
+	}
 	return &ExtendedWorkerPool{
-		inner: inner,
+		inner:     inner,
+		resources: resources,
 	}, nil
 }
 

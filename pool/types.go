@@ -27,3 +27,5 @@ type Resources struct { // TODO: Convert it to TaskApi interface instead of dire
 	MpcClient core.MpcClient
 	TxIssuer  txissuer.TxIssuer
 }
+
+type ResourcesFactory = func() *Resources
