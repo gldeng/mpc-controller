@@ -19,15 +19,15 @@ const (
 )
 
 type Txs struct {
-	ReqNo         uint64
-	Nonce         uint64
-	ReqHash       string
-	DelegateAmt   uint64
-	StartTime     uint64
-	EndTime       uint64
+	//ReqNo uint64
+	Nonce uint64
+	//ReqHash       string
+	DelegateAmt uint64
+	//StartTime     uint64
+	//EndTime       uint64
 	CChainAddress common.Address
 	PChainAddress ids.ShortID
-	NodeID        ids.NodeID
+	//NodeID        ids.NodeID
 
 	BaseFeeGwei uint64
 	NetworkID   uint32

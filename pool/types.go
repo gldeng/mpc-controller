@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
 )
 
@@ -24,7 +25,7 @@ type TaskContext struct { // TODO: Convert it to TaskApi interface instead of di
 
 	NonceGiver noncer.Noncer
 	Network    chain.NetworkContext
-
+	EthClient  *ethclient.Client
 	MpcClient  core.MpcClient
 	TxIssuer   txissuer.TxIssuer
 	Dispatcher kbcevents.Dispatcher[interface{}]

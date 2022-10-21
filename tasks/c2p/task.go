@@ -2,8 +2,7 @@ package c2p
 
 import (
 	"context"
-	"fmt"
-	"github.com/ava-labs/avalanchego/ids"
+	"encoding/hex"
 	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
@@ -41,7 +40,8 @@ type Status int
 
 type TransferC2P struct {
 	Status          Status
-	Joined          events.RequestStarted
+	Id              string
+	Amount          big.Int
 	Quorum          QuorumInfo
 	Txs             *Txs
 	SignReqs        []*core.SignRequest
@@ -52,9 +52,11 @@ type TransferC2P struct {
 	ImportTxSignRes *core.Result
 }
 
-func New(quorum QuorumInfo) (*TransferC2P, error) {
+func New(id string, amount big.Int, quorum QuorumInfo) (*TransferC2P, error) {
 	return &TransferC2P{
 		Status:          0,
+		Id:              id,
+		Amount:          amount,
 		Quorum:          quorum,
 		Txs:             nil,
 		SignReqs:        nil,
@@ -190,32 +192,7 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 	case StatusImportTxFailed:
 		fallthrough
 	case StatusImportTxApproved:
-		utxos, _ := t.Txs.SingedImportTxUTXOs()
-
-		evt := events.StakeAtomicTaskHandled{
-			StakeTaskBasic: events.StakeTaskBasic{
-				ReqNo:   t.Txs.ReqNo,
-				Nonce:   t.Txs.Nonce,
-				ReqHash: t.Txs.ReqHash,
-
-				DelegateAmt: t.Txs.DelegateAmt,
-				StartTime:   t.Txs.StartTime,
-				EndTime:     t.Txs.EndTime,
-				NodeID:      t.Txs.NodeID,
-
-				StakePubKey:   t.Joined.CompressedGenPubKeyHex,
-				CChainAddress: t.Txs.CChainAddress,
-				PChainAddress: t.Txs.PChainAddress,
-
-				JoinedPubKeys: t.Joined.CompressedPartiPubKeys,
-			},
-
-			ExportTxID: t.ExportIssueTx.TxID,
-			ImportTxID: t.ImportIssueTx.TxID,
-
-			UTXOsToStake: utxos,
-		}
-
+		evt := ImportedEvent{Tx: t.Txs.importTx}
 		ctx.Dispatcher.Dispatch(&evt)
 		ctx.Logger.Info("Stake atomic task handled", []logger.Field{{"stakeAtomicTaskHandled", evt}}...)
 		return nil, nil
@@ -224,8 +201,7 @@ func (t *TransferC2P) Next(ctx *pool.TaskContext) ([]pool.Task, error) {
 }
 
 func (t *TransferC2P) buildTask(ctx *pool.TaskContext) error {
-	stakeReq := t.Joined.JoinedReq.Args.(*storage.StakeRequest)
-	txs, err := t.buildTxs(ctx, stakeReq, *t.Joined.ReqHash)
+	txs, err := t.buildTxs(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build txs")
 	}
@@ -247,14 +223,7 @@ func (t *TransferC2P) buildExportTxSignReq(txs *Txs) (*core.SignRequest, error) 
 		return nil, errors.Wrapf(err, "failed to get ExportTx hash")
 	}
 
-	exportTxSignReq := core.SignRequest{
-		ReqID:                  string(events.ReqIDPrefixStakeExport) + fmt.Sprintf("%v", txs.ReqNo) + "-" + txs.ReqHash,
-		CompressedGenPubKeyHex: t.Joined.CompressedGenPubKeyHex,
-		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,
-		Hash:                   bytes.BytesToHex(exportTxHash),
-	}
-
-	return &exportTxSignReq, nil
+	return t.buildSignReq(t.Id+"/export", exportTxHash)
 }
 
 func (t *TransferC2P) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) {
@@ -263,42 +232,38 @@ func (t *TransferC2P) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) 
 		return nil, errors.Wrapf(err, "failed to get ImportTx hash")
 	}
 
-	importTxSignReq := core.SignRequest{
-		ReqID:                  string(events.ReqIDPrefixStakeImport) + fmt.Sprintf("%v", txs.ReqNo) + "-" + txs.ReqHash,
-		CompressedGenPubKeyHex: t.Joined.CompressedGenPubKeyHex,
-		CompressedPartiPubKeys: t.Joined.CompressedPartiPubKeys,
-		Hash:                   bytes.BytesToHex(importTxHash),
-	}
-
-	return &importTxSignReq, nil
+	return t.buildSignReq(t.Id+"/import", importTxHash)
 }
 
-func (t *TransferC2P) buildTxs(ctx *pool.TaskContext, stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*Txs, error) {
-	nodeID, _ := ids.ShortFromPrefixedString(stakeReq.NodeID, ids.NodeIDPrefix)
-	amountBig := new(big.Int)
-	amount, _ := amountBig.SetString(stakeReq.Amount, 10)
+func (t *TransferC2P) buildSignReq(id string, hash []byte) (*core.SignRequest, error) {
+	var participantPks []string
+	for _, pk := range t.Quorum.ParticipantPubKeys {
+		participantPks = append(participantPks, hex.EncodeToString(pk))
+	}
+	return &core.SignRequest{
+		ReqID:                  id,
+		CompressedGenPubKeyHex: hex.EncodeToString(t.Quorum.PubKey),
+		CompressedPartiPubKeys: participantPks,
+		Hash:                   bytes.BytesToHex(hash),
+	}, nil
+}
 
-	startTime := big.NewInt(stakeReq.StartTime)
-	endTIme := big.NewInt(stakeReq.EndTime)
+func (t *TransferC2P) buildTxs(ctx *pool.TaskContext) (*Txs, error) {
 
-	nAVAXAmount := new(big.Int).Div(amount, big.NewInt(1_000_000_000))
-	if !nAVAXAmount.IsUint64() || !startTime.IsUint64() || !endTIme.IsUint64() {
+	nAVAXAmount := new(big.Int).Div(&t.Amount, big.NewInt(1_000_000_000))
+	if !nAVAXAmount.IsUint64() {
 		return nil, errors.New(ErrMsgInvalidUint64)
 	}
 
-	cChainAddr, _ := stakeReq.GenPubKey.CChainAddress()
-	pChainAddr, _ := stakeReq.GenPubKey.PChainAddress()
+	cChainAddr, _ := (storage.PubKey(t.Quorum.PubKey)).CChainAddress()
+	pChainAddr, _ := (storage.PubKey(t.Quorum.PubKey)).PChainAddress()
+	nonce, _ := ctx.EthClient.NonceAt(context.Background(), cChainAddr, nil)
 
 	st := Txs{
-		ReqNo:         stakeReq.ReqNo,
-		Nonce:         ctx.NonceGiver.GetNonce(stakeReq.ReqNo),
-		ReqHash:       reqHash.String(),
+		Nonce:         nonce,
 		DelegateAmt:   nAVAXAmount.Uint64(),
-		StartTime:     startTime.Uint64(),
-		EndTime:       endTIme.Uint64(),
 		CChainAddress: cChainAddr,
 		PChainAddress: pChainAddr,
-		NodeID:        ids.NodeID(nodeID),
 
 		BaseFeeGwei: cchain.BaseFeeGwei,
 		NetworkID:   ctx.Network.NetworkID(),
