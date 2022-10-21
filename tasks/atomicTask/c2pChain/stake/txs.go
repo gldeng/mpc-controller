@@ -67,9 +67,9 @@ func (t *Txs) ExportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) SetExportTxSig(sig [SigLength]byte) error {
-	if t.exportTxCred != nil {
-		return errors.New(ErrMsgSignatureAlreadySet)
-	}
+	//if t.exportTxCred != nil {
+	//	return errors.New(ErrMsgSignatureAlreadySet)
+	//}
 	hash, err := t.ExportTxHash()
 	if err != nil {
 		return errors.WithStack(err)
@@ -118,9 +118,9 @@ func (t *Txs) ImportTxHash() ([]byte, error) {
 }
 
 func (t *Txs) SetImportTxSig(sig [SigLength]byte) error {
-	if t.importTxCred != nil {
-		return errors.New(ErrMsgSignatureAlreadySet)
-	}
+	//if t.importTxCred != nil {
+	//	return errors.New(ErrMsgSignatureAlreadySet)
+	//}
 	hash, err := t.ImportTxHash()
 	if err != nil {
 		return errors.WithStack(err)

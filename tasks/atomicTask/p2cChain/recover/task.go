@@ -23,6 +23,7 @@ import (
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -62,7 +63,7 @@ type Task struct {
 	TxIssuer  txissuer.TxIssuer
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.UTXOExported]
+	Dispatcher kbcevents.Dispatcher[*events.UTXOHandled]
 
 	Joined *events.RequestStarted
 
@@ -103,15 +104,23 @@ func (t *Task) do() bool {
 		t.status = StatusBuilt
 	case StatusBuilt:
 		err := t.MpcClient.Sign(t.Ctx, t.signReqs[0])
-		t.Logger.ErrorOnError(err, "Failed to post signing request")
-		if err == nil {
-			t.status = StatusExportTxSigningPosted
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to post signing request")
+			return false
 		}
+		t.status = StatusExportTxSigningPosted
 	case StatusExportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[0].ReqID)
-		t.Logger.ErrorOnError(err, "Failed to check signing result")
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to check signing result")
+			return true
+		}
 
 		if res.Status != core.StatusDone {
+			if strings.Contains(string(res.Status), "ERROR") {
+				t.Logger.ErrorOnError(errors.New(string(res.Status)), "Failed to sign ExportTx")
+				return false
+			}
 			t.Logger.Debug("Signing task not done")
 			return true
 		}
@@ -144,25 +153,32 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[0].ReqID,
-			Chain: txissuer.ChainC,
+			TxID:  t.exportTx.ID(),
+			Chain: txissuer.ChainP,
 			Bytes: signedBytes,
 		}
 		t.exportIssueTx = &tx
 
 		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
-		t.Logger.ErrorOnError(err, "Failed to issue tx")
-		if err == nil {
-			t.status = StatusExportTxIssued
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to issue ExportTx")
+			return false
 		}
+		t.status = StatusExportTxIssued
 	case StatusExportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
-		if err == nil && t.exportIssueTx.Status == txissuer.StatusFailed {
-			t.status = StatusExportTxFailed
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to track ExportTx status")
+			return true
 		}
 
-		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
+		switch t.exportIssueTx.Status {
+		case txissuer.StatusFailed:
+			t.status = StatusExportTxFailed
+		case txissuer.StatusApproved:
 			t.status = StatusExportTxApproved
 		}
+
 	case StatusExportTxFailed:
 		fallthrough
 	case StatusExportTxApproved:
@@ -175,15 +191,23 @@ func (t *Task) do() bool {
 		t.signReqs[1] = signReq
 
 		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
-		t.Logger.ErrorOnError(err, "Failed to post signing request")
-		if err == nil {
-			t.status = StatusImportTxSigningPosted
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to post signing request")
+			return false
 		}
+		t.status = StatusImportTxSigningPosted
 	case StatusImportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[1].ReqID)
-		t.Logger.ErrorOnError(err, "Failed to check signing result")
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to check signing result")
+			return true
+		}
 
 		if res.Status != core.StatusDone {
+			if strings.Contains(string(res.Status), "ERROR") {
+				t.Logger.ErrorOnError(errors.New(string(res.Status)), "Failed to sign ImportTx")
+				return false
+			}
 			t.Logger.Debug("Signing task not done")
 			return true
 		}
@@ -216,37 +240,52 @@ func (t *Task) do() bool {
 
 		tx := txissuer.Tx{
 			ReqID: t.signReqs[1].ReqID,
-			Chain: txissuer.ChainP,
+			TxID:  t.importTx.ID(),
+			Chain: txissuer.ChainC,
 			Bytes: signedBytes,
 		}
 		t.importIssueTx = &tx
 
 		err = t.TxIssuer.IssueTx(t.Ctx, t.importIssueTx)
-		if err == nil {
-			t.status = StatusImportTxIssued
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to issue ImportTx")
+			return false
 		}
+		t.status = StatusImportTxIssued
+
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
-		if err == nil && t.importIssueTx.Status == txissuer.StatusFailed {
-			t.status = StatusImportTxFailed
+		if err != nil {
+			t.Logger.ErrorOnError(err, "Failed to track ImportTx status")
+			return true
 		}
 
-		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
+		switch t.importIssueTx.Status {
+		case txissuer.StatusFailed:
+			t.status = StatusImportTxFailed
+		case txissuer.StatusApproved:
 			t.status = StatusImportTxApproved
 		}
 	case StatusImportTxFailed:
 		fallthrough
 	case StatusImportTxApproved:
+		var result string
+		if t.status == StatusImportTxFailed {
+			result = "failed"
+		} else {
+			result = "success"
+		}
 		utxo := t.exportTx.Args.UTXOs[0]
-		evt := events.UTXOExported{
+		evt := events.UTXOHandled{
 			NativeUTXO:   utxo,
 			MpcUTXO:      myAvax.MpcUTXOFromUTXO(utxo),
 			ExportedTxID: t.exportTx.ID(),
 			ImportedTxID: t.importTx.ID(),
+			Result:       result,
 		}
 
 		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("UTXO exported", []logger.Field{{"utxoExported", evt}}...)
+		t.Logger.Info("UTXO handled", []logger.Field{{"utxoHandled", evt}}...)
 		return false
 	}
 	return true

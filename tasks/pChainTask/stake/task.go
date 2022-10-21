@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 const (
@@ -79,7 +80,12 @@ func (t *Task) do() bool {
 		t.Logger.ErrorOnError(err, "Failed to check signing result")
 
 		if res.Status != core.StatusDone {
+			if strings.Contains(string(res.Status), "ERROR") {
+				t.Logger.ErrorOnError(errors.New(string(res.Status)), "Failed to sign addDelegatorTx")
+				return false
+			}
 			t.Logger.Debug("Signing task not done")
+			return true
 		}
 		t.status = StatusTxSigningDone
 		t.txSignRes = res

@@ -57,9 +57,10 @@ type ExportUTXORequest struct {
 	TxHash             common.Hash
 }
 
-type UTXOExported struct {
+type UTXOHandled struct {
 	NativeUTXO   *avax.UTXO `json:"-"`
 	MpcUTXO      *myAvax.MpcUTXO
 	ExportedTxID ids.ID
 	ImportedTxID ids.ID
+	Result       string
 }
