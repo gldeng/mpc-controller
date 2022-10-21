@@ -5,6 +5,10 @@ import (
 	"github.com/enriquebris/goconcurrentqueue"
 )
 
+var (
+	_ TaskSubmitter = (*ExtendedWorkerPool)(nil)
+)
+
 type ExtendedWorkerPool struct {
 	inner     *pond.WorkerPool
 	resources *goconcurrentqueue.FIFO

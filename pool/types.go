@@ -29,3 +29,6 @@ type Resources struct { // TODO: Convert it to TaskApi interface instead of dire
 }
 
 type ResourcesFactory = func() *Resources
+type TaskSubmitter interface {
+	Submit(task Task) error
+}
