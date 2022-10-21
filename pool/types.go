@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/core"
@@ -21,6 +22,43 @@ type Task interface {
 	Next(ctx TaskContext) ([]Task, error)
 }
 
+type Status = int
+
+const (
+	Unknown    Status = 0
+	Committed  Status = 4
+	Aborted    Status = 5
+	Processing Status = 6
+	Dropped    Status = 8
+)
+
+func IsPending(status Status) bool {
+	if status == Unknown {
+		return true
+	}
+	if status == Processing {
+		return true
+	}
+	return false
+}
+
+func IsSuccessful(status Status) bool {
+	if status == Committed {
+		return true
+	}
+	return false
+}
+
+func IsFailed(status Status) bool {
+	if status == Aborted {
+		return true
+	}
+	if status == Dropped {
+		return true
+	}
+	return false
+}
+
 type TaskContextImp struct { // TODO: Convert it to TaskApi interface instead of directly giving the underlying resources
 	Logger logger.Logger
 
@@ -36,7 +74,10 @@ type TaskContext interface {
 	GetLogger() logger.Logger
 	GetNetwork() *chain.NetworkContext
 	GetMpcClient() core.MpcClient
-	GetTxIssuer() txissuer.TxIssuer
+	IssueCChainTx(txBytes []byte) (ids.ID, error)
+	IssuePChainTx(txBytes []byte) (ids.ID, error)
+	CheckCChainTx(id ids.ID) (Status, error)
+	CheckPChainTx(id ids.ID) (Status, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
 }

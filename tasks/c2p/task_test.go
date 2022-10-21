@@ -6,7 +6,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
@@ -18,6 +17,22 @@ import (
 
 type MockTaskContext struct {
 	net *chain.NetworkContext
+}
+
+func (m *MockTaskContext) IssueCChainTx(txBytes []byte) (ids.ID, error) {
+	return [32]byte{}, nil
+}
+
+func (m *MockTaskContext) IssuePChainTx(txBytes []byte) (ids.ID, error) {
+	return [32]byte{}, nil
+}
+
+func (m *MockTaskContext) CheckCChainTx(id ids.ID) (pool.Status, error) {
+	return pool.Committed, nil
+}
+
+func (m *MockTaskContext) CheckPChainTx(id ids.ID) (pool.Status, error) {
+	return pool.Committed, nil
 }
 
 func NewMockTaskContext() pool.TaskContext {
@@ -46,11 +61,6 @@ func (m *MockTaskContext) GetNetwork() *chain.NetworkContext {
 }
 
 func (m *MockTaskContext) GetMpcClient() core.MpcClient {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MockTaskContext) GetTxIssuer() txissuer.TxIssuer {
 	//TODO implement me
 	panic("implement me")
 }

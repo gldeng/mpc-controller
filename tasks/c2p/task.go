@@ -46,9 +46,11 @@ type TransferC2P struct {
 	Txs             *Txs
 	SignReqs        []*core.SignRequest
 	ExportIssueTx   *txissuer.Tx
+	ExportTxStatus  pool.Status
 	ExportTxSignRes *core.Result
 
 	ImportIssueTx   *txissuer.Tx
+	ImportTxStatus  pool.Status
 	ImportTxSignRes *core.Result
 }
 
@@ -115,17 +117,18 @@ func (t *TransferC2P) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 		}
 		t.ExportIssueTx = &tx
 
-		err = ctx.GetTxIssuer().IssueTx(context.Background(), t.ExportIssueTx)
+		_, err = ctx.IssueCChainTx(t.ExportIssueTx.Bytes)
 		if err == nil {
 			t.Status = StatusExportTxIssued
 		}
 	case StatusExportTxIssued:
-		err := ctx.GetTxIssuer().TrackTx(context.Background(), t.ExportIssueTx)
-		if err == nil && t.ExportIssueTx.Status == txissuer.StatusFailed {
+		status, err := ctx.CheckCChainTx(t.ExportIssueTx.TxID)
+		t.ExportTxStatus = status
+		if err == nil && pool.IsFailed(status) {
 			t.Status = StatusExportTxFailed
 		}
 
-		if err == nil && t.ExportIssueTx.Status == txissuer.StatusApproved {
+		if err == nil && pool.IsSuccessful(status) {
 			t.Status = StatusExportTxApproved
 		}
 	case StatusExportTxFailed:
@@ -176,13 +179,14 @@ func (t *TransferC2P) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 		}
 		t.ImportIssueTx = &tx
 
-		err = ctx.GetTxIssuer().IssueTx(context.Background(), t.ImportIssueTx)
+		_, err = ctx.IssuePChainTx(t.ImportIssueTx.Bytes)
 		if err == nil {
 			t.Status = StatusImportTxIssued
 		}
 	case StatusImportTxIssued:
-		err := ctx.GetTxIssuer().TrackTx(context.Background(), t.ImportIssueTx)
-		if err == nil && t.ImportIssueTx.Status == txissuer.StatusFailed {
+		status, err := ctx.CheckPChainTx(t.ImportIssueTx.TxID)
+		t.ImportTxStatus = status
+		if err == nil && pool.IsFailed(t.ImportTxStatus) {
 			t.Status = StatusImportTxFailed
 		}
 
