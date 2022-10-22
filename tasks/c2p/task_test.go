@@ -47,7 +47,9 @@ func NewMockTaskContext() pool.TaskContext {
 		100,
 		1,
 		20,
-		100)
+		100,
+		100,
+	)
 	return &MockTaskContext{net: &net}
 }
 

@@ -9,36 +9,40 @@ import (
 // todo: use exported fields for convinience
 
 type NetworkContext struct {
-	chainID    *big.Int
-	networkID  uint32
-	cChainID   ids.ID
-	asset      avax.Asset
-	importFee  uint64
-	exportFee  uint64
-	gasPerByte uint64
-	gasPerSig  uint64
-	gasFixed   uint64
+	chainID     *big.Int
+	networkID   uint32
+	cChainID    ids.ID
+	asset       avax.Asset
+	importFee   uint64
+	exportFee   uint64
+	gasPerByte  uint64
+	gasPerSig   uint64
+	gasFixed    uint64
+	baseFeeGwei uint64
 }
 
 func NewNetworkContext(networkID uint32,
 	cChainID ids.ID,
 	chainID *big.Int,
 	asset avax.Asset,
-	importFee uint64,
-	exportFee uint64,
-	gasPerByte uint64,
-	gasPerSig uint64,
-	gasFixed uint64) NetworkContext {
+	importFee,
+	exportFee,
+	gasPerByte,
+	gasPerSig,
+	gasFixed,
+	baseFeeGwei uint64,
+) NetworkContext {
 	return NetworkContext{
-		networkID:  networkID,
-		cChainID:   cChainID,
-		chainID:    chainID,
-		asset:      asset,
-		importFee:  importFee,
-		exportFee:  exportFee,
-		gasPerByte: gasPerByte,
-		gasPerSig:  gasPerSig,
-		gasFixed:   gasFixed,
+		chainID:     chainID,
+		networkID:   networkID,
+		cChainID:    cChainID,
+		asset:       asset,
+		importFee:   importFee,
+		exportFee:   exportFee,
+		gasPerByte:  gasPerByte,
+		gasPerSig:   gasPerSig,
+		gasFixed:    gasFixed,
+		baseFeeGwei: baseFeeGwei,
 	}
 }
 
@@ -76,4 +80,8 @@ func (c *NetworkContext) GasPerSig() uint64 {
 
 func (c *NetworkContext) GasFixed() uint64 {
 	return c.gasFixed
+}
+
+func (c *NetworkContext) BaseFeeGwei() uint64 {
+	return c.baseFeeGwei
 }

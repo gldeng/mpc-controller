@@ -20,6 +20,7 @@ type WorkerPool interface {
 
 type Task interface {
 	Next(ctx TaskContext) ([]Task, error)
+	IsDone() bool
 }
 
 type Status = int

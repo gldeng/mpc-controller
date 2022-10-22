@@ -34,6 +34,10 @@ const (
 	StatusImportTxIssued
 	StatusImportTxApproved
 	StatusImportTxFailed
+
+	StatusNewSignReqSent
+	StatusNewTxSent
+	StatusNewDone
 )
 
 type Status int
@@ -52,6 +56,10 @@ type TransferC2P struct {
 	ImportIssueTx   *txissuer.Tx
 	ImportTxStatus  pool.Status
 	ImportTxSignRes *core.Result
+}
+
+func (t *TransferC2P) IsDone() bool {
+	return t.Status == StatusImportTxApproved || t.Status == StatusImportTxFailed
 }
 
 func New(id string, amount big.Int, quorum QuorumInfo) (*TransferC2P, error) {
