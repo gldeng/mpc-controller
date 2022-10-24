@@ -29,7 +29,7 @@ type Task struct {
 
 	Bound transactor.Transactor
 
-	UTXOToRecover *events.UTXOToRecover
+	UTXOToRecover *events.UTXOFetched
 	PartiPubKey   storage.PubKey
 
 	status Status

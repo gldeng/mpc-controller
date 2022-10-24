@@ -29,11 +29,11 @@ type TaskCreator struct {
 	Bound transactor.Transactor
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
+	Dispatcher kbcevents.Dispatcher[*events.UTXOFetched]
 }
 
 func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.UTXOToRecover) {
+	reqStartedEvtHandler := func(evt *events.UTXOFetched) {
 		t := Task{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
@@ -49,7 +49,7 @@ func (c *TaskCreator) Start() error {
 		c.Pool.Submit(t.Do)
 	}
 
-	reqStartedEvtFilter := func(evt *events.UTXOToRecover) bool {
+	reqStartedEvtFilter := func(evt *events.UTXOFetched) bool {
 		return true
 	}
 

@@ -178,7 +178,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	stakeReqAddedDispatcher := kbcevents.GlobalDispatcherFor[*events.StakeRequestAdded]()
 	requestStartedDispatcher := kbcevents.GlobalDispatcherFor[*events.RequestStarted]()
 	stakeAtomicDispatcher := kbcevents.NewDispatcher[*events.StakeAtomicTaskHandled]()
-	utxoToRecoverDispatcher := kbcevents.NewDispatcher[*events.UTXOToRecover]()
+	utxoToRecoverDispatcher := kbcevents.NewDispatcher[*events.UTXOFetched]()
 
 	// Create global cache
 	globalCache, _ := ristretto.NewCache(&ristretto.Config{

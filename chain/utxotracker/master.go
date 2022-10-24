@@ -15,7 +15,7 @@ type Master struct {
 	ClientPChain            platformvm.Client
 	Cache                   *ristretto.Cache
 	Dispatcher              dispatcher.Dispatcher
-	UTXOToRecoverDispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
+	UTXOToRecoverDispatcher kbcevents.Dispatcher[*events.UTXOFetched]
 	Logger                  logger.Logger
 	utxoTracker             *UTXOTracker
 }

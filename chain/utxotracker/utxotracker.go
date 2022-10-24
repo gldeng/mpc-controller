@@ -32,7 +32,7 @@ type UTXOTracker struct {
 
 	Cache *ristretto.Cache
 
-	Dispatcher kbcevents.Dispatcher[*events.UTXOToRecover]
+	Dispatcher kbcevents.Dispatcher[*events.UTXOFetched]
 
 	genPubKeyCache map[ids.ShortID]*events.KeyGenerated
 	once           sync.Once
@@ -51,7 +51,7 @@ func (eh *UTXOTracker) Do(ctx context.Context, evtObj *dispatcher.EventObject) {
 		genPubKey := storage.PubKey(evt.PublicKey)
 		pChainAddr, err := genPubKey.PChainAddress()
 		if err != nil {
-			eh.Logger.ErrorOnError(err, "Failed to get P-Chain address")
+			eh.Logger.ErrorOnError(err, "UTXOTracker failed to get P-Chain address")
 			break
 		}
 		eh.genPubKeyCache[pChainAddr] = evt
@@ -72,8 +72,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 			for pChainAddr, genPubKey := range eh.genPubKeyCache {
 				utxosFromStake, err := eh.requestUTXOsFromStake(ctx, pChainAddr)
 				if err != nil {
-					eh.Logger.DebugOnError(err, "Failed to fetch UTXOs",
-						[]logger.Field{{"pChainAddr", pChainAddr}}...)
+					eh.Logger.DebugOnError(err, "UTXOTracker failed to fetch UTXOs")
 					continue
 				}
 
@@ -84,7 +83,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 						continue
 					}
 
-					utxoToRecover := events.UTXOToRecover{
+					utxoToRecover := events.UTXOFetched{
 						UTXO:      utxo,
 						GenPubKey: genPubKey.PublicKey,
 					}
@@ -92,7 +91,7 @@ func (eh *UTXOTracker) fetchUTXOs(ctx context.Context) {
 					eh.Dispatcher.Dispatch(&utxoToRecover)
 					eh.Cache.SetWithTTL(utxoID, utxo, 1, time.Hour)
 					eh.Cache.Wait()
-					eh.Logger.Info("Dispatched UTXOToRecover", []logger.Field{{"utxoToRecover", myAvax.MpcUTXOFromUTXO(utxo)}}...)
+					eh.Logger.Info("UTXOTracker dispatched UTXOFetched", []logger.Field{{"UTXOFetched", myAvax.MpcUTXOFromUTXO(utxo)}}...)
 				}
 			}
 		}
@@ -114,10 +113,7 @@ func (eh *UTXOTracker) requestUTXOsFromStake(ctx context.Context, addr ids.Short
 	for _, utxo := range rawUtxos {
 		ok, err := eh.isFromImportTx(ctx, utxo.TxID)
 		if err != nil {
-			eh.Logger.Debug("Failed to check whether UTXO is from importTX", []logger.Field{
-				{"txID", utxo.TxID},
-				{"error", err}}...)
-			continue
+			return nil, errors.Wrapf(err, "failed to check whether UTXO is from importTx")
 		}
 
 		// An address dedicated to delegate stake may receive three kinds of native UTXO on P-Chain,
