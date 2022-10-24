@@ -21,8 +21,8 @@ import (
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
-	c2pChainStake "github.com/avalido/mpc-controller/tasks/atomicTask/c2pChain/stake"
-	p2cChainRecover "github.com/avalido/mpc-controller/tasks/atomicTask/p2cChain/recover"
+	c2pStake "github.com/avalido/mpc-controller/tasks/atomicTask/c2p/stake"
+	p2cRecover "github.com/avalido/mpc-controller/tasks/atomicTask/p2c/recover"
 	joinTaskRecover "github.com/avalido/mpc-controller/tasks/joinTask/recover"
 	joinTaskStake "github.com/avalido/mpc-controller/tasks/joinTask/stake"
 	pChainTaskStake "github.com/avalido/mpc-controller/tasks/pChainTask/stake"
@@ -210,7 +210,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher:  stakeReqAddedDispatcher,
 	}
 
-	c2pChainStakeTaskCreator := c2pChainStake.TaskCreator{
+	c2pChainStakeTaskCreator := c2pStake.TaskCreator{
 		Ctx:                      ctx,
 		Logger:                   myLogger,
 		MpcClient:                mpcClient,
@@ -233,7 +233,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher: stakeAtomicDispatcher,
 	}
 
-	p2cChainRecoverTaskCreator := p2cChainRecover.TaskCreator{
+	p2cChainRecoverTaskCreator := p2cRecover.TaskCreator{
 		Ctx:            ctx,
 		Logger:         myLogger,
 		MpcClient:      mpcClient,
