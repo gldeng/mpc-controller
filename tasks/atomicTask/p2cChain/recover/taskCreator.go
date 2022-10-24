@@ -33,7 +33,7 @@ type TaskCreator struct {
 
 func (c *TaskCreator) Start() error {
 	reqStartedEvtHandler := func(evt *events.RequestStarted) {
-		t := Task{
+		t := RecoverTransferTask{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
 
