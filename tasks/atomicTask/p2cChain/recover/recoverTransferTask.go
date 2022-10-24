@@ -2,6 +2,7 @@ package stake
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -33,13 +34,13 @@ const (
 	StatusExportTxSigningPosted
 	StatusExportTxSigningDone
 	StatusExportTxIssued
-	StatusExportTxApproved
+	StatusExportTxCommitted
 	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
 	StatusImportTxIssued
-	StatusImportTxApproved
+	StatusImportTxAccepted
 	StatusImportTxFailed
 )
 
@@ -63,7 +64,7 @@ type RecoverTransferTask struct {
 	TxIssuer  txissuer.TxIssuer
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.UTXOHandled]
+	Dispatcher kbcevents.Dispatcher[*events.UTXOTransferred]
 
 	Joined *events.RequestStarted
 
@@ -82,6 +83,9 @@ type RecoverTransferTask struct {
 	importTxSignRes *core.Result
 
 	status Status
+
+	exportTxSignReqNum int
+	importTxSignReqNum int
 }
 
 func (t *RecoverTransferTask) Do() {
@@ -107,12 +111,14 @@ func (t *RecoverTransferTask) do() bool {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to post ExportTx signing request")
 			return false
 		}
+		t.exportTxSignReqNum++
+		fmt.Println("-------------exportTxSignReqNum: ", t.exportTxSignReqNum)
 		t.status = StatusExportTxSigningPosted
 	case StatusExportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[0].ReqID)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to check ExportTx signing result")
-			return true
+			return false
 		}
 
 		if res.Status != core.StatusDone {
@@ -168,19 +174,22 @@ func (t *RecoverTransferTask) do() bool {
 		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to track ExportTx status")
-			return true
+			return false
 		}
 
 		switch t.exportIssueTx.Status {
 		case txissuer.StatusFailed:
 			t.status = StatusExportTxFailed
-		case txissuer.StatusApproved:
-			t.status = StatusExportTxApproved
+			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
+		case txissuer.StatusCommitted:
+			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ExporTx committed")) // todo: add more context info
+			t.status = StatusExportTxCommitted
 		}
-
+		// Pay attention: this mpc-controller need to continue to request signing ImportTx even it failed to issue ExportTx,
+		// Signing transactions always requires multiple participation.
 	case StatusExportTxFailed:
 		fallthrough
-	case StatusExportTxApproved:
+	case StatusExportTxCommitted:
 		signReq, err := t.buildImportTxSignReq(t.Joined.Raw.TxHash.Hex(), t.exportTx, t.importTx)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to build ImportTx signing request")
@@ -199,7 +208,7 @@ func (t *RecoverTransferTask) do() bool {
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[1].ReqID)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to check ImportTx signing result")
-			return true
+			return false
 		}
 
 		if res.Status != core.StatusDone {
@@ -256,35 +265,26 @@ func (t *RecoverTransferTask) do() bool {
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to track ImportTx status")
-			return true
+			return false
 		}
 
 		switch t.importIssueTx.Status {
 		case txissuer.StatusFailed:
 			t.status = StatusImportTxFailed
-		case txissuer.StatusApproved:
-			t.status = StatusImportTxApproved
-		}
-	case StatusImportTxFailed:
-		fallthrough
-	case StatusImportTxApproved:
-		var result string
-		if t.status == StatusImportTxFailed {
-			result = "failed"
-		} else {
-			result = "success"
-		}
-		utxo := t.exportTx.Args.UTXOs[0]
-		evt := events.UTXOHandled{
-			NativeUTXO:   utxo,
-			MpcUTXO:      myAvax.MpcUTXOFromUTXO(utxo),
-			ExportedTxID: t.exportTx.ID(),
-			ImportedTxID: t.importTx.ID(),
-			Result:       result,
-		}
+			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ImportTx failed because of %v", t.importIssueTx.Reason))
+		case txissuer.StatusAccepted:
+			t.status = StatusImportTxAccepted
+			utxo := t.exportTx.Args.UTXOs[0]
+			evt := events.UTXOTransferred{
+				NativeUTXO:   utxo,
+				MpcUTXO:      myAvax.MpcUTXOFromUTXO(utxo),
+				ExportedTxID: t.exportTx.ID(),
+				ImportedTxID: t.importTx.ID(),
+			}
 
-		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("RecoverTransferTask finished", []logger.Field{{"utxoHandled", evt}}...)
+			t.Dispatcher.Dispatch(&evt)
+			t.Logger.Info("RecoverTransferTask finished", []logger.Field{{"UTXOTransferred", evt}}...)
+		}
 		return false
 	}
 	return true

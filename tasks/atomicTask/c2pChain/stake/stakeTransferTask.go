@@ -27,13 +27,13 @@ const (
 	StatusExportTxSigningPosted
 	StatusExportTxSigningDone
 	StatusExportTxIssued
-	StatusExportTxApproved
+	StatusExportTxAccepted
 	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
 	StatusImportTxIssued
-	StatusImportTxApproved
+	StatusImportTxCommitted
 	StatusImportTxFailed
 )
 
@@ -86,14 +86,17 @@ func (t *StakeTransferTask) do() bool {
 		t.status = StatusBuilt
 	case StatusBuilt:
 		err := t.MpcClient.Sign(t.Ctx, t.signReqs[0])
-		t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ExportTx signing request")
-		if err == nil {
-			t.status = StatusExportTxSigningPosted
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ExportTx signing request")
+			return false
 		}
+		t.status = StatusExportTxSigningPosted
 	case StatusExportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[0].ReqID)
-		t.Logger.ErrorOnError(err, "StakeTransferTask failed to check ExportTx signing result")
-
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to check ExportTx signing result")
+			return false
+		}
 		if res.Status != core.StatusDone {
 			if strings.Contains(string(res.Status), "ERROR") {
 				t.Logger.ErrorOnError(errors.New(string(res.Status)), "StakeTransferTask failed to sign ExportTx")
@@ -132,16 +135,23 @@ func (t *StakeTransferTask) do() bool {
 		}
 	case StatusExportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
-		if err == nil && t.exportIssueTx.Status == txissuer.StatusFailed {
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ExportTx status")
+			return false
+		}
+		switch t.exportIssueTx.Status {
+		case txissuer.StatusFailed:
 			t.status = StatusExportTxFailed
+			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
+		case txissuer.StatusAccepted:
+			t.Logger.Info("StakeTransferTask ExportTx accepted") // todo: add more context info
+			t.status = StatusExportTxAccepted
 		}
-
-		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
-			t.status = StatusExportTxApproved
-		}
+	// Pay attention: this mpc-controller need to continue to request signing ImportTx even it failed to issue ExportTx,
+	// Signing transactions always requires multiple participation.	case StatusExportTxFailed:
 	case StatusExportTxFailed:
 		fallthrough
-	case StatusExportTxApproved:
+	case StatusExportTxAccepted:
 		signReq, err := t.buildImportTxSignReq(t.txs)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "StakeTransferTask failed to build ImportTx signing request")
@@ -151,13 +161,17 @@ func (t *StakeTransferTask) do() bool {
 		t.signReqs[1] = signReq
 
 		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
-		t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ImportTx signing request")
-		if err == nil {
-			t.status = StatusImportTxSigningPosted
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ImportTx signing request")
+			return false
 		}
+		t.status = StatusImportTxSigningPosted
 	case StatusImportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[1].ReqID)
-		t.Logger.ErrorOnError(err, "StakeTransferTask failed to check ImportTx signing result")
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to check ImportTx signing result")
+			return false
+		}
 
 		if res.Status != core.StatusDone {
 			if strings.Contains(string(res.Status), "ERROR") {
@@ -192,49 +206,52 @@ func (t *StakeTransferTask) do() bool {
 		t.importIssueTx = &tx
 
 		err = t.TxIssuer.IssueTx(t.Ctx, t.importIssueTx)
-		if err == nil {
-			t.status = StatusImportTxIssued
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to issue ImportTx")
+			return false
 		}
+		t.status = StatusImportTxIssued
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
-		if err == nil && t.importIssueTx.Status == txissuer.StatusFailed {
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ImportTx status")
+			return false
+		}
+
+		switch t.importIssueTx.Status {
+		case txissuer.StatusFailed:
 			t.status = StatusImportTxFailed
+			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ImportTx failed because of %v", t.importIssueTx.Reason))
+		case txissuer.StatusCommitted:
+			t.status = StatusImportTxCommitted
+			utxos, _ := t.txs.SingedImportTxUTXOs()
+			evt := events.StakeAtomicTransferTask{
+				StakeTaskBasic: events.StakeTaskBasic{
+					ReqNo:   t.txs.ReqNo,
+					Nonce:   t.txs.Nonce,
+					ReqHash: t.txs.ReqHash,
+
+					DelegateAmt: t.txs.DelegateAmt,
+					StartTime:   t.txs.StartTime,
+					EndTime:     t.txs.EndTime,
+					NodeID:      t.txs.NodeID,
+
+					StakePubKey:   t.Joined.CompressedGenPubKeyHex,
+					CChainAddress: t.txs.CChainAddress,
+					PChainAddress: t.txs.PChainAddress,
+
+					JoinedPubKeys: t.Joined.CompressedPartiPubKeys,
+				},
+
+				ExportTxID: t.exportIssueTx.TxID,
+				ImportTxID: t.importIssueTx.TxID,
+
+				UTXOsToStake: utxos,
+			}
+
+			t.Dispatcher.Dispatch(&evt)
+			t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTransferTask", evt}}...)
 		}
-
-		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
-			t.status = StatusImportTxApproved
-		}
-	case StatusImportTxFailed:
-		fallthrough
-	case StatusImportTxApproved:
-		utxos, _ := t.txs.SingedImportTxUTXOs()
-
-		evt := events.StakeAtomicTransferTask{
-			StakeTaskBasic: events.StakeTaskBasic{
-				ReqNo:   t.txs.ReqNo,
-				Nonce:   t.txs.Nonce,
-				ReqHash: t.txs.ReqHash,
-
-				DelegateAmt: t.txs.DelegateAmt,
-				StartTime:   t.txs.StartTime,
-				EndTime:     t.txs.EndTime,
-				NodeID:      t.txs.NodeID,
-
-				StakePubKey:   t.Joined.CompressedGenPubKeyHex,
-				CChainAddress: t.txs.CChainAddress,
-				PChainAddress: t.txs.PChainAddress,
-
-				JoinedPubKeys: t.Joined.CompressedPartiPubKeys,
-			},
-
-			ExportTxID: t.exportIssueTx.TxID,
-			ImportTxID: t.importIssueTx.TxID,
-
-			UTXOsToStake: utxos,
-		}
-
-		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTransferTask", evt}}...)
 		return false
 	}
 	return true

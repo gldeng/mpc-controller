@@ -126,25 +126,21 @@ func (t *StakeAddDelegatorTask) do() bool {
 			t.Logger.ErrorOnError(err, "StakeAddDelegatorTask failed to track AddDelegatorTx status")
 			return false
 		}
-		if t.issueTx.Status == txissuer.StatusFailed {
-			t.Logger.Debug(fmt.Sprintf("StakeAddDelegatorTask failed because of %v", t.issueTx.Reason))
+
+		switch t.issueTx.Status {
+		case txissuer.StatusFailed:
 			t.status = StatusImportTxFailed
-			return false
-		}
-
-		if t.issueTx.Status == txissuer.StatusApproved {
+			t.Logger.Debug(fmt.Sprintf("StakeAddDelegatorTask failed because of %v", t.issueTx.Reason))
+		case txissuer.StatusCommitted:
 			t.status = StatusImportTxCommitted
-		}
-	case StatusImportTxFailed: // todo: enhance error handling
-		fallthrough
-	case StatusImportTxCommitted:
-		evt := events.StakeAddDelegatorTask{
-			StakeTaskBasic:   t.tx.StakeTaskBasic,
-			AddDelegatorTxID: t.tx.ID(),
-		}
+			evt := events.StakeAddDelegatorTask{
+				StakeTaskBasic:   t.tx.StakeTaskBasic,
+				AddDelegatorTxID: t.tx.ID(),
+			}
 
-		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("StakeAddDelegatorTask finished", []logger.Field{{"StakeAddDelegatorTask", evt}}...)
+			t.Dispatcher.Dispatch(&evt)
+			t.Logger.Info("StakeAddDelegatorTask finished", []logger.Field{{"StakeAddDelegatorTask", evt}}...)
+		}
 		return false
 	}
 	return true

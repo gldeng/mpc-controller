@@ -16,7 +16,8 @@ const (
 	StatusCreated Status = iota
 	StatusIssued
 	StatusProcessing
-	StatusApproved
+	StatusAccepted
+	StatusCommitted
 	StatusFailed
 )
 
@@ -90,7 +91,7 @@ func (t *MyTxIssuer) TrackTx(ctx context.Context, tx *Tx) error {
 			case evm.Processing:
 				tx.Result = Result{StatusProcessing, "Processing"}
 			case evm.Accepted:
-				tx.Result = Result{StatusApproved, "Accepted"}
+				tx.Result = Result{StatusAccepted, "Accepted"}
 			}
 		case ChainP:
 			statusResp, err := t.PChainClient.GetTxStatus(ctx, tx.TxID)
@@ -105,7 +106,7 @@ func (t *MyTxIssuer) TrackTx(ctx context.Context, tx *Tx) error {
 			case status.Dropped:
 				tx.Result = Result{StatusFailed, "Dropped"}
 			case status.Committed:
-				tx.Result = Result{StatusApproved, "Committed"}
+				tx.Result = Result{StatusCommitted, "Committed"}
 			}
 		}
 		return false, nil

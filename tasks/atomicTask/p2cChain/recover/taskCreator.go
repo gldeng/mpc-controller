@@ -45,7 +45,7 @@ func (c *TaskCreator) Start() error {
 			TxIssuer:  c.TxIssuer,
 
 			Pool:       c.Pool,
-			Dispatcher: kbcevents.NewDispatcher[*events.UTXOHandled](),
+			Dispatcher: kbcevents.NewDispatcher[*events.UTXOTransferred](),
 
 			Joined: evt,
 
