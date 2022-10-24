@@ -25,7 +25,7 @@ type TaskCreator struct {
 
 	Pool                     pool.WorkerPool
 	ReqStartedEvtDispatcher  kbcevents.Dispatcher[*events.RequestStarted]
-	StakeAtomicEvtDispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
+	StakeAtomicEvtDispatcher kbcevents.Dispatcher[*events.StakeAtomicTransferTask]
 }
 
 func (c *TaskCreator) Start() error {

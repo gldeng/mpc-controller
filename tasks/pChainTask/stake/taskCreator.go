@@ -23,12 +23,12 @@ type TaskCreator struct {
 	Network    chain.NetworkContext
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
+	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTransferTask]
 }
 
 func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.StakeAtomicTaskHandled) {
-		t := Task{
+	reqStartedEvtHandler := func(evt *events.StakeAtomicTransferTask) {
+		t := StakeAddDelegatorTask{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
 
@@ -38,14 +38,14 @@ func (c *TaskCreator) Start() error {
 			TxIssuer:  c.TxIssuer,
 
 			Pool:       c.Pool,
-			Dispatcher: kbcevents.NewDispatcher[*events.StakeAddDelegatorTaskDone](),
+			Dispatcher: kbcevents.NewDispatcher[*events.StakeAddDelegatorTask](),
 
 			Atomic: evt,
 		}
 		c.Pool.Submit(t.Do)
 	}
 
-	reqStartedEvtFilter := func(evt *events.StakeAtomicTaskHandled) bool {
+	reqStartedEvtFilter := func(evt *events.StakeAtomicTransferTask) bool {
 		return evt.UTXOsToStake != nil
 	}
 

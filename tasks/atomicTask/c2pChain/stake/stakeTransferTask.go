@@ -50,7 +50,7 @@ type StakeTransferTask struct {
 	TxIssuer  txissuer.TxIssuer
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
+	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTransferTask]
 
 	Joined *events.RequestStarted
 
@@ -209,7 +209,7 @@ func (t *StakeTransferTask) do() bool {
 	case StatusImportTxApproved:
 		utxos, _ := t.txs.SingedImportTxUTXOs()
 
-		evt := events.StakeAtomicTaskHandled{
+		evt := events.StakeAtomicTransferTask{
 			StakeTaskBasic: events.StakeTaskBasic{
 				ReqNo:   t.txs.ReqNo,
 				Nonce:   t.txs.Nonce,
@@ -234,7 +234,7 @@ func (t *StakeTransferTask) do() bool {
 		}
 
 		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTaskHandled", evt}}...)
+		t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTransferTask", evt}}...)
 		return false
 	}
 	return true
