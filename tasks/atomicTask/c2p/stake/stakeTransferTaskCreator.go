@@ -4,65 +4,59 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/chain/txissuer"
-	"github.com/avalido/mpc-controller/contract/caller"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/dgraph-io/ristretto"
+	"github.com/avalido/mpc-controller/utils/noncer"
 	kbcevents "github.com/kubecost/events"
 )
 
-type TaskCreator struct {
+type StakeTransferTaskCreator struct {
 	Ctx    context.Context
 	Logger logger.Logger
 
 	MpcClient core.MpcClient
 	TxIssuer  txissuer.TxIssuer
 
-	Network chain.NetworkContext
+	NonceGiver noncer.Noncer
+	Network    chain.NetworkContext
 
-	ContractCaller caller.Caller
-
-	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.RequestStarted]
-
-	Cache *ristretto.Cache
+	Pool                     pool.WorkerPool
+	ReqStartedEvtDispatcher  kbcevents.Dispatcher[*events.RequestStarted]
+	StakeAtomicEvtDispatcher kbcevents.Dispatcher[*events.StakeAtomicTransferTask]
 }
 
-func (c *TaskCreator) Start() error {
+func (c *StakeTransferTaskCreator) Start() error {
 	reqStartedEvtHandler := func(evt *events.RequestStarted) {
-		t := RecoverTransferTask{
+		t := StakeTransferTask{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
 
-			Network: c.Network,
-
-			ContractCaller: c.ContractCaller,
+			NonceGiver: c.NonceGiver,
+			Network:    c.Network,
 
 			MpcClient: c.MpcClient,
 			TxIssuer:  c.TxIssuer,
 
 			Pool:       c.Pool,
-			Dispatcher: kbcevents.NewDispatcher[*events.UTXOTransferred](),
+			Dispatcher: c.StakeAtomicEvtDispatcher,
 
 			Joined: evt,
-
-			Cache: c.Cache,
 		}
 		c.Pool.Submit(t.Do)
 	}
 
 	reqStartedEvtFilter := func(evt *events.RequestStarted) bool {
-		return evt.TaskType == storage.TaskTypRecover
+		return evt.TaskType == storage.TaskTypStake
 	}
 
-	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
+	c.ReqStartedEvtDispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
 	return nil
 }
 
-func (c *TaskCreator) Close() error {
+func (c *StakeTransferTaskCreator) Close() error {
 	c.Pool.StopAndWait()
 	return nil
 }

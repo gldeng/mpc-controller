@@ -21,7 +21,7 @@ const (
 
 type Status int
 
-type Task struct {
+type StakeJoinTask struct {
 	Ctx    context.Context
 	Logger logger.Logger
 
@@ -38,13 +38,13 @@ type Task struct {
 	joinReq *storage.JoinRequest
 }
 
-func (t *Task) Do() {
+func (t *StakeJoinTask) Do() {
 	if t.do() {
 		t.Pool.Submit(t.Do)
 	}
 }
 
-func (t *Task) do() bool {
+func (t *StakeJoinTask) do() bool {
 	switch t.status {
 	case StatusStarted:
 		err := t.buildTask()
@@ -76,7 +76,7 @@ func (t *Task) do() bool {
 	return true
 }
 
-func (t *Task) buildTask() error {
+func (t *StakeJoinTask) buildTask() error {
 	genPubKey := &storage.GeneratedPublicKey{}
 	key := genPubKey.KeyFromHash(t.TriggerReq.PublicKey)
 	err := t.DB.MGet(t.Ctx, key, genPubKey)

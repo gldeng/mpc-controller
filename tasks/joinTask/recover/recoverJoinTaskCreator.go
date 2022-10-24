@@ -4,56 +4,61 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/chain/txissuer"
+	"github.com/avalido/mpc-controller/contract/transactor"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
-	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/avalido/mpc-controller/storage"
 	kbcevents "github.com/kubecost/events"
 )
 
-type TaskCreator struct {
+type RecoverJoinTaskCreator struct {
 	Ctx    context.Context
 	Logger logger.Logger
+
+	PartiPubKey storage.PubKey
+
+	DB storage.DB
 
 	MpcClient core.MpcClient
 	TxIssuer  txissuer.TxIssuer
 
-	NonceGiver noncer.Noncer
-	Network    chain.NetworkContext
+	Network chain.NetworkContext
+
+	Bound transactor.Transactor
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTransferTask]
+	Dispatcher kbcevents.Dispatcher[*events.UTXOFetched]
 }
 
-func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.StakeAtomicTransferTask) {
-		t := StakeAddDelegatorTask{
+func (c *RecoverJoinTaskCreator) Start() error {
+	reqStartedEvtHandler := func(evt *events.UTXOFetched) {
+		t := RecoverJoinTask{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
 
-			Network: c.Network,
+			DB:   c.DB,
+			Pool: c.Pool,
 
-			MpcClient: c.MpcClient,
-			TxIssuer:  c.TxIssuer,
+			Bound: c.Bound,
 
-			Pool:       c.Pool,
-			Dispatcher: kbcevents.NewDispatcher[*events.StakeAddDelegatorTask](),
-
-			Atomic: evt,
+			UTXOToRecover: evt,
+			PartiPubKey:   c.PartiPubKey,
 		}
 		c.Pool.Submit(t.Do)
 	}
 
-	reqStartedEvtFilter := func(evt *events.StakeAtomicTransferTask) bool {
-		return evt.UTXOsToStake != nil
+	reqStartedEvtFilter := func(evt *events.UTXOFetched) bool {
+		return true
 	}
 
 	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
+
 	return nil
 }
 
-func (c *TaskCreator) Close() error {
+func (c *RecoverJoinTaskCreator) Close() error {
 	c.Pool.StopAndWait()
 	return nil
 }

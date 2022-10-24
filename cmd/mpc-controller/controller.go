@@ -187,7 +187,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		BufferItems: 64,
 	})
 
-	joinTaskRecoverTaskCreator := joinTaskRecover.TaskCreator{
+	joinTaskRecoverTaskCreator := joinTaskRecover.RecoverJoinTaskCreator{
 		Ctx:         ctx,
 		Logger:      myLogger,
 		PartiPubKey: myPartiPubKey,
@@ -200,7 +200,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher:  utxoToRecoverDispatcher,
 	}
 
-	joinTaskStakeTaskCreator := joinTaskStake.TaskCreator{
+	joinTaskStakeTaskCreator := joinTaskStake.StakeJoinTaskCreator{
 		Ctx:         ctx,
 		Logger:      myLogger,
 		PartiPubKey: myPartiPubKey,
@@ -210,7 +210,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher:  stakeReqAddedDispatcher,
 	}
 
-	c2pChainStakeTaskCreator := c2pStake.TaskCreator{
+	c2pChainStakeTaskCreator := c2pStake.StakeTransferTaskCreator{
 		Ctx:                      ctx,
 		Logger:                   myLogger,
 		MpcClient:                mpcClient,
@@ -222,7 +222,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		StakeAtomicEvtDispatcher: stakeAtomicDispatcher,
 	}
 
-	pChainStakeTaskCreator := pChainTaskStake.TaskCreator{
+	pChainStakeTaskCreator := pChainTaskStake.StakeAddDelegatorTaskCreator{
 		Ctx:        ctx,
 		Logger:     myLogger,
 		MpcClient:  mpcClient,
@@ -233,7 +233,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher: stakeAtomicDispatcher,
 	}
 
-	p2cChainRecoverTaskCreator := p2cRecover.TaskCreator{
+	p2cChainRecoverTaskCreator := p2cRecover.RecoverTransferTaskCreator{
 		Ctx:            ctx,
 		Logger:         myLogger,
 		MpcClient:      mpcClient,

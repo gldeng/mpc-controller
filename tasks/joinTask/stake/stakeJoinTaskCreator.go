@@ -2,10 +2,7 @@ package stake
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/contract/transactor"
-	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/pool"
@@ -13,7 +10,7 @@ import (
 	kbcevents "github.com/kubecost/events"
 )
 
-type TaskCreator struct {
+type StakeJoinTaskCreator struct {
 	Ctx    context.Context
 	Logger logger.Logger
 
@@ -21,20 +18,15 @@ type TaskCreator struct {
 
 	DB storage.DB
 
-	MpcClient core.MpcClient
-	TxIssuer  txissuer.TxIssuer
-
-	Network chain.NetworkContext
-
 	Bound transactor.Transactor
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.UTXOFetched]
+	Dispatcher kbcevents.Dispatcher[*events.StakeRequestAdded]
 }
 
-func (c *TaskCreator) Start() error {
-	reqStartedEvtHandler := func(evt *events.UTXOFetched) {
-		t := Task{
+func (c *StakeJoinTaskCreator) Start() error {
+	stakeReqAddedEvtHandler := func(evt *events.StakeRequestAdded) {
+		t := StakeJoinTask{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
 
@@ -43,22 +35,21 @@ func (c *TaskCreator) Start() error {
 
 			Bound: c.Bound,
 
-			UTXOToRecover: evt,
-			PartiPubKey:   c.PartiPubKey,
+			TriggerReq:  evt,
+			PartiPubKey: c.PartiPubKey,
 		}
 		c.Pool.Submit(t.Do)
 	}
 
-	reqStartedEvtFilter := func(evt *events.UTXOFetched) bool {
+	reqStartedEvtFilter := func(evt *events.StakeRequestAdded) bool {
 		return true
 	}
 
-	c.Dispatcher.AddFilteredEventHandler(reqStartedEvtHandler, reqStartedEvtFilter)
-
+	c.Dispatcher.AddFilteredEventHandler(stakeReqAddedEvtHandler, reqStartedEvtFilter)
 	return nil
 }
 
-func (c *TaskCreator) Close() error {
+func (c *StakeJoinTaskCreator) Close() error {
 	c.Pool.StopAndWait()
 	return nil
 }

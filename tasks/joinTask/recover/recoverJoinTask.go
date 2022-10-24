@@ -20,7 +20,7 @@ const (
 
 type Status int
 
-type Task struct {
+type RecoverJoinTask struct {
 	Ctx    context.Context
 	Logger logger.Logger
 
@@ -37,13 +37,13 @@ type Task struct {
 	joinReq *storage.JoinRequest
 }
 
-func (t *Task) Do() {
+func (t *RecoverJoinTask) Do() {
 	if t.do() {
 		t.Pool.Submit(t.Do)
 	}
 }
 
-func (t *Task) do() bool {
+func (t *RecoverJoinTask) do() bool {
 	switch t.status {
 	case StatusStarted:
 		err := t.buildTask()
@@ -75,7 +75,7 @@ func (t *Task) do() bool {
 	return true
 }
 
-func (t *Task) buildTask() error {
+func (t *RecoverJoinTask) buildTask() error {
 	genPubKey := storage.GeneratedPublicKey{
 		GenPubKey: t.UTXOToRecover.GenPubKey,
 	}
