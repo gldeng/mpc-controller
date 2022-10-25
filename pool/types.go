@@ -2,6 +2,7 @@ package pool
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
@@ -13,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
+	"github.com/pkg/errors"
 )
 
 // TODO: Deprecate
@@ -73,6 +75,42 @@ type TaskContextImp struct {
 	CChainClient evm.Client
 	PChainClient platformvm.Client
 	Dispatcher   kbcevents.Dispatcher[interface{}]
+}
+
+type TaskContextImpConfig struct {
+	host      string
+	port      int16
+	ssl       bool
+	logger    logger.Logger
+	mpcClient core.MpcClient
+}
+
+func (c TaskContextImpConfig) getUri() string {
+	scheme := "http"
+	if c.ssl {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%v://%v:%v", scheme, c.host, c.port)
+}
+
+func NewTaskContextImp(config TaskContextImpConfig) (*TaskContextImp, error) {
+	ethClient, err := ethclient.Dial(fmt.Sprintf("%s/ext/bc/C/rpc", config.getUri()))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to dial eth client")
+	}
+	cClient := evm.NewClient(config.getUri(), "C")
+	pClient := platformvm.NewClient(config.getUri())
+	return &TaskContextImp{
+		Logger:       config.logger,
+		NonceGiver:   nil,
+		Network:      chain.NetworkContext{},
+		EthClient:    ethClient,
+		MpcClient:    config.mpcClient,
+		CChainClient: cClient,
+		PChainClient: pClient,
+		Dispatcher:   nil,
+	}, err
+
 }
 
 func (t *TaskContextImp) GetLogger() logger.Logger {
