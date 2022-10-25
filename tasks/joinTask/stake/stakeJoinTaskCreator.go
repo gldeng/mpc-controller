@@ -10,7 +10,7 @@ import (
 	kbcevents "github.com/kubecost/events"
 )
 
-type TaskCreator struct {
+type StakeJoinTaskCreator struct {
 	Ctx    context.Context
 	Logger logger.Logger
 
@@ -24,9 +24,9 @@ type TaskCreator struct {
 	Dispatcher kbcevents.Dispatcher[*events.StakeRequestAdded]
 }
 
-func (c *TaskCreator) Start() error {
+func (c *StakeJoinTaskCreator) Start() error {
 	stakeReqAddedEvtHandler := func(evt *events.StakeRequestAdded) {
-		t := Task{
+		t := StakeJoinTask{
 			Ctx:    c.Ctx,
 			Logger: c.Logger,
 
@@ -49,7 +49,7 @@ func (c *TaskCreator) Start() error {
 	return nil
 }
 
-func (c *TaskCreator) Close() error {
+func (c *StakeJoinTaskCreator) Close() error {
 	c.Pool.StopAndWait()
 	return nil
 }

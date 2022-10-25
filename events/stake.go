@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type StakeAtomicTaskHandled struct {
+type StakeAtomicTransferTask struct {
 	StakeTaskBasic
 
 	ExportTxID ids.ID
@@ -15,7 +15,7 @@ type StakeAtomicTaskHandled struct {
 	UTXOsToStake []*avax.UTXO `json:"-"`
 }
 
-type StakeAddDelegatorTaskDone struct {
+type StakeAddDelegatorTask struct {
 	StakeTaskBasic
 
 	AddDelegatorTxID ids.ID

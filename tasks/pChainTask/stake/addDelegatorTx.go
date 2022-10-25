@@ -19,7 +19,7 @@ const (
 )
 
 type AddDelegatorTx struct {
-	*events.StakeAtomicTaskHandled
+	*events.StakeAtomicTransferTask
 
 	NetworkID uint32
 	Asset     avax.Asset

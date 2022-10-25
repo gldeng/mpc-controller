@@ -21,8 +21,8 @@ import (
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/storage"
-	c2pChainStake "github.com/avalido/mpc-controller/tasks/atomicTask/c2pChain/stake"
-	p2cChainRecover "github.com/avalido/mpc-controller/tasks/atomicTask/p2cChain/recover"
+	c2pStake "github.com/avalido/mpc-controller/tasks/atomicTask/c2p/stake"
+	p2cRecover "github.com/avalido/mpc-controller/tasks/atomicTask/p2c/recover"
 	joinTaskRecover "github.com/avalido/mpc-controller/tasks/joinTask/recover"
 	joinTaskStake "github.com/avalido/mpc-controller/tasks/joinTask/stake"
 	pChainTaskStake "github.com/avalido/mpc-controller/tasks/pChainTask/stake"
@@ -177,8 +177,8 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 	// Create global dispatcher
 	stakeReqAddedDispatcher := kbcevents.GlobalDispatcherFor[*events.StakeRequestAdded]()
 	requestStartedDispatcher := kbcevents.GlobalDispatcherFor[*events.RequestStarted]()
-	stakeAtomicDispatcher := kbcevents.NewDispatcher[*events.StakeAtomicTaskHandled]()
-	utxoToRecoverDispatcher := kbcevents.NewDispatcher[*events.UTXOToRecover]()
+	stakeAtomicDispatcher := kbcevents.NewDispatcher[*events.StakeAtomicTransferTask]()
+	utxoToRecoverDispatcher := kbcevents.NewDispatcher[*events.UTXOFetched]()
 
 	// Create global cache
 	globalCache, _ := ristretto.NewCache(&ristretto.Config{
@@ -187,7 +187,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		BufferItems: 64,
 	})
 
-	joinTaskRecoverTaskCreator := joinTaskRecover.TaskCreator{
+	joinTaskRecoverTaskCreator := joinTaskRecover.RecoverJoinTaskCreator{
 		Ctx:         ctx,
 		Logger:      myLogger,
 		PartiPubKey: myPartiPubKey,
@@ -200,7 +200,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher:  utxoToRecoverDispatcher,
 	}
 
-	joinTaskStakeTaskCreator := joinTaskStake.TaskCreator{
+	joinTaskStakeTaskCreator := joinTaskStake.StakeJoinTaskCreator{
 		Ctx:         ctx,
 		Logger:      myLogger,
 		PartiPubKey: myPartiPubKey,
@@ -210,7 +210,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher:  stakeReqAddedDispatcher,
 	}
 
-	c2pChainStakeTaskCreator := c2pChainStake.TaskCreator{
+	c2pChainStakeTaskCreator := c2pStake.StakeTransferTaskCreator{
 		Ctx:                      ctx,
 		Logger:                   myLogger,
 		MpcClient:                mpcClient,
@@ -222,7 +222,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		StakeAtomicEvtDispatcher: stakeAtomicDispatcher,
 	}
 
-	pChainStakeTaskCreator := pChainTaskStake.TaskCreator{
+	pChainStakeTaskCreator := pChainTaskStake.StakeAddDelegatorTaskCreator{
 		Ctx:        ctx,
 		Logger:     myLogger,
 		MpcClient:  mpcClient,
@@ -233,7 +233,7 @@ func NewController(ctx context.Context, c *cli.Context) *MpcController {
 		Dispatcher: stakeAtomicDispatcher,
 	}
 
-	p2cChainRecoverTaskCreator := p2cChainRecover.TaskCreator{
+	p2cChainRecoverTaskCreator := p2cRecover.RecoverTransferTaskCreator{
 		Ctx:            ctx,
 		Logger:         myLogger,
 		MpcClient:      mpcClient,

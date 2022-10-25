@@ -17,6 +17,7 @@ import (
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
 	"math/big"
+	"strings"
 )
 
 const (
@@ -25,20 +26,20 @@ const (
 
 	StatusExportTxSigningPosted
 	StatusExportTxSigningDone
-	StatusExportTxIssued
-	StatusExportTxApproved
-	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
+
+	StatusExportTxIssued
+	StatusExportTxAccepted
+
 	StatusImportTxIssued
-	StatusImportTxApproved
-	StatusImportTxFailed
+	StatusImportTxCommitted
 )
 
 type Status int
 
-type Task struct {
+type StakeTransferTask struct {
 	Ctx    context.Context
 	Logger logger.Logger
 
@@ -49,7 +50,7 @@ type Task struct {
 	TxIssuer  txissuer.TxIssuer
 
 	Pool       pool.WorkerPool
-	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTaskHandled]
+	Dispatcher kbcevents.Dispatcher[*events.StakeAtomicTransferTask]
 
 	Joined *events.RequestStarted
 
@@ -65,36 +66,43 @@ type Task struct {
 	status Status
 }
 
-func (t *Task) Do() {
+func (t *StakeTransferTask) Do() {
 	if t.do() {
 		t.Pool.Submit(t.Do)
 	}
 }
 
 // todo: function extraction
-// todo: add task failure log
+// todo: enhance resusebility
 
-func (t *Task) do() bool {
+func (t *StakeTransferTask) do() bool {
 	switch t.status {
 	case StatusStarted:
 		err := t.buildTask()
 		if err != nil {
-			t.Logger.ErrorOnError(err, "Failed to build task")
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to build")
 			return false
 		}
 		t.status = StatusBuilt
 	case StatusBuilt:
 		err := t.MpcClient.Sign(t.Ctx, t.signReqs[0])
-		t.Logger.ErrorOnError(err, "Failed to post signing request")
-		if err == nil {
-			t.status = StatusExportTxSigningPosted
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ExportTx signing request")
+			return false
 		}
+		t.status = StatusExportTxSigningPosted
 	case StatusExportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[0].ReqID)
-		t.Logger.ErrorOnError(err, "Failed to check signing result")
-
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to check ExportTx signing result")
+			return false
+		}
 		if res.Status != core.StatusDone {
-			t.Logger.Debug("Signing task not done")
+			if strings.Contains(string(res.Status), "ERROR") {
+				t.Logger.ErrorOnError(errors.New(string(res.Status)), "StakeTransferTask failed to sign ExportTx")
+				return false
+			}
+			t.Logger.Debug("StakeTransferTask hasn't finished ExportTx signing")
 			return true
 		}
 		t.status = StatusExportTxSigningDone
@@ -103,13 +111,51 @@ func (t *Task) do() bool {
 		sig := new(events.Signature).FromHex(t.exportTxSignRes.Result)
 		err := t.txs.SetExportTxSig(*sig)
 		if err != nil {
-			t.Logger.ErrorOnError(err, "Failed to set signature")
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to set ExportTx signature")
+			return false
+		}
+
+		signReq, err := t.buildImportTxSignReq(t.txs)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to build ImportTx signing request")
+			return false
+		}
+
+		t.signReqs[1] = signReq
+		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ImportTx signing request")
+			return false
+		}
+		t.status = StatusImportTxSigningPosted
+	case StatusImportTxSigningPosted:
+		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[1].ReqID)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to check ImportTx signing result")
+			return false
+		}
+
+		if res.Status != core.StatusDone {
+			if strings.Contains(string(res.Status), "ERROR") {
+				t.Logger.ErrorOnError(errors.New(string(res.Status)), "StakeTransferTask failed to sign ImportTx")
+				return false
+			}
+			t.Logger.Debug("StakeTransferTask hasn't finished ImportTx signing")
+			return true
+		}
+		t.status = StatusImportTxSigningDone
+		t.importTxSignRes = res
+	case StatusImportTxSigningDone:
+		sig := new(events.Signature).FromHex(t.importTxSignRes.Result)
+		err := t.txs.SetImportTxSig(*sig)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to set ImportTx signature")
 			return false
 		}
 
 		signedBytes, err := t.txs.SignedExportTxBytes()
 		if err != nil {
-			t.Logger.ErrorOnError(err, "Failed to get signed bytes")
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to get signed ExportTx bytes")
 			return false
 		}
 
@@ -122,55 +168,29 @@ func (t *Task) do() bool {
 		t.exportIssueTx = &tx
 
 		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
-		if err == nil {
-			t.status = StatusExportTxIssued
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to issue ExportTx")
+			return false
 		}
+		t.status = StatusExportTxIssued
 	case StatusExportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
-		if err == nil && t.exportIssueTx.Status == txissuer.StatusFailed {
-			t.status = StatusExportTxFailed
-		}
-
-		if err == nil && t.exportIssueTx.Status == txissuer.StatusApproved {
-			t.status = StatusExportTxApproved
-		}
-	case StatusExportTxFailed:
-		fallthrough
-	case StatusExportTxApproved:
-		signReq, err := t.buildImportTxSignReq(t.txs)
 		if err != nil {
-			t.Logger.ErrorOnError(err, "failed to build ImportTx signing request")
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ExportTx status")
 			return false
 		}
-
-		t.signReqs[1] = signReq
-
-		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
-		t.Logger.ErrorOnError(err, "Failed to post signing request")
-		if err == nil {
-			t.status = StatusImportTxSigningPosted
-		}
-	case StatusImportTxSigningPosted:
-		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[1].ReqID)
-		t.Logger.ErrorOnError(err, "Failed to check signing result")
-
-		if res.Status != core.StatusDone {
-			t.Logger.Debug("Signing task not done")
-			return true
-		}
-		t.status = StatusImportTxSigningDone
-		t.importTxSignRes = res
-	case StatusImportTxSigningDone:
-		sig := new(events.Signature).FromHex(t.importTxSignRes.Result)
-		err := t.txs.SetImportTxSig(*sig)
-		if err != nil {
-			t.Logger.ErrorOnError(err, "Failed to set signature")
+		switch t.exportIssueTx.Status {
+		case txissuer.StatusFailed:
+			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
 			return false
+		case txissuer.StatusAccepted:
+			t.Logger.Info("StakeTransferTask ExportTx accepted") // todo: add more context info
+			t.status = StatusExportTxAccepted
 		}
-
+	case StatusExportTxAccepted:
 		signedBytes, err := t.txs.SignedImportTxBytes()
 		if err != nil {
-			t.Logger.ErrorOnError(err, "Failed to get signed bytes")
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to get signed ImportTx bytes")
 			return false
 		}
 
@@ -183,57 +203,60 @@ func (t *Task) do() bool {
 		t.importIssueTx = &tx
 
 		err = t.TxIssuer.IssueTx(t.Ctx, t.importIssueTx)
-		if err == nil {
-			t.status = StatusImportTxIssued
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to issue ImportTx")
+			return false // todo: mpc-controller need to join AddDelegator signing process
 		}
+		t.status = StatusImportTxIssued
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
-		if err == nil && t.importIssueTx.Status == txissuer.StatusFailed {
-			t.status = StatusImportTxFailed
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ImportTx status")
+			return false // todo: mpc-controller need to join AddDelegator signing process
 		}
 
-		if err == nil && t.importIssueTx.Status == txissuer.StatusApproved {
-			t.status = StatusImportTxApproved
+		switch t.importIssueTx.Status {
+		case txissuer.StatusFailed:
+			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ImportTx failed because of %v", t.importIssueTx.Reason))
+			fallthrough // todo: currently mpc-controller need to join signing AddDelegatorTx, consider seperate joining process, using UTXO memo.
+		case txissuer.StatusCommitted:
+			t.status = StatusImportTxCommitted
+			utxos, _ := t.txs.SingedImportTxUTXOs()
+			evt := events.StakeAtomicTransferTask{
+				StakeTaskBasic: events.StakeTaskBasic{
+					ReqNo:   t.txs.ReqNo,
+					Nonce:   t.txs.Nonce,
+					ReqHash: t.txs.ReqHash,
+
+					DelegateAmt: t.txs.DelegateAmt,
+					StartTime:   t.txs.StartTime,
+					EndTime:     t.txs.EndTime,
+					NodeID:      t.txs.NodeID,
+
+					StakePubKey:   t.Joined.CompressedGenPubKeyHex,
+					CChainAddress: t.txs.CChainAddress,
+					PChainAddress: t.txs.PChainAddress,
+
+					JoinedPubKeys: t.Joined.CompressedPartiPubKeys,
+				},
+
+				ExportTxID: t.exportIssueTx.TxID,
+				ImportTxID: t.importIssueTx.TxID,
+
+				UTXOsToStake: utxos,
+			}
+
+			t.Dispatcher.Dispatch(&evt) // todo:
+			t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTransferTask", evt}}...)
+			return false
 		}
-	case StatusImportTxFailed:
-		fallthrough
-	case StatusImportTxApproved:
-		utxos, _ := t.txs.SingedImportTxUTXOs()
-
-		evt := events.StakeAtomicTaskHandled{
-			StakeTaskBasic: events.StakeTaskBasic{
-				ReqNo:   t.txs.ReqNo,
-				Nonce:   t.txs.Nonce,
-				ReqHash: t.txs.ReqHash,
-
-				DelegateAmt: t.txs.DelegateAmt,
-				StartTime:   t.txs.StartTime,
-				EndTime:     t.txs.EndTime,
-				NodeID:      t.txs.NodeID,
-
-				StakePubKey:   t.Joined.CompressedGenPubKeyHex,
-				CChainAddress: t.txs.CChainAddress,
-				PChainAddress: t.txs.PChainAddress,
-
-				JoinedPubKeys: t.Joined.CompressedPartiPubKeys,
-			},
-
-			ExportTxID: t.exportIssueTx.TxID,
-			ImportTxID: t.importIssueTx.TxID,
-
-			UTXOsToStake: utxos,
-		}
-
-		t.Dispatcher.Dispatch(&evt)
-		t.Logger.Info("Stake atomic task handled", []logger.Field{{"stakeAtomicTaskHandled", evt}}...)
-		return false
 	}
 	return true
 }
 
 // Build task
 
-func (t *Task) buildTask() error {
+func (t *StakeTransferTask) buildTask() error {
 	stakeReq := t.Joined.JoinedReq.Args.(*storage.StakeRequest)
 	txs, err := t.buildTxs(stakeReq, *t.Joined.ReqHash)
 	if err != nil {
@@ -251,7 +274,7 @@ func (t *Task) buildTask() error {
 	return nil
 }
 
-func (t *Task) buildExportTxSignReq(txs *Txs) (*core.SignRequest, error) {
+func (t *StakeTransferTask) buildExportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	exportTxHash, err := txs.ExportTxHash()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ExportTx hash")
@@ -267,7 +290,7 @@ func (t *Task) buildExportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	return &exportTxSignReq, nil
 }
 
-func (t *Task) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) {
+func (t *StakeTransferTask) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	importTxHash, err := txs.ImportTxHash()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ImportTx hash")
@@ -283,7 +306,7 @@ func (t *Task) buildImportTxSignReq(txs *Txs) (*core.SignRequest, error) {
 	return &importTxSignReq, nil
 }
 
-func (t *Task) buildTxs(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*Txs, error) {
+func (t *StakeTransferTask) buildTxs(stakeReq *storage.StakeRequest, reqHash storage.RequestHash) (*Txs, error) {
 	nodeID, _ := ids.ShortFromPrefixedString(stakeReq.NodeID, ids.NodeIDPrefix)
 	amountBig := new(big.Int)
 	amount, _ := amountBig.SetString(stakeReq.Amount, 10)

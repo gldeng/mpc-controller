@@ -34,7 +34,7 @@ type UTXOsFetched struct {
 	PChainAddress    ids.ShortID    `copier:"must"`
 }
 
-type UTXOToRecover struct {
+type UTXOFetched struct {
 	UTXO      *avax.UTXO
 	GenPubKey storage.PubKey
 }
@@ -57,7 +57,7 @@ type ExportUTXORequest struct {
 	TxHash             common.Hash
 }
 
-type UTXOExported struct {
+type UTXOTransferred struct {
 	NativeUTXO   *avax.UTXO `json:"-"`
 	MpcUTXO      *myAvax.MpcUTXO
 	ExportedTxID ids.ID
