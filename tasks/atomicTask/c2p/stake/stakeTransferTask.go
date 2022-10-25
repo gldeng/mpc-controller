@@ -205,20 +205,20 @@ func (t *StakeTransferTask) do() bool {
 		err = t.TxIssuer.IssueTx(t.Ctx, t.importIssueTx)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "StakeTransferTask failed to issue ImportTx")
-			return false
+			return false // todo: mpc-controller need to join AddDelegator signing process
 		}
 		t.status = StatusImportTxIssued
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ImportTx status")
-			return false
+			return false // todo: mpc-controller need to join AddDelegator signing process
 		}
 
 		switch t.importIssueTx.Status {
 		case txissuer.StatusFailed:
 			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ImportTx failed because of %v", t.importIssueTx.Reason))
-			fallthrough // todo: currently mpc-controller need to join signing AddDelegatorTx, consider seperate joining process
+			fallthrough // todo: currently mpc-controller need to join signing AddDelegatorTx, consider seperate joining process, using UTXO memo.
 		case txissuer.StatusCommitted:
 			t.status = StatusImportTxCommitted
 			utxos, _ := t.txs.SingedImportTxUTXOs()
@@ -246,7 +246,7 @@ func (t *StakeTransferTask) do() bool {
 				UTXOsToStake: utxos,
 			}
 
-			t.Dispatcher.Dispatch(&evt)
+			t.Dispatcher.Dispatch(&evt) // todo:
 			t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTransferTask", evt}}...)
 			return false
 		}
