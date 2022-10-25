@@ -172,6 +172,22 @@ func (t *TaskContextImp) Emit(event interface{}) {
 	panic("implement me")
 }
 
+func (t *TaskContextImp) Close() {
+	t.EthClient.Close()
+}
+
+func NewTaskContextImpFactory(config TaskContextImpConfig) (TaskContextFactory, error) {
+	_, err := NewTaskContextImp(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to use the config in TaskContextImpFactory")
+	}
+	factory := func() TaskContext {
+		ctx, _ := NewTaskContextImp(config)
+		return ctx
+	}
+	return factory, err
+}
+
 type TaskContext interface {
 	GetLogger() logger.Logger
 	GetNetwork() *chain.NetworkContext
