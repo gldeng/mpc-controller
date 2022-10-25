@@ -75,7 +75,7 @@ func main() {
 		if len(nextTasks) > 0 {
 			return true, nil
 		}
-		fmt.Printf("Status is %v\n", task.Status)
+		fmt.Printf("Task IsDone: %v\n", task.IsDone())
 		return false, nil
 	})
 
