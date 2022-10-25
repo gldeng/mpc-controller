@@ -44,12 +44,12 @@ func NormalizePubKeys(pubKeyHexs []string) ([]string, error) {
 
 func NormalizePubKey(pubKeyHex string) (*string, error) {
 	pubKeyBytes := common.Hex2Bytes(pubKeyHex)
-	pubKeyHex0 := pubKeyHex[0]
+	pk0 := pubKeyBytes[0]
 
 	switch {
-	case len(pubKeyBytes) == 33 && (pubKeyHex0 == 3) || (pubKeyHex0 == 2):
+	case len(pubKeyBytes) == 33 && (pk0 == 3) || (pk0 == 2):
 		return &pubKeyHex, nil
-	case len(pubKeyBytes) == 65 && pubKeyHex0 == 4:
+	case len(pubKeyBytes) == 65 && pk0 == 4:
 		compressed, err := toCompressed(pubKeyBytes)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to compress public key %q", pubKeyHex)
