@@ -21,9 +21,9 @@ const (
 
 	StatusTxSigningPosted
 	StatusTxSigningDone
+
 	StatusTxIssued
 	StatusImportTxCommitted
-	StatusImportTxFailed
 )
 
 type Status int
@@ -129,8 +129,8 @@ func (t *StakeAddDelegatorTask) do() bool {
 
 		switch t.issueTx.Status {
 		case txissuer.StatusFailed:
-			t.status = StatusImportTxFailed
 			t.Logger.Debug(fmt.Sprintf("StakeAddDelegatorTask failed because of %v", t.issueTx.Reason))
+			return false
 		case txissuer.StatusCommitted:
 			t.status = StatusImportTxCommitted
 			evt := events.StakeAddDelegatorTask{
@@ -140,8 +140,8 @@ func (t *StakeAddDelegatorTask) do() bool {
 
 			t.Dispatcher.Dispatch(&evt)
 			t.Logger.Info("StakeAddDelegatorTask finished", []logger.Field{{"StakeAddDelegatorTask", evt}}...)
+			return false
 		}
-		return false
 	}
 	return true
 }

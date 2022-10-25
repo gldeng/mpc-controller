@@ -15,6 +15,7 @@ import (
 const (
 	StatusStarted Status = iota
 	StatusBuilt
+
 	StatusSent
 	StatusOK
 )

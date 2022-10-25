@@ -26,15 +26,15 @@ const (
 
 	StatusExportTxSigningPosted
 	StatusExportTxSigningDone
-	StatusExportTxIssued
-	StatusExportTxAccepted
-	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
+
+	StatusExportTxIssued
+	StatusExportTxAccepted
+
 	StatusImportTxIssued
 	StatusImportTxCommitted
-	StatusImportTxFailed
 )
 
 type Status int
@@ -73,7 +73,7 @@ func (t *StakeTransferTask) Do() {
 }
 
 // todo: function extraction
-// todo: add task failure log
+// todo: enhance resusebility
 
 func (t *StakeTransferTask) do() bool {
 	switch t.status {
@@ -115,43 +115,6 @@ func (t *StakeTransferTask) do() bool {
 			return false
 		}
 
-		signedBytes, err := t.txs.SignedExportTxBytes()
-		if err != nil {
-			t.Logger.ErrorOnError(err, "StakeTransferTask failed to get signed ExportTx bytes")
-			return false
-		}
-
-		tx := txissuer.Tx{
-			ReqID: t.signReqs[0].ReqID,
-			TxID:  t.txs.ExportTxID(),
-			Chain: txissuer.ChainC,
-			Bytes: signedBytes,
-		}
-		t.exportIssueTx = &tx
-
-		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
-		if err == nil {
-			t.status = StatusExportTxIssued
-		}
-	case StatusExportTxIssued:
-		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
-		if err != nil {
-			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ExportTx status")
-			return false
-		}
-		switch t.exportIssueTx.Status {
-		case txissuer.StatusFailed:
-			t.status = StatusExportTxFailed
-			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
-		case txissuer.StatusAccepted:
-			t.Logger.Info("StakeTransferTask ExportTx accepted") // todo: add more context info
-			t.status = StatusExportTxAccepted
-		}
-	// Pay attention: this mpc-controller need to continue to request signing ImportTx even it failed to issue ExportTx,
-	// Signing transactions always requires multiple participation.	case StatusExportTxFailed:
-	case StatusExportTxFailed:
-		fallthrough
-	case StatusExportTxAccepted:
 		signReq, err := t.buildImportTxSignReq(t.txs)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "StakeTransferTask failed to build ImportTx signing request")
@@ -159,7 +122,6 @@ func (t *StakeTransferTask) do() bool {
 		}
 
 		t.signReqs[1] = signReq
-
 		err = t.MpcClient.Sign(t.Ctx, t.signReqs[1])
 		if err != nil {
 			t.Logger.ErrorOnError(err, "StakeTransferTask failed to post ImportTx signing request")
@@ -191,6 +153,41 @@ func (t *StakeTransferTask) do() bool {
 			return false
 		}
 
+		signedBytes, err := t.txs.SignedExportTxBytes()
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to get signed ExportTx bytes")
+			return false
+		}
+
+		tx := txissuer.Tx{
+			ReqID: t.signReqs[0].ReqID,
+			TxID:  t.txs.ExportTxID(),
+			Chain: txissuer.ChainC,
+			Bytes: signedBytes,
+		}
+		t.exportIssueTx = &tx
+
+		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to issue ExportTx")
+			return false
+		}
+		t.status = StatusExportTxIssued
+	case StatusExportTxIssued:
+		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "StakeTransferTask failed to track ExportTx status")
+			return false
+		}
+		switch t.exportIssueTx.Status {
+		case txissuer.StatusFailed:
+			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
+			return false
+		case txissuer.StatusAccepted:
+			t.Logger.Info("StakeTransferTask ExportTx accepted") // todo: add more context info
+			t.status = StatusExportTxAccepted
+		}
+	case StatusExportTxAccepted:
 		signedBytes, err := t.txs.SignedImportTxBytes()
 		if err != nil {
 			t.Logger.ErrorOnError(err, "StakeTransferTask failed to get signed ImportTx bytes")
@@ -220,8 +217,8 @@ func (t *StakeTransferTask) do() bool {
 
 		switch t.importIssueTx.Status {
 		case txissuer.StatusFailed:
-			t.status = StatusImportTxFailed
 			t.Logger.Debug(fmt.Sprintf("StakeTransferTask ImportTx failed because of %v", t.importIssueTx.Reason))
+			fallthrough // todo: currently mpc-controller need to join signing AddDelegatorTx, consider seperate joining process
 		case txissuer.StatusCommitted:
 			t.status = StatusImportTxCommitted
 			utxos, _ := t.txs.SingedImportTxUTXOs()
@@ -251,8 +248,8 @@ func (t *StakeTransferTask) do() bool {
 
 			t.Dispatcher.Dispatch(&evt)
 			t.Logger.Info("StakeTransferTask finished", []logger.Field{{"StakeAtomicTransferTask", evt}}...)
+			return false
 		}
-		return false
 	}
 	return true
 }

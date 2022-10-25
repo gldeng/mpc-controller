@@ -33,15 +33,15 @@ const (
 
 	StatusExportTxSigningPosted
 	StatusExportTxSigningDone
-	StatusExportTxIssued
-	StatusExportTxCommitted
-	StatusExportTxFailed
 
 	StatusImportTxSigningPosted
 	StatusImportTxSigningDone
+
+	StatusExportTxIssued
+	StatusExportTxCommitted
+
 	StatusImportTxIssued
 	StatusImportTxAccepted
-	StatusImportTxFailed
 )
 
 const (
@@ -83,9 +83,6 @@ type RecoverTransferTask struct {
 	importTxSignRes *core.Result
 
 	status Status
-
-	exportTxSignReqNum int
-	importTxSignReqNum int
 }
 
 func (t *RecoverTransferTask) Do() {
@@ -95,6 +92,7 @@ func (t *RecoverTransferTask) Do() {
 }
 
 // todo: function extraction
+// todo: enhance reusebility
 
 func (t *RecoverTransferTask) do() bool {
 	switch t.status {
@@ -111,8 +109,6 @@ func (t *RecoverTransferTask) do() bool {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to post ExportTx signing request")
 			return false
 		}
-		t.exportTxSignReqNum++
-		fmt.Println("-------------exportTxSignReqNum: ", t.exportTxSignReqNum)
 		t.status = StatusExportTxSigningPosted
 	case StatusExportTxSigningPosted:
 		res, err := t.MpcClient.Result(t.Ctx, t.signReqs[0].ReqID)
@@ -150,46 +146,6 @@ func (t *RecoverTransferTask) do() bool {
 			return false
 		}
 
-		signedBytes, err := t.exportTx.SignedBytes()
-		if err != nil {
-			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to get signed ExportTx bytes")
-			return false
-		}
-
-		tx := txissuer.Tx{
-			ReqID: t.signReqs[0].ReqID,
-			TxID:  t.exportTx.ID(),
-			Chain: txissuer.ChainP,
-			Bytes: signedBytes,
-		}
-		t.exportIssueTx = &tx
-
-		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
-		if err != nil {
-			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to issue ExportTx")
-			return false
-		}
-		t.status = StatusExportTxIssued
-	case StatusExportTxIssued:
-		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
-		if err != nil {
-			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to track ExportTx status")
-			return false
-		}
-
-		switch t.exportIssueTx.Status {
-		case txissuer.StatusFailed:
-			t.status = StatusExportTxFailed
-			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
-		case txissuer.StatusCommitted:
-			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ExporTx committed")) // todo: add more context info
-			t.status = StatusExportTxCommitted
-		}
-		// Pay attention: this mpc-controller need to continue to request signing ImportTx even it failed to issue ExportTx,
-		// Signing transactions always requires multiple participation.
-	case StatusExportTxFailed:
-		fallthrough
-	case StatusExportTxCommitted:
 		signReq, err := t.buildImportTxSignReq(t.Joined.Raw.TxHash.Hex(), t.exportTx, t.importTx)
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to build ImportTx signing request")
@@ -240,6 +196,43 @@ func (t *RecoverTransferTask) do() bool {
 			return false
 		}
 
+		signedBytes, err := t.exportTx.SignedBytes()
+		if err != nil {
+			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to get signed ExportTx bytes")
+			return false
+		}
+
+		tx := txissuer.Tx{
+			ReqID: t.signReqs[0].ReqID,
+			TxID:  t.exportTx.ID(),
+			Chain: txissuer.ChainP,
+			Bytes: signedBytes,
+		}
+		t.exportIssueTx = &tx
+
+		err = t.TxIssuer.IssueTx(t.Ctx, t.exportIssueTx)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to issue ExportTx")
+			return false
+		}
+		t.status = StatusExportTxIssued
+
+	case StatusExportTxIssued:
+		err := t.TxIssuer.TrackTx(t.Ctx, t.exportIssueTx)
+		if err != nil {
+			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to track ExportTx status")
+			return false
+		}
+
+		switch t.exportIssueTx.Status {
+		case txissuer.StatusFailed:
+			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ExporTx failed because of %v", t.exportIssueTx.Reason))
+			return false
+		case txissuer.StatusCommitted:
+			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ExporTx committed")) // todo: add more context info
+			t.status = StatusExportTxCommitted
+		}
+	case StatusExportTxCommitted:
 		signedBytes, err := t.importTx.SignedBytes()
 		if err != nil {
 			t.Logger.ErrorOnError(err, "RecoverTransferTask failed to get ImportTx signed bytes")
@@ -260,7 +253,6 @@ func (t *RecoverTransferTask) do() bool {
 			return false
 		}
 		t.status = StatusImportTxIssued
-
 	case StatusImportTxIssued:
 		err := t.TxIssuer.TrackTx(t.Ctx, t.importIssueTx)
 		if err != nil {
@@ -270,8 +262,8 @@ func (t *RecoverTransferTask) do() bool {
 
 		switch t.importIssueTx.Status {
 		case txissuer.StatusFailed:
-			t.status = StatusImportTxFailed
 			t.Logger.Debug(fmt.Sprintf("RecoverTransferTask ImportTx failed because of %v", t.importIssueTx.Reason))
+			return false
 		case txissuer.StatusAccepted:
 			t.status = StatusImportTxAccepted
 			utxo := t.exportTx.Args.UTXOs[0]
@@ -284,8 +276,8 @@ func (t *RecoverTransferTask) do() bool {
 
 			t.Dispatcher.Dispatch(&evt)
 			t.Logger.Info("RecoverTransferTask finished", []logger.Field{{"UTXOTransferred", evt}}...)
+			return false
 		}
-		return false
 	}
 	return true
 }
