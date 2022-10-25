@@ -4,221 +4,121 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
-	mpcErrors "github.com/avalido/mpc-controller/utils/errors"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
+const (
+	TypKeygen   Type = "KEYGEN"
+	TypSignSign Type = "SIGN"
+)
+
+const (
+	StatusReceived   Status = "RECEIVED"
+	StatusProcessing Status = "PROCESSING"
+	StatusDone       Status = "DONE"
+)
+
+type Type string
+type Status string
+
 type KeygenRequest struct {
-	KeygenReqID            string   `json:"request_id"`
+	ReqID                  string   `json:"request_id"`
 	CompressedPartiPubKeys []string `json:"public_keys"`
 	Threshold              uint64   `json:"t"`
 }
 
 type SignRequest struct {
-	SignReqID              string   `json:"request_id"`
+	ReqID                  string   `json:"request_id"`
+	Hash                   string   `json:"message"`
 	CompressedGenPubKeyHex string   `json:"public_key"`
 	CompressedPartiPubKeys []string `json:"participant_public_keys"`
-	Hash                   string   `json:"message"`
 }
 
 type Result struct {
-	MPCReqID      string `json:"request_id"`
-	Result        string `json:"result"`
-	RequestType   string `json:"request_type"`
-	RequestStatus string `json:"request_status"`
+	ReqID  string `json:"request_id"`
+	Result string `json:"result"`
+	Type   Type   `json:"request_type"`
+	Status Status `json:"request_status"`
 }
 
-var _ MpcClient = (*MpcClientImp)(nil)
+// todo: Prometheus metrics
 
 type MpcClient interface {
-	Keygen(ctx context.Context, keygenReq *KeygenRequest) error
-	Sign(ctx context.Context, signReq *SignRequest) error
+	Keygen(ctx context.Context, req *KeygenRequest) error
+	Sign(ctx context.Context, req *SignRequest) error
 	Result(ctx context.Context, reqID string) (*Result, error)
 }
 
-type MpcClientImp struct {
-	controllerID   string
-	url            string
-	log            logger.Logger
-	sentSignReqs   uint32
-	unsentSignReqs uint32
-	doneSignReqs   uint32
-	errorSignReqs  uint32
-	once           *sync.Once
-	lock           sync.Mutex
+type MyMpcClient struct {
+	Logger       logger.Logger
+	MpcServerUrl string
 }
 
-func NewMpcClient(log logger.Logger, url, controllerID string) (*MpcClientImp, error) {
-	c := &MpcClientImp{
-		controllerID: controllerID,
-		url:          url,
-		log:          log,
-		once:         new(sync.Once),
-	}
-
-	return c, nil
-}
-
-func (c *MpcClientImp) KeygenDone(ctx context.Context, request *KeygenRequest) (res *Result, err error) {
-	err = c.Keygen(ctx, request)
+func (c *MyMpcClient) Keygen(ctx context.Context, req *KeygenRequest) error {
+	payloadBytes, err := json.Marshal(req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	res, err = c.ResultDone(ctx, request.KeygenReqID)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return
-}
-
-func (c *MpcClientImp) Keygen(ctx context.Context, request *KeygenRequest) (err error) {
-	payloadBytes, err := json.Marshal(request)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal KeygenRequest")
-	}
-
-	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() (bool, error) {
-		_, err = http.Post(c.url+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
-		c.log.InfoNilError(err, "Posted keygen request", []logger.Field{{"postedKeygenReq", request}}...)
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
+		_, err = http.Post(c.MpcServerUrl+"/keygen", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		prom.KeygenRequestPosted.Add(1)
+		prom.KeygenRequestPosted.Inc()
 		return false, nil
 	})
-	err = errors.Wrapf(err, "failed to post keygen request")
-	return
+
+	c.Logger.ErrorOnError(err, "Failed to send KeygenRequest", []logger.Field{{"keygenReq", req}}...)
+	c.Logger.DebugNilError(err, "Send KeygenRequest", []logger.Field{{"keygenReq", req}}...)
+	return errors.WithStack(err)
 }
 
-func (c *MpcClientImp) SignDone(ctx context.Context, request *SignRequest) (res *Result, err error) {
-	defer func() {
-		c.log.Debug("Sign request stats", []logger.Field{
-			{"controllerID", c.controllerID},
-			{"sentSignReqs", atomic.LoadUint32(&c.sentSignReqs)},
-			{"doneSignReqs", atomic.LoadUint32(&c.doneSignReqs)},
-			{"unsentSignReqs", atomic.LoadUint32(&c.unsentSignReqs)},
-			{"errorSignReqs", atomic.LoadUint32(&c.errorSignReqs)}}...)
-	}()
-
-	err = c.Sign(ctx, request)
+func (c *MyMpcClient) Sign(ctx context.Context, req *SignRequest) (err error) {
+	payloadBytes, err := json.Marshal(req)
 	if err != nil {
-		atomic.AddUint32(&c.unsentSignReqs, 1)
-		err = errors.Wrapf(err, fmt.Sprintf("failed to requst sign %v", request.SignReqID))
-		return
-	}
-	atomic.AddUint32(&c.sentSignReqs, 1)
-
-	res, err = c.ResultDone(ctx, request.SignReqID)
-	if err != nil {
-		c.log.ErrorOnError(err, "Sign request got error", []logger.Field{{"signRes", res}, {"signReq", request}}...)
-		atomic.AddUint32(&c.errorSignReqs, 1)
-		return res, errors.WithStack(err)
-	}
-	if res == nil {
-		atomic.AddUint32(&c.errorSignReqs, 1)
-		return nil, errors.Errorf("Got nil result for sign request %v", request.SignReqID)
-	}
-	if res.Result == "" {
-		atomic.AddUint32(&c.errorSignReqs, 1)
-		return res, errors.WithStack(mpcErrors.Errorf(&ErrTypEmptySignResult{}, "got result for sign request %v but it's content is empty", request.SignReqID))
+		return errors.WithStack(err)
 	}
 
-	atomic.AddUint32(&c.doneSignReqs, 1)
-	return
-}
-
-func (c *MpcClientImp) Sign(ctx context.Context, request *SignRequest) (err error) {
-	payloadBytes, err := json.Marshal(request)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal SignRequest")
-	}
-
-	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() (bool, error) {
-		c.lock.Lock()
-		defer c.lock.Unlock()
-		resp, err := http.Post(c.url+"/sign", "application/json", bytes.NewBuffer(payloadBytes)) // todo: check response?
-		c.log.InfoNilError(err, "Posted sign request", []logger.Field{{"postedSignReq", request}}...)
-
-		if resp.StatusCode != 200 {
-			defer resp.Body.Close()
-			body, _ := ioutil.ReadAll(resp.Body)
-			c.log.Info("Failed post sign request", []logger.Field{{"error", body}}...)
-		}
-
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
+		_, err = http.Post(c.MpcServerUrl+"/sign", "application/json", bytes.NewBuffer(payloadBytes))
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		switch {
-		case strings.Contains(request.SignReqID, "STAKE"):
-			prom.StakeSignTaskAdded.Inc()
-		case strings.Contains(request.SignReqID, "PRINCIPAL"):
-			prom.PrincipalUTXOSignTaskAdded.Inc()
-		case strings.Contains(request.SignReqID, "REWARD"):
-			prom.RewardUTXOSignTaskAdded.Inc()
-		}
+
 		return false, nil
 	})
 
-	err = errors.Wrapf(err, "failed to request sign")
-	return
+	c.Logger.ErrorOnError(err, "Failed to send SignRequest", []logger.Field{{"signReq", req}}...)
+	c.Logger.DebugNilError(err, "Sent SignRequest", []logger.Field{{"signReq", req}}...)
+	return errors.WithStack(err)
 }
 
-func (c *MpcClientImp) ResultDone(ctx context.Context, mpcReqId string) (res *Result, err error) {
-	err = backoff.RetryFnExponential100Times(c.log, ctx, time.Second, time.Second*10, func() (bool, error) {
-		res, err = c.Result(ctx, mpcReqId)
-		if err != nil {
-			return false, errors.WithStack(err)
-		}
-		if strings.Contains(res.RequestStatus, "ERROR") {
-			return false, errors.Wrap(&ErrTypSignErr{ErrMsg: res.RequestStatus}, "error result")
-		}
-		if res.RequestStatus == "DONE" && res.Result != "" {
-			switch {
-			case strings.Contains(mpcReqId, "STAKE"):
-				prom.StakeSignTaskDone.Inc()
-			case strings.Contains(mpcReqId, "PRINCIPAL"):
-				prom.PrincipalUTXOSignTaskDone.Inc()
-			case strings.Contains(mpcReqId, "REWARD"):
-				prom.RewardUTXOSignTaskDone.Inc()
-			}
-			return false, nil
-		}
-		return true, errors.New(res.RequestStatus)
-	})
-	err = errors.Wrapf(err, "failed to request result or got error result for request controllerID %q", mpcReqId)
-	return
-}
-
-func (c *MpcClientImp) Result(ctx context.Context, reqId string) (res *Result, err error) {
-	payload := strings.NewReader("")
+func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*Result, error) {
+	var payload = strings.NewReader("")
 	var resp *http.Response
-	err = backoff.RetryFnExponential10Times(c.log, ctx, time.Second, time.Second*10, func() (bool, error) {
-		resp, err = http.Post(c.url+"/result/"+reqId, "application/json", payload)
+	var err error
+	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
+		resp, err = http.Post(c.MpcServerUrl+"/result/"+reqId, "application/json", payload)
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
 		return false, nil
 	})
-	err = errors.Wrapf(err, "failed to request result")
 	if err != nil {
-		return
+		return nil, errors.WithStack(err)
 	}
 
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
-	res = new(Result)
+	var res Result
 	err = json.Unmarshal(body, &res)
-	err = errors.Wrapf(err, "failed to unmarshal response body")
-	return
+	return &res, errors.WithStack(err)
 }

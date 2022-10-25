@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -63,7 +64,11 @@ type StakeRequestAdded struct { // event StakeRequestAdded(uint256 requestNumber
 }
 
 type RequestStarted struct { // event RequestStarted(bytes32 requestHash, uint256 participantIndices)
-	RequestHash        [32]byte
-	ParticipantIndices *big.Int
-	Raw                types.Log
+	ReqHash                *storage.RequestHash
+	TaskType               storage.TaskType
+	PartiIndices           *storage.Indices
+	JoinedReq              *storage.JoinRequest
+	CompressedPartiPubKeys []string
+	CompressedGenPubKeyHex string
+	Raw                    types.Log
 }
