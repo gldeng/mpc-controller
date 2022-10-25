@@ -1,9 +1,12 @@
 package pool
 
 import (
+	"context"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
+	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/chain/txissuer"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/noncer"
@@ -60,15 +63,75 @@ func IsFailed(status Status) bool {
 	return false
 }
 
-type TaskContextImp struct { // TODO: Convert it to TaskApi interface instead of directly giving the underlying resources
+type TaskContextImp struct {
 	Logger logger.Logger
 
-	NonceGiver noncer.Noncer
-	Network    chain.NetworkContext
-	EthClient  *ethclient.Client
-	MpcClient  core.MpcClient
-	TxIssuer   txissuer.TxIssuer
-	Dispatcher kbcevents.Dispatcher[interface{}]
+	NonceGiver   noncer.Noncer
+	Network      chain.NetworkContext
+	EthClient    *ethclient.Client
+	MpcClient    core.MpcClient
+	CChainClient evm.Client
+	PChainClient platformvm.Client
+	Dispatcher   kbcevents.Dispatcher[interface{}]
+}
+
+func (t *TaskContextImp) GetLogger() logger.Logger {
+	return t.Logger
+}
+
+func (t *TaskContextImp) GetNetwork() *chain.NetworkContext {
+	return &t.Network
+}
+
+func (t *TaskContextImp) GetMpcClient() core.MpcClient {
+	return t.MpcClient
+}
+
+func (t *TaskContextImp) IssueCChainTx(txBytes []byte) (ids.ID, error) {
+	return t.CChainClient.IssueTx(context.Background(), txBytes)
+}
+
+func (t *TaskContextImp) IssuePChainTx(txBytes []byte) (ids.ID, error) {
+	return t.PChainClient.IssueTx(context.Background(), txBytes)
+}
+
+func (t *TaskContextImp) CheckCChainTx(id ids.ID) (Status, error) {
+	status, err := t.CChainClient.GetAtomicTxStatus(context.Background(), id)
+	switch status {
+	case evm.Unknown:
+		return Unknown, nil
+	case evm.Dropped:
+		return Dropped, nil
+	case evm.Processing:
+		return Processing, nil
+	}
+	return Unknown, err
+}
+
+func (t *TaskContextImp) CheckPChainTx(id ids.ID) (Status, error) {
+	resp, err := t.PChainClient.GetTxStatus(context.Background(), id)
+	switch resp.Status {
+	case pStatus.Unknown:
+		return Unknown, nil
+	case pStatus.Committed:
+		return Committed, nil
+	case pStatus.Aborted:
+		return Aborted, nil
+	case pStatus.Processing:
+		return Processing, nil
+	case pStatus.Dropped:
+		return Dropped, nil
+	}
+	return Unknown, err
+}
+
+func (t *TaskContextImp) NonceAt(account common.Address) (uint64, error) {
+	return t.EthClient.NonceAt(context.Background(), account, nil)
+}
+
+func (t *TaskContextImp) Emit(event interface{}) {
+	//TODO implement me
+	panic("implement me")
 }
 
 type TaskContext interface {
