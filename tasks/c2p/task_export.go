@@ -51,9 +51,12 @@ func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	switch t.Status {
 	case StatusStarted:
 		builder := NewTxBuilder(ctx.GetNetwork())
-		nonce, _ := ctx.NonceAt(t.Quorum.CChainAddress())
-		amount, _ := ToGwei(&t.Amount)
-		tx, _ := builder.ExportFromCChain(t.Quorum.PubKey, amount, nonce)
+		nonce, err := ctx.NonceAt(t.Quorum.CChainAddress())
+		ctx.GetLogger().ErrorOnError(err, "failed to get nonce")
+		amount, err := ToGwei(&t.Amount)
+		ctx.GetLogger().ErrorOnError(err, "failed to convert amount")
+		tx, err := builder.ExportFromCChain(t.Quorum.PubKey, amount, nonce)
+		ctx.GetLogger().ErrorOnError(err, "failed to build export tx")
 		t.Tx = tx
 		txHash, err := ExportTxHash(tx)
 		t.TxHash = txHash
@@ -75,14 +78,18 @@ func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 			ctx.GetLogger().Debug("Signing task not done")
 			return self, nil
 		}
-		txCred, _ := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
+		txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
+		ctx.GetLogger().ErrorOnError(err, "failed to validate cred")
 		t.TxCred = txCred
-		signed, _ := t.SignedTx()
-		txId, _ := ctx.IssuePChainTx(signed.SignedBytes())
+		signed, err := t.SignedTx()
+		ctx.GetLogger().ErrorOnError(err, "failed to get signed tx")
+		txId, err := ctx.IssueCChainTx(signed.SignedBytes())
+		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
 		t.TxID = &txId
 		t.Status = StatusNewTxSent
 	case StatusNewTxSent:
-		status, _ := ctx.CheckCChainTx(*t.TxID)
+		status, err := ctx.CheckCChainTx(*t.TxID)
+		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		if !pool.IsPending(status) {
 			t.Status = StatusNewDone
 			return nil, nil

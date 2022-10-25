@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/crypto"
+	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
@@ -144,6 +145,13 @@ func NewSimulatingMpcClient(privateKey string) (*SimulatingMpcClient, error) {
 		keygenReqMap: map[string]struct{}{},
 		signReqMap:   map[string]*SignRequest{},
 	}, nil
+}
+
+func (c *SimulatingMpcClient) UncompressedPublicKeyBytes() []byte {
+	pk := c.privateKey.PublicKey().Bytes()
+	pkEcdsa, _ := ethCrypto.DecompressPubkey(pk)
+	pkb := ethCrypto.FromECDSAPub(pkEcdsa)
+	return pkb
 }
 
 func (c *SimulatingMpcClient) Keygen(ctx context.Context, req *KeygenRequest) error {

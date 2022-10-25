@@ -78,19 +78,20 @@ type TaskContextImp struct {
 }
 
 type TaskContextImpConfig struct {
-	host      string
-	port      int16
-	ssl       bool
-	logger    logger.Logger
-	mpcClient core.MpcClient
+	Logger         logger.Logger
+	Host           string
+	Port           int16
+	SslEnabled     bool
+	NetworkContext chain.NetworkContext
+	MpcClient      core.MpcClient
 }
 
 func (c TaskContextImpConfig) getUri() string {
 	scheme := "http"
-	if c.ssl {
+	if c.SslEnabled {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%v://%v:%v", scheme, c.host, c.port)
+	return fmt.Sprintf("%v://%v:%v", scheme, c.Host, c.Port)
 }
 
 func NewTaskContextImp(config TaskContextImpConfig) (*TaskContextImp, error) {
@@ -101,11 +102,11 @@ func NewTaskContextImp(config TaskContextImpConfig) (*TaskContextImp, error) {
 	cClient := evm.NewClient(config.getUri(), "C")
 	pClient := platformvm.NewClient(config.getUri())
 	return &TaskContextImp{
-		Logger:       config.logger,
+		Logger:       config.Logger,
 		NonceGiver:   nil,
-		Network:      chain.NetworkContext{},
+		Network:      config.NetworkContext,
 		EthClient:    ethClient,
-		MpcClient:    config.mpcClient,
+		MpcClient:    config.MpcClient,
 		CChainClient: cClient,
 		PChainClient: pClient,
 		Dispatcher:   nil,
@@ -142,6 +143,8 @@ func (t *TaskContextImp) CheckCChainTx(id ids.ID) (Status, error) {
 		return Dropped, nil
 	case evm.Processing:
 		return Processing, nil
+	case evm.Accepted:
+		return Committed, nil
 	}
 	return Unknown, err
 }
