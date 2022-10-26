@@ -1,13 +1,13 @@
 package c2p
 
 import (
-	"github.com/avalido/mpc-controller/pool"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/pkg/errors"
 	"math/big"
 )
 
 var (
-	_ pool.Task = (*C2P)(nil)
+	_ core.Task = (*C2P)(nil)
 )
 
 type C2P struct {
@@ -27,7 +27,7 @@ func (t *C2P) RequiresNonce() bool {
 	return true
 }
 
-func (t *C2P) Next(ctx pool.TaskContext) ([]pool.Task, error) {
+func (t *C2P) Next(ctx core.TaskContext) ([]core.Task, error) {
 	tasks, err := t.run(ctx)
 	if err != nil {
 		t.SubTaskHasError = err
@@ -52,11 +52,11 @@ func (t *C2P) startImport() error {
 	return nil
 }
 
-func (t *C2P) run(ctx pool.TaskContext) ([]pool.Task, error) {
+func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 	if !t.ExportTask.IsDone() {
 		next, err := t.ExportTask.Next(ctx)
 		if len(next) == 1 && next[0] == t.ExportTask {
-			return []pool.Task{t}, nil
+			return []core.Task{t}, nil
 		}
 		if t.ExportTask.IsDone() {
 			t.startImport()
@@ -66,7 +66,7 @@ func (t *C2P) run(ctx pool.TaskContext) ([]pool.Task, error) {
 	if t.ImportTask != nil && !t.ImportTask.IsDone() {
 		next, err := t.ImportTask.Next(ctx)
 		if len(next) == 1 && next[0] == t.ImportTask {
-			return []pool.Task{t}, nil
+			return []core.Task{t}, nil
 		}
 		if err != nil {
 			t.SubTaskHasError = err

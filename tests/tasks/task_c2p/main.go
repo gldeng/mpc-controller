@@ -8,7 +8,6 @@ import (
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/params"
@@ -33,7 +32,7 @@ func main() {
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 
 	panicIfError(err)
-	config := pool.TaskContextImpConfig{
+	config := core.TaskContextImpConfig{
 		Logger:     logger.Default(),
 		Host:       "34.172.25.188",
 		Port:       9650,
@@ -54,7 +53,7 @@ func main() {
 		),
 		MpcClient: mpcClient,
 	}
-	ctx, err := pool.NewTaskContextImp(config)
+	ctx, err := core.NewTaskContextImp(config)
 	panicIfError(err)
 	quorum := c2p.QuorumInfo{
 		ParticipantPubKeys: nil,

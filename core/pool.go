@@ -1,4 +1,4 @@
-package pool
+package core
 
 import (
 	"github.com/alitto/pond"

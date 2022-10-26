@@ -3,19 +3,17 @@ package c2p
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
-	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/utils/bytes"
 )
 
 var (
-	_ pool.Task = (*ImportIntoPChain)(nil)
+	_ core.Task = (*ImportIntoPChain)(nil)
 )
 
 type ImportIntoPChain struct {
@@ -53,8 +51,8 @@ func NewImportIntoPChain(id string, quorum QuorumInfo, signedExportTx *evm.Tx) (
 	}, nil
 }
 
-func (t *ImportIntoPChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
-	self := []pool.Task{t}
+func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
+	self := []core.Task{t}
 	switch t.Status {
 	case StatusInit:
 		builder := NewTxBuilder(ctx.GetNetwork())
@@ -94,8 +92,7 @@ func (t *ImportIntoPChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
-		fmt.Printf("status is %v\n", status)
-		if !pool.IsPending(status) {
+		if !core.IsPending(status) {
 			t.Status = StatusDone
 			return nil, nil
 		}

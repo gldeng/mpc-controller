@@ -8,13 +8,12 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/events"
-	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"math/big"
 )
 
 var (
-	_ pool.Task = (*ExportFromCChain)(nil)
+	_ core.Task = (*ExportFromCChain)(nil)
 )
 
 type ExportFromCChain struct {
@@ -50,8 +49,8 @@ func NewExportFromCChain(id string, quorum QuorumInfo, amount big.Int) (*ExportF
 	}, nil
 }
 
-func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
-	self := []pool.Task{t}
+func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
+	self := []core.Task{t}
 	switch t.Status {
 	case StatusInit:
 		builder := NewTxBuilder(ctx.GetNetwork())
@@ -94,7 +93,7 @@ func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
-		if !pool.IsPending(status) {
+		if !core.IsPending(status) {
 			t.Status = StatusDone
 			return nil, nil
 		}
