@@ -9,11 +9,16 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
+)
+
+var (
+	_ TaskContext = (*TaskContextImp)(nil)
 )
 
 type TaskContextImp struct {
@@ -122,6 +127,21 @@ func (t *TaskContextImp) NonceAt(account common.Address) (uint64, error) {
 }
 
 func (t *TaskContextImp) Emit(event interface{}) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextImp) GetDb() storage.DB {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextImp) GetEventID(event string) (common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextImp) GetParticipantID() storage.ParticipantId {
 	//TODO implement me
 	panic("implement me")
 }

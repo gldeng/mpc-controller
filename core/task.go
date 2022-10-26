@@ -4,6 +4,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -23,6 +24,9 @@ type TaskContext interface {
 	CheckPChainTx(id ids.ID) (TxStatus, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
+	GetDb() storage.DB
+	GetEventID(event string) (common.Hash, error)
+	GetParticipantID() storage.ParticipantId
 }
 
 type TaskContextFactory = func() TaskContext
