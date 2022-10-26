@@ -20,6 +20,13 @@ type C2P struct {
 	SubTaskHasError error
 }
 
+func (t *C2P) RequiresNonce() bool {
+	if t.ExportTask.IsDone() {
+		return false
+	}
+	return true
+}
+
 func (t *C2P) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	tasks, err := t.run(ctx)
 	if err != nil {

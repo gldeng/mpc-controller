@@ -29,6 +29,10 @@ type ExportFromCChain struct {
 	SignRequest *core.SignRequest
 }
 
+func (t *ExportFromCChain) RequiresNonce() bool {
+	return true
+}
+
 func (t *ExportFromCChain) IsDone() bool {
 	return t.Status == StatusNewDone
 }

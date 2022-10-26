@@ -31,6 +31,10 @@ type ImportIntoPChain struct {
 	SignRequest    *core.SignRequest
 }
 
+func (t *ImportIntoPChain) RequiresNonce() bool {
+	return false
+}
+
 func (t *ImportIntoPChain) IsDone() bool {
 	return t.Status == StatusNewDone
 }
