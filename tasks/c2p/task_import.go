@@ -36,12 +36,12 @@ func (t *ImportIntoPChain) RequiresNonce() bool {
 }
 
 func (t *ImportIntoPChain) IsDone() bool {
-	return t.Status == StatusNewDone
+	return t.Status == StatusDone
 }
 
 func NewImportIntoPChain(id string, quorum QuorumInfo, signedExportTx *evm.Tx) (*ImportIntoPChain, error) {
 	return &ImportIntoPChain{
-		Status:         StatusStarted,
+		Status:         StatusInit,
 		Id:             id,
 		Quorum:         quorum,
 		SignedExportTx: signedExportTx,
@@ -56,7 +56,7 @@ func NewImportIntoPChain(id string, quorum QuorumInfo, signedExportTx *evm.Tx) (
 func (t *ImportIntoPChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	self := []pool.Task{t}
 	switch t.Status {
-	case StatusStarted:
+	case StatusInit:
 		builder := NewTxBuilder(ctx.GetNetwork())
 		tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
 		ctx.GetLogger().ErrorOnError(err, "failed to build import tx")
@@ -70,9 +70,9 @@ func (t *ImportIntoPChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 		err = ctx.GetMpcClient().Sign(context.Background(), req)
 		ctx.GetLogger().ErrorOnError(err, "failed to post signing request")
 		if err == nil {
-			t.Status = StatusNewSignReqSent
+			t.Status = StatusSignReqSent
 		}
-	case StatusNewSignReqSent:
+	case StatusSignReqSent:
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 		// TODO: Handle 404
 		ctx.GetLogger().ErrorOnError(err, "Failed to check signing result")
@@ -90,13 +90,13 @@ func (t *ImportIntoPChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 		_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
 		t.TxID = &txId
-		t.Status = StatusNewTxSent
-	case StatusNewTxSent:
+		t.Status = StatusTxSent
+	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		fmt.Printf("status is %v\n", status)
 		if !pool.IsPending(status) {
-			t.Status = StatusNewDone
+			t.Status = StatusDone
 			return nil, nil
 		}
 	}

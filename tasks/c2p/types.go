@@ -27,10 +27,10 @@ type ImportedEvent struct {
 }
 
 const (
-	StatusStarted Status = iota
-	StatusNewSignReqSent
-	StatusNewTxSent
-	StatusNewDone
+	StatusInit Status = iota
+	StatusSignReqSent
+	StatusTxSent
+	StatusDone
 )
 
 type Status int

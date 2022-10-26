@@ -82,7 +82,7 @@ func NewC2P(id string, quorum QuorumInfo, amount big.Int) (*C2P, error) {
 		return nil, err
 	}
 	return &C2P{
-		Status:     StatusStarted,
+		Status:     StatusInit,
 		Id:         id,
 		Quorum:     quorum,
 		ExportTask: exportTask,

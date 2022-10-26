@@ -34,12 +34,12 @@ func (t *ExportFromCChain) RequiresNonce() bool {
 }
 
 func (t *ExportFromCChain) IsDone() bool {
-	return t.Status == StatusNewDone
+	return t.Status == StatusDone
 }
 
 func NewExportFromCChain(id string, quorum QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
 	return &ExportFromCChain{
-		Status:      StatusStarted,
+		Status:      StatusInit,
 		Id:          id,
 		Amount:      amount,
 		Quorum:      quorum,
@@ -53,7 +53,7 @@ func NewExportFromCChain(id string, quorum QuorumInfo, amount big.Int) (*ExportF
 func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 	self := []pool.Task{t}
 	switch t.Status {
-	case StatusStarted:
+	case StatusInit:
 		builder := NewTxBuilder(ctx.GetNetwork())
 		nonce, err := ctx.NonceAt(t.Quorum.CChainAddress())
 		ctx.GetLogger().ErrorOnError(err, "failed to get nonce")
@@ -71,9 +71,9 @@ func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 		err = ctx.GetMpcClient().Sign(context.Background(), req)
 		ctx.GetLogger().ErrorOnError(err, "Failed to post signing request")
 		if err == nil {
-			t.Status = StatusNewSignReqSent
+			t.Status = StatusSignReqSent
 		}
-	case StatusNewSignReqSent:
+	case StatusSignReqSent:
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 		// TODO: Handle 404
 		ctx.GetLogger().ErrorOnError(err, "Failed to check signing result")
@@ -90,12 +90,12 @@ func (t *ExportFromCChain) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 		txId, err := ctx.IssueCChainTx(signed.SignedBytes())
 		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
 		t.TxID = &txId
-		t.Status = StatusNewTxSent
-	case StatusNewTxSent:
+		t.Status = StatusTxSent
+	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		if !pool.IsPending(status) {
-			t.Status = StatusNewDone
+			t.Status = StatusDone
 			return nil, nil
 		}
 	}
