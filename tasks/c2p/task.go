@@ -198,7 +198,7 @@ func (t *TransferC2P) Next(ctx pool.TaskContext) ([]pool.Task, error) {
 			t.Status = StatusImportTxFailed
 		}
 
-		if err == nil && t.ImportIssueTx.Status == txissuer.StatusApproved {
+		if err == nil && t.ImportIssueTx.Status == txissuer.StatusCommitted {
 			t.Status = StatusImportTxApproved
 		}
 	case StatusImportTxFailed:

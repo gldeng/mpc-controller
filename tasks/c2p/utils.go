@@ -5,17 +5,19 @@ import (
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/ava-labs/avalanchego/utils/hashing"
 	"github.com/ava-labs/avalanchego/vms/components/verify"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/events"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 	"math/big"
 )
 
 // TODO: Move to correct package
 func ToGwei(amount *big.Int) (uint64, error) {
-	nAVAXAmount := new(big.Int).Div(amount, big.NewInt(1_000_000_000))
+	nAVAXAmount := new(big.Int).Div(amount, big.NewInt(params.GWei))
 	if !nAVAXAmount.IsUint64() {
 		return 0, errors.New("invalid uint64")
 	}
@@ -72,6 +74,43 @@ func PackSignedExportTx(unsigned *evm.UnsignedExportTx, cred *secp256k1fx.Creden
 		},
 	}
 	err := tx.Sign(evm.Codec, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare signed tx")
+	}
+	return &tx, nil
+}
+
+func ImportTxHash(importTx *txs.ImportTx) ([]byte, error) {
+	tx := txs.Tx{
+		Unsigned: importTx,
+	}
+	unsignedBytes, err := platformvm.Codec.Marshal(txs.Version, &tx.Unsigned)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	hash := hashing.ComputeHash256(unsignedBytes)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return hash, nil
+}
+
+func PackSignedImportTx(unsigned *txs.ImportTx, cred *secp256k1fx.Credential) (*txs.Tx, error) {
+	if unsigned == nil {
+		return nil, errors.New("missing unsigned tx")
+	}
+	if cred == nil {
+		return nil, errors.New(ErrMsgMissingCredential)
+	}
+
+	tx := txs.Tx{
+		Unsigned: unsigned,
+		Creds: []verify.Verifiable{
+			cred,
+		},
+	}
+	err := tx.Sign(platformvm.Codec, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare signed tx")
 	}

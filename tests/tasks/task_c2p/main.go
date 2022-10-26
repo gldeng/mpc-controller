@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"time"
 )
@@ -59,14 +60,13 @@ func main() {
 		ParticipantPubKeys: nil,
 		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
 	}
-	task, err := c2p.NewExportFromCChain("abc", quorum, *big.NewInt(100))
+	task, err := c2p.NewC2P("abc", quorum, *big.NewInt(100 * params.GWei))
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
 	nextTasks, err = task.Next(ctx)
 	panicIfError(err)
 	time.Sleep(5 * time.Second)
-	fmt.Printf("TxID is %v\n", task.TxID.String())
 	backoff.RetryFnExponential10Times(logger.Default(), context.Background(), 1*time.Second, 120*time.Second, func() (retry bool, err error) {
 		nextTasks, err = task.Next(ctx)
 		if err != nil {
@@ -75,9 +75,21 @@ func main() {
 		if len(nextTasks) > 0 {
 			return true, nil
 		}
-		fmt.Printf("Task IsDone: %v\n", task.IsDone())
+		fmt.Printf("ExportTask IsDone: %v\n", task.ExportTask.IsDone())
 		return false, nil
 	})
-
+	fmt.Printf("Export TxID is %v\n", task.ExportTask.TxID.String())
+	backoff.RetryFnExponential10Times(logger.Default(), context.Background(), 1*time.Second, 120*time.Second, func() (retry bool, err error) {
+		nextTasks, err = task.Next(ctx)
+		if err != nil {
+			return false, err
+		}
+		if len(nextTasks) > 0 {
+			return true, nil
+		}
+		fmt.Printf("ImportTask IsDone: %v\n", task.ImportTask.IsDone())
+		return false, nil
+	})
+	fmt.Printf("Import TxID is %v\n", task.ImportTask.TxID.String())
 	fmt.Printf("next is %v\n", nextTasks)
 }
