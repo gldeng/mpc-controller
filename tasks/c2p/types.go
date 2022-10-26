@@ -25,3 +25,16 @@ func (q *QuorumInfo) PChainAddress() ids.ShortID {
 type ImportedEvent struct {
 	Tx *txs.ImportTx
 }
+
+const (
+	StatusStarted Status = iota
+	StatusNewSignReqSent
+	StatusNewTxSent
+	StatusNewDone
+)
+
+type Status int
+
+const (
+	SigLength = 65
+)
