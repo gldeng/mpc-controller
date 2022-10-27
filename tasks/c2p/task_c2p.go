@@ -2,6 +2,7 @@ package c2p
 
 import (
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -13,7 +14,7 @@ var (
 type C2P struct {
 	Status Status
 	Id     string
-	Quorum QuorumInfo
+	Quorum types.QuorumInfo
 
 	ExportTask      *ExportFromCChain
 	ImportTask      *ImportIntoPChain
@@ -76,7 +77,7 @@ func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 	return nil, errors.New("invalid state of composite task")
 }
 
-func NewC2P(id string, quorum QuorumInfo, amount big.Int) (*C2P, error) {
+func NewC2P(id string, quorum types.QuorumInfo, amount big.Int) (*C2P, error) {
 	exportTask, err := NewExportFromCChain(id, quorum, amount)
 	if err != nil {
 		return nil, err

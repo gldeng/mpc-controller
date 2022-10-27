@@ -8,6 +8,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/bytes"
 )
@@ -19,7 +20,7 @@ var (
 type ImportIntoPChain struct {
 	Status Status
 	Id     string
-	Quorum QuorumInfo
+	Quorum types.QuorumInfo
 
 	SignedExportTx *evm.Tx
 	Tx             *txs.ImportTx
@@ -37,7 +38,7 @@ func (t *ImportIntoPChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewImportIntoPChain(id string, quorum QuorumInfo, signedExportTx *evm.Tx) (*ImportIntoPChain, error) {
+func NewImportIntoPChain(id string, quorum types.QuorumInfo, signedExportTx *evm.Tx) (*ImportIntoPChain, error) {
 	return &ImportIntoPChain{
 		Status:         StatusInit,
 		Id:             id,

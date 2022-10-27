@@ -7,6 +7,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"math/big"
@@ -20,7 +21,7 @@ type ExportFromCChain struct {
 	Status      Status
 	Id          string
 	Amount      big.Int
-	Quorum      QuorumInfo
+	Quorum      types.QuorumInfo
 	Tx          *evm.UnsignedExportTx
 	TxHash      []byte
 	TxCred      *secp256k1fx.Credential
@@ -36,7 +37,7 @@ func (t *ExportFromCChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewExportFromCChain(id string, quorum QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
+func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
 	return &ExportFromCChain{
 		Status:      StatusInit,
 		Id:          id,

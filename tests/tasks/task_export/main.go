@@ -7,6 +7,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/utils/backoff"
@@ -54,7 +55,7 @@ func main() {
 	}
 	ctx, err := core.NewTaskContextImp(config)
 	panicIfError(err)
-	quorum := c2p.QuorumInfo{
+	quorum := types.QuorumInfo{
 		ParticipantPubKeys: nil,
 		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
 	}
