@@ -8,6 +8,11 @@ import (
 // ---------------------------------------------------------------------------------------------------------------------
 // Interfaces regarding low-level k-v db
 
+type SlimDb interface {
+	Setter
+	Getter
+}
+
 type DB interface {
 	Setter
 	Getter

@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/router"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
+	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -16,7 +20,8 @@ import (
 )
 
 const (
-	fnRpcUrl            = "rpc-url"
+	fnHost              = "host"
+	fnPort              = "port"
 	fnMpcManagerAddress = "mpc-manager-address"
 )
 
@@ -35,12 +40,31 @@ func runController(c *cli.Context) error {
 	q := goconcurrentqueue.NewFIFO()
 
 	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, &subscriber.Config{
-		EthWsURL:          c.String(fnRpcUrl),                                 // "ws://34.172.25.188:9650/ext/bc/C/ws",
-		MpcManagerAddress: common.HexToAddress(c.String(fnMpcManagerAddress)), // 0x354f6dA5Bfca855021b6AbE4f138AD94bEB688D2
+		EthWsURL:          fmt.Sprintf("ws://%s:%v/ext/bc/C/ws", c.String(fnHost), c.Int(fnPort)),
+		MpcManagerAddress: common.HexToAddress(c.String(fnMpcManagerAddress)),
 	}, q)
 
-	rt, _ := router.NewRouter(q)
+	coreConfig := core.Config{
+		Host:           c.String(fnHost),
+		Port:           int16(c.Int(fnPort)),
+		SslEnabled:     false, // TODO: Add argument
+		NetworkContext: chain.NetworkContext{},
+	}
+
+	db := &storage.InMemoryDb{}
+
+	services := core.NewServicePack(coreConfig, myLogger, nil, db)
+
+	ehContext, err := core.NewEventHandlerContextImp(services)
+	if err != nil {
+		return err
+	}
+
+	rt, _ := router.NewRouter(q, ehContext)
 	rt.AddHandler(printLog)
+
+	rc := &ethlog.RequestCreator{}
+	rt.AddLogEventHandler(rc)
 	err = sub.Start()
 	if err != nil {
 		return err
@@ -71,9 +95,17 @@ func main() {
 		Usage: "Handles the MPC operations needed for Avalanche",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     fnRpcUrl,
-				Required: true,
-				Usage:    "The url of the rpc node.",
+				Name:        fnHost,
+				Required:    true,
+				Usage:       "The host of the avalanche rpc service.",
+				DefaultText: "localhost",
+			},
+
+			&cli.IntFlag{
+				Name:        fnPort,
+				Required:    true,
+				Usage:       "The port of the avalanche rpc service.",
+				DefaultText: "9650",
 			},
 			&cli.StringFlag{
 				Name:     fnMpcManagerAddress,

@@ -131,7 +131,7 @@ func (t *TaskContextImp) Emit(event interface{}) {
 	panic("implement me")
 }
 
-func (t *TaskContextImp) GetDb() storage.DB {
+func (t *TaskContextImp) GetDb() storage.SlimDb {
 	//TODO implement me
 	panic("implement me")
 }

@@ -24,7 +24,7 @@ type TaskContext interface {
 	CheckPChainTx(id ids.ID) (TxStatus, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
-	GetDb() storage.DB
+	GetDb() storage.SlimDb
 	GetEventID(event string) (common.Hash, error)
 	GetParticipantID() storage.ParticipantId
 }
