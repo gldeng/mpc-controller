@@ -58,7 +58,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, "failed to build and sign tx")
+			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToBuildAndSignTx)
 			return nil, err
 		} else {
 			t.Status = StatusSignReqSent
@@ -111,31 +111,31 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
 	nonce, err := ctx.NonceAt(t.Quorum.CChainAddress())
 	if err != nil {
-		return errors.Wrap(err, "failed to get nonce")
+		return errors.Wrap(err, ErrMsgFailedToGetNonce)
 	}
 	amount, err := ToGwei(&t.Amount)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert amount")
+		return errors.Wrap(err, ErrMsgFailedToConvertAmount)
 	}
 	tx, err := builder.ExportFromCChain(t.Quorum.PubKey, amount, nonce)
 	if err != nil {
-		return errors.Wrap(err, "failed to build export tx")
+		return errors.Wrap(err, ErrMsgFailedToBuildTx)
 	}
 	t.Tx = tx
 	txHash, err := ExportTxHash(tx)
 	if err != nil {
-		return errors.Wrap(err, "failed to get tx hash")
+		return errors.Wrap(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
 	req, err := t.buildSignReq(t.Id+"/export", txHash)
 	if err != nil {
-		return errors.Wrap(err, "failed create sign request")
+		return errors.Wrap(err, ErrMsgFailedToCreateSignRequest)
 	}
 	t.SignRequest = req
 
 	err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
-		return errors.Wrap(err, "failed to post signing request")
+		return errors.Wrap(err, ErrMsgFailedToSendSignRequest)
 	}
 	return nil
 }
@@ -144,25 +144,25 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
 	if err != nil {
-		return errors.Wrap(err, "failed to check signing result")
+		return errors.Wrap(err, ErrMsgFailedToCheckSignRequest)
 	}
 
 	if res.Status != core.StatusDone {
-		ctx.GetLogger().Debug("Signing task not done")
+		ctx.GetLogger().Debug(ErrMsgSignRequestNotDone)
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
-		return errors.Wrap(err, "failed to validate cred")
+		return errors.Wrap(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
 	signed, err := t.SignedTx()
 	if err != nil {
-		return errors.Wrap(err, "failed to get signed tx")
+		return errors.Wrap(err, ErrMsgFailedToPrepareSignedTx)
 	}
 	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
-		return errors.Wrap(err, "failed to issue tx")
+		return errors.Wrap(err, ErrMsgFailedToIssueTx)
 	}
 	txId := signed.ID()
 	t.TxID = &txId

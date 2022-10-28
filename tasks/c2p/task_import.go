@@ -110,24 +110,24 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
 	tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
 	if err != nil {
-		return errors.Wrap(err, "failed to build import tx")
+		return errors.Wrap(err, ErrMsgFailedToBuildAndSignTx)
 	}
 	t.Tx = tx
 	txHash, err := ImportTxHash(tx)
 	if err != nil {
-		return errors.Wrap(err, "failed to get import tx hash")
+		return errors.Wrap(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
 	req, err := t.buildSignReq(t.Id+"/import", txHash)
 	if err != nil {
-		return errors.Wrap(err, "failed create sign request")
+		return errors.Wrap(err, ErrMsgFailedToCreateSignRequest)
 	}
 
 	t.SignRequest = req
 
 	err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
-		return errors.Wrap(err, "failed to post signing request")
+		return errors.Wrap(err, ErrMsgFailedToSendSignRequest)
 	}
 	return nil
 }
@@ -136,26 +136,26 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
 	if err != nil {
-		return errors.Wrap(err, "failed to check signing result")
+		return errors.Wrap(err, ErrMsgFailedToCheckSignRequest)
 	}
 
 	if res.Status != core.StatusDone {
-		ctx.GetLogger().Debug("Signing task not done")
+		ctx.GetLogger().Debug(ErrMsgSignRequestNotDone)
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
-		return errors.Wrap(err, "failed to validate cred")
+		return errors.Wrap(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
 	signed, err := t.SignedTx()
 	if err != nil {
-		return errors.Wrap(err, "failed to get signed tx")
+		return errors.Wrap(err, ErrMsgFailedToPrepareSignedTx)
 	}
 	txId := signed.ID()
 	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 	if err != nil {
-		return errors.Wrap(err, "failed to issue tx")
+		return errors.Wrap(err, ErrMsgFailedToIssueTx)
 	}
 	t.TxID = &txId
 	return nil
