@@ -46,6 +46,24 @@ func NewNetworkContext(networkID uint32,
 	}
 }
 
+func (c *NetworkContext) SetChainID(id *big.Int) {
+	c.chainID = id
+}
+
+func (c *NetworkContext) SetNetworkID(id *big.Int) {
+	c.networkID = uint32(id.Uint64())
+}
+
+func (c *NetworkContext) SetCChainID(id ids.ID) {
+	c.cChainID = id
+}
+
+func (c *NetworkContext) SetAssetID(id ids.ID) {
+	c.asset = avax.Asset{
+		ID: id,
+	}
+}
+
 func (c *NetworkContext) NetworkID() uint32 {
 	return c.networkID
 }

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"context"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
@@ -42,6 +44,29 @@ func (c Config) CreateCClient() evm.Client {
 
 func (c Config) CreatePClient() platformvm.Client {
 	return platformvm.NewClient(c.getUri())
+}
+
+func (c Config) FetchNetworkInfo() {
+	ethClient := c.CreateEthClient()
+	//networkID, _ := ethClient.NetworkID(context.Background())
+	//if networkID != nil {
+	//	c.NetworkContext.SetNetworkID(networkID)
+	//}
+	chainID, _ := ethClient.ChainID(context.Background())
+	if chainID != nil {
+		c.NetworkContext.SetChainID(chainID)
+	}
+	pClient := c.CreatePClient()
+	chains, _ := pClient.GetBlockchains(context.Background())
+	for _, blockchain := range chains {
+		if blockchain.Name == "C-Chain" {
+			c.NetworkContext.SetCChainID(blockchain.ID)
+		}
+	}
+	assetID, err := pClient.GetStakingAssetID(context.Background(), ids.Empty)
+	if err == nil {
+		c.NetworkContext.SetAssetID(assetID)
+	}
 }
 
 type ServicePack struct {
