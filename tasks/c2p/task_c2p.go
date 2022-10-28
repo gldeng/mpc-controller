@@ -21,6 +21,10 @@ type C2P struct {
 	SubTaskHasError error
 }
 
+func (t *C2P) FailedPermanently() bool {
+	return t.ExportTask.FailedPermanently() || (t.ImportTask != nil && t.ImportTask.FailedPermanently())
+}
+
 func (t *C2P) RequiresNonce() bool {
 	if t.ExportTask.IsDone() {
 		return false

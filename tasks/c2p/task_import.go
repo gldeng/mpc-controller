@@ -30,6 +30,11 @@ type ImportIntoPChain struct {
 	TxCred         *secp256k1fx.Credential
 	TxID           *ids.ID
 	SignRequest    *core.SignRequest
+	Failed         bool
+}
+
+func (t *ImportIntoPChain) FailedPermanently() bool {
+	return t.Failed
 }
 
 func (t *ImportIntoPChain) RequiresNonce() bool {
@@ -110,24 +115,24 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
 	tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToBuildAndSignTx)
+		return t.failIfError(err, ErrMsgFailedToBuildAndSignTx)
 	}
 	t.Tx = tx
 	txHash, err := ImportTxHash(tx)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToGetTxHash)
+		return t.failIfError(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
 	req, err := t.buildSignReq(t.Id+"/import", txHash)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToCreateSignRequest)
+		return t.failIfError(err, ErrMsgFailedToCreateSignRequest)
 	}
 
 	t.SignRequest = req
 
 	err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToSendSignRequest)
+		return t.failIfError(err, ErrMsgFailedToSendSignRequest)
 	}
 	return nil
 }
@@ -136,7 +141,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToCheckSignRequest)
+		return t.failIfError(err, ErrMsgFailedToCheckSignRequest)
 	}
 
 	if res.Status != core.StatusDone {
@@ -145,18 +150,26 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToValidateCredential)
+		return t.failIfError(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
 	signed, err := t.SignedTx()
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToPrepareSignedTx)
+		return t.failIfError(err, ErrMsgFailedToPrepareSignedTx)
 	}
 	txId := signed.ID()
 	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToIssueTx)
+		return t.failIfError(err, ErrMsgFailedToIssueTx)
 	}
 	t.TxID = &txId
 	return nil
+}
+
+func (t *ImportIntoPChain) failIfError(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
+	t.Failed = true
+	return errors.Wrap(err, msg)
 }

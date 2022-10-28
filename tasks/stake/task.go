@@ -29,6 +29,11 @@ type InitialStake struct {
 
 	C2P             *c2p.C2P
 	SubTaskHasError error
+	Failed          bool
+}
+
+func (t *InitialStake) FailedPermanently() bool {
+	return t.Failed || t.C2P.FailedPermanently()
 }
 
 func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, error) {
@@ -75,5 +80,13 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 		return nil, err
 	}
-	return nil, errors.New("invalid state of composite task")
+	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
+}
+
+func (t *InitialStake) failIfError(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
+	t.Failed = true
+	return errors.Wrap(err, msg)
 }

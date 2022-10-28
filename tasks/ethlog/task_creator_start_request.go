@@ -15,7 +15,12 @@ var (
 )
 
 type RequestStartedHandler struct {
-	Event contract.MpcManagerRequestStarted
+	Event  contract.MpcManagerRequestStarted
+	Failed bool
+}
+
+func (h *RequestStartedHandler) FailedPermanently() bool {
+	return h.Failed
 }
 
 func NewRequestStartedHandler(event contract.MpcManagerRequestStarted) *RequestStartedHandler {
@@ -25,27 +30,27 @@ func NewRequestStartedHandler(event contract.MpcManagerRequestStarted) *RequestS
 func (h *RequestStartedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	p, err := h.participating(ctx)
 	if !p {
-		return nil, errors.Wrap(err, "failed to check index")
+		return nil, h.failIfError(err, "failed to check index")
 	}
 	hash := (storage.RequestHash)(h.Event.RequestHash)
 	data, err := h.retrieveRequest(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve request")
+		return nil, h.failIfError(err, "failed to retrieve request")
 	}
 	switch hash.TaskType() {
 	case storage.TaskTypStake:
 		r := new(stake.Request)
 		err := r.Decode(data)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed decode request")
+			return nil, h.failIfError(err, "failed decode request")
 		}
 		quorum, err := h.getQuorumInfo(ctx, r.PubKey)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get quorum info")
+			return nil, h.failIfError(err, "failed to get quorum info")
 		}
 		task, err := stake.NewInitialStake(r, *quorum)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create stake task")
+			return nil, h.failIfError(err, "failed to create stake task")
 		}
 		return []core.Task{task}, nil
 	case storage.TaskTypRecover:
@@ -86,12 +91,12 @@ func (h *RequestStartedHandler) retrieveKey(ctx core.TaskContext, pubKey []byte)
 	key = append(key, pubKey...)
 	bytes, err := ctx.GetDb().Get(context.Background(), key)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load mpc key info")
+		return nil, h.failIfError(err, "failed to load mpc key info")
 	}
 	keyInfo := new(types.MpcPublicKey)
 	err = keyInfo.Decode(bytes)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode mpc key info")
+		return nil, h.failIfError(err, "failed to decode mpc key info")
 	}
 	return keyInfo, nil
 }
@@ -114,4 +119,12 @@ func (h *RequestStartedHandler) getQuorumInfo(ctx core.TaskContext, pubKey []byt
 		ParticipantPubKeys: pks,
 		PubKey:             pubKey,
 	}, nil
+}
+
+func (h *RequestStartedHandler) failIfError(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
+	h.Failed = true
+	return errors.Wrap(err, msg)
 }

@@ -29,6 +29,11 @@ type ExportFromCChain struct {
 	TxCred      *secp256k1fx.Credential
 	TxID        *ids.ID
 	SignRequest *core.SignRequest
+	Failed      bool
+}
+
+func (t *ExportFromCChain) FailedPermanently() bool {
+	return t.Failed
 }
 
 func (t *ExportFromCChain) RequiresNonce() bool {
@@ -111,31 +116,31 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
 	nonce, err := ctx.NonceAt(t.Quorum.CChainAddress())
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToGetNonce)
+		return t.failIfError(err, ErrMsgFailedToGetNonce)
 	}
 	amount, err := ToGwei(&t.Amount)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToConvertAmount)
+		return t.failIfError(err, ErrMsgFailedToConvertAmount)
 	}
 	tx, err := builder.ExportFromCChain(t.Quorum.PubKey, amount, nonce)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToBuildTx)
+		return t.failIfError(err, ErrMsgFailedToBuildTx)
 	}
 	t.Tx = tx
 	txHash, err := ExportTxHash(tx)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToGetTxHash)
+		return t.failIfError(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
 	req, err := t.buildSignReq(t.Id+"/export", txHash)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToCreateSignRequest)
+		return t.failIfError(err, ErrMsgFailedToCreateSignRequest)
 	}
 	t.SignRequest = req
 
 	err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToSendSignRequest)
+		return t.failIfError(err, ErrMsgFailedToSendSignRequest)
 	}
 	return nil
 }
@@ -144,7 +149,7 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToCheckSignRequest)
+		return t.failIfError(err, ErrMsgFailedToCheckSignRequest)
 	}
 
 	if res.Status != core.StatusDone {
@@ -153,18 +158,26 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToValidateCredential)
+		return t.failIfError(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
 	signed, err := t.SignedTx()
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToPrepareSignedTx)
+		return t.failIfError(err, ErrMsgFailedToPrepareSignedTx)
 	}
 	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
-		return errors.Wrap(err, ErrMsgFailedToIssueTx)
+		return t.failIfError(err, ErrMsgFailedToIssueTx)
 	}
 	txId := signed.ID()
 	t.TxID = &txId
 	return nil
+}
+
+func (t *ExportFromCChain) failIfError(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
+	t.Failed = true
+	return errors.Wrap(err, msg)
 }
