@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/pkg/errors"
 	"math/big"
 )
 
@@ -55,49 +56,28 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	self := []core.Task{t}
 	switch t.Status {
 	case StatusInit:
-		builder := NewTxBuilder(ctx.GetNetwork())
-		nonce, err := ctx.NonceAt(t.Quorum.CChainAddress())
-		ctx.GetLogger().ErrorOnError(err, "failed to get nonce")
-		amount, err := ToGwei(&t.Amount)
-		ctx.GetLogger().ErrorOnError(err, "failed to convert amount")
-		tx, err := builder.ExportFromCChain(t.Quorum.PubKey, amount, nonce)
-		ctx.GetLogger().ErrorOnError(err, "failed to build export tx")
-		t.Tx = tx
-		txHash, err := ExportTxHash(tx)
-		t.TxHash = txHash
-		ctx.GetLogger().ErrorOnError(err, "failed to get export tx hash")
-		req, err := t.buildSignReq(t.Id+"/export", txHash)
-		t.SignRequest = req
-		ctx.GetLogger().ErrorOnError(err, "failed create sign request")
-		err = ctx.GetMpcClient().Sign(context.Background(), req)
-		ctx.GetLogger().ErrorOnError(err, "Failed to post signing request")
-		if err == nil {
+		err := t.buildAndSignTx(ctx)
+		if err != nil {
+			ctx.GetLogger().ErrorOnError(err, "failed to build and sign tx")
+			return nil, err
+		} else {
 			t.Status = StatusSignReqSent
 		}
 	case StatusSignReqSent:
-		res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
-		// TODO: Handle 404
-		ctx.GetLogger().ErrorOnError(err, "Failed to check signing result")
-
-		if res.Status != core.StatusDone {
-			ctx.GetLogger().Debug("Signing task not done")
-			return self, nil
+		err := t.getSignatureAndSendTx(ctx)
+		if err != nil {
+			ctx.GetLogger().ErrorOnError(err, "failed to get signature and send tx")
+			return nil, err
+		} else {
+			t.Status = StatusTxSent
 		}
-		txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
-		ctx.GetLogger().ErrorOnError(err, "failed to validate cred")
-		t.TxCred = txCred
-		signed, err := t.SignedTx()
-		ctx.GetLogger().ErrorOnError(err, "failed to get signed tx")
-		_, err = ctx.IssueCChainTx(signed.SignedBytes())
-		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
-		txId := signed.ID()
-		t.TxID = &txId
-		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx ID is %v", txId.String()))
-		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
 		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx Status is %v", status))
-		ctx.GetLogger().ErrorOnError(err, "failed to check status")
+		if err != nil {
+			ctx.GetLogger().ErrorOnError(err, "failed to check status")
+			return nil, err
+		}
 		if !core.IsPending(status) {
 			t.Status = StatusDone
 			return nil, nil
@@ -121,4 +101,67 @@ func (t *ExportFromCChain) buildSignReq(id string, hash []byte) (*core.SignReque
 		CompressedPartiPubKeys: participantPks,
 		Hash:                   bytes.BytesToHex(hash),
 	}, nil
+}
+
+func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
+	builder := NewTxBuilder(ctx.GetNetwork())
+	nonce, err := ctx.NonceAt(t.Quorum.CChainAddress())
+	if err != nil {
+		return errors.Wrap(err, "failed to get nonce")
+	}
+	amount, err := ToGwei(&t.Amount)
+	if err != nil {
+		return errors.Wrap(err, "failed to convert amount")
+	}
+	tx, err := builder.ExportFromCChain(t.Quorum.PubKey, amount, nonce)
+	if err != nil {
+		return errors.Wrap(err, "failed to build export tx")
+	}
+	t.Tx = tx
+	txHash, err := ExportTxHash(tx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get tx hash")
+	}
+	t.TxHash = txHash
+	req, err := t.buildSignReq(t.Id+"/export", txHash)
+	if err != nil {
+		return errors.Wrap(err, "failed create sign request")
+	}
+	t.SignRequest = req
+
+	err = ctx.GetMpcClient().Sign(context.Background(), req)
+	if err != nil {
+		return errors.Wrap(err, "failed to post signing request")
+	}
+	return nil
+}
+
+func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
+	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
+	// TODO: Handle 404
+	if err != nil {
+		return errors.Wrap(err, "failed to check signing result")
+	}
+
+	if res.Status != core.StatusDone {
+		ctx.GetLogger().Debug("Signing task not done")
+		return nil
+	}
+	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
+	if err != nil {
+		return errors.Wrap(err, "failed to validate cred")
+	}
+	t.TxCred = txCred
+	signed, err := t.SignedTx()
+	if err != nil {
+		return errors.Wrap(err, "failed to get signed tx")
+	}
+	_, err = ctx.IssueCChainTx(signed.SignedBytes())
+	if err != nil {
+		return errors.Wrap(err, "failed to issue tx")
+	}
+	txId := signed.ID()
+	t.TxID = &txId
+	ctx.GetLogger().Debug(fmt.Sprintf("ExportTx ID is %v", txId.String()))
+	return nil
 }
