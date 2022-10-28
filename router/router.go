@@ -42,15 +42,22 @@ func NewRouter(incomingQueue Queue, eventHandlerContext core.EventHandlerContext
 
 func (r *Router) Start() error {
 	go func() {
-		event, _ := r.incomingQueue.DequeueOrWaitForNextElementContext(r.onCloseCtx) // TODO: Handle error
-		for _, handler := range r.handlers {
-			handler(event)
-		}
-		if evt, ok := event.(types.Log); ok {
-			for _, handler := range r.logEventHandlers {
-				tasks, _ := handler.Handle(r.eventHandlerContext, evt) // TODO: Handle error
-				for _, task := range tasks {
-					r.submitter.Submit(task)
+		for {
+			select {
+			case <-r.onCloseCtx.Done():
+				return
+			default:
+				event, _ := r.incomingQueue.DequeueOrWaitForNextElementContext(r.onCloseCtx) // TODO: Handle error
+				for _, handler := range r.handlers {
+					handler(event)
+				}
+				if evt, ok := event.(types.Log); ok {
+					for _, handler := range r.logEventHandlers {
+						tasks, _ := handler.Handle(r.eventHandlerContext, evt) // TODO: Handle error
+						for _, task := range tasks {
+							r.submitter.Submit(task)
+						}
+					}
 				}
 			}
 		}
