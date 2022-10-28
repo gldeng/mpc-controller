@@ -96,7 +96,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
-		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx Status is %v\n", status))
+		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx Status is %v", status))
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		if !core.IsPending(status) {
 			t.Status = StatusDone

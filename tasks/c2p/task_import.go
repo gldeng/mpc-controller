@@ -94,7 +94,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
-		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx Status is %v\n", status))
+		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx Status is %v", status))
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		if !core.IsPending(status) {
 			t.Status = StatusDone
