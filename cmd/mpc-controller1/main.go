@@ -15,6 +15,7 @@ import (
 	"github.com/avalido/mpc-controller/subscriber"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
+	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -60,8 +61,8 @@ func (s *TestSuite) prepareDb() error {
 	return nil
 }
 
-func (s *TestSuite) addDummyRequest() error {
-	request := &stake.Request{
+func (s *TestSuite) getRequest() *stake.Request {
+	return &stake.Request{
 		ReqNo:     0,
 		TxHash:    common.Hash{},
 		PubKey:    s.pubKey,
@@ -70,12 +71,16 @@ func (s *TestSuite) addDummyRequest() error {
 		StartTime: 0,
 		EndTime:   0,
 	}
-	hash, err := request.Hash()
-	hash.SetTaskType(storage.TaskTypStake)
+}
+func (s *TestSuite) getRequestHash() storage.RequestHash {
+	hash, _ := s.getRequest().Hash()
+	return hash
+}
+
+func (s *TestSuite) addDummyRequest() error {
+	request := s.getRequest()
+	hash := s.getRequestHash()
 	fmt.Printf("requestHash is %x\n", hash)
-	if err != nil {
-		return err
-	}
 	key := []byte("request/")
 	key = append(key, hash[:]...)
 	reqBytes, err := request.Encode()
@@ -113,6 +118,9 @@ func idFromString(str string) ids.ID {
 }
 
 func runController(c *cli.Context) error {
+
+	indices := new(big.Int)
+	indices.SetString("8000000000000000000000000000000000000000000000000000000000000000", 16)
 
 	myLogger := logger.Default()
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
@@ -190,6 +198,9 @@ func runController(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	l := testingutils.MakeEventRequestStarted(ts.getRequestHash(), indices)
+	q.Enqueue(*l)
 	go func() {
 		quit := make(chan os.Signal)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
