@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
@@ -32,6 +34,14 @@ func (c Config) CreateEthClient() *ethclient.Client {
 		panic(errors.Wrap(err, "failed to get eth client"))
 	}
 	return client
+}
+
+func (c Config) CreateCClient() evm.Client {
+	return evm.NewClient(c.getUri(), "C")
+}
+
+func (c Config) CreatePClient() platformvm.Client {
+	return platformvm.NewClient(c.getUri())
 }
 
 type ServicePack struct {

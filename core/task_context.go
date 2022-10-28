@@ -38,8 +38,8 @@ type TaskContextImp struct {
 
 func NewTaskContextImp(services *ServicePack) (*TaskContextImp, error) {
 	ethClient := services.Config.CreateEthClient()
-	cClient := evm.NewClient(services.Config.getUri(), "C")
-	pClient := platformvm.NewClient(services.Config.getUri())
+	cClient := services.Config.CreateCClient()
+	pClient := services.Config.CreatePClient()
 	abi, err := contract.MpcManagerMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get abi")
