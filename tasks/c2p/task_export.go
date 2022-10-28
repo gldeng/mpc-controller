@@ -69,6 +69,10 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 			ctx.GetLogger().ErrorOnError(err, "failed to get signature and send tx")
 			return nil, err
 		} else {
+			if t.TxID != nil {
+				ctx.GetLogger().Debug(fmt.Sprintf("ExportTx ID is %v", t.TxID.String()))
+			}
+
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
@@ -162,6 +166,5 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 	txId := signed.ID()
 	t.TxID = &txId
-	ctx.GetLogger().Debug(fmt.Sprintf("ExportTx ID is %v", txId.String()))
 	return nil
 }

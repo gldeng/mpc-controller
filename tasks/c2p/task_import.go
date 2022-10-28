@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -57,41 +58,25 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	self := []core.Task{t}
 	switch t.Status {
 	case StatusInit:
-		builder := NewTxBuilder(ctx.GetNetwork())
-		tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
-		ctx.GetLogger().ErrorOnError(err, "failed to build import tx")
-		t.Tx = tx
-		txHash, err := ImportTxHash(tx)
-		t.TxHash = txHash
-		ctx.GetLogger().ErrorOnError(err, "failed to get import tx hash")
-		req, err := t.buildSignReq(t.Id+"/import", txHash)
-		t.SignRequest = req
-		ctx.GetLogger().ErrorOnError(err, "failed create sign request")
-		err = ctx.GetMpcClient().Sign(context.Background(), req)
-		ctx.GetLogger().ErrorOnError(err, "failed to post signing request")
-		if err == nil {
+		err := t.buildAndSignTx(ctx)
+		if err != nil {
+			ctx.GetLogger().ErrorOnError(err, "failed to build and sign tx")
+			return nil, err
+		} else {
 			t.Status = StatusSignReqSent
 		}
 	case StatusSignReqSent:
-		res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
-		// TODO: Handle 404
-		ctx.GetLogger().ErrorOnError(err, "Failed to check signing result")
+		err := t.getSignatureAndSendTx(ctx)
+		if err != nil {
+			ctx.GetLogger().ErrorOnError(err, "failed to get signature and send tx")
+			return nil, err
+		} else {
+			if t.TxID != nil {
+				ctx.GetLogger().Debug(fmt.Sprintf("ImportTx ID is %v", t.TxID.String()))
+			}
 
-		if res.Status != core.StatusDone {
-			ctx.GetLogger().Debug("Signing task not done")
-			return self, nil
+			t.Status = StatusTxSent
 		}
-		txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
-		ctx.GetLogger().ErrorOnError(err, "failed to validate cred")
-		t.TxCred = txCred
-		signed, err := t.SignedTx()
-		ctx.GetLogger().ErrorOnError(err, "failed to get signed tx")
-		txId := signed.ID()
-		_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
-		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
-		t.TxID = &txId
-		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx ID is %v", txId.String()))
-		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
 		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx Status is %v", status))
@@ -119,4 +104,59 @@ func (t *ImportIntoPChain) buildSignReq(id string, hash []byte) (*core.SignReque
 		CompressedPartiPubKeys: participantPks,
 		Hash:                   bytes.BytesToHex(hash),
 	}, nil
+}
+
+func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
+	builder := NewTxBuilder(ctx.GetNetwork())
+	tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
+	if err != nil {
+		return errors.Wrap(err, "failed to build import tx")
+	}
+	t.Tx = tx
+	txHash, err := ImportTxHash(tx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get import tx hash")
+	}
+	t.TxHash = txHash
+	req, err := t.buildSignReq(t.Id+"/import", txHash)
+	if err != nil {
+		return errors.Wrap(err, "failed create sign request")
+	}
+
+	t.SignRequest = req
+
+	err = ctx.GetMpcClient().Sign(context.Background(), req)
+	if err != nil {
+		return errors.Wrap(err, "failed to post signing request")
+	}
+	return nil
+}
+
+func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
+	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
+	// TODO: Handle 404
+	if err != nil {
+		return errors.Wrap(err, "failed to check signing result")
+	}
+
+	if res.Status != core.StatusDone {
+		ctx.GetLogger().Debug("Signing task not done")
+		return nil
+	}
+	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
+	if err != nil {
+		return errors.Wrap(err, "failed to validate cred")
+	}
+	t.TxCred = txCred
+	signed, err := t.SignedTx()
+	if err != nil {
+		return errors.Wrap(err, "failed to get signed tx")
+	}
+	txId := signed.ID()
+	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
+	if err != nil {
+		return errors.Wrap(err, "failed to issue tx")
+	}
+	t.TxID = &txId
+	return nil
 }
