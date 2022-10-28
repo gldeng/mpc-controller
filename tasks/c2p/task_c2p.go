@@ -73,6 +73,9 @@ func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			t.SubTaskHasError = err
 		}
+		if t.ImportTask.IsDone() {
+			ctx.GetLogger().Debug("imported")
+		}
 		return nil, err
 	}
 	return nil, errors.New("invalid state of composite task")

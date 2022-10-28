@@ -3,6 +3,7 @@ package c2p
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -89,9 +90,11 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
 		t.TxID = &txId
+		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx ID is %v", txId.String()))
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
+		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx Status is %v\n", status))
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		if !core.IsPending(status) {
 			t.Status = StatusDone

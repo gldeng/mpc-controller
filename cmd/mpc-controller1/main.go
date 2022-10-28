@@ -122,6 +122,7 @@ func runController(c *cli.Context) error {
 	indices := new(big.Int)
 	indices.SetString("8000000000000000000000000000000000000000000000000000000000000000", 16)
 
+	logger.DevMode = true
 	myLogger := logger.Default()
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
 	q := goconcurrentqueue.NewFIFO()

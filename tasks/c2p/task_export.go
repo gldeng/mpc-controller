@@ -3,6 +3,7 @@ package c2p
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
@@ -91,9 +92,11 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
 		txId := signed.ID()
 		t.TxID = &txId
+		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx ID is %v", txId.String()))
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
+		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx Status is %v\n", status))
 		ctx.GetLogger().ErrorOnError(err, "failed to check status")
 		if !core.IsPending(status) {
 			t.Status = StatusDone
