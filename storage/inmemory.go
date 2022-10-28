@@ -9,6 +9,10 @@ type InMemoryDb struct {
 	data map[string][]byte
 }
 
+func NewInMemoryDb() *InMemoryDb {
+	return &InMemoryDb{data: map[string][]byte{}}
+}
+
 func (i *InMemoryDb) Set(ctx context.Context, key, val []byte) error {
 	i.data[hex.EncodeToString(key)] = val
 	return nil

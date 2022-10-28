@@ -14,7 +14,7 @@ type ExtendedWorkerPool struct {
 	contexts *goconcurrentqueue.FIFO
 }
 
-func New(size int, makeContext TaskContextFactory) (*ExtendedWorkerPool, error) {
+func NewExtendedWorkerPool(size int, makeContext TaskContextFactory) (*ExtendedWorkerPool, error) {
 	inner := pond.New(size, 1024)
 	contexts := goconcurrentqueue.NewFIFO()
 	for i := 0; i < size; i++ {

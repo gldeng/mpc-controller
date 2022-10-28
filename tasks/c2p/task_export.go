@@ -87,8 +87,9 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		t.TxCred = txCred
 		signed, err := t.SignedTx()
 		ctx.GetLogger().ErrorOnError(err, "failed to get signed tx")
-		txId, err := ctx.IssueCChainTx(signed.SignedBytes())
+		_, err = ctx.IssueCChainTx(signed.SignedBytes())
 		ctx.GetLogger().ErrorOnError(err, "failed to issue tx")
+		txId := signed.ID()
 		t.TxID = &txId
 		t.Status = StatusTxSent
 	case StatusTxSent:

@@ -81,7 +81,7 @@ func MockTaskContextFactory() TaskContext {
 }
 
 func TestPool(t *testing.T) {
-	p, err := New(1, MockTaskContextFactory)
+	p, err := NewExtendedWorkerPool(1, MockTaskContextFactory)
 	require.NoError(t, err)
 	task := &IncrementTask{Counter: 0}
 	p.Submit(task)

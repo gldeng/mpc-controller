@@ -2,15 +2,16 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
@@ -30,41 +31,29 @@ type TaskContextImp struct {
 	MpcClient    MpcClient
 	CChainClient evm.Client
 	PChainClient platformvm.Client
+	Db           storage.SlimDb
+	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
 }
 
-type TaskContextImpConfig struct {
-	Logger         logger.Logger
-	Host           string
-	Port           int16
-	SslEnabled     bool
-	NetworkContext chain.NetworkContext
-	MpcClient      MpcClient
-}
-
-func (c TaskContextImpConfig) getUri() string {
-	scheme := "http"
-	if c.SslEnabled {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%v://%v:%v", scheme, c.Host, c.Port)
-}
-
-func NewTaskContextImp(config TaskContextImpConfig) (*TaskContextImp, error) {
-	ethClient, err := ethclient.Dial(fmt.Sprintf("%s/ext/bc/C/rpc", config.getUri()))
+func NewTaskContextImp(services *ServicePack) (*TaskContextImp, error) {
+	ethClient := services.Config.CreateEthClient()
+	cClient := evm.NewClient(services.Config.getUri(), "C")
+	pClient := platformvm.NewClient(services.Config.getUri())
+	abi, err := contract.MpcManagerMetaData.GetAbi()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to dial eth client")
+		return nil, errors.Wrap(err, "failed to get abi")
 	}
-	cClient := evm.NewClient(config.getUri(), "C")
-	pClient := platformvm.NewClient(config.getUri())
 	return &TaskContextImp{
-		Logger:       config.Logger,
+		Logger:       services.Logger,
 		NonceGiver:   nil,
-		Network:      config.NetworkContext,
+		Network:      services.Config.NetworkContext,
 		EthClient:    ethClient,
-		MpcClient:    config.MpcClient,
+		MpcClient:    services.MpcClient,
 		CChainClient: cClient,
 		PChainClient: pClient,
+		Db:           services.Db,
+		abi:          abi,
 		Dispatcher:   nil,
 	}, err
 
@@ -132,31 +121,35 @@ func (t *TaskContextImp) Emit(event interface{}) {
 }
 
 func (t *TaskContextImp) GetDb() storage.SlimDb {
-	//TODO implement me
-	panic("implement me")
+	return t.Db
 }
 
 func (t *TaskContextImp) GetEventID(event string) (common.Hash, error) {
-	//TODO implement me
-	panic("implement me")
+	return t.abi.Events[event].ID, nil
 }
 
 func (t *TaskContextImp) GetParticipantID() storage.ParticipantId {
-	//TODO implement me
-	panic("implement me")
+	//TODO Do it properly
+	id, err := t.Db.Get(context.Background(), []byte("participant_id"))
+	if err != nil {
+		panic(err)
+	}
+	var id32 [32]byte
+	copy(id32[:], id)
+	return id32
 }
 
 func (t *TaskContextImp) Close() {
 	t.EthClient.Close()
 }
 
-func NewTaskContextImpFactory(config TaskContextImpConfig) (TaskContextFactory, error) {
-	_, err := NewTaskContextImp(config)
+func NewTaskContextImpFactory(services *ServicePack) (TaskContextFactory, error) {
+	_, err := NewTaskContextImp(services)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to use the config in TaskContextImpFactory")
 	}
 	factory := func() TaskContext {
-		ctx, _ := NewTaskContextImp(config)
+		ctx, _ := NewTaskContextImp(services)
 		return ctx
 	}
 	return factory, err

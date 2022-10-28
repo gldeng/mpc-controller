@@ -104,7 +104,7 @@ func (h *RequestStartedHandler) getQuorumInfo(ctx core.TaskContext, pubKey []byt
 	indices := ((*storage.Indices)(h.Event.ParticipantIndices)).Indices()
 	pks := make([][]byte, len(indices))
 	for i, index := range indices {
-		k := keyInfo.ParticipantPubKeys[index]
+		k := keyInfo.ParticipantPubKeys[index-1]
 		if k == nil {
 			return nil, errors.New("can't find key")
 		}

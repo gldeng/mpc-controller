@@ -2,18 +2,24 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
+	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/router"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
+	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v2"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,6 +39,79 @@ func printLog(event interface{}) {
 	fmt.Printf("Received event log %v\n", evt)
 }
 
+type TestSuite struct {
+	db     storage.SlimDb
+	pubKey []byte
+}
+
+func (s *TestSuite) prepareDb() error {
+	err := s.addDummyKey()
+	if err != nil {
+		return err
+	}
+	err = s.addDummyRequest()
+	if err != nil {
+		return err
+	}
+	err = s.addDummyParticipantId()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *TestSuite) addDummyRequest() error {
+	request := &stake.Request{
+		ReqNo:     0,
+		TxHash:    common.Hash{},
+		PubKey:    s.pubKey,
+		NodeID:    "",
+		Amount:    "999000000000",
+		StartTime: 0,
+		EndTime:   0,
+	}
+	hash, err := request.Hash()
+	hash.SetTaskType(storage.TaskTypStake)
+	fmt.Printf("requestHash is %x\n", hash)
+	if err != nil {
+		return err
+	}
+	key := []byte("request/")
+	key = append(key, hash[:]...)
+	reqBytes, err := request.Encode()
+	if err != nil {
+		return err
+	}
+	return s.db.Set(context.Background(), key, reqBytes)
+}
+
+func (s *TestSuite) addDummyKey() error {
+	key := []byte("key/")
+	key = append(key, s.pubKey...)
+	keyInfo := types2.MpcPublicKey{
+		GroupId:            common.Hash{},
+		GenPubKey:          nil,
+		ParticipantPubKeys: [][]byte{[]byte("a")},
+	}
+	bytes, err := keyInfo.Encode()
+	if err != nil {
+		return err
+	}
+	return s.db.Set(context.Background(), key, bytes)
+}
+
+func (s *TestSuite) addDummyParticipantId() error {
+	key := []byte("participant_id")
+	var id [32]byte
+	id[31] = 1
+	return s.db.Set(context.Background(), key, id[:])
+}
+
+func idFromString(str string) ids.ID {
+	id, _ := ids.FromString(str)
+	return id
+}
+
 func runController(c *cli.Context) error {
 
 	myLogger := logger.Default()
@@ -45,26 +124,64 @@ func runController(c *cli.Context) error {
 	}, q)
 
 	coreConfig := core.Config{
-		Host:           c.String(fnHost),
-		Port:           int16(c.Int(fnPort)),
-		SslEnabled:     false, // TODO: Add argument
-		NetworkContext: chain.NetworkContext{},
+		Host:       c.String(fnHost),
+		Port:       int16(c.Int(fnPort)),
+		SslEnabled: false, // TODO: Add argument
+		NetworkContext: chain.NewNetworkContext(
+			1337,
+			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
+			big.NewInt(43112),
+			avax.Asset{
+				ID: idFromString("BUuypiq2wyuLMvyhzFXcPyxPMCgSp7eeDohhQRqTChoBjKziC"),
+			},
+			1000000,
+			1000000,
+			1,
+			1000,
+			10000,
+			300,
+		),
 	}
 
-	db := &storage.InMemoryDb{}
+	db := storage.NewInMemoryDb()
+	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	if err != nil {
+		return err
+	}
+	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
-	services := core.NewServicePack(coreConfig, myLogger, nil, db)
+	pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
+	if err != nil {
+		return err
+	}
+	ts := &TestSuite{
+		db:     db,
+		pubKey: pk,
+	}
+	ts.prepareDb()
 
 	ehContext, err := core.NewEventHandlerContextImp(services)
 	if err != nil {
 		return err
 	}
 
-	rt, _ := router.NewRouter(q, ehContext)
+	makeContext := func() core.TaskContext {
+		ctx, _ := core.NewTaskContextImp(services) // TODO: Handler error
+		return ctx
+	}
+	wp, err := core.NewExtendedWorkerPool(2, makeContext)
+	if err != nil {
+		return err
+	}
+	rt, _ := router.NewRouter(q, ehContext, wp)
 	rt.AddHandler(printLog)
 
 	rc := &ethlog.RequestCreator{}
 	rt.AddLogEventHandler(rc)
+	err = wp.Start()
+	if err != nil {
+		return err
+	}
 	err = sub.Start()
 	if err != nil {
 		return err
@@ -73,7 +190,6 @@ func runController(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	go func() {
 		quit := make(chan os.Signal)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -81,6 +197,7 @@ func runController(c *cli.Context) error {
 		shutdown()
 		rt.Close()
 		sub.Close()
+		wp.Close()
 	}()
 
 	<-shutdownCtx.Done()

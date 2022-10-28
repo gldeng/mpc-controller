@@ -22,9 +22,10 @@ type Router struct {
 	handlers            []EventHandler
 	logEventHandlers    []core.LogEventHandler
 	eventHandlerContext core.EventHandlerContext
+	submitter           core.TaskSubmitter
 }
 
-func NewRouter(incomingQueue Queue, eventHandlerContext core.EventHandlerContext) (*Router, error) {
+func NewRouter(incomingQueue Queue, eventHandlerContext core.EventHandlerContext, submitter core.TaskSubmitter) (*Router, error) {
 	onCloseCtx, cancel := context.WithCancel(context.Background())
 	return &Router{
 		unsub:               make(chan struct{}),
@@ -35,6 +36,7 @@ func NewRouter(incomingQueue Queue, eventHandlerContext core.EventHandlerContext
 		handlers:            make([]EventHandler, 0),
 		logEventHandlers:    make([]core.LogEventHandler, 0),
 		eventHandlerContext: eventHandlerContext,
+		submitter:           submitter,
 	}, nil
 }
 
@@ -46,7 +48,10 @@ func (r *Router) Start() error {
 		}
 		if evt, ok := event.(types.Log); ok {
 			for _, handler := range r.logEventHandlers {
-				handler.Handle(r.eventHandlerContext, evt)
+				tasks, _ := handler.Handle(r.eventHandlerContext, evt) // TODO: Handle error
+				for _, task := range tasks {
+					r.submitter.Submit(task)
+				}
 			}
 		}
 	}()
