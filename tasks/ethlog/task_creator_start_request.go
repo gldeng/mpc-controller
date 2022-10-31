@@ -2,6 +2,7 @@ package ethlog
 
 import (
 	"context"
+	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -17,6 +18,10 @@ var (
 type RequestStartedHandler struct {
 	Event  contract.MpcManagerRequestStarted
 	Failed bool
+}
+
+func (h *RequestStartedHandler) GetId() string {
+	return fmt.Sprintf("Event(%v, %v)", h.Event.Raw.TxHash, h.Event.Raw.TxIndex)
 }
 
 func (h *RequestStartedHandler) FailedPermanently() bool {

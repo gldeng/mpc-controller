@@ -9,6 +9,7 @@ import (
 )
 
 type Task interface {
+	GetId() string
 	Next(ctx TaskContext) ([]Task, error)
 	IsDone() bool
 	FailedPermanently() bool

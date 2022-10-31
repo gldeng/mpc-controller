@@ -41,8 +41,10 @@ func printLog(event interface{}) {
 }
 
 type TestSuite struct {
-	db     storage.SlimDb
-	pubKey []byte
+	db           storage.SlimDb
+	pubKey       []byte
+	queue        *goconcurrentqueue.FIFO
+	requestCount int
 }
 
 func (s *TestSuite) prepareDb() error {
@@ -50,7 +52,7 @@ func (s *TestSuite) prepareDb() error {
 	if err != nil {
 		return err
 	}
-	err = s.addDummyRequest()
+	err = s.addDummyRequests()
 	if err != nil {
 		return err
 	}
@@ -61,9 +63,9 @@ func (s *TestSuite) prepareDb() error {
 	return nil
 }
 
-func (s *TestSuite) getRequest() *stake.Request {
+func (s *TestSuite) getRequest(reqNo uint64) *stake.Request {
 	return &stake.Request{
-		ReqNo:     0,
+		ReqNo:     reqNo,
 		TxHash:    common.Hash{},
 		PubKey:    s.pubKey,
 		NodeID:    "",
@@ -72,14 +74,17 @@ func (s *TestSuite) getRequest() *stake.Request {
 		EndTime:   0,
 	}
 }
-func (s *TestSuite) getRequestHash() storage.RequestHash {
-	hash, _ := s.getRequest().Hash()
-	return hash
+
+func (s *TestSuite) addDummyRequests() error {
+	for i := 0; i < s.requestCount; i++ {
+		s.addDummyRequest(uint64(i))
+	}
+	return nil
 }
 
-func (s *TestSuite) addDummyRequest() error {
-	request := s.getRequest()
-	hash := s.getRequestHash()
+func (s *TestSuite) addDummyRequest(reqNo uint64) error {
+	request := s.getRequest(reqNo)
+	hash, _ := request.Hash()
 	fmt.Printf("requestHash is %x\n", hash)
 	key := []byte("request/")
 	key = append(key, hash[:]...)
@@ -112,15 +117,24 @@ func (s *TestSuite) addDummyParticipantId() error {
 	return s.db.Set(context.Background(), key, id[:])
 }
 
+func (s *TestSuite) enqueueMessages() {
+	indices := new(big.Int)
+	indices.SetString("8000000000000000000000000000000000000000000000000000000000000000", 16)
+
+	for i := 0; i < s.requestCount; i++ {
+		req := s.getRequest(uint64(i))
+		h, _ := req.Hash()
+		l := testingutils.MakeEventRequestStarted(h, indices)
+		s.queue.Enqueue(*l)
+	}
+}
+
 func idFromString(str string) ids.ID {
 	id, _ := ids.FromString(str)
 	return id
 }
 
 func runController(c *cli.Context) error {
-
-	indices := new(big.Int)
-	indices.SetString("8000000000000000000000000000000000000000000000000000000000000000", 16)
 
 	logger.DevMode = true
 	myLogger := logger.Default()
@@ -165,8 +179,10 @@ func runController(c *cli.Context) error {
 		return err
 	}
 	ts := &TestSuite{
-		db:     db,
-		pubKey: pk,
+		db:           db,
+		pubKey:       pk,
+		queue:        q,
+		requestCount: 2,
 	}
 	ts.prepareDb()
 
@@ -201,8 +217,7 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
-	l := testingutils.MakeEventRequestStarted(ts.getRequestHash(), indices)
-	q.Enqueue(*l)
+	ts.enqueueMessages()
 	go func() {
 		quit := make(chan os.Signal)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

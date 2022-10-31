@@ -33,6 +33,10 @@ type ImportIntoPChain struct {
 	Failed         bool
 }
 
+func (t *ImportIntoPChain) GetId() string {
+	return fmt.Sprintf("ImportP(%v)", t.Id)
+}
+
 func (t *ImportIntoPChain) FailedPermanently() bool {
 	return t.Failed
 }
@@ -76,14 +80,14 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, err
 		} else {
 			if t.TxID != nil {
-				ctx.GetLogger().Debug(fmt.Sprintf("ImportTx ID is %v", t.TxID.String()))
+				ctx.GetLogger().Debug(fmt.Sprintf("id %v ImportTx ID is %v", t.Id, t.TxID.String()))
 			}
 
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
-		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx Status is %v", status))
+		ctx.GetLogger().Debug(fmt.Sprintf("id %v ImportTx Status is %v", t.Id, status))
 		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToCheckStatus)
 		if !core.IsPending(status) {
 			t.Status = StatusDone
@@ -144,7 +148,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 
 	if res.Status != core.StatusDone {
-		ctx.GetLogger().Debug(ErrMsgSignRequestNotDone)
+		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
@@ -170,5 +174,6 @@ func (t *ImportIntoPChain) failIfError(err error, msg string) error {
 		return nil
 	}
 	t.Failed = true
+	msg = fmt.Sprintf("[%v] %v", t.Id, msg)
 	return errors.Wrap(err, msg)
 }

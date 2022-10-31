@@ -2,6 +2,7 @@ package stake
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/tasks/c2p"
@@ -30,6 +31,10 @@ type InitialStake struct {
 	C2P             *c2p.C2P
 	SubTaskHasError error
 	Failed          bool
+}
+
+func (t *InitialStake) GetId() string {
+	return fmt.Sprintf("Stake(%v)", t.Id)
 }
 
 func (t *InitialStake) FailedPermanently() bool {
@@ -74,11 +79,7 @@ func (t *InitialStake) RequiresNonce() bool {
 func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	// TODO: Add AddDelegator Tx
 	if !t.C2P.IsDone() {
-		next, err := t.C2P.Next(ctx)
-		if len(next) == 1 && next[0] == t.C2P {
-			return []core.Task{t}, nil
-		}
-		return nil, err
+		return t.C2P.Next(ctx)
 	}
 	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
 }

@@ -16,7 +16,7 @@ const (
 	ErrMsgFailedToCreateSignRequest     = "failed to create sign request"
 	ErrMsgFailedToSendSignRequest       = "failed to post signing request"
 	ErrMsgFailedToCheckSignRequest      = "failed to check signing result"
-	ErrMsgSignRequestNotDone            = "sign request is still pending"
+	DebugMsgSignRequestNotDone          = "sign request is still pending"
 	ErrMsgFailedToValidateCredential    = "failed to validate cred"
 	ErrMsgFailedToPrepareSignedTx       = "failed to get signed tx"
 	ErrMsgFailedToIssueTx               = "failed to issue tx"

@@ -32,6 +32,10 @@ type ExportFromCChain struct {
 	Failed      bool
 }
 
+func (t *ExportFromCChain) GetId() string {
+	return fmt.Sprintf("ExportC(%v)", t.Id)
+}
+
 func (t *ExportFromCChain) FailedPermanently() bool {
 	return t.Failed
 }
@@ -58,6 +62,10 @@ func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*E
 }
 
 func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
+	ctx.GetLogger().Debug(fmt.Sprintf("%v is running", t.GetId()))
+	defer func() {
+		ctx.GetLogger().Debug(fmt.Sprintf("%v is run", t.GetId()))
+	}()
 	switch t.Status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
@@ -74,14 +82,14 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, err
 		} else {
 			if t.TxID != nil {
-				ctx.GetLogger().Debug(fmt.Sprintf("ExportTx ID is %v", t.TxID.String()))
+				ctx.GetLogger().Debug(fmt.Sprintf("id %v ExportTx ID is %v", t.Id, t.TxID.String()))
 			}
 
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
-		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx Status is %v", status))
+		ctx.GetLogger().Debug(fmt.Sprintf("id %v ExportTx Status is %v", t.Id, status))
 		if err != nil {
 			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToCheckStatus)
 			return nil, err
@@ -152,7 +160,7 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 
 	if res.Status != core.StatusDone {
-		ctx.GetLogger().Debug(ErrMsgSignRequestNotDone)
+		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
@@ -178,5 +186,6 @@ func (t *ExportFromCChain) failIfError(err error, msg string) error {
 		return nil
 	}
 	t.Failed = true
+	msg = fmt.Sprintf("[%v] %v", t.Id, msg)
 	return errors.Wrap(err, msg)
 }

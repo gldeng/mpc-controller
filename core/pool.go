@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/alitto/pond"
 	"github.com/enriquebris/goconcurrentqueue"
 )
@@ -10,19 +11,22 @@ var (
 )
 
 type ExtendedWorkerPool struct {
-	inner    *pond.WorkerPool
-	contexts *goconcurrentqueue.FIFO
+	sequentialWorker *pond.WorkerPool
+	parallelPool     *pond.WorkerPool
+	contexts         *goconcurrentqueue.FIFO
 }
 
 func NewExtendedWorkerPool(size int, makeContext TaskContextFactory) (*ExtendedWorkerPool, error) {
-	inner := pond.New(size, 1024)
+	sequentialWorker := pond.New(1, 1024)
+	parallelPool := pond.New(size, 1024)
 	contexts := goconcurrentqueue.NewFIFO()
-	for i := 0; i < size; i++ {
+	for i := 0; i < size+1; i++ {
 		contexts.Enqueue(makeContext())
 	}
 	return &ExtendedWorkerPool{
-		inner:    inner,
-		contexts: contexts,
+		sequentialWorker: sequentialWorker,
+		parallelPool:     parallelPool,
+		contexts:         contexts,
 	}, nil
 }
 
@@ -32,11 +36,18 @@ func (e *ExtendedWorkerPool) Start() error {
 }
 
 func (e *ExtendedWorkerPool) Close() error {
-	e.inner.StopAndWait()
+	e.parallelPool.StopAndWait()
 	return nil
 }
 
 func (e *ExtendedWorkerPool) Submit(task Task) error {
+	whichPool := e.parallelPool
+	if task.RequiresNonce() {
+		fmt.Printf("task is sequential %v\n", task.GetId())
+		whichPool = e.sequentialWorker
+	} else {
+		fmt.Printf("task is parallel %v\n", task.GetId())
+	}
 	taskWrapper := func() {
 		ctx, _ := e.contexts.Dequeue()          // TODO: Handle error
 		next, _ := task.Next(ctx.(TaskContext)) // TODO: Handle error
@@ -50,6 +61,6 @@ func (e *ExtendedWorkerPool) Submit(task Task) error {
 			}
 		}
 	}
-	e.inner.Submit(taskWrapper)
+	whichPool.Submit(taskWrapper)
 	return nil
 }

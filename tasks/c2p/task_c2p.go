@@ -1,6 +1,7 @@
 package c2p
 
 import (
+	"fmt"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/pkg/errors"
@@ -19,6 +20,10 @@ type C2P struct {
 	ExportTask      *ExportFromCChain
 	ImportTask      *ImportIntoPChain
 	SubTaskHasError error
+}
+
+func (t *C2P) GetId() string {
+	return fmt.Sprintf("C2P(%v)", t.Id)
 }
 
 func (t *C2P) FailedPermanently() bool {
@@ -60,27 +65,21 @@ func (t *C2P) startImport() error {
 func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 	if !t.ExportTask.IsDone() {
 		next, err := t.ExportTask.Next(ctx)
-		if len(next) == 1 && next[0] == t.ExportTask {
-			return []core.Task{t}, nil
-		}
 		if t.ExportTask.IsDone() {
 			err := t.startImport()
 			ctx.GetLogger().ErrorOnError(err, "failed to start import")
 		}
-		return nil, err
+		return next, err
 	}
 	if t.ImportTask != nil && !t.ImportTask.IsDone() {
 		next, err := t.ImportTask.Next(ctx)
-		if len(next) == 1 && next[0] == t.ImportTask {
-			return []core.Task{t}, nil
-		}
 		if err != nil {
 			t.SubTaskHasError = err
 		}
 		if t.ImportTask.IsDone() {
-			ctx.GetLogger().Debug("imported")
+			ctx.GetLogger().Debug(fmt.Sprintf("%v imported", t.Id))
 		}
-		return nil, err
+		return next, err
 	}
 	return nil, errors.New("invalid state of composite task")
 }
