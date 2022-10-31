@@ -182,7 +182,7 @@ func runController(c *cli.Context) error {
 		db:           db,
 		pubKey:       pk,
 		queue:        q,
-		requestCount: 2,
+		requestCount: 100,
 	}
 	ts.prepareDb()
 
@@ -195,7 +195,7 @@ func runController(c *cli.Context) error {
 		ctx, _ := core.NewTaskContextImp(services) // TODO: Handler error
 		return ctx
 	}
-	wp, err := core.NewExtendedWorkerPool(2, makeContext)
+	wp, err := core.NewExtendedWorkerPool(3, makeContext)
 	if err != nil {
 		return err
 	}

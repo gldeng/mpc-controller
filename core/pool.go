@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/alitto/pond"
 	"github.com/enriquebris/goconcurrentqueue"
 )
@@ -43,10 +42,7 @@ func (e *ExtendedWorkerPool) Close() error {
 func (e *ExtendedWorkerPool) Submit(task Task) error {
 	whichPool := e.parallelPool
 	if task.RequiresNonce() {
-		fmt.Printf("task is sequential %v\n", task.GetId())
 		whichPool = e.sequentialWorker
-	} else {
-		fmt.Printf("task is parallel %v\n", task.GetId())
 	}
 	taskWrapper := func() {
 		ctx, _ := e.contexts.Dequeue()          // TODO: Handle error

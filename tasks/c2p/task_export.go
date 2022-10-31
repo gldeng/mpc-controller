@@ -13,6 +13,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"math/big"
+	"time"
 )
 
 var (
@@ -62,10 +63,28 @@ func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*E
 }
 
 func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
-	ctx.GetLogger().Debug(fmt.Sprintf("%v is running", t.GetId()))
-	defer func() {
-		ctx.GetLogger().Debug(fmt.Sprintf("%v is run", t.GetId()))
-	}()
+	interval := 100 * time.Millisecond
+	timer := time.NewTimer(interval)
+	for {
+		select {
+		case <-timer.C:
+			next, err := t.run(ctx)
+			if err != nil || t.Status == StatusDone {
+				return next, err
+			} else {
+				timer.Reset(interval)
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func (t *ExportFromCChain) SignedTx() (*evm.Tx, error) {
+	return PackSignedExportTx(t.Tx, t.TxCred)
+}
+
+func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	switch t.Status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
@@ -100,10 +119,6 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		}
 	}
 	return nil, nil
-}
-
-func (t *ExportFromCChain) SignedTx() (*evm.Tx, error) {
-	return PackSignedExportTx(t.Tx, t.TxCred)
 }
 
 func (t *ExportFromCChain) buildSignReq(id string, hash []byte) (*core.SignRequest, error) {
