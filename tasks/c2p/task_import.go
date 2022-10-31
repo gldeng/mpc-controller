@@ -60,12 +60,11 @@ func NewImportIntoPChain(id string, quorum types.QuorumInfo, signedExportTx *evm
 }
 
 func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
-	self := []core.Task{t}
 	switch t.Status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, "failed to build and sign tx")
+			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToBuildAndSignTx)
 			return nil, err
 		} else {
 			t.Status = StatusSignReqSent
@@ -73,7 +72,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, "failed to get signature and send tx")
+			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToGetSignatureAndSendTx)
 			return nil, err
 		} else {
 			if t.TxID != nil {
@@ -85,13 +84,13 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
 		ctx.GetLogger().Debug(fmt.Sprintf("ImportTx Status is %v", status))
-		ctx.GetLogger().ErrorOnError(err, "failed to check status")
+		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToCheckStatus)
 		if !core.IsPending(status) {
 			t.Status = StatusDone
 			return nil, nil
 		}
 	}
-	return self, nil
+	return nil, nil
 }
 
 func (t *ImportIntoPChain) SignedTx() (*txs.Tx, error) {

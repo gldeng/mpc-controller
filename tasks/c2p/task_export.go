@@ -58,7 +58,6 @@ func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*E
 }
 
 func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
-	self := []core.Task{t}
 	switch t.Status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
@@ -71,7 +70,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, "failed to get signature and send tx")
+			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToGetSignatureAndSendTx)
 			return nil, err
 		} else {
 			if t.TxID != nil {
@@ -84,7 +83,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		status, err := ctx.CheckCChainTx(*t.TxID)
 		ctx.GetLogger().Debug(fmt.Sprintf("ExportTx Status is %v", status))
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, "failed to check status")
+			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToCheckStatus)
 			return nil, err
 		}
 		if !core.IsPending(status) {
@@ -92,7 +91,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, nil
 		}
 	}
-	return self, nil
+	return nil, nil
 }
 
 func (t *ExportFromCChain) SignedTx() (*evm.Tx, error) {

@@ -40,6 +40,9 @@ func (e *ExtendedWorkerPool) Submit(task Task) error {
 	taskWrapper := func() {
 		ctx, _ := e.contexts.Dequeue()          // TODO: Handle error
 		next, _ := task.Next(ctx.(TaskContext)) // TODO: Handle error
+		if !task.IsDone() && !task.FailedPermanently() {
+			e.Submit(task)
+		}
 		e.contexts.Enqueue(ctx)
 		if next != nil {
 			for _, t := range next {
