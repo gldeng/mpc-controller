@@ -19,7 +19,7 @@ import (
 type AddDelegatorTestSuite struct {
 	suite.Suite
 	id             string
-	request        *Request
+	stakeParam     *StakeParam
 	signedImportTx *txs.Tx // TODO:
 	taskCtxMock    *mocks.TaskContext
 	quorum         types.QuorumInfo
@@ -70,12 +70,12 @@ func (s *AddDelegatorTestSuite) SetupTest() {
 
 	nodeID, err := ids.ShortFromString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5")
 	require.Nil(err)
-	s.request = &Request{ids.NodeID(nodeID), 1663315662, 1694830062}
+	s.stakeParam = &StakeParam{ids.NodeID(nodeID), 1663315662, 1694830062, nil}
 }
 
 func (s *AddDelegatorTestSuite) TestNext() {
 	require := s.Require()
-	task, err := NewAddDelegator(s.request, s.id, s.quorum, s.signedImportTx)
+	task, err := NewAddDelegator(s.id, s.quorum, s.stakeParam)
 	require.Nil(err)
 	require.NotNil(task)
 }
