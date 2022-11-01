@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/events"
@@ -21,11 +20,10 @@ var (
 )
 
 type AddDelegator struct {
-	Id             string
-	Request        *Request
-	Quorum         types.QuorumInfo
-	SignedImportTx *txs.Tx
-	TxID           ids.ID
+	Id     string
+	Quorum types.QuorumInfo
+	Param  *StakeParam
+	TxID   ids.ID
 
 	tx      *AddDelegatorTx
 	signReq *core.SignRequest
@@ -34,12 +32,11 @@ type AddDelegator struct {
 	failed bool
 }
 
-func NewAddDelegator(req *Request, id string, quorum types.QuorumInfo, signedImportTx *txs.Tx) (*AddDelegator, error) {
+func NewAddDelegator(id string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
 	return &AddDelegator{
-		Id:             id,
-		Request:        req,
-		Quorum:         quorum,
-		SignedImportTx: signedImportTx,
+		Id:     id,
+		Quorum: quorum,
+		Param:  param,
 	}, nil
 }
 
@@ -183,10 +180,10 @@ func (t *AddDelegator) buildTx(ctx core.TaskContext) (*AddDelegatorTx, error) {
 		NetworkID:     ctx.GetNetwork().NetworkID(),
 		Asset:         ctx.GetNetwork().Asset(),
 		PChainAddress: t.Quorum.PChainAddress(),
-		UTXOsToStake:  t.SignedImportTx.UTXOs(),
-		NodeID:        t.Request.NodeID,
-		StartTime:     t.Request.StartTime,
-		EndTime:       t.Request.EndTime,
+		UTXOsToStake:  t.Param.UTXOs,
+		NodeID:        t.Param.NodeID,
+		StartTime:     t.Param.StartTime,
+		EndTime:       t.Param.EndTime,
 	}
 
 	return &st, nil
