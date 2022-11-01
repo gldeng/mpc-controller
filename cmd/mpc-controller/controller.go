@@ -32,6 +32,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/dispatcher" // todo: apply kubecost/events instead
 	"github.com/avalido/mpc-controller/utils/noncer"
+	"github.com/avalido/mpc-controller/utils/port/txs/cchain"
 	"github.com/dgraph-io/ristretto"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -321,6 +322,7 @@ func networkCtx(config *config.Config) chain.NetworkContext {
 		config.GasPerByte,
 		config.GasPerSig,
 		config.GasFixed,
+		cchain.BaseFeeGwei,
 	)
 	return networkCtx
 }

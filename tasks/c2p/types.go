@@ -1,0 +1,22 @@
+package c2p
+
+import (
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
+)
+
+type ImportedEvent struct {
+	Tx *txs.ImportTx
+}
+
+const (
+	StatusInit Status = iota
+	StatusSignReqSent
+	StatusTxSent
+	StatusDone
+)
+
+type Status int
+
+const (
+	SigLength = 65
+)

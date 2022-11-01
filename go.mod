@@ -9,6 +9,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgraph-io/ristretto v0.1.0
+	github.com/enriquebris/goconcurrentqueue v0.6.3
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/goccy/go-yaml v1.9.5
 	github.com/google/uuid v1.3.0
