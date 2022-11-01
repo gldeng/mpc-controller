@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -24,6 +25,7 @@ type AddDelegator struct {
 	Request        *Request
 	Quorum         types.QuorumInfo
 	SignedImportTx *txs.Tx
+	TxID           ids.ID
 
 	tx      *AddDelegatorTx
 	signReq *core.SignRequest
@@ -128,6 +130,8 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfError(err, "failed to get signed AddDelegatorTx bytes")
 	}
+
+	t.TxID = t.tx.ID()
 
 	_, err = ctx.IssuePChainTx(signedBytes)
 	if err != nil {
