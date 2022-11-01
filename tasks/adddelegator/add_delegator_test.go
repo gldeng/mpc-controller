@@ -3,43 +3,59 @@ package addDelegator
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/mocks"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/stretchr/testify/suite"
 	"math/big"
 	"testing"
 )
 
-// TODO: implement
-
 type AddDelegatorTestSuite struct {
 	suite.Suite
-	id             string
-	stakeParam     *StakeParam
-	signedImportTx *txs.Tx // TODO:
-	taskCtxMock    *mocks.TaskContext
-	quorum         types.QuorumInfo
+	id         string
+	stakeParam *StakeParam
+	quorum     types.QuorumInfo
+
+	logger     logger.Logger
+	mpcClient  core.MpcClient
+	networkCtx *chain.NetworkContext
 }
 
 func (s *AddDelegatorTestSuite) SetupTest() {
 	require := s.Require()
 
-	s.id = "abc"
-	s.signedImportTx = nil
-	taskCtxMock := mocks.NewTaskContext(s.T())
+	// Setup id
+	s.id = "0xc02b59f772cb23a75b6ffb9f7602ba25fdd5d8e75ad88efcc013fec2c63b0895"
 
-	logger.DevMode = true
-	logger.UseConsoleEncoder = true
-	taskCtxMock.EXPECT().GetLogger().Return(logger.Default())
+	// Setup stake param
+	nodeID, err := ids.NodeIDFromString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5")
+	require.Nil(err)
+	utxos, err := testingutils.GetRewardUTXOs("http://34.172.25.188:9650", "cxbA4wytAUWTRmNyqfYQHnHdR8vYthyeCrDFWEQULiUHPyVu2")
+	require.Nil(err)
+	require.NotNil(utxos)
+	s.stakeParam = &StakeParam{nodeID, 1663315662, 1694830062, utxos}
 
+	// Setup mock mpc-client
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	require.Nil(err)
-	taskCtxMock.EXPECT().GetMpcClient().Return(mpcClient)
+	s.mpcClient = mpcClient
 
+	// Setup quorum
+	s.quorum = types.QuorumInfo{
+		ParticipantPubKeys: nil,
+		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
+	}
+
+	// Setup logger
+	logger.DevMode = true
+	logger.UseConsoleEncoder = true
+	s.logger = logger.Default()
+
+	// Setup network context
 	cchainID, err := ids.FromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH")
 	require.Nil(err)
 
@@ -60,24 +76,29 @@ func (s *AddDelegatorTestSuite) SetupTest() {
 		10000,
 		300,
 	)
-	taskCtxMock.EXPECT().GetNetwork().Return(&networkCtx)
-	s.taskCtxMock = taskCtxMock
 
-	s.quorum = types.QuorumInfo{
-		ParticipantPubKeys: nil,
-		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
-	}
-
-	nodeID, err := ids.ShortFromString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5")
-	require.Nil(err)
-	s.stakeParam = &StakeParam{ids.NodeID(nodeID), 1663315662, 1694830062, nil}
+	s.networkCtx = &networkCtx
 }
 
 func (s *AddDelegatorTestSuite) TestNext() {
+	// Set task context expectation
+	taskCtxMock := mocks.NewTaskContext(s.T())
+	taskCtxMock.EXPECT().GetLogger().Return(s.logger)
+	taskCtxMock.EXPECT().GetMpcClient().Return(s.mpcClient)
+	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
+	//taskCtxMock.EXPECT().IssuePChainTx() // TODO
+	//taskCtxMock.EXPECT().CheckPChainTx() // TODO
+
+	// Create AddDelegator
 	require := s.Require()
 	task, err := NewAddDelegator(s.id, s.quorum, s.stakeParam)
 	require.Nil(err)
 	require.NotNil(task)
+
+	// TODO: implement
+	taskCtxMock.GetLogger()
+	taskCtxMock.GetMpcClient()
+	taskCtxMock.GetNetwork()
 }
 
 func TestAddDelegatorTestSuite(t *testing.T) {
