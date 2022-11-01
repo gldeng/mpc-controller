@@ -30,9 +30,11 @@ type InitialStake struct {
 	Id     string
 	Quorum types.QuorumInfo
 
-	C2P               *c2p.C2P
-	AddDelegator      *addDelegator.AddDelegator
-	addDelegatorParam *addDelegator.Request
+	C2P          *c2p.C2P
+	AddDelegator *addDelegator.AddDelegator
+
+	request *Request
+	//stakeParam *addDelegator.StakeParam
 
 	SubTaskHasError error
 	Failed          bool
@@ -58,14 +60,12 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 		return nil, errors.Wrap(err, "failed to create C2P instance")
 	}
 
-	nodeID, _ := ids.ShortFromPrefixedString(request.NodeID, ids.NodeIDPrefix)
-	addDelParam := addDelegator.Request{ids.NodeID(nodeID), request.StartTime, request.EndTime}
 	return &InitialStake{
-		Status:            StatusInit,
-		Id:                hex.EncodeToString(id[:]),
-		Quorum:            quorum,
-		C2P:               c2pInstance,
-		addDelegatorParam: &addDelParam,
+		Status:  StatusInit,
+		Id:      hex.EncodeToString(id[:]),
+		Quorum:  quorum,
+		C2P:     c2pInstance,
+		request: request,
 	}, nil
 }
 
@@ -94,12 +94,19 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			return nil, t.failIfError(err, "failed to get signed ImportTx")
 		}
-		addDelegator, err := addDelegator.NewAddDelegator(t.addDelegatorParam, t.Id, t.Quorum, signedImportTx)
+
+		nodeID, _ := ids.ShortFromPrefixedString(t.request.NodeID, ids.NodeIDPrefix)
+		stakeParam := addDelegator.StakeParam{ids.NodeID(nodeID), t.request.StartTime, t.request.EndTime, signedImportTx.UTXOs()}
+
+		addDelegator, err := addDelegator.NewAddDelegator(t.Id, t.Quorum, &stakeParam)
 		if err != nil {
 			return nil, t.failIfError(err, "failed to create AddDelegator task")
 		}
 		t.AddDelegator = addDelegator
 		return t.AddDelegator.Next(ctx)
+	}
+	if !t.AddDelegator.IsDone() {
+		return t.C2P.Next(ctx)
 	}
 	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
 }
