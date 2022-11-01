@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/pkg/errors"
 	"math/big"
@@ -29,6 +30,7 @@ type InitialStake struct {
 	Quorum types.QuorumInfo
 
 	C2P             *c2p.C2P
+	AddDelegator    *addDelegator.AddDelegator
 	SubTaskHasError error
 	Failed          bool
 }
@@ -80,6 +82,18 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	// TODO: Add AddDelegator Tx
 	if !t.C2P.IsDone() {
 		return t.C2P.Next(ctx)
+	}
+	if t.C2P.IsDone() {
+		signedImportTx, err := t.C2P.ImportTask.SignedTx()
+		if err != nil {
+			return nil, t.failIfError(err, "failed to get signed ImportTx")
+		}
+		addDelegator, err := addDelegator.NewAddDelegator(nil, t.Id, t.Quorum, signedImportTx) // todo: give request params
+		if err != nil {
+			return nil, t.failIfError(err, "failed to create AddDelegator task")
+		}
+		t.AddDelegator = addDelegator
+		return t.AddDelegator.Next(ctx)
 	}
 	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
 }
