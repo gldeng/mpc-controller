@@ -3,6 +3,7 @@ package stake
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
@@ -29,8 +30,10 @@ type InitialStake struct {
 	Id     string
 	Quorum types.QuorumInfo
 
-	C2P             *c2p.C2P
-	AddDelegator    *addDelegator.AddDelegator
+	C2P               *c2p.C2P
+	AddDelegator      *addDelegator.AddDelegator
+	addDelegatorParam *addDelegator.Request
+
 	SubTaskHasError error
 	Failed          bool
 }
@@ -54,11 +57,15 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create C2P instance")
 	}
+
+	nodeID, _ := ids.ShortFromPrefixedString(request.NodeID, ids.NodeIDPrefix)
+	addDelParam := addDelegator.Request{ids.NodeID(nodeID), request.StartTime, request.EndTime}
 	return &InitialStake{
-		Status: StatusInit,
-		Id:     hex.EncodeToString(id[:]),
-		Quorum: quorum,
-		C2P:    c2pInstance,
+		Status:            StatusInit,
+		Id:                hex.EncodeToString(id[:]),
+		Quorum:            quorum,
+		C2P:               c2pInstance,
+		addDelegatorParam: &addDelParam,
 	}, nil
 }
 
@@ -79,7 +86,6 @@ func (t *InitialStake) RequiresNonce() bool {
 }
 
 func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
-	// TODO: Add AddDelegator Tx
 	if !t.C2P.IsDone() {
 		return t.C2P.Next(ctx)
 	}
@@ -88,7 +94,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			return nil, t.failIfError(err, "failed to get signed ImportTx")
 		}
-		addDelegator, err := addDelegator.NewAddDelegator(nil, t.Id, t.Quorum, signedImportTx) // todo: give request params
+		addDelegator, err := addDelegator.NewAddDelegator(t.addDelegatorParam, t.Id, t.Quorum, signedImportTx)
 		if err != nil {
 			return nil, t.failIfError(err, "failed to create AddDelegator task")
 		}
