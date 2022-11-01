@@ -18,8 +18,8 @@ type Request struct {
 	PubKey    []byte      `json:"pubKey"`
 	NodeID    string      `json:"nodeID"`
 	Amount    string      `json:"amount"`
-	StartTime int64       `json:"startTime"`
-	EndTime   int64       `json:"endTime"`
+	StartTime uint64      `json:"startTime"`
+	EndTime   uint64      `json:"endTime"`
 }
 
 func (r *Request) Encode() ([]byte, error) {
