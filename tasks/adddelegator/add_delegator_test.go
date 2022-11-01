@@ -19,17 +19,16 @@ import (
 type AddDelegatorTestSuite struct {
 	suite.Suite
 	id             string
-	quorum         types.QuorumInfo
 	request        *Request
-	signedImportTx *txs.Tx
+	signedImportTx *txs.Tx // TODO:
 	taskCtxMock    *mocks.TaskContext
+	quorum         types.QuorumInfo
 }
 
 func (s *AddDelegatorTestSuite) SetupTest() {
 	require := s.Require()
 
 	s.id = "abc"
-	s.quorum = types.QuorumInfo{}
 	s.signedImportTx = nil
 	taskCtxMock := mocks.NewTaskContext(s.T())
 
@@ -62,8 +61,16 @@ func (s *AddDelegatorTestSuite) SetupTest() {
 		300,
 	)
 	taskCtxMock.EXPECT().GetNetwork().Return(&networkCtx)
-
 	s.taskCtxMock = taskCtxMock
+
+	s.quorum = types.QuorumInfo{
+		ParticipantPubKeys: nil,
+		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
+	}
+
+	nodeID, err := ids.ShortFromString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5")
+	require.Nil(err)
+	s.request = &Request{ids.NodeID(nodeID), 1663315662, 1694830062}
 }
 
 func (s *AddDelegatorTestSuite) TestNext() {
