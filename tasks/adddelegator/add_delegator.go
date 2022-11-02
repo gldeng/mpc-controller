@@ -139,19 +139,19 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 }
 
 func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
-	tx, err := t.buildTx(ctx)
+	tx, err := NewAddDelegatorTx(t.Param, t.Quorum, ctx)
 	if err != nil {
-		return errors.WithStack(err)
+		return t.failIfError(err, "failed to build AddDelegatorTx")
 	}
 
 	txHash, err := tx.TxHash()
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToCreateSignRequest)
+		return t.failIfError(err, "failed to get AddDelegatorTx hash")
 	}
 
 	signReqs, err := t.buildSignReqs(t.Id+"/addDelegator", txHash)
 	if err != nil {
-		return errors.WithStack(err)
+		return t.failIfError(err, "failed to build sign request")
 	}
 
 	t.tx = tx
@@ -173,20 +173,6 @@ func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*core.SignRequest,
 	}
 
 	return &signReq, nil
-}
-
-func (t *AddDelegator) buildTx(ctx core.TaskContext) (*AddDelegatorTx, error) {
-	st := AddDelegatorTx{
-		NetworkID:     ctx.GetNetwork().NetworkID(),
-		Asset:         ctx.GetNetwork().Asset(),
-		PChainAddress: t.Quorum.PChainAddress(),
-		UTXOsToStake:  t.Param.UTXOs,
-		NodeID:        t.Param.NodeID,
-		StartTime:     t.Param.StartTime,
-		EndTime:       t.Param.EndTime,
-	}
-
-	return &st, nil
 }
 
 func (t *AddDelegator) failIfError(err error, msg string) error {

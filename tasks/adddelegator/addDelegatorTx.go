@@ -10,6 +10,8 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/platformvm/validator"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
+	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +32,19 @@ type AddDelegatorTx struct {
 }
 
 // ---
+
+func NewAddDelegatorTx(param *StakeParam, quorum types.QuorumInfo, ctx core.TaskContext) (*AddDelegatorTx, error) {
+	tx := AddDelegatorTx{
+		NetworkID:     ctx.GetNetwork().NetworkID(),
+		Asset:         ctx.GetNetwork().Asset(),
+		PChainAddress: quorum.PChainAddress(),
+		UTXOsToStake:  param.UTXOs,
+		NodeID:        param.NodeID,
+		StartTime:     param.StartTime,
+		EndTime:       param.EndTime,
+	}
+	return &tx, nil
+}
 
 func (t *AddDelegatorTx) TxHash() ([]byte, error) {
 	unsignedTx, err := t.buildUnsignedTx()
