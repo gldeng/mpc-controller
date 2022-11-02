@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
@@ -35,6 +36,14 @@ type TaskContextImp struct {
 	Db           storage.SlimDb
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
+}
+
+func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to ")
+	}
+	return caller.GetGroup(opts, groupId)
 }
 
 func NewTaskContextImp(services *ServicePack) (*TaskContextImp, error) {

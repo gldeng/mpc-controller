@@ -6,8 +6,9 @@ import (
 )
 
 type Group struct {
-	GroupId [32]byte
-	Index   *big.Int
+	GroupId          [32]byte
+	Index            *big.Int
+	MemberPublicKeys [][]byte
 }
 
 func (g *Group) Encode() ([]byte, error) {

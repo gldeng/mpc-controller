@@ -5,6 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -16,7 +17,12 @@ type Task interface {
 	RequiresNonce() bool
 }
 
+type MpcManager interface {
+	GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error)
+}
+
 type TaskContext interface {
+	MpcManager
 	GetLogger() logger.Logger
 	GetNetwork() *chain.NetworkContext
 	GetMpcClient() MpcClient
