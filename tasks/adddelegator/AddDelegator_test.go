@@ -123,8 +123,7 @@ func (s *AddDelegatorTestSuite) TestBuildAndSignTx() {
 	require.Nil(err)
 	require.NotNil(task.tx)
 	require.NotNil(task.signReq)
-
-	// todo: check result: error, object status
+	// TODO: more check
 }
 
 func TestAddDelegatorTestSuite(t *testing.T) {
