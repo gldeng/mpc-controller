@@ -4,11 +4,12 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/mocks"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/testingutils"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"math/big"
 	"testing"
@@ -21,7 +22,6 @@ type AddDelegatorTestSuite struct {
 	quorum     types.QuorumInfo
 
 	logger     logger.Logger
-	mpcClient  core.MpcClient
 	networkCtx *chain.NetworkContext
 }
 
@@ -39,15 +39,17 @@ func (s *AddDelegatorTestSuite) SetupTest() {
 	require.NotNil(utxos)
 	s.stakeParam = &StakeParam{nodeID, 1663315662, 1694830062, utxos}
 
-	// Setup mock mpc-client
-	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
-	require.Nil(err)
-	s.mpcClient = mpcClient
-
 	// Setup quorum
+	privateKeyStr := "56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027"
+	pubkeys, err := crypto.ExtractPubKeysForParticipants([]string{privateKeyStr})
+	require.Nil(err)
+
+	compressedPubKey, err := crypto.NormalizePubKeyBytes(pubkeys[0])
+	require.Nil(err)
+
 	s.quorum = types.QuorumInfo{
 		ParticipantPubKeys: nil,
-		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
+		PubKey:             compressedPubKey,
 	}
 
 	// Setup logger
@@ -84,7 +86,6 @@ func (s *AddDelegatorTestSuite) TestNext() {
 	// Set task context expectation
 	taskCtxMock := mocks.NewTaskContext(s.T())
 	taskCtxMock.EXPECT().GetLogger().Return(s.logger)
-	taskCtxMock.EXPECT().GetMpcClient().Return(s.mpcClient)
 	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
 	//taskCtxMock.EXPECT().IssuePChainTx() // TODO
 	//taskCtxMock.EXPECT().CheckPChainTx() // TODO
@@ -102,24 +103,28 @@ func (s *AddDelegatorTestSuite) TestNext() {
 }
 
 func (s *AddDelegatorTestSuite) TestBuildAndSignTx() {
-	// Set task context expectation
-	taskCtxMock := mocks.NewTaskContext(s.T())
-	taskCtxMock.EXPECT().GetLogger().Return(s.logger)
-	taskCtxMock.EXPECT().GetMpcClient().Return(s.mpcClient)
-	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
-	//taskCtxMock.EXPECT().IssuePChainTx() // TODO
-	//taskCtxMock.EXPECT().CheckPChainTx() // TODO
-
-	// Create AddDelegator
 	require := s.Require()
+
+	// Create necessary mocks
+	taskCtxMock := mocks.NewTaskContext(s.T())
+	mpcClientMock := mocks.NewMpcClient(s.T())
+
+	// Set mock expectation
+	taskCtxMock.EXPECT().GetMpcClient().Return(mpcClientMock)
+	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
+
+	mpcClientMock.EXPECT().Sign(mock.Anything, mock.Anything).Return(nil) // TODO: give more specific args
+
+	// Create AddDelegator task
 	task, err := NewAddDelegator(s.id, s.quorum, s.stakeParam)
 	require.Nil(err)
 	require.NotNil(task)
+	// todo: check status
 
-	// TODO: implement
-	taskCtxMock.GetLogger()
-	taskCtxMock.GetMpcClient()
-	taskCtxMock.GetNetwork()
+	// Build and sign Tx
+	err = task.buildAndSignTx(taskCtxMock)
+	require.Nil(err)
+	// todo: check status
 }
 
 func TestAddDelegatorTestSuite(t *testing.T) {
