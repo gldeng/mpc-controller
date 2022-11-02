@@ -25,6 +25,14 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		task := NewRequestStartedHandler(*event)
 		return []core.Task{task}, nil
 	}
-
+	if log.Topics[0] == ctx.GetEventID(EvtParticipantAdded) {
+		event := new(binding.MpcManagerParticipantAdded)
+		err := ctx.GetContract().UnpackLog(event, EvtParticipantAdded, log)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unpack log")
+		}
+		task := NewParticipantAddedHandler(*event)
+		return []core.Task{task}, nil
+	}
 	return nil, nil
 }

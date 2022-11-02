@@ -124,8 +124,8 @@ func (s *TestSuite) enqueueMessages() {
 	for i := 0; i < s.requestCount; i++ {
 		req := s.getRequest(uint64(i))
 		h, _ := req.Hash()
-		l := testingutils.MakeEventRequestStarted(h, indices)
-		s.queue.Enqueue(*l)
+		evt := testingutils.MakeEventRequestStarted(h, indices)
+		s.queue.Enqueue(evt.Raw)
 	}
 }
 
@@ -147,9 +147,10 @@ func runController(c *cli.Context) error {
 	}, q)
 
 	coreConfig := core.Config{
-		Host:       c.String(fnHost),
-		Port:       int16(c.Int(fnPort)),
-		SslEnabled: false, // TODO: Add argument
+		Host:              c.String(fnHost),
+		Port:              int16(c.Int(fnPort)),
+		SslEnabled:        false, // TODO: Add argument
+		MpcManagerAddress: common.Address{},
 		NetworkContext: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
@@ -164,6 +165,7 @@ func runController(c *cli.Context) error {
 			10000,
 			300,
 		),
+		MyPublicKey: common.Hex2Bytes("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb"),
 	}
 	coreConfig.FetchNetworkInfo()
 

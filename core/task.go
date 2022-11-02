@@ -28,6 +28,7 @@ type TaskContext interface {
 	Emit(event interface{})
 	GetDb() storage.SlimDb
 	GetEventID(event string) (common.Hash, error)
+	GetMyPublicKey() ([]byte, error)
 	GetParticipantID() storage.ParticipantId
 }
 

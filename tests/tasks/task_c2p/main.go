@@ -9,8 +9,10 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"time"
@@ -33,11 +35,11 @@ func main() {
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 
 	panicIfError(err)
-	config := core.TaskContextImpConfig{
-		Logger:     logger.Default(),
-		Host:       "34.172.25.188",
-		Port:       9650,
-		SslEnabled: false,
+	config := core.Config{
+		Host:              "34.172.25.188",
+		Port:              9650,
+		SslEnabled:        false,
+		MpcManagerAddress: common.Address{},
 		NetworkContext: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
@@ -52,9 +54,12 @@ func main() {
 			10000,
 			300,
 		),
-		MpcClient: mpcClient,
+		MyPublicKey: common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
 	}
-	ctx, err := core.NewTaskContextImp(config)
+
+	db := storage.NewInMemoryDb()
+	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
+	ctx, err := core.NewTaskContextImp(services)
 	panicIfError(err)
 	quorum := types.QuorumInfo{
 		ParticipantPubKeys: nil,
