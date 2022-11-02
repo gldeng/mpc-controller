@@ -29,17 +29,35 @@ func idFromString(str string) ids.ID {
 	return id
 }
 
+func fakeStakeParam() (*addDelegator.StakeParam, error) {
+	nodeID, _ := ids.NodeIDFromString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5")
+	utxos, err := testingutils.GetRewardUTXOs("http://34.172.25.188:9650", "cxbA4wytAUWTRmNyqfYQHnHdR8vYthyeCrDFWEQULiUHPyVu2")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get utxos")
+	}
+
+	if len(utxos) == 0 {
+		return nil, errors.New("no utxo found")
+	}
+	param := addDelegator.StakeParam{
+		NodeID:    nodeID,
+		StartTime: 1663315662,
+		EndTime:   1694830062,
+		UTXOs:     utxos,
+	}
+	return &param, nil
+}
+
 func main() {
+	logger.DevMode = true
+	logger.UseConsoleEncoder = true
 
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
-
 	panicIfError(err)
-	config := core.TaskContextImp{
-		Logger:     logger.Default(),
-		Host:       "34.172.25.188",
-		Port:       9650,
-		SslEnabled: false,
-		NetworkContext: chain.NewNetworkContext(
+
+	ctx := &core.TaskContextImp{
+		Logger: logger.Default(),
+		Network: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
 			big.NewInt(43112),
@@ -53,21 +71,19 @@ func main() {
 			10000,
 			300,
 		),
-		MpcClient: mpcClient,
+		MpcClient:    mpcClient,
+		PChainClient: nil, // TODO:
 	}
-	ctx, err := core.NewTaskContextImp(config)
-	panicIfError(err)
+
 	quorum := types.QuorumInfo{
 		ParticipantPubKeys: nil,
 		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
 	}
 
 	stakeParam, err := fakeStakeParam()
-	if err != nil {
-		panic(err)
-	}
+	panicIfError(err)
 
-	task, err := addDelegator.NewAddDelegator("abc", quorum, stakeParam)
+	task, err := addDelegator.NewAddDelegator("0xc02b59f772cb23a75b6ffb9f7602ba25fdd5d8e75ad88efcc013fec2c63b0895", quorum, stakeParam)
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
@@ -86,23 +102,4 @@ func main() {
 		return false, nil
 	})
 	fmt.Printf("next is %v\n", nextTasks)
-}
-
-func fakeStakeParam() (*addDelegator.StakeParam, error) {
-	nodeID, _ := ids.NodeIDFromString("NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5")
-	utxos, err := testingutils.GetRewardUTXOs("http://34.172.25.188:9650", "cxbA4wytAUWTRmNyqfYQHnHdR8vYthyeCrDFWEQULiUHPyVu2")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get utxos")
-	}
-
-	if len(utxos) == 0 {
-		return nil, errors.New("no utxo found")
-	}
-	param := addDelegator.StakeParam{
-		NodeID:    nodeID,
-		StartTime: 1663315662,
-		EndTime:   1694830062,
-		UTXOs:     utxos,
-	}
-	return &param, nil
 }
