@@ -113,18 +113,18 @@ func (s *AddDelegatorTestSuite) TestBuildAndSignTx() {
 	taskCtxMock.EXPECT().GetMpcClient().Return(mpcClientMock)
 	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
 
-	mpcClientMock.EXPECT().Sign(mock.Anything, mock.Anything).Return(nil) // TODO: give more specific args
+	mpcClientMock.EXPECT().Sign(mock.AnythingOfType("*context.emptyCtx"), mock.AnythingOfType("*core.SignRequest")).Return(nil)
 
 	// Create AddDelegator task
-	task, err := NewAddDelegator(s.id, s.quorum, s.stakeParam)
-	require.Nil(err)
-	require.NotNil(task)
-	// todo: check status
+	task, _ := NewAddDelegator(s.id, s.quorum, s.stakeParam)
 
 	// Build and sign Tx
-	err = task.buildAndSignTx(taskCtxMock)
+	err := task.buildAndSignTx(taskCtxMock)
 	require.Nil(err)
-	// todo: check status
+	require.NotNil(task.tx)
+	require.NotNil(task.signReq)
+
+	// todo: check result: error, object status
 }
 
 func TestAddDelegatorTestSuite(t *testing.T) {
