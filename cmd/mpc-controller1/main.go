@@ -68,10 +68,10 @@ func (s *TestSuite) getRequest(reqNo uint64) *stake.Request {
 		ReqNo:     reqNo,
 		TxHash:    common.Hash{},
 		PubKey:    s.pubKey,
-		NodeID:    "",
+		NodeID:    "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5",
 		Amount:    "999000000000",
-		StartTime: 0,
-		EndTime:   0,
+		StartTime: 1663315662,
+		EndTime:   1694830062,
 	}
 }
 
