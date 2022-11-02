@@ -141,17 +141,17 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 	tx, err := NewAddDelegatorTx(t.Param, t.Quorum, ctx)
 	if err != nil {
-		return t.failIfError(err, "failed to build AddDelegatorTx")
+		return errors.Wrapf(err, "failed to build AddDelegatorTx")
 	}
 
 	txHash, err := tx.TxHash()
 	if err != nil {
-		return t.failIfError(err, "failed to get AddDelegatorTx hash")
+		return errors.Wrapf(err, "failed to get AddDelegatorTx hash")
 	}
 
 	signReqs, err := t.buildSignReqs(t.Id+"/addDelegator", txHash)
 	if err != nil {
-		return t.failIfError(err, "failed to build sign request")
+		return errors.Wrapf(err, "failed to build AddDelegatorTx sign request")
 	}
 
 	t.tx = tx
