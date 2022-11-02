@@ -101,6 +101,27 @@ func (s *AddDelegatorTestSuite) TestNext() {
 	taskCtxMock.GetNetwork()
 }
 
+func (s *AddDelegatorTestSuite) TestBuildAndSignTx() {
+	// Set task context expectation
+	taskCtxMock := mocks.NewTaskContext(s.T())
+	taskCtxMock.EXPECT().GetLogger().Return(s.logger)
+	taskCtxMock.EXPECT().GetMpcClient().Return(s.mpcClient)
+	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
+	//taskCtxMock.EXPECT().IssuePChainTx() // TODO
+	//taskCtxMock.EXPECT().CheckPChainTx() // TODO
+
+	// Create AddDelegator
+	require := s.Require()
+	task, err := NewAddDelegator(s.id, s.quorum, s.stakeParam)
+	require.Nil(err)
+	require.NotNil(task)
+
+	// TODO: implement
+	taskCtxMock.GetLogger()
+	taskCtxMock.GetMpcClient()
+	taskCtxMock.GetNetwork()
+}
+
 func TestAddDelegatorTestSuite(t *testing.T) {
 	suite.Run(t, new(AddDelegatorTestSuite))
 }
