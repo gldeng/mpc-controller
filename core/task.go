@@ -19,6 +19,7 @@ type Task interface {
 
 type MpcManager interface {
 	GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error)
+	ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error)
 }
 
 type TaskContext interface {
@@ -28,6 +29,7 @@ type TaskContext interface {
 	GetMpcClient() MpcClient
 	IssueCChainTx(txBytes []byte) (ids.ID, error)
 	IssuePChainTx(txBytes []byte) (ids.ID, error)
+	CheckEthTx(txHash common.Hash) (TxStatus, error)
 	CheckCChainTx(id ids.ID) (TxStatus, error)
 	CheckPChainTx(id ids.ID) (TxStatus, error)
 	NonceAt(account common.Address) (uint64, error)

@@ -6,7 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
-	"github.com/avalido/mpc-controller/core/types"
+	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/testingutils"
@@ -24,6 +24,16 @@ var (
 type TaskContextWrapper struct {
 	inner core.TaskContext
 	group [][]byte
+}
+
+func (t *TaskContextWrapper) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
+	hash := common.HexToHash("1111111111111111111111111111111111111111111111111111111111111111")
+	return &hash, nil
+}
+
+func (t *TaskContextWrapper) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (t *TaskContextWrapper) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
@@ -142,7 +152,7 @@ func TestAddParticipant(t *testing.T) {
 	res, err := db.Get(context.Background(), key)
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	group := &types.Group{}
+	group := &types2.Group{}
 	err = group.Decode(res)
 	require.NoError(t, err)
 	require.Equal(t, groupId32, group.GroupId)
