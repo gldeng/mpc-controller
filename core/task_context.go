@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
@@ -12,6 +13,7 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
@@ -35,6 +37,42 @@ type TaskContextImp struct {
 	Db           storage.SlimDb
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
+}
+
+func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
+	rcp, err := t.EthClient.TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		return TxStatusUnknown, errors.Wrap(err, "failed to check tx receipt")
+	}
+	if rcp.Status == 0 {
+		return TxStatusAborted, nil
+	}
+	if rcp.Status == 1 {
+		return TxStatusCommitted, nil
+	}
+	return TxStatusUnknown, errors.New(fmt.Sprintf("unknown tx status %v", rcp.Status))
+}
+
+func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
+	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to MpcManagerTransactor")
+	}
+	tx, err := transactor.ReportGeneratedKey(opts, participantId, generatedPublicKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed send tx")
+	}
+	hash := tx.Hash()
+	return &hash, nil
+}
+
+func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create MpcManagerCaller")
+	}
+	return caller.GetGroup(opts, groupId)
 }
 
 func NewTaskContextImp(services *ServicePack) (*TaskContextImp, error) {

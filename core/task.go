@@ -5,6 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -16,12 +17,19 @@ type Task interface {
 	RequiresNonce() bool
 }
 
+type MpcManager interface {
+	GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error)
+	ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error)
+}
+
 type TaskContext interface {
+	MpcManager
 	GetLogger() logger.Logger
 	GetNetwork() *chain.NetworkContext
 	GetMpcClient() MpcClient
 	IssueCChainTx(txBytes []byte) (ids.ID, error)
 	IssuePChainTx(txBytes []byte) (ids.ID, error)
+	CheckEthTx(txHash common.Hash) (TxStatus, error)
 	CheckCChainTx(id ids.ID) (TxStatus, error)
 	CheckPChainTx(id ids.ID) (TxStatus, error)
 	NonceAt(account common.Address) (uint64, error)

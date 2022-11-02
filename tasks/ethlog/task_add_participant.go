@@ -56,9 +56,16 @@ func (h *ParticipantAddedHandler) RequiresNonce() bool {
 }
 
 func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
+
+	members, err := ctx.GetGroup(nil, h.Event.GroupId)
+	if err != nil {
+		return errors.Wrap(err, "failed to get group")
+	}
+
 	group := types.Group{
-		GroupId: h.Event.GroupId,
-		Index:   h.Event.Index,
+		GroupId:          h.Event.GroupId,
+		Index:            h.Event.Index,
+		MemberPublicKeys: members,
 	}
 	key := []byte("group/")
 	key = append(key, group.GroupId[:]...)
