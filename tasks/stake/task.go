@@ -77,7 +77,7 @@ func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *InitialStake) IsDone() bool {
-	return t.AddDelegator.IsDone()
+	return t.Status == StatusDone
 }
 
 func (t *InitialStake) RequiresNonce() bool {
@@ -119,6 +119,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
+			t.Status = StatusDone
 			ctx.GetLogger().Debug(fmt.Sprintf("%v added delegator", t.Id))
 			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v AddDelegator got error", t.Id))
 		}
