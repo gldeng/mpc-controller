@@ -12,7 +12,7 @@ var (
 	TestAddress = common.HexToAddress("0xa626f2e3a33b03459b84df1ac2756f2d9d44d0db")
 )
 
-func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) *types.Log {
+func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) *contract.MpcManagerParticipantAdded {
 	abi, err := contract.MpcManagerMetaData.GetAbi()
 	if err != nil {
 		panic(err)
@@ -23,7 +23,7 @@ func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) 
 	if err != nil {
 		panic(err)
 	}
-	return &types.Log{
+	log := types.Log{
 		Address: common.HexToAddress("0xa626f2e3a33b03459b84df1ac2756f2d9d44d0db"),
 		Topics: []common.Hash{
 			event.ID,
@@ -37,6 +37,10 @@ func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) 
 		Index:       0,
 		Removed:     false,
 	}
+	e := &contract.MpcManagerParticipantAdded{}
+	abi.UnpackIntoInterface(e, "ParticipantAdded", data)
+	e.Raw = log
+	return e
 }
 
 func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) *types.Log {

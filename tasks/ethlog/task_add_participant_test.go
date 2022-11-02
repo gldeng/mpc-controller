@@ -5,7 +5,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
-	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
@@ -50,15 +49,12 @@ func TestAddParticipant(t *testing.T) {
 	db := storage.NewInMemoryDb()
 	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
 	ctx, err := core.NewTaskContextImp(services)
-	abi, _ := contract.MpcManagerMetaData.GetAbi()
+
 	//myPubKey := common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1")
 	groupId := common.Hex2Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
 	var groupId32 [32]byte
 	copy(groupId32[:], groupId)
-	rawLog := testingutils.MakeEventParticipantAdded(config.MyPublicKey, groupId32, big.NewInt(1))
-	event := &contract.MpcManagerParticipantAdded{}
-	abi.UnpackIntoInterface(event, "ParticipantAdded", rawLog.Data)
-	event.Raw = *rawLog
+	event := testingutils.MakeEventParticipantAdded(config.MyPublicKey, groupId32, big.NewInt(1))
 
 	handler := NewParticipantAddedHandler(*event)
 	next, err := handler.Next(ctx)
