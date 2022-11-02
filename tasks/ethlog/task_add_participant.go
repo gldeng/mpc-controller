@@ -6,6 +6,8 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 )
 
@@ -31,6 +33,15 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 }
 
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if len(h.Event.Raw.Topics) < 2 {
+		// Do nothing, invalid event
+		return nil, nil
+	}
+	pubKey, _ := ctx.GetMyPublicKey()
+	if h.Event.Raw.Topics[1] != common.BytesToHash(crypto.Keccak256(pubKey)) {
+		// Not for me
+		return nil, nil
+	}
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
 	return nil, h.failIfError(err, "failed to save group")

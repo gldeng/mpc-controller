@@ -25,6 +25,7 @@ var (
 type TaskContextImp struct {
 	Logger logger.Logger
 
+	Services     *ServicePack
 	NonceGiver   noncer.Noncer
 	Network      chain.NetworkContext
 	EthClient    *ethclient.Client
@@ -46,6 +47,7 @@ func NewTaskContextImp(services *ServicePack) (*TaskContextImp, error) {
 	}
 	return &TaskContextImp{
 		Logger:       services.Logger,
+		Services:     services,
 		NonceGiver:   nil,
 		Network:      services.Config.NetworkContext,
 		EthClient:    ethClient,
@@ -137,6 +139,10 @@ func (t *TaskContextImp) GetParticipantID() storage.ParticipantId {
 	var id32 [32]byte
 	copy(id32[:], id)
 	return id32
+}
+
+func (t *TaskContextImp) GetMyPublicKey() ([]byte, error) {
+	return t.Services.Config.MyPublicKey, nil
 }
 
 func (t *TaskContextImp) Close() {

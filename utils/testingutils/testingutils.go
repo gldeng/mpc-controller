@@ -4,6 +4,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 )
 
@@ -11,7 +12,7 @@ var (
 	TestAddress = common.HexToAddress("0xa626f2e3a33b03459b84df1ac2756f2d9d44d0db")
 )
 
-func MakeEventParticipantAdded(groupId [32]byte, index *big.Int) *types.Log {
+func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) *types.Log {
 	abi, err := contract.MpcManagerMetaData.GetAbi()
 	if err != nil {
 		panic(err)
@@ -23,8 +24,11 @@ func MakeEventParticipantAdded(groupId [32]byte, index *big.Int) *types.Log {
 		panic(err)
 	}
 	return &types.Log{
-		Address:     common.HexToAddress("0xa626f2e3a33b03459b84df1ac2756f2d9d44d0db"),
-		Topics:      []common.Hash{event.ID},
+		Address: common.HexToAddress("0xa626f2e3a33b03459b84df1ac2756f2d9d44d0db"),
+		Topics: []common.Hash{
+			event.ID,
+			common.BytesToHash(crypto.Keccak256(pubKey)),
+		},
 		Data:        data,
 		BlockNumber: 0x3802,
 		TxHash:      common.HexToHash("0xc8ddd3b3a163ede531ef5f9762825358d909b3f5328d4586a20f724d9cf1e661"),

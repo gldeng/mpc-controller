@@ -26,9 +26,10 @@ func TestAddParticipant(t *testing.T) {
 
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	config := core.Config{
-		Host:       "localhost",
-		Port:       9650,
-		SslEnabled: false,
+		Host:              "localhost",
+		Port:              9650,
+		SslEnabled:        false,
+		MpcManagerAddress: common.Address{},
 		NetworkContext: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
@@ -43,6 +44,7 @@ func TestAddParticipant(t *testing.T) {
 			10000,
 			300,
 		),
+		MyPublicKey: common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
 	}
 
 	db := storage.NewInMemoryDb()
@@ -53,9 +55,10 @@ func TestAddParticipant(t *testing.T) {
 	groupId := common.Hex2Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
 	var groupId32 [32]byte
 	copy(groupId32[:], groupId)
-	rawLog := testingutils.MakeEventParticipantAdded(groupId32, big.NewInt(1))
+	rawLog := testingutils.MakeEventParticipantAdded(config.MyPublicKey, groupId32, big.NewInt(1))
 	event := &contract.MpcManagerParticipantAdded{}
 	abi.UnpackIntoInterface(event, "ParticipantAdded", rawLog.Data)
+	event.Raw = *rawLog
 
 	handler := NewParticipantAddedHandler(*event)
 	next, err := handler.Next(ctx)
