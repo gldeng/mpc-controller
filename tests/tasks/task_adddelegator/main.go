@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/utils/rpc"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -48,9 +50,24 @@ func fakeStakeParam() (*addDelegator.StakeParam, error) {
 	return &param, nil
 }
 
+type mockPChainClient struct {
+	platformvm.Client
+}
+
+func (c *mockPChainClient) IssueTx(ctx context.Context, txBytes []byte, options ...rpc.Option) (ids.ID, error) {
+	return ids.ID{}, nil
+}
+
+func (c *mockPChainClient) GetTxStatus(ctx context.Context, txID ids.ID, options ...rpc.Option) (*platformvm.GetTxStatusResponse, error) {
+	return nil, nil
+}
+
 func main() {
 	logger.DevMode = true
 	logger.UseConsoleEncoder = true
+
+	c := platformvm.NewClient("http://34.172.25.188:9650")
+	mockPChainClient := mockPChainClient{c}
 
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	panicIfError(err)
@@ -72,7 +89,7 @@ func main() {
 			300,
 		),
 		MpcClient:    mpcClient,
-		PChainClient: nil, // TODO:
+		PChainClient: &mockPChainClient,
 	}
 
 	quorum := types.QuorumInfo{
