@@ -20,6 +20,7 @@ type Config struct {
 	SslEnabled        bool
 	MpcManagerAddress common.Address
 	NetworkContext    chain.NetworkContext
+	MyPublicKey       []byte
 }
 
 func (c Config) getUri() string {

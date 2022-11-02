@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"time"
@@ -35,9 +36,10 @@ func main() {
 
 	panicIfError(err)
 	config := core.Config{
-		Host:       "34.172.25.188",
-		Port:       9650,
-		SslEnabled: false,
+		Host:              "34.172.25.188",
+		Port:              9650,
+		SslEnabled:        false,
+		MpcManagerAddress: common.Address{},
 		NetworkContext: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
@@ -52,6 +54,7 @@ func main() {
 			10000,
 			300,
 		),
+		MyPublicKey: common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
 	}
 
 	db := storage.NewInMemoryDb()

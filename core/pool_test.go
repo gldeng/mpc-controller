@@ -4,13 +4,29 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
+var (
+	_ Task        = (*IncrementTask)(nil)
+	_ TaskContext = (*MockTaskContext)(nil)
+)
+
 type IncrementTask struct {
 	Counter int
+}
+
+func (i *IncrementTask) GetId() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (i *IncrementTask) FailedPermanently() bool {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (i *IncrementTask) IsDone() bool {
@@ -29,6 +45,26 @@ func (i *IncrementTask) Next(ctx TaskContext) ([]Task, error) {
 }
 
 type MockTaskContext struct {
+}
+
+func (m MockTaskContext) GetDb() storage.SlimDb {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) GetEventID(event string) (common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) GetMyPublicKey() ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) GetParticipantID() storage.ParticipantId {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m MockTaskContext) GetNetwork() *chain.NetworkContext {

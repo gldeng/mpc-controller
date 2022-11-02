@@ -1,8 +1,7 @@
-package main
+package ethlog
 
 import (
 	"context"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
@@ -10,32 +9,23 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/avalido/mpc-controller/tasks/c2p"
-	"github.com/avalido/mpc-controller/utils/backoff"
+	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/require"
 	"math/big"
-	"time"
+	"testing"
 )
 
-func panicIfError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func idFromString(str string) ids.ID {
-	id, err := ids.FromString(str)
-	panicIfError(err)
+	id, _ := ids.FromString(str)
 	return id
 }
 
-func main() {
+func TestAddParticipant(t *testing.T) {
 
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
-
-	panicIfError(err)
 	config := core.Config{
-		Host:              "34.172.25.188",
+		Host:              "localhost",
 		Port:              9650,
 		SslEnabled:        false,
 		MpcManagerAddress: common.Address{},
@@ -59,30 +49,25 @@ func main() {
 	db := storage.NewInMemoryDb()
 	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
 	ctx, err := core.NewTaskContextImp(services)
-	panicIfError(err)
-	quorum := types.QuorumInfo{
-		ParticipantPubKeys: nil,
-		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
-	}
-	task, err := c2p.NewExportFromCChain("abc", quorum, *big.NewInt(100))
-	panicIfError(err)
-	nextTasks, err := task.Next(ctx)
-	panicIfError(err)
-	nextTasks, err = task.Next(ctx)
-	panicIfError(err)
-	time.Sleep(5 * time.Second)
-	fmt.Printf("TxID is %v\n", task.TxID.String())
-	backoff.RetryFnExponential10Times(logger.Default(), context.Background(), 1*time.Second, 120*time.Second, func() (retry bool, err error) {
-		nextTasks, err = task.Next(ctx)
-		if err != nil {
-			return false, err
-		}
-		if len(nextTasks) > 0 {
-			return true, nil
-		}
-		fmt.Printf("Task IsDone: %v\n", task.IsDone())
-		return false, nil
-	})
 
-	fmt.Printf("next is %v\n", nextTasks)
+	//myPubKey := common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1")
+	groupId := common.Hex2Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
+	var groupId32 [32]byte
+	copy(groupId32[:], groupId)
+	event := testingutils.MakeEventParticipantAdded(config.MyPublicKey, groupId32, big.NewInt(1))
+
+	handler := NewParticipantAddedHandler(*event)
+	next, err := handler.Next(ctx)
+	require.Nil(t, next)
+	require.NoError(t, err)
+	key := []byte("group/")
+	key = append(key, groupId...)
+	res, err := db.Get(context.Background(), key)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	group := &types.Group{}
+	err = group.Decode(res)
+	require.NoError(t, err)
+	require.Equal(t, groupId32, group.GroupId)
+	require.Equal(t, big.NewInt(1), group.Index)
 }
