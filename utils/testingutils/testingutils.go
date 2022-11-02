@@ -43,7 +43,7 @@ func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) 
 	return e
 }
 
-func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) *types.Log {
+func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) *contract.MpcManagerRequestStarted {
 	abi, err := contract.MpcManagerMetaData.GetAbi()
 	if err != nil {
 		panic(err)
@@ -54,7 +54,8 @@ func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) 
 	if err != nil {
 		panic(err)
 	}
-	return &types.Log{
+
+	log := types.Log{
 		Address:     common.HexToAddress("0xa626f2e3a33b03459b84df1ac2756f2d9d44d0db"),
 		Topics:      []common.Hash{event.ID},
 		Data:        data,
@@ -65,4 +66,8 @@ func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) 
 		Index:       0,
 		Removed:     false,
 	}
+	e := &contract.MpcManagerRequestStarted{}
+	abi.UnpackIntoInterface(e, "RequestStarted", data)
+	e.Raw = log
+	return e
 }

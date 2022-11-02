@@ -124,8 +124,8 @@ func (s *TestSuite) enqueueMessages() {
 	for i := 0; i < s.requestCount; i++ {
 		req := s.getRequest(uint64(i))
 		h, _ := req.Hash()
-		l := testingutils.MakeEventRequestStarted(h, indices)
-		s.queue.Enqueue(*l)
+		evt := testingutils.MakeEventRequestStarted(h, indices)
+		s.queue.Enqueue(evt.Raw)
 	}
 }
 
