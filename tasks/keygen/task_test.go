@@ -22,8 +22,9 @@ var (
 )
 
 type TaskContextWrapper struct {
-	inner core.TaskContext
-	group [][]byte
+	inner         core.TaskContext
+	participantId [32]byte
+	group         [][]byte
 }
 
 func (t *TaskContextWrapper) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
@@ -87,7 +88,7 @@ func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
 }
 
 func (t *TaskContextWrapper) GetParticipantID() storage.ParticipantId {
-	return t.inner.GetParticipantID()
+	return t.participantId
 }
 
 func idFromString(str string) ids.ID {
@@ -119,12 +120,18 @@ func TestRequestAdded(t *testing.T) {
 		),
 		MyPublicKey: common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
 	}
+	groupId := common.Hex2Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
+	var groupId32, pId [32]byte
+	copy(groupId32[:], groupId)
+	copy(pId[:], groupId)
+	pId[31] = 1
 
 	db := storage.NewInMemoryDb()
 	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
 	ctx0, err := core.NewTaskContextImp(services)
 	ctx := &TaskContextWrapper{
-		inner: ctx0,
+		inner:         ctx0,
+		participantId: pId,
 		group: [][]byte{
 			common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
 			common.Hex2Bytes("72eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4d3c33a90bd5b304344e1bea939ef7d16f428d50d25cada4225d9299d35ef1644"),
@@ -137,9 +144,7 @@ func TestRequestAdded(t *testing.T) {
 	}
 
 	//myPubKey := common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1")
-	groupId := common.Hex2Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
-	var groupId32 [32]byte
-	copy(groupId32[:], groupId)
+
 	key := []byte("group/")
 	key = append(key, groupId...)
 
@@ -153,7 +158,7 @@ func TestRequestAdded(t *testing.T) {
 
 	event := testingutils.MakeEventKeygenRequestAdded(groupId32, big.NewInt(1))
 
-	handler := NewRequestAdded(groupId32, *event)
+	handler := NewRequestAdded(*event)
 	next, err := handler.Next(ctx)
 	require.Nil(t, next)
 	require.NoError(t, err)

@@ -125,6 +125,12 @@ func (m ParticipantId) Index() uint64 {
 	return new(big.Int).SetBytes(m[31:32]).Uint64()
 }
 
+func (m ParticipantId) GroupId() [32]byte {
+	var groupId [32]byte
+	copy(groupId[:], m[:31])
+	return groupId
+}
+
 func (m ParticipantId) Joined(indices *big.Int) bool {
 	myIndex := m.Index() - 1
 	initBit, _ := new(big.Int).SetString(InitBit, 16)

@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -18,17 +19,15 @@ var (
 type RequestAdded struct {
 	Status Status
 
-	GroupId       [32]byte
 	Event         contract.MpcManagerKeygenRequestAdded
 	KeygenRequest *core.KeygenRequest
 	TxHash        *common.Hash
 	Failed        bool
 }
 
-func NewRequestAdded(groupId [32]byte, event contract.MpcManagerKeygenRequestAdded) *RequestAdded {
+func NewRequestAdded(event contract.MpcManagerKeygenRequestAdded) *RequestAdded {
 	return &RequestAdded{
 		Status:        StatusInit,
-		GroupId:       groupId,
 		Event:         event,
 		KeygenRequest: nil,
 		TxHash:        nil,
@@ -41,6 +40,16 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if len(t.Event.Raw.Topics) < 2 {
+		// Do nothing, invalid event
+		return nil, nil
+	}
+	groupId := ctx.GetParticipantID().GroupId()
+	if t.Event.Raw.Topics[1] != common.BytesToHash(crypto.Keccak256(groupId[:])) {
+		// Not for me
+		return nil, nil
+	}
+
 	interval := 100 * time.Millisecond
 	timer := time.NewTimer(interval)
 	for {
@@ -77,7 +86,9 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 	switch t.Status {
 	case StatusInit:
 		key := []byte("group/")
-		key = append(key, t.GroupId[:]...)
+		pId := ctx.GetParticipantID()
+		groupId := pId.GroupId()
+		key = append(key, groupId[:]...)
 		groupBytes, err := ctx.GetDb().Get(context.Background(), key)
 		if err != nil {
 			return t.failIfError(err, "failed to get group")
