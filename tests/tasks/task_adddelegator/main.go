@@ -7,6 +7,7 @@ import (
 	"github.com/ava-labs/avalanchego/utils/rpc"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/status"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -14,6 +15,7 @@ import (
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/testingutils"
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/pkg/errors"
 	"math/big"
 	"time"
@@ -59,7 +61,7 @@ func (c *mockPChainClient) IssueTx(ctx context.Context, txBytes []byte, options 
 }
 
 func (c *mockPChainClient) GetTxStatus(ctx context.Context, txID ids.ID, options ...rpc.Option) (*platformvm.GetTxStatusResponse, error) {
-	return nil, nil
+	return &platformvm.GetTxStatusResponse{Status: status.Committed}, nil
 }
 
 func main() {
@@ -94,13 +96,13 @@ func main() {
 
 	quorum := types.QuorumInfo{
 		ParticipantPubKeys: nil,
-		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
+		PubKey:             mpcClient.UncompressedPublicKeyBytes(), // NOTE: use the compressed ones for true MPC signing request
 	}
 
 	stakeParam, err := fakeStakeParam()
 	panicIfError(err)
 
-	task, err := addDelegator.NewAddDelegator("0xc02b59f772cb23a75b6ffb9f7602ba25fdd5d8e75ad88efcc013fec2c63b0895", quorum, stakeParam)
+	task, err := addDelegator.NewAddDelegator(gofakeit.UUID(), quorum, stakeParam)
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
@@ -115,7 +117,7 @@ func main() {
 		if len(nextTasks) > 0 {
 			return true, nil
 		}
-		fmt.Printf("ExportTask IsDone: %v\n", task.IsDone())
+		fmt.Printf("AddDelegator IsDone: %v\n", task.IsDone())
 		return false, nil
 	})
 	fmt.Printf("next is %v\n", nextTasks)
