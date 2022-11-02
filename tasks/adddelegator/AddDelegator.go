@@ -93,11 +93,11 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 	err := t.buildTask(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to build task")
+		return errors.Wrapf(err, "failed to build AddDelegator task")
 	}
 	err = ctx.GetMpcClient().Sign(context.Background(), t.signReq)
 	if err != nil {
-		return errors.Wrapf(err, "failed to send signing request")
+		return errors.Wrapf(err, "failed to send AddDelegator signing request")
 	}
 
 	return nil
