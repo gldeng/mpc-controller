@@ -34,7 +34,6 @@ type InitialStake struct {
 	AddDelegator *addDelegator.AddDelegator
 
 	request *Request
-	//stakeParam *addDelegator.StakeParam
 
 	SubTaskHasError error
 	Failed          bool
@@ -78,35 +77,52 @@ func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *InitialStake) IsDone() bool {
-	return t.C2P.IsDone()
+	return t.AddDelegator.IsDone()
 }
 
 func (t *InitialStake) RequiresNonce() bool {
 	return t.C2P.RequiresNonce()
 }
 
+func (t *InitialStake) startAddDelegator() error {
+	signedImportTx, err := t.C2P.ImportTask.SignedTx()
+	nodeID, err := ids.ShortFromPrefixedString(t.request.NodeID, ids.NodeIDPrefix)
+	if err != nil {
+		return errors.New("failed to convert NodeID")
+	}
+	stakeParam := addDelegator.StakeParam{
+		NodeID:    ids.NodeID(nodeID),
+		StartTime: t.request.StartTime,
+		EndTime:   t.request.EndTime,
+		UTXOs:     signedImportTx.UTXOs(),
+	}
+
+	addDelegator, err := addDelegator.NewAddDelegator(t.Id, t.Quorum, &stakeParam)
+	if err != nil {
+		return errors.Wrap(err, "failed to create AddDelegator")
+	}
+	t.AddDelegator = addDelegator
+	return nil
+}
+
 func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	if !t.C2P.IsDone() {
-		return t.C2P.Next(ctx)
-	}
-	if t.C2P.IsDone() {
-		signedImportTx, err := t.C2P.ImportTask.SignedTx()
-		if err != nil {
-			return nil, t.failIfError(err, "failed to get signed ImportTx")
+		next, err := t.C2P.Next(ctx)
+		if t.C2P.IsDone() {
+			err = t.startAddDelegator()
+			ctx.GetLogger().Debug(fmt.Sprintf("%v C2P done", t.Id))
+			ctx.GetLogger().ErrorOnError(err, "failed to start AddDelegator")
 		}
-
-		nodeID, _ := ids.ShortFromPrefixedString(t.request.NodeID, ids.NodeIDPrefix)
-		stakeParam := addDelegator.StakeParam{ids.NodeID(nodeID), t.request.StartTime, t.request.EndTime, signedImportTx.UTXOs()}
-
-		addDelegator, err := addDelegator.NewAddDelegator(t.Id, t.Quorum, &stakeParam)
-		if err != nil {
-			return nil, t.failIfError(err, "failed to create AddDelegator task")
-		}
-		t.AddDelegator = addDelegator
-		return t.AddDelegator.Next(ctx)
+		return next, err
 	}
-	if !t.AddDelegator.IsDone() {
-		return t.C2P.Next(ctx)
+
+	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
+		next, err := t.AddDelegator.Next(ctx)
+		if t.AddDelegator.IsDone() {
+			ctx.GetLogger().Debug(fmt.Sprintf("%v added delegator", t.Id))
+			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v AddDelegator got error", t.Id))
+		}
+		return next, err
 	}
 	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
 }
