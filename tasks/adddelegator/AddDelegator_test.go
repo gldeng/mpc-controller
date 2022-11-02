@@ -102,6 +102,37 @@ func (s *AddDelegatorTestSuite) TestNext() {
 	taskCtxMock.GetNetwork()
 }
 
+func (s *AddDelegatorTestSuite) TestGetGetSignatureAndSendTx() {
+	require := s.Require()
+
+	// Create necessary mocks
+	taskCtxMock := mocks.NewTaskContext(s.T())
+	mpcClientMock := mocks.NewMpcClient(s.T())
+
+	// Set mock expectation
+	taskCtxMock.EXPECT().GetMpcClient().Return(mpcClientMock)
+	taskCtxMock.EXPECT().GetNetwork().Return(s.networkCtx)
+	taskCtxMock.EXPECT().GetLogger().Return(s.logger)
+	taskCtxMock.EXPECT().IssuePChainTx(mock.AnythingOfType("[]byte")).Return(ids.ID{}, nil) // TODO: specify return value
+
+	mpcClientMock.EXPECT().Sign(mock.AnythingOfType("*context.emptyCtx"), mock.AnythingOfType("*core.SignRequest")).Return(nil)
+	mpcClientMock.EXPECT().Result("*context.emptyCtx", "AddDelegator/"+s.id).Return(nil, nil)
+
+	// Create AddDelegator task
+	task, _ := NewAddDelegator(s.id, s.quorum, s.stakeParam)
+
+	// Build and sign Tx
+	err := task.buildAndSignTx(taskCtxMock)
+	require.Nil(err)
+	require.NotNil(task.tx)
+	require.NotNil(task.signReq)
+
+	// Get signature and send Tx
+	err = task.getSignatureAndSendTx(taskCtxMock)
+	require.Nil(err)
+	// TODO: more check
+}
+
 func (s *AddDelegatorTestSuite) TestBuildAndSignTx() {
 	require := s.Require()
 
