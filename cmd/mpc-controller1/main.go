@@ -267,6 +267,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Printf("Failed to run controolerr, error: %+v", err)
+		fmt.Printf("Failed to run controller, error: %+v", err)
 	}
 }
