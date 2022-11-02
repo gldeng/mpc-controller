@@ -88,7 +88,7 @@ func (t *InitialStake) startAddDelegator() error {
 	signedImportTx, err := t.C2P.ImportTask.SignedTx()
 	nodeID, err := ids.ShortFromPrefixedString(t.request.NodeID, ids.NodeIDPrefix)
 	if err != nil {
-		return errors.New("failed to convert NodeID")
+		return errors.Wrap(err, "failed to convert NodeID")
 	}
 	stakeParam := addDelegator.StakeParam{
 		NodeID:    ids.NodeID(nodeID),
