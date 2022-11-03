@@ -139,12 +139,15 @@ func runController(c *cli.Context) error {
 	logger.DevMode = true
 	logger.UseConsoleEncoder = true // temporally for easier debug only
 	myLogger := logger.Default()
+
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
 	q := goconcurrentqueue.NewFIFO()
 
+	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
+
 	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, &subscriber.Config{
 		EthWsURL:          fmt.Sprintf("ws://%s:%v/ext/bc/C/ws", c.String(fnHost), c.Int(fnPort)),
-		MpcManagerAddress: common.HexToAddress(c.String(fnMpcManagerAddress)),
+		MpcManagerAddress: mpcManagerAddr,
 	}, q)
 
 	partiPubKeys, err := crypto.ExtractPubKeysForParticipants([]string{"59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21"}) // TODO: use keystore
@@ -154,7 +157,7 @@ func runController(c *cli.Context) error {
 		Host:              c.String(fnHost),
 		Port:              int16(c.Int(fnPort)),
 		SslEnabled:        false, // TODO: Add argument
-		MpcManagerAddress: common.Address{},
+		MpcManagerAddress: mpcManagerAddr,
 		NetworkContext: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
