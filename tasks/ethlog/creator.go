@@ -4,6 +4,7 @@ import (
 	binding "github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/tasks/keygen"
+	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 )
@@ -51,6 +52,18 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
 		task := NewKeyGeneratedHandler(*event)
+		return []core.Task{task}, nil
+	}
+	if log.Topics[0] == ctx.GetEventID(EvtStakeRequestAdded) {
+		event := new(binding.MpcManagerStakeRequestAdded)
+		err := ctx.GetContract().UnpackLog(event, EvtStakeRequestAdded, log)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unpack log")
+		}
+		task, err := stake.NewStakeRequestAddedHandler(*event)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create task")
+		}
 		return []core.Task{task}, nil
 	}
 	return nil, nil

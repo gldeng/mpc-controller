@@ -1,4 +1,4 @@
-package ethlog
+package join
 
 const (
 	StatusInit Status = iota
