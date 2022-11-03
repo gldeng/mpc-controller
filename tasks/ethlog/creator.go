@@ -44,5 +44,14 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		task := keygen.NewRequestAdded(*event)
 		return []core.Task{task}, nil
 	}
+	if log.Topics[0] == ctx.GetEventID(EvtKeyGenerated) {
+		event := new(binding.MpcManagerKeyGenerated)
+		err := ctx.GetContract().UnpackLog(event, EvtKeyGenerated, log)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unpack log")
+		}
+		task := NewKeyGeneratedHandler(*event)
+		return []core.Task{task}, nil
+	}
 	return nil, nil
 }
