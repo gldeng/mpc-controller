@@ -73,8 +73,6 @@ github.com/bool64/dev v0.1.41/go.mod h1:cTHiTDNc8EewrQPy3p1obNilpMpdmlUesDkFTF2z
 github.com/bool64/dev v0.2.16 h1:ZlybgWWXmHGMojqIjDrtl5QF6jmE4hNeojE00nioVk0=
 github.com/bool64/shared v0.1.4 h1:zwtb1dl2QzDa9TJOq2jzDTdb5IPf9XlxTGKN8cySWT0=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
-github.com/brianvoe/gofakeit/v6 v6.19.0 h1:g+yJ+meWVEsAmR+bV4mNM/eXI0N+0pZ3D+Mi+G5+YQo=
-github.com/brianvoe/gofakeit/v6 v6.19.0/go.mod h1:Ow6qC71xtwm79anlwKRlWZW6zVq9D2XHE4QSSMP/rU8=
 github.com/btcsuite/btcd v0.20.1-beta/go.mod h1:wVuoA8VJLEcwgqHBwHmzLRazpKxTv13Px/pDuV7OomQ=
 github.com/btcsuite/btcd v0.22.0-beta.0.20220111032746-97732e52810c/go.mod h1:tjmYdS6MLJ5/s0Fj4DbLgSbDHbEqLJrtnHecBFkdz5M=
 github.com/btcsuite/btcd v0.23.1 h1:IB8cVQcC2X5mHbnfirLG5IZnkWYNTPlLZVrxUYSotbE=

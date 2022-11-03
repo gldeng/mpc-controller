@@ -27,6 +27,11 @@ type TaskContextWrapper struct {
 	group         [][]byte
 }
 
+func (t *TaskContextWrapper) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t *TaskContextWrapper) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
 	hash := common.HexToHash("1111111111111111111111111111111111111111111111111111111111111111")
 	return &hash, nil

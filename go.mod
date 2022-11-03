@@ -6,7 +6,6 @@ require (
 	github.com/alitto/pond v1.8.2
 	github.com/ava-labs/avalanchego v1.7.14
 	github.com/ava-labs/coreth v0.8.13-rc.5
-	github.com/brianvoe/gofakeit/v6 v6.19.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgraph-io/ristretto v0.1.0

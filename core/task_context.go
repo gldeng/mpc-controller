@@ -67,6 +67,20 @@ func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participant
 	return &hash, nil
 }
 
+func (t *TaskContextImp) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
+	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to MpcManagerTransactor")
+	}
+	tx, err := transactor.JoinRequest(opts, participantId, requestHash)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed send tx")
+	}
+	hash := tx.Hash()
+	return &hash, nil
+}
+
 func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
 	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
