@@ -20,6 +20,7 @@ type Task interface {
 type MpcManager interface {
 	GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error)
 	ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error)
+	JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error)
 }
 
 type TaskContext interface {
