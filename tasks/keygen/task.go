@@ -68,8 +68,7 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *RequestAdded) IsDone() bool {
-	//TODO implement me
-	panic("implement me")
+	return t.Status == StatusDone
 }
 
 func (t *RequestAdded) FailedPermanently() bool {
