@@ -18,15 +18,7 @@ var (
 
 type Status int
 
-const (
-	StatusInit Status = iota
-	StatusSignReqSent
-	StatusTxSent
-	StatusDone
-)
-
 type InitialStake struct {
-	Status Status
 	Id     string
 	Quorum types.QuorumInfo
 
@@ -60,7 +52,6 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 
 	return &InitialStake{
-		Status:  StatusInit,
 		Id:      hex.EncodeToString(id[:]),
 		Quorum:  quorum,
 		C2P:     c2pInstance,
@@ -77,7 +68,7 @@ func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *InitialStake) IsDone() bool {
-	return t.Status == StatusDone
+	return t.AddDelegator != nil && t.AddDelegator.IsDone()
 }
 
 func (t *InitialStake) RequiresNonce() bool {
@@ -113,13 +104,13 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 			ctx.GetLogger().Debug(fmt.Sprintf("%v C2P done", t.Id))
 			ctx.GetLogger().ErrorOnError(err, "failed to start AddDelegator")
 		}
+		ctx.GetLogger().ErrorOnError(err, "failed to run C2P")
 		return next, err
 	}
 
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
-			t.Status = StatusDone
 			ctx.GetLogger().Debug(fmt.Sprintf("%v added delegator", t.Id))
 			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v AddDelegator got error", t.Id))
 		}
