@@ -1,17 +1,10 @@
 package testingutils
 
 import (
-	"context"
-	"github.com/ava-labs/avalanchego/api"
-	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/avalido/mpc-controller/contract"
-	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pkg/errors"
 	"math/big"
 )
 
@@ -77,31 +70,4 @@ func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) 
 	abi.UnpackIntoInterface(e, "RequestStarted", data)
 	e.Raw = log
 	return e
-}
-
-func GetRewardUTXOs(url, txID string) ([]*avax.UTXO, error) {
-	c := platformvm.NewClient(url)
-	txid, err := ids.FromString(txID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid txID")
-	}
-	args := api.GetTxArgs{
-		TxID: txid,
-	}
-	byteArr, err := c.GetRewardUTXOs(context.Background(), &args)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query UTXOs")
-	}
-
-	utxos, err := myAvax.ParseUTXOs(byteArr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse UTXOs")
-	}
-	var utxosFiltered []*avax.UTXO
-	for _, utxo := range utxos {
-		if utxo != nil {
-			utxosFiltered = append(utxosFiltered, utxo)
-		}
-	}
-	return utxosFiltered, nil
 }
