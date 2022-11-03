@@ -78,8 +78,7 @@ func (t *RequestAdded) FailedPermanently() bool {
 }
 
 func (t *RequestAdded) RequiresNonce() bool {
-	//TODO implement me
-	panic("implement me")
+	return false
 }
 
 func (t *RequestAdded) run(ctx core.TaskContext) error {
