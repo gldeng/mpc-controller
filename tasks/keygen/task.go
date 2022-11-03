@@ -72,8 +72,7 @@ func (t *RequestAdded) IsDone() bool {
 }
 
 func (t *RequestAdded) FailedPermanently() bool {
-	//TODO implement me
-	panic("implement me")
+	return t.Status == StatusDropped
 }
 
 func (t *RequestAdded) RequiresNonce() bool {
@@ -89,11 +88,13 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		key = append(key, groupId[:]...)
 		groupBytes, err := ctx.GetDb().Get(context.Background(), key)
 		if err != nil {
+			t.Status = StatusDropped
 			return t.failIfError(err, "failed to get group")
 		}
 		group := &types2.Group{}
 		err = group.Decode(groupBytes)
 		if err != nil {
+			t.Status = StatusDropped
 			return t.failIfError(err, "failed to decode group")
 		}
 		pubkeys := make([]string, 0)
