@@ -121,6 +121,9 @@ func (t *TaskContextImp) IssuePChainTx(txBytes []byte) (ids.ID, error) {
 
 func (t *TaskContextImp) CheckCChainTx(id ids.ID) (TxStatus, error) {
 	status, err := t.CChainClient.GetAtomicTxStatus(context.Background(), id)
+	if err != nil {
+		return TxStatusUnknown, errors.Wrapf(err, "failed to get C-Chain AtomicTx status for %v", id)
+	}
 	switch status {
 	case evm.Unknown:
 		return TxStatusUnknown, nil
@@ -136,6 +139,12 @@ func (t *TaskContextImp) CheckCChainTx(id ids.ID) (TxStatus, error) {
 
 func (t *TaskContextImp) CheckPChainTx(id ids.ID) (TxStatus, error) {
 	resp, err := t.PChainClient.GetTxStatus(context.Background(), id)
+	if err != nil {
+		return TxStatusUnknown, errors.Wrapf(err, "failed to get P-Chain Tx status for %v", id)
+	}
+	if resp == nil {
+		return TxStatusUnknown, errors.Errorf("got nil P-Chain TxStatusResponse for %v", id)
+	}
 	switch resp.Status {
 	case pStatus.Unknown:
 		return TxStatusUnknown, nil

@@ -3,8 +3,10 @@ package stake
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/pkg/errors"
 	"math/big"
@@ -16,19 +18,15 @@ var (
 
 type Status int
 
-const (
-	StatusInit Status = iota
-	StatusSignReqSent
-	StatusTxSent
-	StatusDone
-)
-
 type InitialStake struct {
-	Status Status
 	Id     string
 	Quorum types.QuorumInfo
 
-	C2P             *c2p.C2P
+	C2P          *c2p.C2P
+	AddDelegator *addDelegator.AddDelegator
+
+	request *Request
+
 	SubTaskHasError error
 	Failed          bool
 }
@@ -52,11 +50,12 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create C2P instance")
 	}
+
 	return &InitialStake{
-		Status: StatusInit,
-		Id:     hex.EncodeToString(id[:]),
-		Quorum: quorum,
-		C2P:    c2pInstance,
+		Id:      hex.EncodeToString(id[:]),
+		Quorum:  quorum,
+		C2P:     c2pInstance,
+		request: request,
 	}, nil
 }
 
@@ -69,17 +68,53 @@ func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *InitialStake) IsDone() bool {
-	return t.C2P.IsDone()
+	return t.AddDelegator != nil && t.AddDelegator.IsDone()
 }
 
 func (t *InitialStake) RequiresNonce() bool {
 	return t.C2P.RequiresNonce()
 }
 
+func (t *InitialStake) startAddDelegator() error {
+	signedImportTx, err := t.C2P.ImportTask.SignedTx()
+	nodeID, err := ids.ShortFromPrefixedString(t.request.NodeID, ids.NodeIDPrefix)
+	if err != nil {
+		return errors.Wrap(err, "failed to convert NodeID")
+	}
+	stakeParam := addDelegator.StakeParam{
+		NodeID:    ids.NodeID(nodeID),
+		StartTime: t.request.StartTime,
+		EndTime:   t.request.EndTime,
+		UTXOs:     signedImportTx.UTXOs(),
+	}
+
+	addDelegator, err := addDelegator.NewAddDelegator(t.Id, t.Quorum, &stakeParam)
+	if err != nil {
+		return errors.Wrap(err, "failed to create AddDelegator")
+	}
+	t.AddDelegator = addDelegator
+	return nil
+}
+
 func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
-	// TODO: Add AddDelegator Tx
 	if !t.C2P.IsDone() {
-		return t.C2P.Next(ctx)
+		next, err := t.C2P.Next(ctx)
+		if t.C2P.IsDone() {
+			err = t.startAddDelegator()
+			ctx.GetLogger().Debug(fmt.Sprintf("%v C2P done", t.Id))
+			ctx.GetLogger().ErrorOnError(err, "failed to start AddDelegator")
+		}
+		ctx.GetLogger().ErrorOnError(err, "failed to run C2P")
+		return next, err
+	}
+
+	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
+		next, err := t.AddDelegator.Next(ctx)
+		if t.AddDelegator.IsDone() {
+			ctx.GetLogger().Debug(fmt.Sprintf("%v added delegator", t.Id))
+			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v AddDelegator got error", t.Id))
+		}
+		return next, err
 	}
 	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
 }
