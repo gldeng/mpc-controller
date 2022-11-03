@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
@@ -15,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/subscriber"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/common"
@@ -146,6 +146,9 @@ func runController(c *cli.Context) error {
 		MpcManagerAddress: common.HexToAddress(c.String(fnMpcManagerAddress)),
 	}, q)
 
+	partiPubKeys, err := crypto.ExtractPubKeysForParticipants([]string{"59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21"}) // TODO: use keystore
+	myLogger.FatalOnError(err, "failed to parse public keys")
+
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
 		Port:              int16(c.Int(fnPort)),
@@ -165,7 +168,7 @@ func runController(c *cli.Context) error {
 			10000,
 			300,
 		),
-		MyPublicKey: common.Hex2Bytes("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb"),
+		MyPublicKey: partiPubKeys[0],
 	}
 	coreConfig.FetchNetworkInfo()
 
@@ -176,17 +179,17 @@ func runController(c *cli.Context) error {
 	}
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
-	pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
-	if err != nil {
-		return err
-	}
+	//pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
+	//if err != nil {
+	//	return err
+	//}
 	ts := &TestSuite{
 		db:           db,
-		pubKey:       pk,
+		pubKey:       partiPubKeys[0],
 		queue:        q,
 		requestCount: 100,
 	}
-	ts.prepareDb()
+	//ts.prepareDb()
 
 	ehContext, err := core.NewEventHandlerContextImp(services)
 	if err != nil {
