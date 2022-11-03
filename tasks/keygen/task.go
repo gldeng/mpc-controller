@@ -6,8 +6,9 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -23,6 +24,7 @@ type RequestAdded struct {
 	KeygenRequest *core.KeygenRequest
 	TxHash        *common.Hash
 	Failed        bool
+	Dropped       bool
 }
 
 func NewRequestAdded(event contract.MpcManagerKeygenRequestAdded) *RequestAdded {
@@ -41,30 +43,44 @@ func (t *RequestAdded) GetId() string {
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 	if len(t.Event.Raw.Topics) < 2 {
-		// Do nothing, invalid event
-		return nil, nil
+		t.Dropped = true
+		return nil, errors.Errorf("invalid event topics length")
 	}
-	groupId := ctx.GetParticipantID().GroupId()
-	if t.Event.Raw.Topics[1] != common.BytesToHash(crypto.Keccak256(groupId[:])) {
-		// Not for me
+	groupId := ctx.GetParticipantID().GroupId() // TODO: this line has problem
+	if t.Event.Raw.Topics[1] != hash256.FromBytes(groupId[:]) {
+		t.Dropped = true
 		return nil, nil
 	}
 
 	interval := 100 * time.Millisecond
 	timer := time.NewTimer(interval)
+	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
+
+	var err error
+
+	groupIDHex := bytes.Bytes32ToHex(groupId)
+
+loop:
 	for {
 		select {
 		case <-timer.C:
-			err := t.run(ctx)
-			if err != nil || t.Status == StatusDone {
-				return nil, err
-			} else {
-				timer.Reset(interval)
+			err = t.run(ctx)
+			if t.Dropped {
+				break loop
 			}
+
+			if t.Status == StatusDone {
+				break loop
+			}
+
+			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Got keygen error for %s", groupIDHex))
+			timer.Reset(interval)
 		}
+		ctx.GetLogger().Debug(fmt.Sprintf("Processing keygen for %s", groupIDHex))
 	}
 
-	return nil, nil
+	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Keygen done for %s", groupIDHex))
+	return nil, err
 }
 
 func (t *RequestAdded) IsDone() bool {
@@ -72,7 +88,7 @@ func (t *RequestAdded) IsDone() bool {
 }
 
 func (t *RequestAdded) FailedPermanently() bool {
-	return t.Status == StatusDropped
+	return t.Dropped
 }
 
 func (t *RequestAdded) RequiresNonce() bool {
@@ -88,13 +104,13 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		key = append(key, groupId[:]...)
 		groupBytes, err := ctx.GetDb().Get(context.Background(), key)
 		if err != nil {
-			t.Status = StatusDropped
+			t.Dropped = true
 			return t.failIfError(err, "failed to get group")
 		}
 		group := &types2.Group{}
 		err = group.Decode(groupBytes)
 		if err != nil {
-			t.Status = StatusDropped
+			t.Dropped = true
 			return t.failIfError(err, "failed to decode group")
 		}
 		pubkeys := make([]string, 0)
@@ -108,6 +124,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
+
 			return t.failIfError(err, "failed to send keygen request")
 		}
 		t.Status = StatusKeygenReqSent
@@ -124,7 +141,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return nil
 		}
 		generatedPubKey := common.Hex2Bytes(res.Result)
-		txHash, err := ctx.ReportGeneratedKey(nil, ctx.GetParticipantID(), generatedPubKey)
+		txHash, err := ctx.ReportGeneratedKey(nil, ctx.GetParticipantID(), generatedPubKey) // TODO: report the uncompressed?
 		if err != nil {
 			return t.failIfError(err, "failed to report GeneratedKey")
 		}

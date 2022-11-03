@@ -5,8 +5,6 @@ const (
 	StatusKeygenReqSent
 	StatusTxSent
 	StatusDone
-
-	StatusDropped
 )
 
 type Status int
