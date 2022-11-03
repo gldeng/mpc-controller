@@ -2,7 +2,6 @@ package ethlog
 
 import (
 	"context"
-	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
@@ -10,94 +9,13 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/testingutils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
 )
 
-var (
-	_ core.TaskContext = (*TaskContextWrapper)(nil)
-)
-
-type TaskContextWrapper struct {
-	inner         core.TaskContext
-	group         [][]byte
-	participantId [32]byte
-}
-
-func (t *TaskContextWrapper) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
-	hash := common.HexToHash("1111111111111111111111111111111111111111111111111111111111111111")
-	return &hash, nil
-}
-
-func (t *TaskContextWrapper) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (t *TaskContextWrapper) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
-	return t.group, nil
-}
-
-func (t *TaskContextWrapper) GetLogger() logger.Logger {
-	return t.inner.GetLogger()
-}
-
-func (t *TaskContextWrapper) GetNetwork() *chain.NetworkContext {
-	return t.inner.GetNetwork()
-}
-
-func (t *TaskContextWrapper) GetMpcClient() core.MpcClient {
-	return t.inner.GetMpcClient()
-}
-
-func (t *TaskContextWrapper) IssueCChainTx(txBytes []byte) (ids.ID, error) {
-	return t.inner.IssueCChainTx(txBytes)
-}
-
-func (t *TaskContextWrapper) IssuePChainTx(txBytes []byte) (ids.ID, error) {
-	return t.inner.IssuePChainTx(txBytes)
-}
-
-func (t *TaskContextWrapper) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
-	return t.inner.CheckCChainTx(id)
-}
-
-func (t *TaskContextWrapper) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
-	return t.inner.CheckPChainTx(id)
-}
-
-func (t *TaskContextWrapper) NonceAt(account common.Address) (uint64, error) {
-	return t.inner.NonceAt(account)
-}
-
-func (t *TaskContextWrapper) Emit(event interface{}) {
-}
-
-func (t *TaskContextWrapper) GetDb() storage.SlimDb {
-	return t.inner.GetDb()
-}
-
-func (t *TaskContextWrapper) GetEventID(event string) (common.Hash, error) {
-	return t.inner.GetEventID(event)
-}
-
-func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
-	return t.inner.GetMyPublicKey()
-}
-
-func (t *TaskContextWrapper) GetParticipantID() storage.ParticipantId {
-	return t.participantId
-}
-
-func idFromString(str string) ids.ID {
-	id, _ := ids.FromString(str)
-	return id
-}
-
-func TestAddParticipant(t *testing.T) {
+func TestKeyGeneratedHandler(t *testing.T) {
 
 	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	config := core.Config{
@@ -132,7 +50,8 @@ func TestAddParticipant(t *testing.T) {
 	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
 	ctx0, err := core.NewTaskContextImp(services)
 	ctx := &TaskContextWrapper{
-		inner: ctx0,
+		participantId: pId,
+		inner:         ctx0,
 		group: [][]byte{
 			common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
 			common.Hex2Bytes("72eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4d3c33a90bd5b304344e1bea939ef7d16f428d50d25cada4225d9299d35ef1644"),
@@ -142,26 +61,34 @@ func TestAddParticipant(t *testing.T) {
 			common.Hex2Bytes("d0639e479fa1ca8ee13fd966c216e662408ff00349068bdc9c6966c4ea10fe3e5f4d4ffc52db1898fe83742a8732e53322c178acb7113072c8dc6f82bbc00b99"),
 			common.Hex2Bytes("df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f3456dab26cdf995e6cb7cf772ba892044da9c64b095db7725d9e3c306c484cf54e2"),
 		},
-		participantId: pId,
 	}
+	genPubKey := common.Hex2Bytes("c6184cd4d6e7eeadd09410fe06a30bc06355c8c8c4dabd5c1e2d3c30d6ba42386bac735d7f4e7d264ac8741ab382a7868bf1bfa3f3b74a67f83d032309d4599c")
 
-	//myPubKey := common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1")
+	gKey := []byte("group/")
+	gKey = append(gKey, groupId32[:]...)
 
-	event := testingutils.MakeEventParticipantAdded(config.MyPublicKey, groupId32, big.NewInt(1))
+	group := &types2.Group{
+		GroupId:          groupId32,
+		Index:            big.NewInt(1),
+		MemberPublicKeys: ctx.group,
+	}
+	gBytes, _ := group.Encode()
+	db.Set(context.Background(), gKey, gBytes)
 
-	handler := NewParticipantAddedHandler(*event)
+	event := testingutils.MakeEventKeyGenerated(groupId32, genPubKey)
+
+	handler := NewKeyGeneratedHandler(*event)
 	next, err := handler.Next(ctx)
 	require.Nil(t, next)
 	require.NoError(t, err)
-	key := []byte("group/")
-	key = append(key, groupId...)
+	key := []byte("latestPubKey")
 	res, err := db.Get(context.Background(), key)
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	group := &types2.Group{}
-	err = group.Decode(res)
+	pubKey := &types2.MpcPublicKey{}
+	err = pubKey.Decode(res)
 	require.NoError(t, err)
-	require.Equal(t, groupId32, group.GroupId)
-	require.Equal(t, big.NewInt(1), group.Index)
-	require.Equal(t, ctx.group, group.MemberPublicKeys)
+	require.Equal(t, common.BytesToHash(groupId32[:]), pubKey.GroupId)
+	require.Equal(t, genPubKey, []byte(pubKey.GenPubKey))
+	require.Equal(t, ctx.group, pubKey.ParticipantPubKeys)
 }
