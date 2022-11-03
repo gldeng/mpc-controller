@@ -16,8 +16,10 @@ var (
 )
 
 type KeyGeneratedHandler struct {
-	Event  contract.MpcManagerKeyGenerated
-	Failed bool
+	Event   contract.MpcManagerKeyGenerated
+	Done    bool
+	Failed  bool
+	Dropped bool
 }
 
 func (h *KeyGeneratedHandler) GetId() string {
@@ -25,7 +27,7 @@ func (h *KeyGeneratedHandler) GetId() string {
 }
 
 func (h *KeyGeneratedHandler) FailedPermanently() bool {
-	return h.Failed
+	return h.Dropped
 }
 
 func NewKeyGeneratedHandler(event contract.MpcManagerKeyGenerated) *KeyGeneratedHandler {
@@ -48,7 +50,7 @@ func (h *KeyGeneratedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (h *KeyGeneratedHandler) IsDone() bool {
-	return true
+	return h.Done
 }
 
 func (h *KeyGeneratedHandler) RequiresNonce() bool {
@@ -59,6 +61,7 @@ func (h *KeyGeneratedHandler) saveKey(ctx core.TaskContext) error {
 
 	group, err := h.retrieveGroup(ctx)
 	if err != nil {
+		h.Dropped = true
 		return errors.Wrap(err, "failed to get group")
 	}
 
