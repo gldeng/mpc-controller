@@ -178,8 +178,10 @@ func (t *TaskContextImp) GetEventID(event string) (common.Hash, error) {
 	return t.abi.Events[event].ID, nil
 }
 
-func (t *TaskContextImp) LoadGroup() (*types.Group, error) {
-	groupBytes, err := t.Db.Get(context.Background(), []byte("group/"))
+func (t *TaskContextImp) LoadGroup(groupID [32]byte) (*types.Group, error) {
+	key := []byte("group/")
+	key = append(key, groupID[:]...)
+	groupBytes, err := t.Db.Get(context.Background(), key)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load group")
 	}

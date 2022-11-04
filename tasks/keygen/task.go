@@ -45,7 +45,7 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
-	group, err := ctx.LoadGroup()
+	group, err := ctx.LoadGroup(t.Event.GroupId)
 	if err != nil {
 		t.Dropped = true
 		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToLoadGroup)

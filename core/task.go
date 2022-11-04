@@ -38,7 +38,7 @@ type TaskContext interface {
 	GetDb() storage.SlimDb
 	GetEventID(event string) (common.Hash, error)
 	GetMyPublicKey() ([]byte, error)
-	LoadGroup() (*types.Group, error)
+	LoadGroup([32]byte) (*types.Group, error)
 	GetParticipantID() storage.ParticipantId
 }
 
