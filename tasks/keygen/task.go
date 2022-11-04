@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -97,16 +98,22 @@ func (t *RequestAdded) RequiresNonce() bool {
 func (t *RequestAdded) run(ctx core.TaskContext) error {
 	switch t.Status {
 	case StatusInit:
-		pubkeys := make([]string, 0)
+		var pubKeys storage.PubKeys
 		for _, publicKey := range t.group.MemberPublicKeys {
-			pubkeys = append(pubkeys, common.Bytes2Hex(publicKey))
+			pubKeys = append(pubKeys, publicKey)
 		}
+		normalized, err := pubKeys.CompressPubKeyHexs() // for mpc-server compatibility
+		if err != nil {
+			t.Dropped = true
+			return errors.Wrapf(err, "failed to compress participant public keys")
+		}
+
 		t.KeygenRequest = &core.KeygenRequest{
 			ReqID:                  t.GetId(),
-			CompressedPartiPubKeys: pubkeys, // TODO: use the compressed ones
-			Threshold:              0,
+			CompressedPartiPubKeys: normalized,
+			Threshold:              0, // TODO: fix it
 		}
-		err := ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
+		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
 			return t.failIfError(err, "failed to send keygen request")
 		}
