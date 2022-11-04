@@ -52,7 +52,7 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 	}
 
 	groupIDHex := bytes.Bytes32ToHex(group.GroupId)
-	ctx.GetLogger().Debug(fmt.Sprintf("loaded group %v\n", groupIDHex))
+	ctx.GetLogger().Debug(fmt.Sprintf("loaded group %v", groupIDHex))
 	t.group = group
 
 	interval := 100 * time.Millisecond
