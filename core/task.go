@@ -38,6 +38,7 @@ type TaskContext interface {
 	GetDb() storage.SlimDb
 	GetEventID(event string) (common.Hash, error)
 	GetMyPublicKey() ([]byte, error)
+	GetMyTransactSigner() *bind.TransactOpts
 	LoadGroup(groupID [32]byte) (*types.Group, error)
 	GetParticipantID() storage.ParticipantId
 }

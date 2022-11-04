@@ -209,6 +209,10 @@ func (t *TaskContextImp) GetMyPublicKey() ([]byte, error) {
 	return t.Services.Config.MyPublicKey, nil
 }
 
+func (t *TaskContextImp) GetMyTransactSigner() *bind.TransactOpts {
+	return t.Services.Config.MyTransactSigner
+}
+
 func (t *TaskContextImp) Close() {
 	t.EthClient.Close()
 }
