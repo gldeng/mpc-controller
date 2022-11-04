@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"time"
@@ -115,15 +116,25 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.KeygenRequest.ReqID)
 		// TODO: Handle 404
 		if err != nil {
-			return t.failIfError(err, "failed to get result")
+			return t.failIfError(err, "failed to get keygen result")
+		}
+
+		if res == nil || res.Result == "" {
+			return t.failIfError(err, "empty keygen result")
 		}
 
 		if res.Status != core.StatusDone {
 			ctx.GetLogger().Debug("Keygen not done")
 			return nil
 		}
-		generatedPubKey := common.Hex2Bytes(res.Result)
-		txHash, err := ctx.ReportGeneratedKey(nil, ctx.GetParticipantID(), generatedPubKey) // TODO: report the uncompressed?
+
+		genPubKeyHex := res.Result
+		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
+		if err != nil {
+			return t.failIfError(err, fmt.Sprintf("failed to decompress generated public key %v", genPubKeyHex))
+		}
+
+		txHash, err := ctx.ReportGeneratedKey(nil, ctx.GetParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
 			return t.failIfError(err, "failed to report GeneratedKey")
 		}
