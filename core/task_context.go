@@ -9,6 +9,7 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/noncer"
@@ -175,6 +176,20 @@ func (t *TaskContextImp) GetDb() storage.SlimDb {
 
 func (t *TaskContextImp) GetEventID(event string) (common.Hash, error) {
 	return t.abi.Events[event].ID, nil
+}
+
+func (t *TaskContextImp) LoadGroup() (*types.Group, error) {
+	groupBytes, err := t.Db.Get(context.Background(), []byte("group/"))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load group")
+	}
+
+	group := &types.Group{}
+	err = group.Decode(groupBytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode group")
+	}
+	return group, nil
 }
 
 func (t *TaskContextImp) GetParticipantID() storage.ParticipantId {
