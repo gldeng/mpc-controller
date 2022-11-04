@@ -26,8 +26,7 @@ type RequestAdded struct {
 
 	group *types.Group
 
-	Failed  bool
-	Dropped bool
+	Failed bool
 }
 
 func NewRequestAdded(event contract.MpcManagerKeygenRequestAdded) *RequestAdded {
@@ -47,9 +46,8 @@ func (t *RequestAdded) GetId() string {
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 	group, err := ctx.LoadGroup(t.Event.GroupId)
 	if err != nil {
-		t.Dropped = true
 		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToLoadGroup)
-		return nil, errors.Wrap(err, ErrMsgFailedToLoadGroup)
+		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
 	}
 
 	groupIDHex := bytes.Bytes32ToHex(group.GroupId)
@@ -65,21 +63,18 @@ loop:
 		select {
 		case <-timer.C:
 			err = t.run(ctx)
-			if t.Dropped {
+			if t.Failed || t.Status == StatusDone {
 				break loop
 			}
 
-			if t.Status == StatusDone {
-				break loop
-			}
-
-			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Got keygen error for %s", groupIDHex))
 			timer.Reset(interval)
 		}
 		ctx.GetLogger().Debug(fmt.Sprintf("Processing keygen for %s", groupIDHex))
 	}
 
+	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Keygen error for %s", groupIDHex))
 	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Keygen done for %s", groupIDHex))
+
 	return nil, err
 }
 
@@ -88,7 +83,7 @@ func (t *RequestAdded) IsDone() bool {
 }
 
 func (t *RequestAdded) FailedPermanently() bool {
-	return t.Dropped
+	return t.Failed
 }
 
 func (t *RequestAdded) RequiresNonce() bool {
@@ -104,8 +99,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		normalized, err := pubKeys.CompressPubKeyHexs() // for mpc-server compatibility
 		if err != nil {
-			t.Dropped = true
-			return errors.Wrapf(err, "failed to compress participant public keys")
+			return t.failIfError(err, "failed to compress participant public keys")
 		}
 
 		t.KeygenRequest = &core.KeygenRequest{
