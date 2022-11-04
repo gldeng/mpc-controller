@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/pkg/errors"
 )
@@ -15,10 +16,9 @@ var (
 )
 
 type ParticipantAddedHandler struct {
-	Event   contract.MpcManagerParticipantAdded
-	Done    bool
-	Failed  bool // Failed task need be re-enqueued, error maybe cause by network partition, ect.
-	Dropped bool // Dropped task means failed permanently and shouldn't be re-enqueued
+	Event  contract.MpcManagerParticipantAdded
+	Done   bool
+	Failed bool
 }
 
 func (h *ParticipantAddedHandler) GetId() string {
@@ -26,7 +26,7 @@ func (h *ParticipantAddedHandler) GetId() string {
 }
 
 func (h *ParticipantAddedHandler) FailedPermanently() bool {
-	return h.Dropped
+	return h.Failed
 }
 
 func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *ParticipantAddedHandler {
@@ -34,25 +34,18 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 }
 
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if len(h.Event.Raw.Topics) < 2 {
-		h.Dropped = true
-		return nil, errors.Errorf("invalid event topics length")
-	}
 	myPubKey, _ := ctx.GetMyPublicKey()
 	if h.Event.PublicKey != hash256.FromBytes(myPubKey) {
-		h.Dropped = true
+		ctx.GetLogger().Debug(fmt.Sprintf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId)))
+		h.Failed = true // TODO: this expression is ambiguous
 		return nil, nil
 	}
 
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
-	if err != nil {
-		h.Dropped = true
-	}
-	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("saved group for %x", myPubKey))
-	errMsg := fmt.Sprintf("failed to save group for %x", myPubKey)
-	ctx.GetLogger().ErrorOnError(err, errMsg)
-	return nil, h.failIfError(err, errMsg)
+	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Saved group for %x", myPubKey))
+	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
+	return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
 }
 
 func (h *ParticipantAddedHandler) IsDone() bool {
