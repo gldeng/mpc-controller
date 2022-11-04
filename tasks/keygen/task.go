@@ -105,7 +105,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		t.KeygenRequest = &core.KeygenRequest{
 			ReqID:                  t.GetId(),
 			CompressedPartiPubKeys: normalized,
-			Threshold:              0, // TODO: fix it
+			Threshold:              t.group.ParticipantID().Threshold(),
 		}
 		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
