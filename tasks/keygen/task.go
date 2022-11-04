@@ -69,7 +69,6 @@ loop:
 
 			timer.Reset(interval)
 		}
-		ctx.GetLogger().Debug(fmt.Sprintf("Processing keygen for %s", groupIDHex))
 	}
 
 	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Keygen error for %s", groupIDHex))
@@ -112,7 +111,6 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return t.failIfError(err, "failed to send keygen request")
 		}
 		t.Status = StatusKeygenReqSent
-		return nil
 	case StatusKeygenReqSent:
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.KeygenRequest.ReqID)
 		// TODO: Handle 404
@@ -121,7 +119,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 
 		if res.Status != core.StatusDone {
-			ctx.GetLogger().Debug("keygen not done")
+			ctx.GetLogger().Debug("Keygen not done")
 			return nil
 		}
 		generatedPubKey := common.Hex2Bytes(res.Result)
@@ -131,7 +129,6 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		t.TxHash = txHash
 		t.Status = StatusTxSent
-		return nil
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debug(fmt.Sprintf("id %v ReportGeneratedKey Status is %v", t.GetId(), status))
@@ -142,7 +139,6 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			t.Status = StatusDone
 			return nil
 		}
-		return nil
 	}
 	return nil
 }
