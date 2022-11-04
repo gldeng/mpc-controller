@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
-	types2 "github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/utils/bytes"
-	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"time"
@@ -23,8 +22,11 @@ type RequestAdded struct {
 	Event         contract.MpcManagerKeygenRequestAdded
 	KeygenRequest *core.KeygenRequest
 	TxHash        *common.Hash
-	Failed        bool
-	Dropped       bool
+
+	group *types.Group
+
+	Failed  bool
+	Dropped bool
 }
 
 func NewRequestAdded(event contract.MpcManagerKeygenRequestAdded) *RequestAdded {
@@ -42,23 +44,20 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if len(t.Event.Raw.Topics) < 2 {
+	group, err := ctx.LoadGroup()
+	if err != nil {
 		t.Dropped = true
-		return nil, errors.Errorf("invalid event topics length")
+		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToLoadGroup)
+		return nil, errors.Wrap(err, ErrMsgFailedToLoadGroup)
 	}
-	groupId := ctx.GetParticipantID().GroupId() // TODO: this line has problem
-	if t.Event.Raw.Topics[1] != hash256.FromBytes(groupId[:]) {
-		t.Dropped = true
-		return nil, nil
-	}
+
+	groupIDHex := bytes.Bytes32ToHex(group.GroupId)
+	ctx.GetLogger().Debug(fmt.Sprintf("loaded group %v\n", groupIDHex))
+	t.group = group
 
 	interval := 100 * time.Millisecond
 	timer := time.NewTimer(interval)
 	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
-
-	var err error
-
-	groupIDHex := bytes.Bytes32ToHex(groupId)
 
 loop:
 	for {
@@ -98,33 +97,17 @@ func (t *RequestAdded) RequiresNonce() bool {
 func (t *RequestAdded) run(ctx core.TaskContext) error {
 	switch t.Status {
 	case StatusInit:
-		key := []byte("group/")
-		pId := ctx.GetParticipantID()
-		groupId := pId.GroupId()
-		key = append(key, groupId[:]...)
-		groupBytes, err := ctx.GetDb().Get(context.Background(), key)
-		if err != nil {
-			t.Dropped = true
-			return t.failIfError(err, "failed to get group")
-		}
-		group := &types2.Group{}
-		err = group.Decode(groupBytes)
-		if err != nil {
-			t.Dropped = true
-			return t.failIfError(err, "failed to decode group")
-		}
 		pubkeys := make([]string, 0)
-		for _, publicKey := range group.MemberPublicKeys {
+		for _, publicKey := range t.group.MemberPublicKeys {
 			pubkeys = append(pubkeys, common.Bytes2Hex(publicKey))
 		}
 		t.KeygenRequest = &core.KeygenRequest{
 			ReqID:                  t.GetId(),
-			CompressedPartiPubKeys: pubkeys,
+			CompressedPartiPubKeys: pubkeys, // TODO: use the compressed ones
 			Threshold:              0,
 		}
-		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
+		err := ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
-
 			return t.failIfError(err, "failed to send keygen request")
 		}
 		t.Status = StatusKeygenReqSent
