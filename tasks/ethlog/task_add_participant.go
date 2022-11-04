@@ -80,6 +80,7 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to encode group")
 	}
+	// Note: what if participant and group has many-many relationship? In this case group shouldn't be overwritten?
 	err = ctx.GetDb().Set(context.Background(), key, groupBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set group")
