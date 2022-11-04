@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -37,6 +38,7 @@ type TaskContext interface {
 	GetDb() storage.SlimDb
 	GetEventID(event string) (common.Hash, error)
 	GetMyPublicKey() ([]byte, error)
+	LoadGroup() (*types.Group, error)
 	GetParticipantID() storage.ParticipantId
 }
 
