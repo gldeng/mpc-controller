@@ -134,7 +134,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return t.failIfError(err, fmt.Sprintf("failed to decompress generated public key %v", genPubKeyHex))
 		}
 
-		txHash, err := ctx.ReportGeneratedKey(nil, t.group.ParticipantID(), decompressedPubKeyBytes)
+		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
 			return t.failIfError(err, "failed to report GeneratedKey")
 		}
