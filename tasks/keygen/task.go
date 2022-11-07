@@ -7,7 +7,6 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/storage"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -51,8 +50,7 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
 	}
 
-	groupIDHex := bytes.Bytes32ToHex(group.GroupId)
-	ctx.GetLogger().Debug(fmt.Sprintf("Loaded group %v", groupIDHex))
+	ctx.GetLogger().Debug(fmt.Sprintf("Loaded group %x", group.GroupId))
 	t.group = group
 
 	interval := 100 * time.Millisecond
@@ -72,8 +70,8 @@ loop:
 		}
 	}
 
-	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Keygen error for %s", groupIDHex))
-	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Keygen done for %s", groupIDHex))
+	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Keygen error for %x", group.GroupId))
+	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Keygen done for %x", group.GroupId))
 
 	return nil, err
 }
@@ -143,6 +141,10 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debug(fmt.Sprintf("id %v ReportGeneratedKey Status is %v", t.GetId(), status))
+		if status == core.TxStatusAborted {
+			t.Status = StatusKeygenReqSent // TODO: better retry policy on error caused by concurrency
+			return nil
+		}
 		if err != nil {
 			return t.failIfError(err, "failed to check tx status")
 		}
