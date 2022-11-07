@@ -36,14 +36,14 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	myPubKey, _ := ctx.GetMyPublicKey()
 	if h.Event.PublicKey != hash256.FromBytes(myPubKey) {
-		ctx.GetLogger().Debug(fmt.Sprintf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId)))
-		h.Failed = true // TODO: this expression is ambiguous
+		ctx.GetLogger().Debug(fmt.Sprintf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId))) // TODO: %x
+		h.Failed = true                                                                                // TODO: this expression is ambiguous
 		return nil, nil
 	}
 
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
-	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Saved group for %x", myPubKey))
+	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Saved group %x for %x", h.Event.GroupId, myPubKey))
 	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
 	return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
 }
