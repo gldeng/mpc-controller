@@ -10,7 +10,6 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"time"
 )
 
 var (
@@ -53,27 +52,26 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 	ctx.GetLogger().Debug(fmt.Sprintf("Loaded group %x", group.GroupId))
 	t.group = group
 
-	interval := 100 * time.Millisecond
-	timer := time.NewTimer(interval)
-	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
-
-loop:
-	for {
-		select {
-		case <-timer.C:
-			err = t.run(ctx)
-			if t.Failed || t.Status == StatusDone {
-				break loop
-			}
-
-			timer.Reset(interval)
-		}
-	}
-
-	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Keygen error for %x", group.GroupId))
-	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Keygen done for %x", group.GroupId))
-
-	return nil, err
+	// TODO: improve retry strategy, involving further error handling
+	//	interval := 100 * time.Millisecond
+	//	timer := time.NewTimer(interval)
+	//	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
+	//
+	//loop:
+	//	for {
+	//		select {
+	//		case <-timer.C:
+	//			err = t.run(ctx)
+	//			if t.Failed || t.Status == StatusDone {
+	//				break loop
+	//			}
+	//
+	//			timer.Reset(interval)
+	//		}
+	//	}
+	//
+	//	return nil, err
+	return nil, t.run(ctx)
 }
 
 func (t *RequestAdded) IsDone() bool {
@@ -141,16 +139,25 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debug(fmt.Sprintf("id %v ReportGeneratedKey Status is %v", t.GetId(), status))
-		if status == core.TxStatusAborted {
-			t.Status = StatusKeygenReqSent // TODO: better retry policy on error caused by concurrency
-			return nil
-		}
 		if err != nil {
-			return t.failIfError(err, "failed to check tx status")
+			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Failed to check status for tx %x", *t.TxHash))
+			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
 		}
-		if !core.IsPending(status) {
+
+		switch status {
+		case core.TxStatusUnknown:
+			ctx.GetLogger().Debug(fmt.Sprintf("Unkonw tx status (%v:%x) of reporting generated key for group %x",
+				status, *t.TxHash, t.group.GroupId))
+			return t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
+				status, *t.TxHash, t.group.GroupId), "")
+		case core.TxStatusAborted:
+			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
+			errMsg := fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId)
+			ctx.GetLogger().Error(errMsg)
+			return errors.Errorf(errMsg)
+		case core.TxStatusCommitted:
 			t.Status = StatusDone
-			return nil
+			ctx.GetLogger().Debug(fmt.Sprintf("Generated key reported for group %x", t.group.GroupId))
 		}
 	}
 	return nil
