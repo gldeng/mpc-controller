@@ -72,11 +72,11 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, err
 		}
 
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v AddDelegatorTx ID is %v", t.Id, t.tx.ID().String()))
+		ctx.GetLogger().Debugf("id %v AddDelegatorTx ID is %v", t.Id, t.tx.ID().String())
 		t.status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(t.tx.ID())
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v AddDelegatorTx status is %v", t.Id, status))
+		ctx.GetLogger().Debugf("id %v AddDelegatorTx status is %v", t.Id, status)
 		if err != nil {
 			return nil, t.failIfError(err, ErrMsgFailedToCheckStatus)
 		}

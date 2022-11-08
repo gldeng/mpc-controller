@@ -79,7 +79,7 @@ func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.SubTaskHasError = err
 		}
 		if t.ImportTask.IsDone() {
-			ctx.GetLogger().Debug(fmt.Sprintf("%v imported", t.Id))
+			ctx.GetLogger().Debugf("%v imported", t.Id)
 		}
 		return next, err
 	}

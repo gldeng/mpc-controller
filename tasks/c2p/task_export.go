@@ -101,14 +101,14 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, err
 		} else {
 			if t.TxID != nil {
-				ctx.GetLogger().Debug(fmt.Sprintf("id %v ExportTx ID is %v", t.Id, t.TxID.String()))
+				ctx.GetLogger().Debugf("id %v ExportTx ID is %v", t.Id, t.TxID.String())
 			}
 
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v ExportTx Status is %v", t.Id, status))
+		ctx.GetLogger().Debugf("id %v ExportTx Status is %v", t.Id, status)
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToCheckStatus, err)
 			return nil, err

@@ -80,14 +80,14 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, err
 		} else {
 			if t.TxID != nil {
-				ctx.GetLogger().Debug(fmt.Sprintf("id %v ImportTx ID is %v", t.Id, t.TxID.String()))
+				ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.Id, t.TxID.String())
 			}
 
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v ImportTx Status is %v", t.Id, status))
+		ctx.GetLogger().Debugf("id %v ImportTx Status is %v", t.Id, status)
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToCheckStatus, err)
 		}

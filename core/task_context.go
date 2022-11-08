@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
@@ -50,7 +49,7 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
 	if rcp.Status == 1 {
 		return TxStatusCommitted, nil
 	}
-	return TxStatusUnknown, errors.New(fmt.Sprintf("unknown tx status %v", rcp.Status))
+	return TxStatusUnknown, errors.Errorf("unknown tx status %v", rcp.Status)
 }
 
 func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {

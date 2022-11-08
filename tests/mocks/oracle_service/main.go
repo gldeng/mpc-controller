@@ -65,9 +65,11 @@ func main() {
 	o := Oracle{myLogger, client, signer, oracleManager, *nodeNoFlag, *epochDurationFlag}
 	for {
 		blockNumber, epochId, err := o.ReceiveMemberReport(context.Background())
-		myLogger.ErrorOnError(err, "Failed to ReceiveMemberReport")
-		myLogger.InfoNilError(err, "Success to call ReceiveMemberReport", []logger.Field{{"blockNumber", blockNumber}, {"epochId", epochId}}...)
-
+		if err != nil {
+			myLogger.Errorf("Failed to ReceiveMemberReport, error:%+v", err)
+		} else {
+			myLogger.Info("Success to call ReceiveMemberReport", []logger.Field{{"blockNumber", blockNumber}, {"epochId", epochId}}...)
+		}
 		time.Sleep(time.Hour * 24)
 	}
 }
