@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
@@ -27,7 +26,7 @@ type MpcManager interface {
 type TaskContext interface {
 	MpcManager
 	GetLogger() logger.Logger
-	GetNetwork() *chain.NetworkContext
+	GetNetwork() *NetworkContext
 	GetMpcClient() MpcClient
 	IssueCChainTx(txBytes []byte) (ids.ID, error)
 	IssuePChainTx(txBytes []byte) (ids.ID, error)

@@ -2,9 +2,10 @@ package core
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -47,6 +48,36 @@ func (i *IncrementTask) Next(ctx TaskContext) ([]Task, error) {
 type MockTaskContext struct {
 }
 
+func (m MockTaskContext) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) CheckEthTx(txHash common.Hash) (TxStatus, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) GetMyTransactSigner() *bind.TransactOpts {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) LoadGroup(groupID [32]byte) (*types.Group, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m MockTaskContext) GetDb() storage.SlimDb {
 	//TODO implement me
 	panic("implement me")
@@ -67,7 +98,7 @@ func (m MockTaskContext) GetParticipantID() storage.ParticipantId {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetNetwork() *chain.NetworkContext {
+func (m MockTaskContext) GetNetwork() *NetworkContext {
 	//TODO implement me
 	panic("implement me")
 }

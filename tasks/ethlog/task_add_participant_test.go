@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
@@ -50,7 +49,7 @@ func (t *TaskContextWrapper) GetLogger() logger.Logger {
 	return t.inner.GetLogger()
 }
 
-func (t *TaskContextWrapper) GetNetwork() *chain.NetworkContext {
+func (t *TaskContextWrapper) GetNetwork() *core.NetworkContext {
 	return t.inner.GetNetwork()
 }
 
@@ -114,7 +113,7 @@ func TestAddParticipant(t *testing.T) {
 		Port:              9650,
 		SslEnabled:        false,
 		MpcManagerAddress: common.Address{},
-		NetworkContext: chain.NewNetworkContext(
+		NetworkContext: core.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
 			big.NewInt(43112),

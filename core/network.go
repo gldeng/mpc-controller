@@ -1,4 +1,4 @@
-package chain
+package core
 
 import (
 	"github.com/ava-labs/avalanchego/ids"

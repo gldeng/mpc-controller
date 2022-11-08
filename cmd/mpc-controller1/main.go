@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
@@ -177,7 +176,7 @@ func runController(c *cli.Context) error {
 		Port:              int16(c.Int(fnPort)),
 		SslEnabled:        false, // TODO: Add argument
 		MpcManagerAddress: mpcManagerAddr,
-		NetworkContext: chain.NewNetworkContext(
+		NetworkContext: core.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
 			chainId,
