@@ -12,5 +12,7 @@ func main() {
 	flag.Parse()
 
 	logger.DevMode = true
-	service.ListenAndServe("9000", *participants, *threshold)
+	logger.UseConsoleEncoder = true
+	myLogger := logger.Default()
+	service.ListenAndServe(myLogger, "9000", *participants, *threshold)
 }

@@ -27,7 +27,7 @@ type signedReq struct {
 	sig   string
 }
 
-func Sign() usecase.IOInteractor {
+func Sign(log logger.Logger) usecase.IOInteractor {
 	u := usecase.NewIOI(new(SignInput), nil, func(ctx context.Context, input, output interface{}) error {
 		lockSign.Lock()
 		defer lockSign.Unlock()
@@ -45,7 +45,7 @@ func Sign() usecase.IOInteractor {
 				status:  StatusReceived,
 			}
 			storer.StoreSignRequestModel(lastSignReq)
-			logger.Debug("Mpc-server received sign request", []logger.Field{
+			log.Debug("Mpc-server received sign request", []logger.Field{
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
@@ -57,7 +57,9 @@ func Sign() usecase.IOInteractor {
 		if in.PublicKey != lastSignReq.input.PublicKey {
 			err := errors.Errorf("Inconsistent public key for sign request %q, expected public key %q , but received %q", in.RequestId, lastSignReq.input.PublicKey, in.PublicKey)
 			err = errors.Wrap(err, ErrMsgSignReqRefused)
-			logger.ErrorOnError(err, ErrMsgSignReqRefused)
+			if err != nil {
+				log.Errorf("%v error:%+v", ErrMsgSignReqRefused, err)
+			}
 			lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 			return err
 		}
@@ -65,7 +67,9 @@ func Sign() usecase.IOInteractor {
 		if len(in.ParticipantKeys) != len(lastSignReq.input.ParticipantKeys) {
 			err := errors.Errorf("Inconsistent participants length for sign request %q, expected participants length %v , but received %v", in.RequestId, len(lastSignReq.input.ParticipantKeys), len(in.ParticipantKeys))
 			err = errors.Wrap(err, ErrMsgSignReqRefused)
-			logger.ErrorOnError(err, ErrMsgSignReqRefused)
+			if err != nil {
+				log.Errorf("%v error:%+v", ErrMsgSignReqRefused, err)
+			}
 			lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 			return err
 		}
@@ -74,7 +78,9 @@ func Sign() usecase.IOInteractor {
 			if partiKey != lastSignReq.input.ParticipantKeys[i] {
 				err := errors.Errorf("Inconsistent participant public key at index %v for sign request %q, expected participant key %q , but received %q", i, in.RequestId, lastSignReq.input.ParticipantKeys[i], partiKey)
 				err = errors.Wrap(err, ErrMsgSignReqRefused)
-				logger.ErrorOnError(err, ErrMsgSignReqRefused)
+				if err != nil {
+					log.Errorf("%v error:%+v", ErrMsgSignReqRefused, err)
+				}
 				lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 				return err
 			}
@@ -83,7 +89,9 @@ func Sign() usecase.IOInteractor {
 		if in.Hash != lastSignReq.input.Hash {
 			err := errors.Errorf("Inconsistent hash for sign request %q, expected hash %q , but received %q", in.RequestId, lastSignReq.input.Hash, in.Hash)
 			err = errors.Wrap(err, ErrMsgSignReqRefused)
-			logger.ErrorOnError(err, ErrMsgSignReqRefused)
+			if err != nil {
+				log.Errorf("%v error:%+v", ErrMsgSignReqRefused, err)
+			}
 			lastSignReq.status = StatusError + ": " + RequestStatus(err.Error())
 			return err
 		}
@@ -91,7 +99,7 @@ func Sign() usecase.IOInteractor {
 		if lastSignReq.hits == Threshold+1 {
 			lastSignReq.hits++
 			storer.StoreSignRequestModel(lastSignReq)
-			logger.Error("Received redundant sign request", []logger.Field{
+			log.Error("Received redundant sign request", []logger.Field{
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
@@ -103,7 +111,7 @@ func Sign() usecase.IOInteractor {
 		if lastSignReq.hits != Threshold {
 			lastSignReq.hits++
 			storer.StoreSignRequestModel(lastSignReq)
-			logger.Debug("Mpc-server received sign request", []logger.Field{
+			log.Debug("Mpc-server received sign request", []logger.Field{
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
@@ -116,7 +124,7 @@ func Sign() usecase.IOInteractor {
 
 		//lastKeygenReq := storer.GetKeygenRequestModel(reqIdParts[0])
 		//if lastKeygenReq == nil || lastKeygenReq.status != StatusDone {
-		//	logger.Error("Mpc-server failed to get key to sign",
+		//	log.Error("Mpc-server failed to get key to sign",
 		//		logger.Field{"reqId", in.ID})
 		//	return errors.Errorf("Mpc-server failed to get key to sign, request id: %v", in.ID)
 		//}
@@ -128,7 +136,7 @@ func Sign() usecase.IOInteractor {
 
 		sigBytes, err := signer.SignHash(digest)
 		if err != nil {
-			logger.Error("Mpc-server failed to sign", []logger.Field{
+			log.Error("Mpc-server failed to sign", []logger.Field{
 				{"reqId", in.RequestId},
 				{"error", err}}...)
 			return errors.Wrapf(err, "Mpc-server failed to sign")
@@ -137,7 +145,7 @@ func Sign() usecase.IOInteractor {
 		lastSignReq.result = sigHex
 		lastSignReq.status = StatusDone
 		storer.StoreSignRequestModel(lastSignReq)
-		logger.Debug("Mpc-server received sign request", []logger.Field{
+		log.Debug("Mpc-server received sign request", []logger.Field{
 			{"reqId", in.RequestId},
 			{"hits", lastSignReq.hits},
 			{"status", lastSignReq.status},
@@ -156,7 +164,7 @@ func Sign() usecase.IOInteractor {
 			signedReward++
 		}
 
-		logger.Debug("Signed requests stats", []logger.Field{
+		log.Debug("Signed requests stats", []logger.Field{
 			{"signedReqs", signedStake + signedPrincipal + signedReward},
 			{"signedStakeReqs", signedStake},
 			{"signedPrincipalReqs", signedPrincipal},

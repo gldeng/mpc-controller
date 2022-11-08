@@ -101,18 +101,24 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		next, err := t.C2P.Next(ctx)
 		if t.C2P.IsDone() {
 			err = t.startAddDelegator()
-			ctx.GetLogger().Debug(fmt.Sprintf("%v C2P done", t.Id))
-			ctx.GetLogger().ErrorOnError(err, "failed to start AddDelegator")
+			ctx.GetLogger().Debugf("%v C2P done", t.Id)
+			if err != nil {
+				ctx.GetLogger().Errorf("Failed to start AddDelegator, error:%+v", err)
+			}
 		}
-		ctx.GetLogger().ErrorOnError(err, "failed to run C2P")
+		if err != nil {
+			ctx.GetLogger().Errorf("Failed to run C2P, error: %v", err)
+		}
 		return next, err
 	}
 
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
-			ctx.GetLogger().Debug(fmt.Sprintf("%v added delegator", t.Id))
-			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v AddDelegator got error", t.Id))
+			ctx.GetLogger().Debugf("%v added delegator", t.Id)
+			if err != nil {
+				ctx.GetLogger().Errorf("%v AddDelegator got error:%+v", t.Id, err)
+			}
 		}
 		return next, err
 	}

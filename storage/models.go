@@ -3,7 +3,7 @@ package storage
 import (
 	"crypto/ecdsa"
 	"github.com/ava-labs/avalanchego/ids"
-	"github.com/avalido/mpc-controller/utils/addrs"
+	"github.com/avalido/mpc-controller/utils/address"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
@@ -46,7 +46,7 @@ func (m PubKey) CChainAddress() (common.Address, error) {
 	if err != nil {
 		return *new(common.Address), errors.WithStack(err)
 	}
-	return *addrs.PubkeyToAddresse(pubKey), nil
+	return *address.PubkeyToAddresse(pubKey), nil
 }
 
 func (m PubKey) PChainAddress() (ids.ShortID, error) {
