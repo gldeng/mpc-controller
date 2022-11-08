@@ -5,7 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
-	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
+	myAvax "github.com/avalido/mpc-controller/utils/txs/avax"
 )
 
 type ExportTxArgs struct {

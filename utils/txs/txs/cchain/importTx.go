@@ -4,7 +4,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/coreth/plugin/evm"
-	myAvax "github.com/avalido/mpc-controller/utils/port/avax"
+	myAvax "github.com/avalido/mpc-controller/utils/txs/avax"
 	"github.com/ethereum/go-ethereum/common"
 )
 
