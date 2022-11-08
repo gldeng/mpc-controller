@@ -57,7 +57,6 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
 	//}
 	//return TxStatusUnknown, errors.New(fmt.Sprintf("unknown tx status %v", rcp.Status))
 
-	var txStatus TxStatus
 	var rcp *types2.Receipt
 	var err error
 	err = backoff.RetryFnExponential10Times(t.Logger, context.Background(), time.Second, time.Second*10, func() (retry bool, err error) {
@@ -80,13 +79,6 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
 		return TxStatusUnknown, errors.WithStack(err)
 	}
 
-	txStatus = TxStatusUnknown
-	switch rcp.Status {
-	case 0:
-		txStatus = TxStatusAborted
-	case 1:
-		txStatus = TxStatusCommitted
-	}
 	return TxStatusUnknown, errors.Errorf("unknown tx status %v", rcp.Status)
 }
 

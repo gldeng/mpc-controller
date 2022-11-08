@@ -43,8 +43,11 @@ func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error
 
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
-	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Saved group %x for %x", h.Event.GroupId, myPubKey))
-	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
+	if err != nil {
+		ctx.GetLogger().Errorf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey)
+	} else {
+		ctx.GetLogger().Debugf("Saved group %x for %x", h.Event.GroupId, myPubKey)
+	}
 	return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
 }
 
@@ -53,7 +56,7 @@ func (h *ParticipantAddedHandler) IsDone() bool {
 }
 
 func (h *ParticipantAddedHandler) RequiresNonce() bool {
-	return false
+	return true
 }
 
 func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
