@@ -1,4 +1,4 @@
-package addrs
+package address
 
 import (
 	"fmt"

@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/addrs"
+	"github.com/avalido/mpc-controller/utils/address"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,7 +47,7 @@ func main() {
 		panic(err)
 	}
 
-	myAddr := addrs.PubkeyToAddresse(&myPrivKey.PublicKey)
+	myAddr := address.PubkeyToAddresse(&myPrivKey.PublicKey)
 	fmt.Printf("Node number: %v\n", *nodeNoFlag)
 	fmt.Printf("Epoch duration: %v\n", *epochDurationFlag)
 	fmt.Printf("C-Chain ID: %v\n", *cChainIdFlag)
