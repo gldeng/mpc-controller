@@ -3,6 +3,7 @@ package backoff
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/lestrrat-go/backoff/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -75,7 +76,7 @@ func TestRetryFn(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
-			err := RetryFn(ctx, p, scenario.fn)
+			err := RetryFn(logger.Default(), ctx, p, scenario.fn)
 			assert.True(t, err != nil == scenario.wantErr)
 		})
 	}
@@ -106,7 +107,7 @@ func TestRetryFnExponentialForever(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
-			err := RetryFnExponentialForever(ctx, time.Second, time.Second*10, scenario.fn)
+			err := RetryFnExponentialForever(logger.Default(), ctx, time.Second, time.Second*10, scenario.fn)
 			assert.True(t, err != nil == scenario.wantErr)
 		})
 	}
