@@ -97,8 +97,7 @@ func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn F
 			break
 		}
 		retryNum++
-		log.Error("Retry", []logger.Field{
-			{"error", err},
+		log.ErrorOnError(err, "Retry", []logger.Field{
 			{"retryNum", retryNum},
 			{"retryAfter", time.Now().Sub(lastRetryAt).Seconds()}}...)
 		lastRetryAt = time.Now()

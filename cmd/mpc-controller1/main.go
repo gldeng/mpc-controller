@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
@@ -15,10 +14,13 @@ import (
 	"github.com/avalido/mpc-controller/subscriber"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
+	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/urfave/cli/v2"
 	"math/big"
 	"os"
@@ -137,24 +139,47 @@ func idFromString(str string) ids.ID {
 func runController(c *cli.Context) error {
 
 	logger.DevMode = true
+	logger.UseConsoleEncoder = true // temporally for easier debug only
 	myLogger := logger.Default()
+
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
 	q := goconcurrentqueue.NewFIFO()
 
+	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
+
 	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, &subscriber.Config{
 		EthWsURL:          fmt.Sprintf("ws://%s:%v/ext/bc/C/ws", c.String(fnHost), c.Int(fnPort)),
-		MpcManagerAddress: common.HexToAddress(c.String(fnMpcManagerAddress)),
+		MpcManagerAddress: mpcManagerAddr,
 	}, q)
+
+	// Parse private key
+	myPrivKey, err := crypto.HexToECDSA("59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21")
+	if err != nil {
+		panic("failed to parse private key")
+	}
+
+	// Parse public key
+	myPubKeyBytes := utilsCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
+	//myPartiPubKey := storage.PubKey(myPubKeyBytes)
+
+	// Convert chain ID
+	chainId := big.NewInt(43112)
+
+	// Create transaction signer
+	signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
+	if err != nil {
+		panic("failed to create tx signer")
+	}
 
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
 		Port:              int16(c.Int(fnPort)),
 		SslEnabled:        false, // TODO: Add argument
-		MpcManagerAddress: common.Address{},
+		MpcManagerAddress: mpcManagerAddr,
 		NetworkContext: chain.NewNetworkContext(
 			1337,
 			idFromString("2cRHidGTGMgWSMQXVuyqB86onp69HTtw6qHsoHvMjk9QbvnijH"),
-			big.NewInt(43112),
+			chainId,
 			avax.Asset{
 				ID: idFromString("BUuypiq2wyuLMvyhzFXcPyxPMCgSp7eeDohhQRqTChoBjKziC"),
 			},
@@ -165,7 +190,8 @@ func runController(c *cli.Context) error {
 			10000,
 			300,
 		),
-		MyPublicKey: common.Hex2Bytes("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb"),
+		MyPublicKey:      myPubKeyBytes,
+		MyTransactSigner: signer,
 	}
 	coreConfig.FetchNetworkInfo()
 
@@ -176,17 +202,17 @@ func runController(c *cli.Context) error {
 	}
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
-	pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
-	if err != nil {
-		return err
-	}
+	//pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
+	//if err != nil {
+	//	return err
+	//}
 	ts := &TestSuite{
 		db:           db,
-		pubKey:       pk,
+		pubKey:       myPubKeyBytes,
 		queue:        q,
 		requestCount: 100,
 	}
-	ts.prepareDb()
+	//ts.prepareDb()
 
 	ehContext, err := core.NewEventHandlerContextImp(services)
 	if err != nil {

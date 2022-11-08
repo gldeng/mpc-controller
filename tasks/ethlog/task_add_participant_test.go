@@ -93,6 +93,10 @@ func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
 	return t.inner.GetMyPublicKey()
 }
 
+func (t *TaskContextWrapper) LoadGroup([32]byte) (*types2.Group, error) {
+	panic("implement me")
+}
+
 func (t *TaskContextWrapper) GetParticipantID() storage.ParticipantId {
 	return t.participantId
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
@@ -21,6 +22,7 @@ type Config struct {
 	MpcManagerAddress common.Address
 	NetworkContext    chain.NetworkContext
 	MyPublicKey       []byte
+	MyTransactSigner  *bind.TransactOpts
 }
 
 func (c Config) getUri() string {

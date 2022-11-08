@@ -6,8 +6,8 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/pkg/errors"
 )
 
@@ -17,6 +17,7 @@ var (
 
 type ParticipantAddedHandler struct {
 	Event  contract.MpcManagerParticipantAdded
+	Done   bool
 	Failed bool
 }
 
@@ -33,22 +34,22 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 }
 
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if len(h.Event.Raw.Topics) < 2 {
-		// Do nothing, invalid event
+	myPubKey, _ := ctx.GetMyPublicKey()
+	if h.Event.PublicKey != hash256.FromBytes(myPubKey) {
+		ctx.GetLogger().Debug(fmt.Sprintf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId))) // TODO: %x
+		h.Failed = true                                                                                // TODO: this expression is ambiguous
 		return nil, nil
 	}
-	pubKey, _ := ctx.GetMyPublicKey()
-	if h.Event.Raw.Topics[1] != common.BytesToHash(crypto.Keccak256(pubKey)) {
-		// Not for me
-		return nil, nil
-	}
+
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
-	return nil, h.failIfError(err, "failed to save group")
+	ctx.GetLogger().DebugNilError(err, fmt.Sprintf("Saved group %x for %x", h.Event.GroupId, myPubKey))
+	ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
+	return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
 }
 
 func (h *ParticipantAddedHandler) IsDone() bool {
-	return true
+	return h.Done
 }
 
 func (h *ParticipantAddedHandler) RequiresNonce() bool {
@@ -56,7 +57,6 @@ func (h *ParticipantAddedHandler) RequiresNonce() bool {
 }
 
 func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
-
 	members, err := ctx.GetGroup(nil, h.Event.GroupId)
 	if err != nil {
 		return errors.Wrap(err, "failed to get group")
@@ -71,13 +71,14 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 	key = append(key, group.GroupId[:]...)
 	groupBytes, err := group.Encode()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to encode group")
 	}
 	err = ctx.GetDb().Set(context.Background(), key, groupBytes)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to set group")
 	}
-	return err
+	h.Done = true
+	return nil
 }
 
 func (h *ParticipantAddedHandler) failIfError(err error, msg string) error {

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
-	types2 "github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	"time"
 )
 
 var (
@@ -22,7 +22,10 @@ type RequestAdded struct {
 	Event         contract.MpcManagerKeygenRequestAdded
 	KeygenRequest *core.KeygenRequest
 	TxHash        *common.Hash
-	Failed        bool
+
+	group *types.Group
+
+	Failed bool
 }
 
 func NewRequestAdded(event contract.MpcManagerKeygenRequestAdded) *RequestAdded {
@@ -40,109 +43,122 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if len(t.Event.Raw.Topics) < 2 {
-		// Do nothing, invalid event
-		return nil, nil
-	}
-	groupId := ctx.GetParticipantID().GroupId()
-	if t.Event.Raw.Topics[1] != common.BytesToHash(crypto.Keccak256(groupId[:])) {
-		// Not for me
-		return nil, nil
+	group, err := ctx.LoadGroup(t.Event.GroupId)
+	if err != nil {
+		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToLoadGroup)
+		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
 	}
 
-	interval := 100 * time.Millisecond
-	timer := time.NewTimer(interval)
-	for {
-		select {
-		case <-timer.C:
-			err := t.run(ctx)
-			if err != nil || t.Status == StatusDone {
-				return nil, err
-			} else {
-				timer.Reset(interval)
-			}
-		}
-	}
+	ctx.GetLogger().Debug(fmt.Sprintf("Loaded group %x", group.GroupId))
+	t.group = group
 
-	return nil, nil
+	// TODO: improve retry strategy, involving further error handling
+	//	interval := 100 * time.Millisecond
+	//	timer := time.NewTimer(interval)
+	//	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
+	//
+	//loop:
+	//	for {
+	//		select {
+	//		case <-timer.C:
+	//			err = t.run(ctx)
+	//			if t.Failed || t.Status == StatusDone {
+	//				break loop
+	//			}
+	//
+	//			timer.Reset(interval)
+	//		}
+	//	}
+	//
+	//	return nil, err
+	return nil, t.run(ctx)
 }
 
 func (t *RequestAdded) IsDone() bool {
-	//TODO implement me
-	panic("implement me")
+	return t.Status == StatusDone
 }
 
 func (t *RequestAdded) FailedPermanently() bool {
-	//TODO implement me
-	panic("implement me")
+	return t.Failed
 }
 
 func (t *RequestAdded) RequiresNonce() bool {
-	//TODO implement me
-	panic("implement me")
+	return false
 }
 
 func (t *RequestAdded) run(ctx core.TaskContext) error {
 	switch t.Status {
 	case StatusInit:
-		key := []byte("group/")
-		pId := ctx.GetParticipantID()
-		groupId := pId.GroupId()
-		key = append(key, groupId[:]...)
-		groupBytes, err := ctx.GetDb().Get(context.Background(), key)
+		var pubKeys storage.PubKeys
+		for _, publicKey := range t.group.MemberPublicKeys {
+			pubKeys = append(pubKeys, publicKey)
+		}
+		normalized, err := pubKeys.CompressPubKeyHexs() // for mpc-server compatibility
 		if err != nil {
-			return t.failIfError(err, "failed to get group")
+			return t.failIfError(err, "failed to compress participant public keys")
 		}
-		group := &types2.Group{}
-		err = group.Decode(groupBytes)
-		if err != nil {
-			return t.failIfError(err, "failed to decode group")
-		}
-		pubkeys := make([]string, 0)
-		for _, publicKey := range group.MemberPublicKeys {
-			pubkeys = append(pubkeys, common.Bytes2Hex(publicKey))
-		}
+
 		t.KeygenRequest = &core.KeygenRequest{
 			ReqID:                  t.GetId(),
-			CompressedPartiPubKeys: pubkeys,
-			Threshold:              0,
+			CompressedPartiPubKeys: normalized,
+			Threshold:              t.group.ParticipantID().Threshold(),
 		}
 		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
 			return t.failIfError(err, "failed to send keygen request")
 		}
 		t.Status = StatusKeygenReqSent
-		return nil
 	case StatusKeygenReqSent:
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.KeygenRequest.ReqID)
 		// TODO: Handle 404
 		if err != nil {
-			return t.failIfError(err, "failed to get result")
+			return t.failIfError(err, "failed to get keygen result")
+		}
+
+		if res == nil || res.Result == "" {
+			return t.failIfError(err, "empty keygen result")
 		}
 
 		if res.Status != core.StatusDone {
-			ctx.GetLogger().Debug("keygen not done")
+			ctx.GetLogger().Debug("Keygen not done")
 			return nil
 		}
-		generatedPubKey := common.Hex2Bytes(res.Result)
-		txHash, err := ctx.ReportGeneratedKey(nil, ctx.GetParticipantID(), generatedPubKey)
+
+		genPubKeyHex := res.Result
+		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
+		if err != nil {
+			return t.failIfError(err, fmt.Sprintf("failed to decompress generated public key %v", genPubKeyHex))
+		}
+
+		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
 			return t.failIfError(err, "failed to report GeneratedKey")
 		}
 		t.TxHash = txHash
 		t.Status = StatusTxSent
-		return nil
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
-			return t.failIfError(err, "failed to check tx status")
+			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Failed to check status for tx %x", *t.TxHash))
+			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
 		}
-		if !core.IsPending(status) {
+
+		switch status {
+		case core.TxStatusUnknown:
+			ctx.GetLogger().Debug(fmt.Sprintf("Unkonw tx status (%v:%x) of reporting generated key for group %x",
+				status, *t.TxHash, t.group.GroupId))
+			return t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
+				status, *t.TxHash, t.group.GroupId), "")
+		case core.TxStatusAborted:
+			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
+			errMsg := fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId)
+			ctx.GetLogger().Error(errMsg)
+			return errors.Errorf(errMsg)
+		case core.TxStatusCommitted:
 			t.Status = StatusDone
-			return nil
+			ctx.GetLogger().Debug(fmt.Sprintf("Generated key reported for group %x", t.group.GroupId))
 		}
-		return nil
 	}
 	return nil
 }
