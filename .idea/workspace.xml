@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="" />
+    <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/mpc-controller1/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/mpc-controller1/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/task_context.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task_context.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_keygen.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_keygen.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/keygen/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/backoff/backoff.go" beforeDir="false" afterPath="$PROJECT_DIR$/utils/backoff/backoff.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -33,7 +41,6 @@
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/enriquebris/goconcurrentqueue@v0.6.3/fifo_queue.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/ethereum/go-ethereum@v1.10.19/accounts/abi/abi.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/ethereum/go-ethereum@v1.10.19/accounts/abi/bind/base.go" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/chain/platformvmClient.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/cmd/mpc-controller1/main.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/contract/MpcManager.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/core/config.go" root0="FORCE_HIGHLIGHTING" />

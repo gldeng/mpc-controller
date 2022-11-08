@@ -45,7 +45,7 @@ func (t *RequestAdded) GetId() string {
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 	group, err := ctx.LoadGroup(t.Event.GroupId)
 	if err != nil {
-		ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToLoadGroup)
+		ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
 		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
 	}
 
@@ -140,7 +140,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Failed to check status for tx %x", *t.TxHash))
+			ctx.GetLogger().Errorf("Failed to check status for tx %x", *t.TxHash)
 			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
 		}
 
