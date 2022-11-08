@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/router"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
+	"github.com/avalido/mpc-controller/syncer"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
@@ -202,16 +203,18 @@ func runController(c *cli.Context) error {
 	}
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
+	syn := syncer.NewSyncer(services, q)
+
 	//pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
 	//if err != nil {
 	//	return err
 	//}
-	ts := &TestSuite{
-		db:           db,
-		pubKey:       myPubKeyBytes,
-		queue:        q,
-		requestCount: 100,
-	}
+	//ts := &TestSuite{
+	//	db:           db,
+	//	pubKey:       myPubKeyBytes,
+	//	queue:        q,
+	//	requestCount: 100,
+	//}
 	//ts.prepareDb()
 
 	ehContext, err := core.NewEventHandlerContextImp(services)
@@ -245,7 +248,7 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
-	ts.enqueueMessages()
+	//ts.enqueueMessages()
 	go func() {
 		quit := make(chan os.Signal)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -255,6 +258,8 @@ func runController(c *cli.Context) error {
 		sub.Close()
 		wp.Close()
 	}()
+
+	_ = syn.Start()
 
 	<-shutdownCtx.Done()
 
