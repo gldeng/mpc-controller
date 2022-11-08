@@ -6,7 +6,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
-	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -20,7 +19,7 @@ type Config struct {
 	Port              int16
 	SslEnabled        bool
 	MpcManagerAddress common.Address
-	NetworkContext    chain.NetworkContext
+	NetworkContext    NetworkContext
 	MyPublicKey       []byte
 	MyTransactSigner  *bind.TransactOpts
 }

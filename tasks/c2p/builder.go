@@ -6,16 +6,16 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
-	"github.com/avalido/mpc-controller/chain"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/pkg/errors"
 )
 
 type TxBuilder struct {
-	net *chain.NetworkContext
+	net *core.NetworkContext
 }
 
-func NewTxBuilder(net *chain.NetworkContext) *TxBuilder {
+func NewTxBuilder(net *core.NetworkContext) *TxBuilder {
 	return &TxBuilder{net: net}
 }
 

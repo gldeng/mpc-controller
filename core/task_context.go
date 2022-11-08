@@ -9,7 +9,6 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
 	"github.com/ava-labs/coreth/plugin/evm"
-	"github.com/avalido/mpc-controller/chain"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
@@ -34,7 +33,7 @@ type TaskContextImp struct {
 
 	Services     *ServicePack
 	NonceGiver   noncer.Noncer
-	Network      chain.NetworkContext
+	Network      NetworkContext
 	EthClient    *ethclient.Client
 	MpcClient    MpcClient
 	CChainClient evm.Client
@@ -165,7 +164,7 @@ func (t *TaskContextImp) GetLogger() logger.Logger {
 	return t.Logger
 }
 
-func (t *TaskContextImp) GetNetwork() *chain.NetworkContext {
+func (t *TaskContextImp) GetNetwork() *NetworkContext {
 	return &t.Network
 }
 
