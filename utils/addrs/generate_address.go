@@ -19,17 +19,9 @@ func EthPubkeyHexToAddress(pubKeyHex string) (*common.Address, error) {
 
 	addr, err := PubKeyBytesToAddress(compressedBytes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Got an error when parse address from public key: %q", pubKeyHex)
+		return nil, errors.Wrapf(err, "parse public key: %q", pubKeyHex)
 	}
 	return addr, nil
-}
-
-func PubkeysToAddresses(pubkeys []*ecdsa.PublicKey) []*common.Address {
-	var addrs = make([]*common.Address, 0)
-	for _, pubkey := range pubkeys {
-		addrs = append(addrs, PubkeyToAddresse(pubkey))
-	}
-	return addrs
 }
 
 func PubkeyToAddresse(pubkey *ecdsa.PublicKey) *common.Address {
