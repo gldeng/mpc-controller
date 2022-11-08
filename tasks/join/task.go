@@ -72,7 +72,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(t.TxHash)
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v ReportGeneratedKey Status is %v", t.GetId(), status))
+		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
 			return nil, t.failIfError(err, "failed to check tx status")
 		}

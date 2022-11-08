@@ -2,6 +2,9 @@ package core
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
@@ -20,8 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
-	"strings"
-	"time"
 )
 
 var (
@@ -86,8 +87,7 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
 	case 1:
 		txStatus = TxStatusCommitted
 	}
-
-	return txStatus, nil
+	return TxStatusUnknown, errors.Errorf("unknown tx status %v", rcp.Status)
 }
 
 func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {

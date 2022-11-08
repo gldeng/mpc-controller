@@ -3,7 +3,7 @@ package usecases
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/addrs"
+	"github.com/avalido/mpc-controller/utils/address"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -15,7 +15,7 @@ var globalSiner crypto.Signer_
 
 var lockKeygen = &sync.Mutex{}
 
-func Keygen() usecase.IOInteractor {
+func Keygen(log logger.Logger) usecase.IOInteractor {
 
 	u := usecase.NewIOI(new(KeygenInput), nil, func(ctx context.Context, input, output interface{}) error {
 		lockKeygen.Lock()
@@ -34,7 +34,7 @@ func Keygen() usecase.IOInteractor {
 				status:  StatusReceived,
 			}
 			storer.StoreKeygenRequestModel(lastKeygenReq)
-			logger.Debug("Mpc-server received keygen request", []logger.Field{
+			log.Debug("Mpc-server received keygen request", []logger.Field{
 				{"reqId", in.RequestId},
 				{"hits", lastKeygenReq.hits},
 				{"status", lastKeygenReq.status},
@@ -45,7 +45,7 @@ func Keygen() usecase.IOInteractor {
 		if lastKeygenReq.hits == Participants {
 			lastKeygenReq.hits++
 			storer.StoreKeygenRequestModel(lastKeygenReq)
-			logger.Error("Received redundant keygen request", []logger.Field{
+			log.Error("Received redundant keygen request", []logger.Field{
 				{"reqId", in.RequestId},
 				{"hits", lastKeygenReq.hits},
 				{"status", lastKeygenReq.status},
@@ -56,7 +56,7 @@ func Keygen() usecase.IOInteractor {
 		if lastKeygenReq.hits != Participants-1 {
 			lastKeygenReq.hits++
 			storer.StoreKeygenRequestModel(lastKeygenReq)
-			logger.Debug("Mpc-server received keygen request", []logger.Field{
+			log.Debug("Mpc-server received keygen request", []logger.Field{
 				{"reqId", in.RequestId},
 				{"hits", lastKeygenReq.hits},
 				{"status", lastKeygenReq.status},
@@ -71,7 +71,7 @@ func Keygen() usecase.IOInteractor {
 		lastKeygenReq.result = pubkeyHex
 		lastKeygenReq.status = StatusDone
 		storer.StoreKeygenRequestModel(lastKeygenReq)
-		logger.Debug("Mpc-server received keygen request", []logger.Field{
+		log.Debug("Mpc-server received keygen request", []logger.Field{
 			{"reqId", in.RequestId},
 			{"hits", lastKeygenReq.hits},
 			{"status", lastKeygenReq.status},
@@ -81,9 +81,9 @@ func Keygen() usecase.IOInteractor {
 		signerKeyBytes := signer.PrivateKey().Bytes()
 		signerKeyHex := common.Bytes2Hex(signerKeyBytes)
 		signerPubHex := common.Bytes2Hex(signer.PublicKey().Bytes())
-		cChainAddr, _ := addrs.PubKeyBytesToAddress(signer.PublicKey().Bytes())
+		cChainAddr, _ := address.PubKeyBytesToAddress(signer.PublicKey().Bytes())
 		pChainAddr := signer.Address()
-		logger.Info("Mpc mock server generated a signer", []logger.Field{
+		log.Info("Mpc mock server generated a signer", []logger.Field{
 			{"privateKey", signerKeyHex},
 			{"publicKey", signerPubHex},
 			{"cChainAddr", cChainAddr},

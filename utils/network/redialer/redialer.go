@@ -83,7 +83,7 @@ func (d *ReDialer) redial(ctx context.Context) {
 
 			client, err := d.dial(ctx)
 			if err != nil {
-				d.Logger.ErrorOnError(err, "Failed to redial.")
+				d.Logger.Errorf("Failed to redial, error:%+v", err)
 				break
 			}
 			d.client = client

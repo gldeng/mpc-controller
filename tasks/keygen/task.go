@@ -138,7 +138,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(*t.TxHash)
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v ReportGeneratedKey Status is %v", t.GetId(), status))
+		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
 			ctx.GetLogger().ErrorOnError(err, fmt.Sprintf("Failed to check status for tx %x", *t.TxHash))
 			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))

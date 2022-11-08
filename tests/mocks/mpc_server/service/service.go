@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/tests/mocks/mpc_server/usecases"
 	"github.com/swaggest/rest/web"
 	swgui "github.com/swaggest/swgui/v4emb"
@@ -8,7 +9,7 @@ import (
 	"net/http"
 )
 
-func ListenAndServe(port string, participants, threshold int) {
+func ListenAndServe(logger logger.Logger, port string, participants, threshold int) {
 	// Set group info
 	usecases.Participants = participants
 	usecases.Threshold = threshold
@@ -21,8 +22,8 @@ func ListenAndServe(port string, participants, threshold int) {
 	s.OpenAPI.Info.Version = "v1.0.0"
 
 	// Add use case handler to router.
-	s.Post("/keygen", usecases.Keygen())
-	s.Post("/sign", usecases.Sign())
+	s.Post("/keygen", usecases.Keygen(logger))
+	s.Post("/sign", usecases.Sign(logger))
 	s.Post("/result/{reqId}", usecases.Result())
 
 	// Swagger UI endpoint at /docs.

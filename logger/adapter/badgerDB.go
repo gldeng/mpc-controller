@@ -3,10 +3,11 @@ package adapter
 import (
 	"fmt"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/dgraph-io/badger/v3"
 	"strings"
 )
 
-var _ logger.BadgerDBLogger = (*BadgerDBLoggerAdapter)(nil)
+var _ badger.Logger = (*BadgerDBLoggerAdapter)(nil)
 
 type BadgerDBLoggerAdapter struct {
 	logger.Logger
