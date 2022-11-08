@@ -24,6 +24,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
+		event.Raw = log
 		task := NewRequestStartedHandler(*event)
 		return []core.Task{task}, nil
 	}
@@ -33,6 +34,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
+		event.Raw = log
 		task := NewParticipantAddedHandler(*event)
 		return []core.Task{task}, nil
 	}
@@ -42,6 +44,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
+		event.Raw = log
 		task := keygen.NewRequestAdded(*event)
 		return []core.Task{task}, nil
 	}
@@ -51,6 +54,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
+		event.Raw = log
 		task := NewKeyGeneratedHandler(*event)
 		return []core.Task{task}, nil
 	}
