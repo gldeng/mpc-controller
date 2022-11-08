@@ -53,7 +53,7 @@ func (h *ParticipantAddedHandler) IsDone() bool {
 }
 
 func (h *ParticipantAddedHandler) RequiresNonce() bool {
-	return false
+	return true
 }
 
 func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {

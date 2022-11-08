@@ -58,7 +58,7 @@ func (h *KeyGeneratedHandler) IsDone() bool {
 }
 
 func (h *KeyGeneratedHandler) RequiresNonce() bool {
-	return false
+	return true
 }
 
 func (h *KeyGeneratedHandler) saveKey(ctx core.TaskContext) error {
