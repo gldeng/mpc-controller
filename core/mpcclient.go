@@ -80,8 +80,12 @@ func (c *MyMpcClient) Keygen(ctx context.Context, req *KeygenRequest) error {
 		return false, nil
 	})
 
-	c.Logger.ErrorOnError(err, "Failed to send KeygenRequest", []logger.Field{{"keygenReq", req}}...)
-	c.Logger.DebugNilError(err, "Send KeygenRequest", []logger.Field{{"keygenReq", req}}...)
+	if err != nil {
+		c.Logger.Errorf("Failed to send keygen request %+v, error:%+v", req, err)
+	} else {
+		c.Logger.Debugf("Sent keygen request %+v", req)
+	}
+
 	return errors.WithStack(err)
 }
 
@@ -100,8 +104,12 @@ func (c *MyMpcClient) Sign(ctx context.Context, req *SignRequest) (err error) {
 		return false, nil
 	})
 
-	c.Logger.ErrorOnError(err, "Failed to send SignRequest", []logger.Field{{"signReq", req}}...)
-	c.Logger.DebugNilError(err, "Sent SignRequest", []logger.Field{{"signReq", req}}...)
+	if err != nil {
+		c.Logger.Errorf("Failed to send sign request %+v, error:%+v", req, err)
+	} else {
+		c.Logger.Debugf("Sent sign request %+v", req)
+	}
+
 	return errors.WithStack(err)
 }
 

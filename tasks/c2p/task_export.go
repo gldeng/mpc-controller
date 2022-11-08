@@ -89,7 +89,7 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToBuildAndSignTx)
+			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToBuildAndSignTx, err)
 			return nil, err
 		} else {
 			t.Status = StatusSignReqSent
@@ -97,7 +97,7 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToGetSignatureAndSendTx)
+			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToGetSignatureAndSendTx, err)
 			return nil, err
 		} else {
 			if t.TxID != nil {
@@ -110,7 +110,7 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 		status, err := ctx.CheckCChainTx(*t.TxID)
 		ctx.GetLogger().Debug(fmt.Sprintf("id %v ExportTx Status is %v", t.Id, status))
 		if err != nil {
-			ctx.GetLogger().ErrorOnError(err, ErrMsgFailedToCheckStatus)
+			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToCheckStatus, err)
 			return nil, err
 		}
 		if !core.IsPending(status) {

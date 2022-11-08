@@ -67,7 +67,9 @@ func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 		next, err := t.ExportTask.Next(ctx)
 		if t.ExportTask.IsDone() {
 			err := t.startImport()
-			ctx.GetLogger().ErrorOnError(err, "failed to start import")
+			if err != nil {
+				ctx.GetLogger().Errorf("Failed to start import, error:%+v", err)
+			}
 		}
 		return next, err
 	}
