@@ -139,7 +139,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
-			ctx.GetLogger().Errorf("Failed to check status for tx %x", *t.TxHash)
+			ctx.GetLogger().Errorf("Failed to check status for tx %x : %v", *t.TxHash, err)
 			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
 		}
 
