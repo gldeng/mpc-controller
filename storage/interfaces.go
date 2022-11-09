@@ -13,20 +13,6 @@ type SlimDb interface {
 	Getter
 }
 
-type DB interface {
-	Setter
-	Getter
-	Lister
-
-	MarshalSetter
-	UnmarshalGetter
-	UnmarshalLister
-
-	ModelSaver
-	ModelLoader
-	ModelLister
-}
-
 // Classic k-v storage
 
 type Setter interface {
@@ -36,48 +22,6 @@ type Setter interface {
 type Getter interface {
 	Get(ctx context.Context, key []byte) ([]byte, error)
 }
-
-type Lister interface {
-	List(ctx context.Context, prefix []byte) ([][]byte, error)
-}
-
-// With marshal and unmarshal support
-
-type MarshalSetter interface {
-	MSet(ctx context.Context, key []byte, val interface{}) error
-}
-
-type UnmarshalGetter interface {
-	MGet(ctx context.Context, key []byte, val interface{}) error
-}
-
-type UnmarshalLister interface {
-	MList(ctx context.Context, prefix []byte, val interface{}) error
-}
-
-// With Model(s) interface support
-
-type Model interface {
-	Key() []byte
-}
-
-type Models interface {
-	Prefix() []byte
-}
-
-type ModelSaver interface {
-	SaveModel(ctx context.Context, data Model) error
-}
-
-type ModelLoader interface {
-	LoadModel(ctx context.Context, data Model) error
-}
-
-type ModelLister interface {
-	ListModels(ctx context.Context, datum Models) error
-}
-
-// Handy function to concat a key
 
 func Key(prefix []byte, payload [32]byte) []byte {
 	return JoinWithHyphen([][]byte{prefix, payload[:]})

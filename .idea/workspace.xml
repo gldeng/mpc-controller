@@ -5,19 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/chain/network.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/network.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/mpc-controller1/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/mpc-controller1/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/pool_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/pool_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/task_context.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task_context.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c2p/builder.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/builder.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_keygen_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_keygen_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/keygen/task_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tasks/task_c2p/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/tasks/task_c2p/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tasks/task_export/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/tasks/task_export/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logger/adapter/badgerDB.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/badgerDB/wrapper.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/badgerDB/wrapper.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/interfaces.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/interfaces.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/storage/models.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -2,7 +2,6 @@ package badgerDB
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
@@ -11,7 +10,7 @@ import (
 	"time"
 )
 
-var _ storage.DB = (*BadgerDB)(nil)
+var _ storage.SlimDb = (*BadgerDB)(nil)
 
 type BadgerDB struct {
 	logger.Logger
@@ -59,80 +58,4 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 	})
 	err = errors.Wrapf(err, "failed to get value by key. key:%v", string(key))
 	return
-}
-
-func (b *BadgerDB) List(ctx context.Context, prefix []byte) ([][]byte, error) {
-	var valBytesArr [][]byte
-	err := backoff.RetryFnExponential10Times(b.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
-		err := b.View(func(txn *badger.Txn) error {
-			it := txn.NewIterator(badger.DefaultIteratorOptions)
-			defer it.Close()
-			for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-				item := it.Item()
-				err := item.Value(func(v []byte) error {
-					var valBytes = make([]byte, len(v))
-					copy(valBytes, v)
-					valBytesArr = append(valBytesArr, valBytes)
-					return nil
-				})
-				if err != nil {
-					return errors.WithStack(err)
-				}
-			}
-			return nil
-		})
-		if err != nil {
-			if errors.Is(err, badger.ErrKeyNotFound) {
-				return false, errors.WithStack(err)
-			}
-			return true, errors.WithStack(err)
-		}
-		return false, nil
-	})
-	err = errors.Wrapf(err, "failed to list values by prefix. prefix:%v", string(prefix))
-	return valBytesArr, nil
-}
-
-// With marshal and unmarshal support
-
-func (b *BadgerDB) MSet(ctx context.Context, key []byte, val interface{}) error {
-	valBytes, err := json.Marshal(val)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = b.Set(ctx, key, valBytes)
-
-	return errors.WithStack(err)
-}
-
-func (b *BadgerDB) MGet(ctx context.Context, key []byte, val interface{}) error {
-	valBytes, err := b.Get(ctx, key)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = json.Unmarshal(valBytes, val)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
-}
-
-func (b *BadgerDB) MList(ctx context.Context, prefix []byte, val interface{}) error {
-	return errors.New("to to implemented") // todo
-}
-
-// With Model(s) interface support
-
-func (b *BadgerDB) SaveModel(ctx context.Context, data storage.Model) error {
-	return errors.WithStack(b.MSet(ctx, data.Key(), data))
-}
-
-func (b *BadgerDB) LoadModel(ctx context.Context, data storage.Model) error {
-	return errors.WithStack(b.MGet(ctx, data.Key(), data))
-}
-
-func (b *BadgerDB) ListModels(ctx context.Context, datum storage.Models) error {
-	return errors.WithStack(b.MList(ctx, datum.Prefix(), datum))
 }
