@@ -7,7 +7,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
-	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/pkg/errors"
 )
 
@@ -19,7 +19,7 @@ func NewTxBuilder(net *core.NetworkContext) *TxBuilder {
 	return &TxBuilder{net: net}
 }
 
-func (t *TxBuilder) ExportFromCChain(pubKey storage.PubKey, amount, nonce uint64) (*evm.UnsignedExportTx, error) {
+func (t *TxBuilder) ExportFromCChain(pubKey types.PubKey, amount, nonce uint64) (*evm.UnsignedExportTx, error) {
 	exportAmt := amount + t.net.ImportFee()
 	cChaiAddress, err := pubKey.CChainAddress()
 	if err != nil {
@@ -69,7 +69,7 @@ func (t *TxBuilder) ExportFromCChain(pubKey storage.PubKey, amount, nonce uint64
 	return tx, nil
 }
 
-func (t *TxBuilder) ImportIntoPChain(pubKey storage.PubKey, signedExportTx *evm.Tx) (*txs.ImportTx, error) {
+func (t *TxBuilder) ImportIntoPChain(pubKey types.PubKey, signedExportTx *evm.Tx) (*txs.ImportTx, error) {
 	exportTx, ok := signedExportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx)
 	if !ok {
 		return nil, errors.New("not a valid ExportTx")
@@ -106,7 +106,7 @@ func (t *TxBuilder) ImportIntoPChain(pubKey storage.PubKey, signedExportTx *evm.
 	return tx, nil
 }
 
-func (t *TxBuilder) TransferTo(pubKey storage.PubKey, amt uint64) (*avax.TransferableOutput, error) {
+func (t *TxBuilder) TransferTo(pubKey types.PubKey, amt uint64) (*avax.TransferableOutput, error) {
 	pChainAddress, err := pubKey.PChainAddress()
 	if err != nil {
 		return nil, err

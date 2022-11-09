@@ -12,7 +12,6 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -38,7 +37,7 @@ type TaskContextImp struct {
 	MpcClient    MpcClient
 	CChainClient evm.Client
 	PChainClient platformvm.Client
-	Db           storage.SlimDb
+	Db           Store
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
 }
@@ -230,7 +229,7 @@ func (t *TaskContextImp) Emit(event interface{}) {
 	panic("implement me")
 }
 
-func (t *TaskContextImp) GetDb() storage.SlimDb {
+func (t *TaskContextImp) GetDb() Store {
 	return t.Db
 }
 
@@ -254,7 +253,7 @@ func (t *TaskContextImp) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	return group, nil
 }
 
-func (t *TaskContextImp) GetParticipantID() storage.ParticipantId {
+func (t *TaskContextImp) GetParticipantID() types.ParticipantId {
 	//TODO Do it properly
 	id, err := t.Db.Get(context.Background(), []byte("participant_id"))
 	if err != nil {

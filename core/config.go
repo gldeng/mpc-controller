@@ -7,7 +7,6 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -75,10 +74,10 @@ type ServicePack struct {
 	Config    Config
 	Logger    logger.Logger
 	MpcClient MpcClient
-	Db        storage.SlimDb
+	Db        Store
 }
 
-func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db storage.SlimDb) *ServicePack {
+func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db Store) *ServicePack {
 	return &ServicePack{
 		Config:    config,
 		Logger:    logger,

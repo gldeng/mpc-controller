@@ -2,14 +2,13 @@ package types
 
 import (
 	"encoding/json"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type MpcPublicKey struct {
-	GroupId            common.Hash    `json:"groupId"`
-	GenPubKey          storage.PubKey `json:"genPubKey"`
-	ParticipantPubKeys [][]byte       `json:"participantPubKeys"`
+	GroupId            common.Hash `json:"groupId"`
+	GenPubKey          PubKey      `json:"genPubKey"`
+	ParticipantPubKeys [][]byte    `json:"participantPubKeys"`
 }
 
 func (k *MpcPublicKey) Encode() ([]byte, error) {

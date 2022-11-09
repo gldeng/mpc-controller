@@ -7,7 +7,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
-	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"strings"
@@ -117,7 +116,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return nil
 	}
 
-	sig := new(events.Signature).FromHex(res.Result)
+	sig := new(types.Signature).FromHex(res.Result)
 	err = t.tx.SetTxSig(*sig)
 	if err != nil {
 		return t.failIfError(err, "failed to set signature")

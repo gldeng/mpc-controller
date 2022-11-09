@@ -9,7 +9,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
-	"github.com/avalido/mpc-controller/events"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 	"math/big"
@@ -41,7 +41,7 @@ func ExportTxHash(exportTx *evm.UnsignedExportTx) ([]byte, error) {
 	return hash, nil
 }
 
-func ValidateAndGetCred(hash []byte, sig events.Signature, address ids.ShortID) (*secp256k1fx.Credential, error) {
+func ValidateAndGetCred(hash []byte, sig types.Signature, address ids.ShortID) (*secp256k1fx.Credential, error) {
 	sigIndex := 0
 	numSigs := 1
 	cred := &secp256k1fx.Credential{

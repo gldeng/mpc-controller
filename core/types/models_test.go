@@ -1,4 +1,4 @@
-package storage
+package types
 
 import (
 	"github.com/avalido/mpc-controller/utils/bytes"

@@ -4,7 +4,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -78,7 +77,7 @@ func (m MockTaskContext) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetDb() storage.SlimDb {
+func (m MockTaskContext) GetDb() Store {
 	//TODO implement me
 	panic("implement me")
 }
@@ -93,7 +92,7 @@ func (m MockTaskContext) GetMyPublicKey() ([]byte, error) {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetParticipantID() storage.ParticipantId {
+func (m MockTaskContext) GetParticipantID() types.ParticipantId {
 	//TODO implement me
 	panic("implement me")
 }

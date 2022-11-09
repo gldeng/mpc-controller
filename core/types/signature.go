@@ -1,4 +1,4 @@
-package events
+package types
 
 import "github.com/avalido/mpc-controller/utils/bytes"
 
