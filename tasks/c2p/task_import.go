@@ -10,7 +10,6 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
-	"github.com/avalido/mpc-controller/events"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 )
@@ -153,7 +152,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
 		return nil
 	}
-	txCred, err := ValidateAndGetCred(t.TxHash, *new(events.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
+	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
 		return t.failIfError(err, ErrMsgFailedToValidateCredential)
 	}
