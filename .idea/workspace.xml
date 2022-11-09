@@ -5,10 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/scripts/test.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/task_context.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task_context.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/keygen/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/mpc-controller/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/mpc-controller/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/pool.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/pool_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,7 +39,7 @@
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/enriquebris/goconcurrentqueue@v0.6.3/fifo_queue.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/ethereum/go-ethereum@v1.10.19/accounts/abi/abi.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/ethereum/go-ethereum@v1.10.19/accounts/abi/bind/base.go" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/cmd/mpc-controller1/main.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/cmd/mpc-controller/main.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/contract/MpcManager.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/core/config.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/core/event_handler.go" root0="FORCE_HIGHLIGHTING" />
@@ -85,6 +86,7 @@
       <recent name="\\wsl$\Ubuntu-20.04\home\gldeng\go\src\github.com\avalido\mpc-controller\tests\tasks\task_c2p" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="\\wsl$\Ubuntu-20.04\home\gldeng\go\src\github.com\avalido\mpc-controller\pool" />
       <recent name="\\wsl$\Ubuntu-20.04\home\gldeng\go\src\github.com\avalido\mpc-controller\core\types" />
       <recent name="\\wsl$\Ubuntu-20.04\home\gldeng\go\src\github.com\avalido\mpc-controller\core" />
     </key>

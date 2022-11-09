@@ -1,7 +1,8 @@
-package core
+package pool
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,8 +12,8 @@ import (
 )
 
 var (
-	_ Task        = (*IncrementTask)(nil)
-	_ TaskContext = (*MockTaskContext)(nil)
+	_ core.Task        = (*IncrementTask)(nil)
+	_ core.TaskContext = (*MockTaskContext)(nil)
 )
 
 type IncrementTask struct {
@@ -39,7 +40,7 @@ func (i *IncrementTask) RequiresNonce() bool {
 	panic("implement me")
 }
 
-func (i *IncrementTask) Next(ctx TaskContext) ([]Task, error) {
+func (i *IncrementTask) Next(ctx core.TaskContext) ([]core.Task, error) {
 	i.Counter = i.Counter + 1
 	return nil, nil
 }
@@ -62,7 +63,7 @@ func (m MockTaskContext) JoinRequest(opts *bind.TransactOpts, participantId [32]
 	panic("implement me")
 }
 
-func (m MockTaskContext) CheckEthTx(txHash common.Hash) (TxStatus, error) {
+func (m MockTaskContext) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -77,7 +78,7 @@ func (m MockTaskContext) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetDb() Store {
+func (m MockTaskContext) GetDb() core.Store {
 	//TODO implement me
 	panic("implement me")
 }
@@ -97,12 +98,12 @@ func (m MockTaskContext) GetParticipantID() types.ParticipantId {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetNetwork() *NetworkContext {
+func (m MockTaskContext) GetNetwork() *core.NetworkContext {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetMpcClient() MpcClient {
+func (m MockTaskContext) GetMpcClient() core.MpcClient {
 	//TODO implement me
 	panic("implement me")
 }
@@ -117,12 +118,12 @@ func (m MockTaskContext) IssuePChainTx(txBytes []byte) (ids.ID, error) {
 	panic("implement me")
 }
 
-func (m MockTaskContext) CheckCChainTx(id ids.ID) (TxStatus, error) {
+func (m MockTaskContext) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m MockTaskContext) CheckPChainTx(id ids.ID) (TxStatus, error) {
+func (m MockTaskContext) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -142,7 +143,7 @@ func (m MockTaskContext) GetLogger() logger.Logger {
 	panic("implement me")
 }
 
-func MockTaskContextFactory() TaskContext {
+func MockTaskContextFactory() core.TaskContext {
 	return &MockTaskContext{}
 }
 

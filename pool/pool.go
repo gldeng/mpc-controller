@@ -1,12 +1,13 @@
-package core
+package pool
 
 import (
 	"github.com/alitto/pond"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/enriquebris/goconcurrentqueue"
 )
 
 var (
-	_ TaskSubmitter = (*ExtendedWorkerPool)(nil)
+	_ core.TaskSubmitter = (*ExtendedWorkerPool)(nil)
 )
 
 type ExtendedWorkerPool struct {
@@ -15,7 +16,7 @@ type ExtendedWorkerPool struct {
 	contexts         *goconcurrentqueue.FIFO
 }
 
-func NewExtendedWorkerPool(size int, makeContext TaskContextFactory) (*ExtendedWorkerPool, error) {
+func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*ExtendedWorkerPool, error) {
 	sequentialWorker := pond.New(1, 1024)
 	parallelPool := pond.New(size, 1024)
 	contexts := goconcurrentqueue.NewFIFO()
@@ -39,14 +40,14 @@ func (e *ExtendedWorkerPool) Close() error {
 	return nil
 }
 
-func (e *ExtendedWorkerPool) Submit(task Task) error {
+func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 	whichPool := e.parallelPool
 	if task.RequiresNonce() {
 		whichPool = e.sequentialWorker
 	}
 	taskWrapper := func() {
-		ctx, _ := e.contexts.Dequeue()          // TODO: Handle error
-		next, _ := task.Next(ctx.(TaskContext)) // TODO: Handle error
+		ctx, _ := e.contexts.Dequeue()               // TODO: Handle error
+		next, _ := task.Next(ctx.(core.TaskContext)) // TODO: Handle error
 		if !task.IsDone() && !task.FailedPermanently() {
 			e.Submit(task)
 		}

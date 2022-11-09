@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/router"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
@@ -227,7 +228,7 @@ func runController(c *cli.Context) error {
 		ctx, _ := core.NewTaskContextImp(services) // TODO: Handler error
 		return ctx
 	}
-	wp, err := core.NewExtendedWorkerPool(3, makeContext)
+	wp, err := pool.NewExtendedWorkerPool(3, makeContext)
 	if err != nil {
 		return err
 	}
