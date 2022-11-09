@@ -32,6 +32,7 @@ const (
 	fnHost              = "host"
 	fnPort              = "port"
 	fnMpcManagerAddress = "mpc-manager-address"
+	fnPrivateKey        = "private-key"
 )
 
 func printLog(event interface{}) {
@@ -152,8 +153,9 @@ func runController(c *cli.Context) error {
 		MpcManagerAddress: mpcManagerAddr,
 	}, q)
 
+	privKey := c.String(fnPrivateKey)
 	// Parse private key
-	myPrivKey, err := crypto.HexToECDSA("59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21")
+	myPrivKey, err := crypto.HexToECDSA(privKey)
 	if err != nil {
 		panic("failed to parse private key")
 	}
@@ -288,6 +290,11 @@ func main() {
 				Name:     fnMpcManagerAddress,
 				Required: true,
 				Usage:    "The address of the deployed MpcManager contract.",
+			},
+			&cli.StringFlag{
+				Name:     fnPrivateKey,
+				Required: true,
+				Usage:    "The private key for this participant.",
 			},
 		},
 		Action: runController,
