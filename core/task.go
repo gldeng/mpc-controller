@@ -34,7 +34,7 @@ type TaskContext interface {
 	CheckPChainTx(id ids.ID) (TxStatus, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
-	GetDb() SlimDb
+	GetDb() Store
 	GetEventID(event string) (common.Hash, error)
 	GetMyPublicKey() ([]byte, error)
 	GetMyTransactSigner() *bind.TransactOpts

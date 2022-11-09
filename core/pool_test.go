@@ -77,7 +77,7 @@ func (m MockTaskContext) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetDb() SlimDb {
+func (m MockTaskContext) GetDb() Store {
 	//TODO implement me
 	panic("implement me")
 }

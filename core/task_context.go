@@ -37,7 +37,7 @@ type TaskContextImp struct {
 	MpcClient    MpcClient
 	CChainClient evm.Client
 	PChainClient platformvm.Client
-	Db           SlimDb
+	Db           Store
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
 }
@@ -229,7 +229,7 @@ func (t *TaskContextImp) Emit(event interface{}) {
 	panic("implement me")
 }
 
-func (t *TaskContextImp) GetDb() SlimDb {
+func (t *TaskContextImp) GetDb() Store {
 	return t.Db
 }
 

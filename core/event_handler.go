@@ -21,7 +21,7 @@ type LogEventHandler interface {
 type EventHandlerContext interface {
 	GetLogger() logger.Logger
 	GetContract() *bind.BoundContract
-	GetDb() SlimDb
+	GetDb() Store
 	GetEventID(event string) common.Hash
 }
 
@@ -30,7 +30,7 @@ type EventHandlerContextFactory = func() EventHandlerContext
 type EventHandlerContextImp struct {
 	Logger      logger.Logger
 	MpcContract *bind.BoundContract
-	DB          SlimDb
+	DB          Store
 	abi         *abi.ABI
 }
 
@@ -42,7 +42,7 @@ func (c *EventHandlerContextImp) GetContract() *bind.BoundContract {
 	return c.MpcContract
 }
 
-func (c *EventHandlerContextImp) GetDb() SlimDb {
+func (c *EventHandlerContextImp) GetDb() Store {
 	return c.DB
 }
 

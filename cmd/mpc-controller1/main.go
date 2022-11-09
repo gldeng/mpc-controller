@@ -43,7 +43,7 @@ func printLog(event interface{}) {
 }
 
 type TestSuite struct {
-	db           core.SlimDb
+	db           core.Store
 	pubKey       []byte
 	queue        *goconcurrentqueue.FIFO
 	requestCount int

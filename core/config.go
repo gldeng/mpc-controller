@@ -74,10 +74,10 @@ type ServicePack struct {
 	Config    Config
 	Logger    logger.Logger
 	MpcClient MpcClient
-	Db        SlimDb
+	Db        Store
 }
 
-func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db SlimDb) *ServicePack {
+func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db Store) *ServicePack {
 	return &ServicePack{
 		Config:    config,
 		Logger:    logger,

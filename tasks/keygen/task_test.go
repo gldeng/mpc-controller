@@ -79,7 +79,7 @@ func (t *TaskContextWrapper) NonceAt(account common.Address) (uint64, error) {
 func (t *TaskContextWrapper) Emit(event interface{}) {
 }
 
-func (t *TaskContextWrapper) GetDb() core.SlimDb {
+func (t *TaskContextWrapper) GetDb() core.Store {
 	return t.inner.GetDb()
 }
 

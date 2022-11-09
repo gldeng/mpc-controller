@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var _ core.SlimDb = (*BadgerDB)(nil)
+var _ core.Store = (*BadgerDB)(nil)
 
 type BadgerDB struct {
 	logger.Logger
