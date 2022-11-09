@@ -19,7 +19,7 @@ start_mpc_controller(){
   DIR=tmp/party${IND}
   mkdir -p $DIR
   echo "Starting MPC controller ${i}"
-  go run ./cmd/mpc-controller1/main.go --host 34.172.25.188 --port 9650 \
+  go run ./cmd/mpc-controller/main.go --host 34.172.25.188 --port 9650 \
   --mpc-manager-address 0x3fc3Ea6Bf83A467Da8FA5Db54659fEa760BB9222 \
   --private-key ${SECKEYS[$((IND-1))]} > ${DIR}/log.txt 2>&1 &
   echo $! > ${DIR}/pid
