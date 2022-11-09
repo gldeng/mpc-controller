@@ -55,7 +55,7 @@ func (h *ParticipantAddedHandler) IsDone() bool {
 	return h.Done
 }
 
-func (h *ParticipantAddedHandler) RequiresNonce() bool {
+func (h *ParticipantAddedHandler) IsSequential() bool {
 	return true
 }
 

@@ -47,7 +47,7 @@ func (t *AddDelegator) FailedPermanently() bool {
 	return t.failed
 }
 
-func (t *AddDelegator) RequiresNonce() bool {
+func (t *AddDelegator) IsSequential() bool {
 	return false
 }
 

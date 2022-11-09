@@ -13,7 +13,7 @@ type Task interface {
 	Next(ctx TaskContext) ([]Task, error)
 	IsDone() bool
 	FailedPermanently() bool
-	RequiresNonce() bool
+	IsSequential() bool
 }
 
 type MpcManager interface {

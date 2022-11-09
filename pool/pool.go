@@ -42,7 +42,7 @@ func (e *ExtendedWorkerPool) Close() error {
 
 func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 	whichPool := e.parallelPool
-	if task.RequiresNonce() {
+	if task.IsSequential() {
 		whichPool = e.sequentialWorker
 	}
 	taskWrapper := func() {

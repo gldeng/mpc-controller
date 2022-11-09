@@ -71,8 +71,8 @@ func (t *InitialStake) IsDone() bool {
 	return t.AddDelegator != nil && t.AddDelegator.IsDone()
 }
 
-func (t *InitialStake) RequiresNonce() bool {
-	return t.C2P.RequiresNonce()
+func (t *InitialStake) IsSequential() bool {
+	return t.C2P.IsSequential()
 }
 
 func (t *InitialStake) startAddDelegator() error {

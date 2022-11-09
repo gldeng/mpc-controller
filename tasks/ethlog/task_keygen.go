@@ -57,7 +57,7 @@ func (h *KeyGeneratedHandler) IsDone() bool {
 	return h.Done
 }
 
-func (h *KeyGeneratedHandler) RequiresNonce() bool {
+func (h *KeyGeneratedHandler) IsSequential() bool {
 	return true
 }
 

@@ -35,7 +35,7 @@ func (i *IncrementTask) IsDone() bool {
 	panic("implement me")
 }
 
-func (i *IncrementTask) RequiresNonce() bool {
+func (i *IncrementTask) IsSequential() bool {
 	//TODO implement me
 	panic("implement me")
 }

@@ -40,7 +40,7 @@ func (t *ExportFromCChain) FailedPermanently() bool {
 	return t.Failed
 }
 
-func (t *ExportFromCChain) RequiresNonce() bool {
+func (t *ExportFromCChain) IsSequential() bool {
 	return true
 }
 

@@ -54,7 +54,7 @@ func (t *Join) IsDone() bool {
 	return true
 }
 
-func (t *Join) RequiresNonce() bool {
+func (t *Join) IsSequential() bool {
 	return false
 }
 

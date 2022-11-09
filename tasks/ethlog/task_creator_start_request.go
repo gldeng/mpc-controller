@@ -69,7 +69,7 @@ func (h *RequestStartedHandler) IsDone() bool {
 	return true
 }
 
-func (h *RequestStartedHandler) RequiresNonce() bool {
+func (h *RequestStartedHandler) IsSequential() bool {
 	return false
 }
 

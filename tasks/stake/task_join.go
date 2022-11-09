@@ -31,12 +31,12 @@ func (t *RequestAddedHandler) IsDone() bool {
 	return t.Join != nil && t.Join.IsDone()
 }
 
-func (t *RequestAddedHandler) RequiresNonce() bool {
-	return t.Join != nil && t.Join.RequiresNonce()
+func (t *RequestAddedHandler) IsSequential() bool {
+	return t.Join != nil && t.Join.IsSequential()
 }
 
 func (t *RequestAddedHandler) FailedPermanently() bool {
-	return t.Join != nil && t.Join.RequiresNonce()
+	return t.Join != nil && t.Join.IsSequential()
 }
 
 func NewStakeRequestAddedHandler(event contract.MpcManagerStakeRequestAdded) (*RequestAddedHandler, error) {

@@ -81,7 +81,7 @@ func (t *RequestAdded) FailedPermanently() bool {
 	return t.Failed
 }
 
-func (t *RequestAdded) RequiresNonce() bool {
+func (t *RequestAdded) IsSequential() bool {
 	return false
 }
 

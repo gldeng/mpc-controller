@@ -40,7 +40,7 @@ func (t *ImportIntoPChain) FailedPermanently() bool {
 	return t.Failed
 }
 
-func (t *ImportIntoPChain) RequiresNonce() bool {
+func (t *ImportIntoPChain) IsSequential() bool {
 	return false
 }
 

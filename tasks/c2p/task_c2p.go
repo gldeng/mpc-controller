@@ -30,7 +30,7 @@ func (t *C2P) FailedPermanently() bool {
 	return t.ExportTask.FailedPermanently() || (t.ImportTask != nil && t.ImportTask.FailedPermanently())
 }
 
-func (t *C2P) RequiresNonce() bool {
+func (t *C2P) IsSequential() bool {
 	if t.ExportTask.IsDone() {
 		return false
 	}
