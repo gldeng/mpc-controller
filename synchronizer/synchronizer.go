@@ -1,4 +1,4 @@
-package syncer
+package synchronizer
 
 import (
 	"fmt"
@@ -10,16 +10,16 @@ type Queue interface {
 	Enqueue(value interface{}) error
 }
 
-type Syncer struct {
+type Synchronizer struct {
 	services      *core.ServicePack
 	eventLogQueue Queue
 }
 
-func NewSyncer(services *core.ServicePack, queue Queue) *Syncer {
-	return &Syncer{services: services, eventLogQueue: queue}
+func NewSyncer(services *core.ServicePack, queue Queue) *Synchronizer {
+	return &Synchronizer{services: services, eventLogQueue: queue}
 }
 
-func (s *Syncer) Start() error {
+func (s *Synchronizer) Start() error {
 	ethClient := s.services.Config.CreateEthClient()
 
 	instance, err := contract.NewMpcManagerFilterer(s.services.Config.MpcManagerAddress, ethClient)

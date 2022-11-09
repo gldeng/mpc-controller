@@ -5,27 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/core/types/mpcrequests.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/eventhandlercontext/event_handler_context.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mpcclient/mpcclient.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/mpc-controller/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/mpc-controller/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/event_handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/event_handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/mpcclient.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/mpcclient.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/mpcclient_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/mpcclient/mpcclient_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/task_context.go" beforeDir="false" afterPath="$PROJECT_DIR$/taskcontext/task_context.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/tx.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/tx_status.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/request.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/request.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/test.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/adddelegator/adddelegator.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/adddelegator/adddelegator.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/syncer/syncer.go" beforeDir="false" afterPath="$PROJECT_DIR$/synchronizer/synchronizer.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/c2p/task_export.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/task_export.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/c2p/task_import.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/task_import.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_keygen_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_keygen_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/keygen/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/keygen/task_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tasks/task_c2p/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/tasks/task_c2p/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/tasks/task_export/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/tasks/task_export/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/stake/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/types.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

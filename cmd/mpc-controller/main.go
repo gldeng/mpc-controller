@@ -14,7 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/router"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
-	"github.com/avalido/mpc-controller/syncer"
+	"github.com/avalido/mpc-controller/synchronizer"
 	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
@@ -208,7 +208,7 @@ func runController(c *cli.Context) error {
 	}
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
-	syn := syncer.NewSyncer(services, q)
+	syn := synchronizer.NewSyncer(services, q)
 
 	//pk, err := hex.DecodeString("27448e78ffa8cdb24cf19be0204ad954b1bdb4db8c51183534c1eecf2ebd094e28644a0982c69420f823dafe7a062dc9fd4d894be33d088fb02e63ab61710ccb")
 	//if err != nil {
