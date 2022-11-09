@@ -28,6 +28,11 @@ type TaskContextWrapper struct {
 	participantId [32]byte
 }
 
+func (t *TaskContextWrapper) GetMyTransactSigner() *bind.TransactOpts {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t *TaskContextWrapper) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
 	//TODO implement me
 	panic("implement me")

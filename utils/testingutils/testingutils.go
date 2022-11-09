@@ -38,6 +38,7 @@ func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) 
 		Removed:     false,
 	}
 	e := &contract.MpcManagerParticipantAdded{}
+	e.PublicKey = log.Topics[1]
 	abi.UnpackIntoInterface(e, "ParticipantAdded", data)
 	e.Raw = log
 	return e

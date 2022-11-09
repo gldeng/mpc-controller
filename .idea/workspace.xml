@@ -6,21 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pool/pool.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pool/pool_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/test.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/adddelegator/adddelegator.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/adddelegator/adddelegator.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c2p/task_c2p.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/task_c2p.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c2p/task_export.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/task_export.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c2p/task_import.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/task_import.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_creator_start_request.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_creator_start_request.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_keygen.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_keygen.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/join/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/join/task.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/keygen/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/stake/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/task.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/stake/task_join.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/task_join.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/testingutils/testingutils.go" beforeDir="false" afterPath="$PROJECT_DIR$/utils/testingutils/testingutils.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -104,7 +92,7 @@
       <recent name="\\wsl$\Ubuntu-20.04\home\gldeng\go\src\github.com\avalido\mpc-controller\pool" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.go build github.com/avalido/mpc-controller/cmd/mpc-controller1">
+  <component name="RunManager" selected="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)">
     <configuration name="go build github.com/avalido/mpc-controller/cmd/mpc-controller1" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
       <module name="mpc-controller" />
       <working_directory value="$PROJECT_DIR$" />
@@ -124,16 +112,19 @@
       <filePath value="$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go" />
       <method v="2" />
     </configuration>
-    <configuration name="go build github.com/avalido/mpc-controller/tests/tasks/task_c2p" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+    <configuration name="TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="mpc-controller" />
-      <working_directory value="$PROJECT_DIR$" />
+      <working_directory value="$PROJECT_DIR$/tasks/ethlog" />
+      <root_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="github.com/avalido/mpc-controller/tests/tasks/task_c2p" />
+      <package value="github.com/avalido/mpc-controller/tasks/ethlog" />
       <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/tests/tasks/task_c2p/main.go" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestAddParticipant\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="mpc-controller" />
       <working_directory value="$PROJECT_DIR$/tasks/ethlog" />
       <root_directory value="$PROJECT_DIR$" />
@@ -172,24 +163,35 @@
     <list>
       <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/cmd/mpc-controller1" />
       <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/tests/tasks/task_adddelegator" />
-      <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/tests/tasks/task_c2p" />
-      <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog" />
+      <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)" />
+      <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (1)" />
       <item itemvalue="Go Test.TestKeyGeneratedHandler in github.com/avalido/mpc-controller/tasks/ethlog" />
       <item itemvalue="Go Test.TestRequestAdded in github.com/avalido/mpc-controller/tasks/keygen" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)" />
+        <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (1)" />
         <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/tests/tasks/task_adddelegator" />
         <item itemvalue="Go Test.TestKeyGeneratedHandler in github.com/avalido/mpc-controller/tasks/ethlog" />
         <item itemvalue="Go Test.TestRequestAdded in github.com/avalido/mpc-controller/tasks/keygen" />
-        <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog" />
-        <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/tests/tasks/task_c2p" />
       </list>
     </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
+      </list>
+    </option>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
