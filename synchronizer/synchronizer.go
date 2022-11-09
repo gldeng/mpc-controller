@@ -1,7 +1,6 @@
 package synchronizer
 
 import (
-	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 )
@@ -41,7 +40,6 @@ func (s *Synchronizer) Start() error {
 
 	it1, err := instance.FilterKeyGenerated(nil, groupIds)
 	for it1.Next() {
-		fmt.Printf("x\n")
 		err = s.eventLogQueue.Enqueue(it1.Event.Raw)
 		if err != nil {
 			return err
