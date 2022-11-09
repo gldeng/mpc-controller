@@ -152,11 +152,6 @@ func runController(c *cli.Context) error {
 
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 
-	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, &subscriber.Config{
-		EthWsURL:          fmt.Sprintf("ws://%s:%v/ext/bc/C/ws", c.String(fnHost), c.Int(fnPort)),
-		MpcManagerAddress: mpcManagerAddr,
-	}, q)
-
 	privKey := c.String(fnPrivateKey)
 	// Parse private key
 	myPrivKey, err := crypto.HexToECDSA(privKey)
@@ -200,6 +195,8 @@ func runController(c *cli.Context) error {
 		MyTransactSigner: signer,
 	}
 	coreConfig.FetchNetworkInfo()
+
+	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q)
 
 	db := storage.NewInMemoryDb()
 	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")

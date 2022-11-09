@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,7 +15,7 @@ import (
 type Subscriber struct {
 	ctx           context.Context
 	logger        logger.Logger
-	config        *Config
+	config        core.Config
 	client        *ethclient.Client
 	subscription  ethereum.Subscription
 	eventLogQueue Queue
@@ -23,7 +24,7 @@ type Queue interface {
 	Enqueue(value interface{}) error
 }
 
-func NewSubscriber(ctx context.Context, logger logger.Logger, config *Config, eventLogQueue Queue) (*Subscriber, error) {
+func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config, eventLogQueue Queue) (*Subscriber, error) {
 	return &Subscriber{
 		ctx:           ctx,
 		logger:        logger,
@@ -35,17 +36,13 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config *Config, ev
 }
 
 func (s *Subscriber) Start() error {
-	client, err := ethclient.Dial(s.config.EthWsURL)
-	if err != nil {
-		return errors.Wrap(err, "failed to create client")
-	}
-	s.client = client
+	s.client = s.config.CreateWsClient()
 	filter := ethereum.FilterQuery{
 		Addresses: []common.Address{s.config.MpcManagerAddress},
 	}
 
 	eventLogs := make(chan types.Log, 1024)
-	sub, err := client.SubscribeFilterLogs(s.ctx, filter, eventLogs)
+	sub, err := s.client.SubscribeFilterLogs(s.ctx, filter, eventLogs)
 	if err != nil {
 		return errors.Wrap(err, "failed to subscribe to contract events")
 	}

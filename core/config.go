@@ -31,6 +31,22 @@ func (c Config) getUri() string {
 	return fmt.Sprintf("%v://%v:%v", scheme, c.Host, c.Port)
 }
 
+func (c Config) getWsUri() string {
+	scheme := "ws"
+	if c.SslEnabled {
+		scheme = "wss"
+	}
+	return fmt.Sprintf("%v://%v:%v", scheme, c.Host, c.Port)
+}
+
+func (c Config) CreateWsClient() *ethclient.Client {
+	client, err := ethclient.Dial(fmt.Sprintf("%s/ext/bc/C/ws", c.getWsUri()))
+	if err != nil {
+		panic(errors.Wrap(err, "failed to get eth client"))
+	}
+	return client
+}
+
 func (c Config) CreateEthClient() *ethclient.Client {
 	client, err := ethclient.Dial(fmt.Sprintf("%s/ext/bc/C/rpc", c.getUri()))
 	if err != nil {
