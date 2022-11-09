@@ -1,7 +1,6 @@
-package storage
+package core
 
 import (
-	"bytes"
 	"context"
 )
 
@@ -21,12 +20,4 @@ type Setter interface {
 
 type Getter interface {
 	Get(ctx context.Context, key []byte) ([]byte, error)
-}
-
-func Key(prefix []byte, payload [32]byte) []byte {
-	return JoinWithHyphen([][]byte{prefix, payload[:]})
-}
-
-func JoinWithHyphen(s [][]byte) []byte {
-	return bytes.Join(s, []byte("-"))
 }

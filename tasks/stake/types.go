@@ -3,7 +3,7 @@ package stake
 import (
 	"encoding/json"
 	"github.com/avalido/mpc-controller/core"
-	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -30,12 +30,12 @@ func (r *Request) Decode(data []byte) error {
 	return json.Unmarshal(data, r)
 }
 
-func (r Request) Hash() (storage.RequestHash, error) {
+func (r Request) Hash() (types.RequestHash, error) {
 	data, err := r.Encode()
 	if err != nil {
 		return [32]byte{}, err
 	}
-	hash := storage.RequestHash(hash256.FromBytes(data))
-	hash.SetTaskType(storage.TaskTypStake)
+	hash := types.RequestHash(hash256.FromBytes(data))
+	hash.SetTaskType(types.TaskTypStake)
 	return hash, nil
 }

@@ -1,10 +1,10 @@
-package storage
+package types
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/utils/address"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	ids2 "github.com/avalido/mpc-controller/utils/ids"
@@ -34,7 +34,7 @@ func (m PubKey) String() string {
 }
 
 func (m PubKey) PubKeyHex() string {
-	return bytes.BytesToHex(m)
+	return common.Bytes2Hex(m)
 }
 
 func (m PubKey) CChainAddress() (common.Address, error) {
@@ -275,4 +275,12 @@ func (m *RecoverRequest) ReqHash() RequestHash {
 	reqHash := RequestHash(hash256.FromBytes(JoinWithHyphen([][]byte{m.TxID[:], bs})))
 	reqHash.SetTaskType(TaskTypRecover)
 	return reqHash
+}
+
+func Key(prefix []byte, payload [32]byte) []byte {
+	return JoinWithHyphen([][]byte{prefix, payload[:]})
+}
+
+func JoinWithHyphen(s [][]byte) []byte {
+	return bytes.Join(s, []byte("-"))
 }

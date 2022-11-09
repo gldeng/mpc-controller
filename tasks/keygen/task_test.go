@@ -79,7 +79,7 @@ func (t *TaskContextWrapper) NonceAt(account common.Address) (uint64, error) {
 func (t *TaskContextWrapper) Emit(event interface{}) {
 }
 
-func (t *TaskContextWrapper) GetDb() storage.SlimDb {
+func (t *TaskContextWrapper) GetDb() core.SlimDb {
 	return t.inner.GetDb()
 }
 
@@ -91,7 +91,7 @@ func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
 	return t.inner.GetMyPublicKey()
 }
 
-func (t *TaskContextWrapper) GetParticipantID() storage.ParticipantId {
+func (t *TaskContextWrapper) GetParticipantID() types2.ParticipantId {
 	return t.participantId
 }
 

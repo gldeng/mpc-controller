@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/json"
-	"github.com/avalido/mpc-controller/storage"
 	"math/big"
 )
 
@@ -20,7 +19,7 @@ func (g *Group) Decode(data []byte) error {
 	return json.Unmarshal(data, g)
 }
 
-func (g *Group) ParticipantID() storage.ParticipantId {
+func (g *Group) ParticipantID() ParticipantId {
 	groupIdBig := new(big.Int).SetBytes(g.GroupId[:])
 	indexBig := new(big.Int).SetUint64(g.Index.Uint64())
 	partiIdBig := new(big.Int).Or(groupIdBig, indexBig)

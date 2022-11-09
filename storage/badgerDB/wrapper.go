@@ -2,15 +2,15 @@ package badgerDB
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/pkg/errors"
 	"time"
 )
 
-var _ storage.SlimDb = (*BadgerDB)(nil)
+var _ core.SlimDb = (*BadgerDB)(nil)
 
 type BadgerDB struct {
 	logger.Logger

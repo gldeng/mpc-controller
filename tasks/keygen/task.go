@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -89,7 +88,7 @@ func (t *RequestAdded) RequiresNonce() bool {
 func (t *RequestAdded) run(ctx core.TaskContext) error {
 	switch t.Status {
 	case StatusInit:
-		var pubKeys storage.PubKeys
+		var pubKeys types.PubKeys
 		for _, publicKey := range t.group.MemberPublicKeys {
 			pubKeys = append(pubKeys, publicKey)
 		}

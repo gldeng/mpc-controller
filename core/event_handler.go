@@ -3,7 +3,6 @@ package core
 import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,7 +21,7 @@ type LogEventHandler interface {
 type EventHandlerContext interface {
 	GetLogger() logger.Logger
 	GetContract() *bind.BoundContract
-	GetDb() storage.SlimDb
+	GetDb() SlimDb
 	GetEventID(event string) common.Hash
 }
 
@@ -31,7 +30,7 @@ type EventHandlerContextFactory = func() EventHandlerContext
 type EventHandlerContextImp struct {
 	Logger      logger.Logger
 	MpcContract *bind.BoundContract
-	DB          storage.SlimDb
+	DB          SlimDb
 	abi         *abi.ABI
 }
 
@@ -43,7 +42,7 @@ func (c *EventHandlerContextImp) GetContract() *bind.BoundContract {
 	return c.MpcContract
 }
 
-func (c *EventHandlerContextImp) GetDb() storage.SlimDb {
+func (c *EventHandlerContextImp) GetDb() SlimDb {
 	return c.DB
 }
 

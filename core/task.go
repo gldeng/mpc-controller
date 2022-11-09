@@ -4,7 +4,6 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -35,12 +34,12 @@ type TaskContext interface {
 	CheckPChainTx(id ids.ID) (TxStatus, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
-	GetDb() storage.SlimDb
+	GetDb() SlimDb
 	GetEventID(event string) (common.Hash, error)
 	GetMyPublicKey() ([]byte, error)
 	GetMyTransactSigner() *bind.TransactOpts
 	LoadGroup(groupID [32]byte) (*types.Group, error)
-	GetParticipantID() storage.ParticipantId
+	GetParticipantID() types.ParticipantId
 }
 
 type TaskContextFactory = func() TaskContext
