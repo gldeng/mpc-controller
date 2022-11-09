@@ -19,7 +19,7 @@ type RequestAdded struct {
 	Status Status
 
 	Event         contract.MpcManagerKeygenRequestAdded
-	KeygenRequest *core.KeygenRequest
+	KeygenRequest *types.KeygenRequest
 	TxHash        *common.Hash
 
 	group *types.Group
@@ -97,7 +97,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return t.failIfError(err, "failed to compress participant public keys")
 		}
 
-		t.KeygenRequest = &core.KeygenRequest{
+		t.KeygenRequest = &types.KeygenRequest{
 			ReqID:                  t.GetId(),
 			CompressedPartiPubKeys: normalized,
 			Threshold:              t.group.ParticipantID().Threshold(),
@@ -118,7 +118,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return t.failIfError(err, "empty keygen result")
 		}
 
-		if res.Status != core.StatusDone {
+		if res.Status != types.StatusDone {
 			ctx.GetLogger().Debug("Keygen not done")
 			return nil
 		}

@@ -28,7 +28,7 @@ type ImportIntoPChain struct {
 	TxHash         []byte
 	TxCred         *secp256k1fx.Credential
 	TxID           *ids.ID
-	SignRequest    *core.SignRequest
+	SignRequest    *types.SignRequest
 	Failed         bool
 }
 
@@ -102,12 +102,12 @@ func (t *ImportIntoPChain) SignedTx() (*txs.Tx, error) {
 	return PackSignedImportTx(t.Tx, t.TxCred)
 }
 
-func (t *ImportIntoPChain) buildSignReq(id string, hash []byte) (*core.SignRequest, error) {
+func (t *ImportIntoPChain) buildSignReq(id string, hash []byte) (*types.SignRequest, error) {
 	var participantPks []string
 	for _, pk := range t.Quorum.ParticipantPubKeys {
 		participantPks = append(participantPks, hex.EncodeToString(pk))
 	}
-	return &core.SignRequest{
+	return &types.SignRequest{
 		ReqID:                  id,
 		CompressedGenPubKeyHex: hex.EncodeToString(t.Quorum.PubKey),
 		CompressedPartiPubKeys: participantPks,
@@ -148,7 +148,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return t.failIfError(err, ErrMsgFailedToCheckSignRequest)
 	}
 
-	if res.Status != core.StatusDone {
+	if res.Status != types.StatusDone {
 		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
 		return nil
 	}

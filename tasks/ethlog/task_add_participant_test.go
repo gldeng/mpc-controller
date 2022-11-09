@@ -7,7 +7,9 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -107,7 +109,7 @@ func idFromString(str string) ids.ID {
 
 func TestAddParticipant(t *testing.T) {
 
-	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	config := core.Config{
 		Host:              "localhost",
 		Port:              9650,
@@ -138,7 +140,7 @@ func TestAddParticipant(t *testing.T) {
 
 	db := storage.NewInMemoryDb()
 	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
-	ctx0, err := core.NewTaskContextImp(services)
+	ctx0, err := taskcontext.NewTaskContextImp(services)
 	ctx := &TaskContextWrapper{
 		inner: ctx0,
 		group: [][]byte{

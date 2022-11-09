@@ -8,7 +8,9 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/storage"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +33,7 @@ func idFromString(str string) ids.ID {
 
 func main() {
 
-	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 
 	panicIfError(err)
 	config := core.Config{
@@ -58,7 +60,7 @@ func main() {
 
 	db := storage.NewInMemoryDb()
 	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
-	ctx, err := core.NewTaskContextImp(services)
+	ctx, err := taskcontext.NewTaskContextImp(services)
 	panicIfError(err)
 	quorum := types.QuorumInfo{
 		ParticipantPubKeys: nil,

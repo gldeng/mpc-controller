@@ -1,7 +1,8 @@
-package core
+package taskcontext
 
 import (
 	"context"
+	"github.com/avalido/mpc-controller/core"
 	"strings"
 	"time"
 
@@ -24,25 +25,25 @@ import (
 )
 
 var (
-	_ TaskContext = (*TaskContextImp)(nil)
+	_ core.TaskContext = (*TaskContextImp)(nil)
 )
 
 type TaskContextImp struct {
 	Logger logger.Logger
 
-	Services     *ServicePack
+	Services     *core.ServicePack
 	NonceGiver   noncer.Noncer
-	Network      NetworkContext
+	Network      core.NetworkContext
 	EthClient    *ethclient.Client
-	MpcClient    MpcClient
+	MpcClient    core.MpcClient
 	CChainClient evm.Client
 	PChainClient platformvm.Client
-	Db           Store
+	Db           core.Store
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
 }
 
-func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
+func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 	//rcp, err := t.EthClient.TransactionReceipt(context.Background(), txHash)
 	//if err != nil {
 	//	return TxStatusUnknown, errors.Wrap(err, "failed to check tx receipt")
@@ -55,7 +56,7 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
 	//}
 	//return TxStatusUnknown, errors.New(fmt.Sprintf("unknown tx status %v", rcp.Status))
 
-	var txStatus TxStatus
+	var txStatus core.TxStatus
 	var rcp *types2.Receipt
 	var err error
 	err = backoff.RetryFnExponential10Times(t.Logger, context.Background(), time.Second, time.Second*10, func() (retry bool, err error) {
@@ -75,15 +76,15 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (TxStatus, error) {
 	})
 
 	if err != nil {
-		return TxStatusUnknown, errors.WithStack(err)
+		return core.TxStatusUnknown, errors.WithStack(err)
 	}
 
-	txStatus = TxStatusUnknown
+	txStatus = core.TxStatusUnknown
 	switch rcp.Status {
 	case 0:
-		txStatus = TxStatusAborted
+		txStatus = core.TxStatusAborted
 	case 1:
-		txStatus = TxStatusCommitted
+		txStatus = core.TxStatusCommitted
 	}
 
 	return txStatus, nil
@@ -144,7 +145,7 @@ func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]by
 	return caller.GetGroup(opts, groupId)
 }
 
-func NewTaskContextImp(services *ServicePack) (*TaskContextImp, error) {
+func NewTaskContextImp(services *core.ServicePack) (*TaskContextImp, error) {
 	ethClient := services.Config.CreateEthClient()
 	cClient := services.Config.CreateCClient()
 	pClient := services.Config.CreatePClient()
@@ -172,11 +173,11 @@ func (t *TaskContextImp) GetLogger() logger.Logger {
 	return t.Logger
 }
 
-func (t *TaskContextImp) GetNetwork() *NetworkContext {
+func (t *TaskContextImp) GetNetwork() *core.NetworkContext {
 	return &t.Network
 }
 
-func (t *TaskContextImp) GetMpcClient() MpcClient {
+func (t *TaskContextImp) GetMpcClient() core.MpcClient {
 	return t.MpcClient
 }
 
@@ -188,45 +189,45 @@ func (t *TaskContextImp) IssuePChainTx(txBytes []byte) (ids.ID, error) {
 	return t.PChainClient.IssueTx(context.Background(), txBytes)
 }
 
-func (t *TaskContextImp) CheckCChainTx(id ids.ID) (TxStatus, error) {
+func (t *TaskContextImp) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
 	status, err := t.CChainClient.GetAtomicTxStatus(context.Background(), id)
 	if err != nil {
-		return TxStatusUnknown, errors.Wrapf(err, "failed to get C-Chain AtomicTx status for %v", id)
+		return core.TxStatusUnknown, errors.Wrapf(err, "failed to get C-Chain AtomicTx status for %v", id)
 	}
 	switch status {
 	case evm.Unknown:
-		return TxStatusUnknown, nil
+		return core.TxStatusUnknown, nil
 	case evm.Dropped:
-		return TxStatusDropped, nil
+		return core.TxStatusDropped, nil
 	case evm.Processing:
-		return TxStatusProcessing, nil
+		return core.TxStatusProcessing, nil
 	case evm.Accepted:
-		return TxStatusCommitted, nil
+		return core.TxStatusCommitted, nil
 	}
-	return TxStatusUnknown, err
+	return core.TxStatusUnknown, err
 }
 
-func (t *TaskContextImp) CheckPChainTx(id ids.ID) (TxStatus, error) {
+func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
 	resp, err := t.PChainClient.GetTxStatus(context.Background(), id)
 	if err != nil {
-		return TxStatusUnknown, errors.Wrapf(err, "failed to get P-Chain Tx status for %v", id)
+		return core.TxStatusUnknown, errors.Wrapf(err, "failed to get P-Chain Tx status for %v", id)
 	}
 	if resp == nil {
-		return TxStatusUnknown, errors.Errorf("got nil P-Chain TxStatusResponse for %v", id)
+		return core.TxStatusUnknown, errors.Errorf("got nil P-Chain TxStatusResponse for %v", id)
 	}
 	switch resp.Status {
 	case pStatus.Unknown:
-		return TxStatusUnknown, nil
+		return core.TxStatusUnknown, nil
 	case pStatus.Committed:
-		return TxStatusCommitted, nil
+		return core.TxStatusCommitted, nil
 	case pStatus.Aborted:
-		return TxStatusAborted, nil
+		return core.TxStatusAborted, nil
 	case pStatus.Processing:
-		return TxStatusProcessing, nil
+		return core.TxStatusProcessing, nil
 	case pStatus.Dropped:
-		return TxStatusDropped, nil
+		return core.TxStatusDropped, nil
 	}
-	return TxStatusUnknown, err
+	return core.TxStatusUnknown, err
 }
 
 func (t *TaskContextImp) NonceAt(account common.Address) (uint64, error) {
@@ -238,7 +239,7 @@ func (t *TaskContextImp) Emit(event interface{}) {
 	panic("implement me")
 }
 
-func (t *TaskContextImp) GetDb() Store {
+func (t *TaskContextImp) GetDb() core.Store {
 	return t.Db
 }
 
@@ -285,12 +286,12 @@ func (t *TaskContextImp) Close() {
 	t.EthClient.Close()
 }
 
-func NewTaskContextImpFactory(services *ServicePack) (TaskContextFactory, error) {
+func NewTaskContextImpFactory(services *core.ServicePack) (core.TaskContextFactory, error) {
 	_, err := NewTaskContextImp(services)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to use the config in TaskContextImpFactory")
 	}
-	factory := func() TaskContext {
+	factory := func() core.TaskContext {
 		ctx, _ := NewTaskContextImp(services)
 		return ctx
 	}

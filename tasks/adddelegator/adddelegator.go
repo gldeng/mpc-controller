@@ -25,7 +25,7 @@ type AddDelegator struct {
 	TxID   ids.ID
 
 	tx      *AddDelegatorTx
-	signReq *core.SignRequest
+	signReq *types.SignRequest
 
 	status Status
 	failed bool
@@ -108,7 +108,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return t.failIfError(err, ErrMsgFailedToCheckSignRequest)
 	}
 
-	if res.Status != core.StatusDone {
+	if res.Status != types.StatusDone {
 		if strings.Contains(string(res.Status), "ERROR") {
 			return t.failIfError(err, "failed to sign tx")
 		}
@@ -158,13 +158,13 @@ func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*core.SignRequest, error) {
+func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*types.SignRequest, error) {
 	var participantPks []string
 	for _, pk := range t.Quorum.ParticipantPubKeys {
 		participantPks = append(participantPks, hex.EncodeToString(pk))
 	}
 
-	signReq := core.SignRequest{
+	signReq := types.SignRequest{
 		ReqID:                  id,
 		CompressedGenPubKeyHex: hex.EncodeToString(t.Quorum.PubKey),
 		CompressedPartiPubKeys: participantPks,

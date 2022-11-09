@@ -7,12 +7,15 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/core"
 	types2 "github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/eventhandlercontext"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/router"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
 	"github.com/avalido/mpc-controller/syncer"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
@@ -199,7 +202,7 @@ func runController(c *cli.Context) error {
 	coreConfig.FetchNetworkInfo()
 
 	db := storage.NewInMemoryDb()
-	mpcClient, err := core.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	if err != nil {
 		return err
 	}
@@ -219,13 +222,13 @@ func runController(c *cli.Context) error {
 	//}
 	//ts.prepareDb()
 
-	ehContext, err := core.NewEventHandlerContextImp(services)
+	ehContext, err := eventhandlercontext.NewEventHandlerContextImp(services)
 	if err != nil {
 		return err
 	}
 
 	makeContext := func() core.TaskContext {
-		ctx, _ := core.NewTaskContextImp(services) // TODO: Handler error
+		ctx, _ := taskcontext.NewTaskContextImp(services) // TODO: Handler error
 		return ctx
 	}
 	wp, err := pool.NewExtendedWorkerPool(3, makeContext)

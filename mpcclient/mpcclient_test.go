@@ -1,8 +1,9 @@
-package core
+package mpcclient
 
 import (
 	"context"
 	"encoding/hex"
+	"github.com/avalido/mpc-controller/core/types"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,7 +16,7 @@ func TestSimulatingMpcClient(t *testing.T) {
 	hash, _ := hex.DecodeString(hashStr)
 	privateKey, _ := ethCrypto.HexToECDSA(privKeyStr)
 	client, _ := NewSimulatingMpcClient(privKeyStr)
-	client.Keygen(context.Background(), &KeygenRequest{
+	client.Keygen(context.Background(), &types.KeygenRequest{
 		ReqID:                  "kg",
 		CompressedPartiPubKeys: []string{},
 		Threshold:              0,
@@ -26,7 +27,7 @@ func TestSimulatingMpcClient(t *testing.T) {
 	pk, _ := ethCrypto.DecompressPubkey(pkBytes)
 
 	require.Equal(t, privateKey.PublicKey, *pk)
-	client.Sign(context.Background(), &SignRequest{
+	client.Sign(context.Background(), &types.SignRequest{
 		ReqID:                  reqIDStr,
 		Hash:                   hashStr,
 		CompressedGenPubKeyHex: "",
