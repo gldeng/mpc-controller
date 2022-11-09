@@ -1,3 +1,7 @@
+[![Docker Build workflow](https://github.com/AvaLido/mpc-controller/actions/workflows/build-docker.yml/badge.svg)](https://github.com/AvaLido/mpc-controller/actions?workflow=build-docker)
+[![Lint workflow](https://github.com/AvaLido/mpc-controller/actions/workflows/lint.yml/badge.svg)](https://github.com/AvaLido/mpc-controller/actions?workflow=lint)
+[![Test workflow](https://github.com/AvaLido/mpc-controller/actions/workflows/test.yml/badge.svg)](https://github.com/AvaLido/mpc-controller/actions?workflow=test)
+
 # MPC Controller
 **This project is under active development**
 ## Project Components
