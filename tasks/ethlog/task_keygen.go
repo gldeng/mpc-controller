@@ -35,7 +35,7 @@ func NewKeyGeneratedHandler(event contract.MpcManagerKeyGenerated) *KeyGenerated
 func (h *KeyGeneratedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	group, err := ctx.LoadGroup(h.Event.GroupId)
 	if err != nil {
-		ctx.GetLogger().Errorf("Failed to load group %x", h.Event.GroupId)
+		ctx.GetLogger().Errorf("Failed to load group %x, error:%+v", h.Event.GroupId, err)
 		return nil, h.failIfError(err, fmt.Sprintf("%s %x", ErrMsgFailedToLoadGroup, h.Event.GroupId))
 	}
 

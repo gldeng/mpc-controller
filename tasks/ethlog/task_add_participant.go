@@ -44,7 +44,7 @@ func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
 	if err != nil {
-		ctx.GetLogger().Errorf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey)
+		ctx.GetLogger().Errorf("%v for %x, error:%+v", ErrMsgFailedToSaveGroup, myPubKey, err)
 	} else {
 		ctx.GetLogger().Debugf("Saved group %x for %x", h.Event.GroupId, myPubKey)
 	}
