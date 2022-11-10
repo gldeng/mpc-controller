@@ -61,7 +61,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *Join) IsDone() bool {
-	return true
+	return t.Status == StatusDone
 }
 
 func (t *Join) IsSequential() bool {
@@ -73,6 +73,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
+			ctx.GetLogger().Errorf("Failed to join request %x, error:%+v", t.RequestHash, err)
 			return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.RequestHash))
 		}
 		t.TxHash = *txHash
