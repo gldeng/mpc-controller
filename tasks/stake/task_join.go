@@ -91,7 +91,7 @@ func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	}
 
 	if t.Join.FailedPermanently() {
-		ctx.GetLogger().Errorf("subtask failed to join request %x permanently, error:%+v", t.reqHash, err)
+		ctx.GetLogger().Debugf("subtask failed to join request %x permanently, error:%+v", t.reqHash, err)
 		return next, t.failIfError(err, fmt.Sprintf("subtask failed to join request %x permanently", t.reqHash))
 	}
 

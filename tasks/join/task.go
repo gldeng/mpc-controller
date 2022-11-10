@@ -75,7 +75,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
-			ctx.GetLogger().Errorf("Failed to join request. participantId:%x requestHash:%x group:%x, error:%+v", t.group.ParticipantID(), t.RequestHash, t.group.GroupId, err)
+			ctx.GetLogger().Debugf("Failed to join request. participantId:%x requestHash:%x group:%x, error:%+v", t.group.ParticipantID(), t.RequestHash, t.group.GroupId, err)
 			return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.RequestHash))
 		}
 		t.TxHash = *txHash
