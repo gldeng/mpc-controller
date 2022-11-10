@@ -6,12 +6,9 @@ require (
 	github.com/alitto/pond v1.8.2
 	github.com/ava-labs/avalanchego v1.7.14
 	github.com/ava-labs/coreth v0.8.13-rc.5
-	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/dgraph-io/ristretto v0.1.0
 	github.com/enriquebris/goconcurrentqueue v0.6.3
 	github.com/ethereum/go-ethereum v1.10.19
-	github.com/goccy/go-yaml v1.9.5
 	github.com/google/uuid v1.3.0
 	github.com/jinzhu/copier v0.3.5
 	github.com/kubecost/events v0.0.6
@@ -19,7 +16,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/objx v0.4.0
 	github.com/stretchr/testify v1.7.5
 	github.com/swaggest/rest v0.2.29
 	github.com/swaggest/swgui v1.4.5
@@ -27,7 +23,6 @@ require (
 	github.com/tidwall/secret v0.1.0
 	github.com/urfave/cli/v2 v2.10.3
 	go.uber.org/zap v1.21.0
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
 require (
@@ -47,13 +42,14 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v3 v3.0.0-20200627015759-01fd2de07837 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/decred/dcrd/lru v1.1.1 // indirect
+	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/fatih/color v1.13.0 // indirect
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
@@ -99,6 +95,7 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/swaggest/form/v5 v5.0.1 // indirect
 	github.com/swaggest/jsonschema-go v0.3.35 // indirect
 	github.com/swaggest/openapi-go v0.2.18 // indirect
@@ -114,11 +111,11 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gonum.org/v1/gonum v0.9.1 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
