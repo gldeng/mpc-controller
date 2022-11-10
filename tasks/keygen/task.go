@@ -151,7 +151,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		case core.TxStatusAborted:
 			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
 			errMsg := fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId)
-			ctx.GetLogger().Error(errMsg)
+			ctx.GetLogger().Debug(errMsg)
 			return errors.Errorf(errMsg)
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
