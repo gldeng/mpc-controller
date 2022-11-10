@@ -48,7 +48,7 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
 	}
 
-	ctx.GetLogger().Debug(fmt.Sprintf("Loaded group %x", group.GroupId))
+	ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
 	t.group = group
 
 	// TODO: improve retry strategy, involving further error handling
@@ -145,8 +145,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 
 		switch status {
 		case core.TxStatusUnknown:
-			ctx.GetLogger().Debug(fmt.Sprintf("Unkonw tx status (%v:%x) of reporting generated key for group %x",
-				status, *t.TxHash, t.group.GroupId))
+			ctx.GetLogger().Debugf("Unkonw tx status (%v:%x) of reporting generated key for group %x", status, *t.TxHash, t.group.GroupId)
 			return t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
 				status, *t.TxHash, t.group.GroupId), "")
 		case core.TxStatusAborted:
@@ -156,7 +155,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return errors.Errorf(errMsg)
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
-			ctx.GetLogger().Debug(fmt.Sprintf("Generated key reported for group %x", t.group.GroupId))
+			ctx.GetLogger().Debugf("Generated key reported for group %x", t.group.GroupId)
 		}
 	}
 	return nil

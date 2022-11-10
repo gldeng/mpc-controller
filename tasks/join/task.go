@@ -79,15 +79,14 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		status, err := ctx.CheckEthTx(t.TxHash)
-		ctx.GetLogger().Debug(fmt.Sprintf("id %v Join Status is %v", t.GetId(), status))
+		ctx.GetLogger().Debugf("id %v Join Status is %v", t.GetId(), status)
 		if err != nil {
 			ctx.GetLogger().Errorf("Failed to check status for tx %x, error:%+v", t.TxHash, err)
 			return nil, t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", t.TxHash))
 		}
 		switch status {
 		case core.TxStatusUnknown:
-			ctx.GetLogger().Debug(fmt.Sprintf("Unkonw tx status (%v:%x) of joing request %x",
-				status, t.TxHash, t.RequestHash))
+			ctx.GetLogger().Debugf("Unkonw tx status (%v:%x) of joing request %x", status, t.TxHash, t.RequestHash)
 			return nil, t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
 		case core.TxStatusAborted:
 			t.Status = StatusInit // TODO: avoid endless repeating joining?
@@ -95,7 +94,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId)
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
-			ctx.GetLogger().Debug(fmt.Sprintf("Joining request %x for group %x", t.RequestHash, t.group.GroupId))
+			ctx.GetLogger().Debugf("Joined request %x for group %x", t.RequestHash, t.group.GroupId)
 		}
 	}
 	return nil, nil

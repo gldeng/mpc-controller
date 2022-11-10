@@ -36,8 +36,8 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	myPubKey, _ := ctx.GetMyPublicKey()
 	if h.Event.PublicKey != hash256.FromBytes(myPubKey) {
-		ctx.GetLogger().Debug(fmt.Sprintf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId))) // TODO: %x
-		h.Failed = true                                                                                // TODO: this expression is ambiguous
+		ctx.GetLogger().Debugf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId)) // TODO: %x
+		h.Failed = true                                                                    // TODO: this expression is ambiguous
 		return nil, nil
 	}
 
