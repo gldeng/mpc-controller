@@ -69,25 +69,25 @@ func (l *logrus) With(fields ...Field) Logger {
 
 func (l *logrus) Debugf(format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.Debug(msg)
+	l.l.Debug(msg)
 }
 
 func (l *logrus) Infof(format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.Info(msg)
+	l.l.Info(msg)
 }
 
 func (l *logrus) Warnf(format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.Warn(msg)
+	l.l.Warn(msg)
 }
 
 func (l *logrus) Errorf(format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.Error(msg)
+	l.l.Error(msg)
 }
 
 func (l *logrus) Fatalf(format string, a ...interface{}) {
 	msg := strings.TrimSuffix(fmt.Sprintf(format, a...), "\n")
-	l.Fatalf(msg)
+	l.l.Fatalf(msg)
 }
