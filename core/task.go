@@ -39,6 +39,7 @@ type TaskContext interface {
 	GetMyPublicKey() ([]byte, error)
 	GetMyTransactSigner() *bind.TransactOpts
 	LoadGroup(groupID [32]byte) (*types.Group, error)
+	LoadGroupByLatestMpcPubKey() (*types.Group, error)
 	GetParticipantID() types.ParticipantId
 }
 

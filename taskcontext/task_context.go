@@ -124,17 +124,36 @@ func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participant
 }
 
 func (t *TaskContextImp) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
-	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
+	//transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
+	//
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to MpcManagerTransactor")
+	//}
+	//tx, err := transactor.JoinRequest(opts, participantId, requestHash)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed send tx")
+	//}
+	//hash := tx.Hash()
+	//return &hash, nil
 
+	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to MpcManagerTransactor")
+		return nil, errors.Wrap(err, "failed to create MpcManagerTransactor")
 	}
-	tx, err := transactor.JoinRequest(opts, participantId, requestHash)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed send tx")
-	}
-	hash := tx.Hash()
-	return &hash, nil
+	var hash common.Hash
+	err = backoff.RetryFnExponential10Times(t.Logger, context.Background(), time.Second, time.Second*10, func() (bool, error) {
+		tx, err := transactor.JoinRequest(opts, participantId, requestHash)
+		if err != nil {
+			if strings.Contains(err.Error(), "execution reverted") {
+				return false, errors.Wrap(err, "JoinRequest reverted")
+			}
+			return true, errors.Wrap(err, "failed call JoinRequest")
+		}
+		hash = tx.Hash()
+		return false, nil
+	})
+
+	return &hash, errors.WithStack(err)
 }
 
 func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
@@ -260,6 +279,30 @@ func (t *TaskContextImp) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode group")
 	}
+	return group, nil
+}
+
+func (t *TaskContextImp) LoadGroupByLatestMpcPubKey() (*types.Group, error) {
+	bytes, err := t.Db.Get(context.Background(), []byte("latestPubKey"))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load latest mpc public key")
+	}
+
+	if bytes == nil {
+		return nil, errors.New("loaded empty mpc public key")
+	}
+
+	model := types.MpcPublicKey{}
+	err = model.Decode(bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode mpc public key")
+	}
+
+	group, err := t.LoadGroup(model.GroupId)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load group")
+	}
+
 	return group, nil
 }
 
