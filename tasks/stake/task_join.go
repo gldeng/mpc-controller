@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/tasks/join"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -17,9 +18,11 @@ var (
 type RequestAddedHandler struct {
 	Event   contract.MpcManagerStakeRequestAdded
 	Request Request
+	reqHash types.RequestHash
 
 	Join   *join.Join
 	Failed bool
+	Done   bool
 }
 
 func (t *RequestAddedHandler) GetId() string {
@@ -28,7 +31,7 @@ func (t *RequestAddedHandler) GetId() string {
 }
 
 func (t *RequestAddedHandler) IsDone() bool {
-	return t.Join != nil && t.Join.IsDone()
+	return t.Done
 }
 
 func (t *RequestAddedHandler) IsSequential() bool {
@@ -36,7 +39,7 @@ func (t *RequestAddedHandler) IsSequential() bool {
 }
 
 func (t *RequestAddedHandler) FailedPermanently() bool {
-	return t.Join != nil && t.Join.IsSequential()
+	return t.Failed
 }
 
 func NewStakeRequestAddedHandler(event contract.MpcManagerStakeRequestAdded) (*RequestAddedHandler, error) {
@@ -50,30 +53,41 @@ func NewStakeRequestAddedHandler(event contract.MpcManagerStakeRequestAdded) (*R
 		EndTime:   event.EndTime.Uint64(),
 	}
 
-	return &RequestAddedHandler{
+	hash, err := request.Hash()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get request hash")
+	}
+
+	h := &RequestAddedHandler{
 		Event:   event,
 		Request: request,
+		reqHash: hash,
 		Join:    nil,
 		Failed:  false,
-	}, nil
+	}
+
+	return h, nil
 }
 
 func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	err := t.saveRequest(ctx)
 	if err != nil {
-		return nil, t.failIfError(err, "failed to save request")
+		ctx.GetLogger().Errorf("Failed to save request %x, error:%+v", t.reqHash, err)
+		return nil, t.failIfError(err, fmt.Sprintf("failed to save request %x", t.reqHash))
 	}
-	hash, err := t.Request.Hash()
+	t.Join = join.NewJoin(t.reqHash)
+	if t.Join == nil {
+		t.Failed = true
+		return nil, errors.Errorf("invalid joining task created for request %+x", t.reqHash)
+	}
+	next, err := t.Join.Next(ctx)
 	if err != nil {
-		return nil, t.failIfError(err, "failed to get hash")
+		ctx.GetLogger().Errorf("Failed to join request %x, error:%+v", t.reqHash, err)
+		return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.reqHash))
 	}
-	t.Join = join.NewJoin(hash)
-	if t.Join != nil {
-		next, err := t.Join.Next(ctx)
-		return next, t.failIfError(err, "failed to save request")
-	}
-
-	return nil, nil
+	t.Done = true
+	ctx.GetLogger().Debugf("Joined request %x", t.reqHash)
+	return next, nil
 }
 
 func (t *RequestAddedHandler) saveRequest(ctx core.TaskContext) error {
@@ -83,13 +97,8 @@ func (t *RequestAddedHandler) saveRequest(ctx core.TaskContext) error {
 		return err
 	}
 
-	hash, err := t.Request.Hash()
-	if err != nil {
-		return err
-	}
-
 	key := []byte("request/")
-	key = append(key, hash[:]...)
+	key = append(key, t.reqHash[:]...)
 	return ctx.GetDb().Set(context.Background(), key, rBytes)
 }
 
