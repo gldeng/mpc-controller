@@ -85,8 +85,14 @@ func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 		ctx.GetLogger().Errorf("Failed to join request %x, error:%+v", t.reqHash, err)
 		return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.reqHash))
 	}
-	t.Done = true
-	ctx.GetLogger().Debugf("Joined request %x", t.reqHash)
+
+	if t.Join.IsDone() {
+		t.Done = true
+		ctx.GetLogger().Debugf("Joined request %x", t.reqHash)
+		return nil, nil
+	}
+
+	ctx.GetLogger().Debugf("Sub joining task not done, requestHash:%x", t.reqHash)
 	return next, nil
 }
 
