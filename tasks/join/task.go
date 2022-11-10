@@ -35,12 +35,14 @@ func NewJoin(requestHash [32]byte) *Join {
 }
 
 func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
-	group, err := ctx.LoadGroupByLatestMpcPubKey() // TODO: should we always use the latest one?
-	if err != nil {
-		ctx.GetLogger().Errorf("failed to load group for joining request %x, error:%+v", t.RequestHash, err)
-		return nil, t.failIfError(err, fmt.Sprintf("failed to load group for joining request %x", t.RequestHash))
+	if t.group == nil {
+		group, err := ctx.LoadGroupByLatestMpcPubKey() // TODO: should we always use the latest one?
+		if err != nil {
+			ctx.GetLogger().Errorf("failed to load group for joining request %x, error:%+v", t.RequestHash, err)
+			return nil, t.failIfError(err, fmt.Sprintf("failed to load group for joining request %x", t.RequestHash))
+		}
+		t.group = group
 	}
-	t.group = group
 
 	//interval := 100 * time.Millisecond
 	//timer := time.NewTimer(interval)
@@ -73,7 +75,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
-			ctx.GetLogger().Errorf("Failed to join request %x, error:%+v", t.RequestHash, err)
+			ctx.GetLogger().Errorf("Failed to join request. participantId:%x requestHash:%x group:%x, error:%+v", t.group.ParticipantID(), t.RequestHash, t.group.GroupId, err)
 			return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.RequestHash))
 		}
 		t.TxHash = *txHash

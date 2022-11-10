@@ -42,14 +42,16 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
-	group, err := ctx.LoadGroup(t.Event.GroupId)
-	if err != nil {
-		ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
-		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
-	}
+	if t.group == nil {
+		group, err := ctx.LoadGroup(t.Event.GroupId)
+		if err != nil {
+			ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
+			return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
+		}
 
-	ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
-	t.group = group
+		ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
+		t.group = group
+	}
 
 	// TODO: improve retry strategy, involving further error handling
 	//	interval := 100 * time.Millisecond
