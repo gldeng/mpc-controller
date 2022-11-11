@@ -42,14 +42,16 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
-	group, err := ctx.LoadGroup(t.Event.GroupId)
-	if err != nil {
-		ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
-		return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
-	}
+	if t.group == nil {
+		group, err := ctx.LoadGroup(t.Event.GroupId)
+		if err != nil {
+			ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
+			return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
+		}
 
-	ctx.GetLogger().Debug(fmt.Sprintf("Loaded group %x", group.GroupId))
-	t.group = group
+		ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
+		t.group = group
+	}
 
 	// TODO: improve retry strategy, involving further error handling
 	//	interval := 100 * time.Millisecond
@@ -139,24 +141,19 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
-			ctx.GetLogger().Errorf("Failed to check status for tx %x : %v", *t.TxHash, err)
 			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
 		}
 
 		switch status {
 		case core.TxStatusUnknown:
-			ctx.GetLogger().Debug(fmt.Sprintf("Unkonw tx status (%v:%x) of reporting generated key for group %x",
-				status, *t.TxHash, t.group.GroupId))
 			return t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
 				status, *t.TxHash, t.group.GroupId), "")
 		case core.TxStatusAborted:
 			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
-			errMsg := fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId)
-			ctx.GetLogger().Error(errMsg)
-			return errors.Errorf(errMsg)
+			return errors.Errorf(fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId))
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
-			ctx.GetLogger().Debug(fmt.Sprintf("Generated key reported for group %x", t.group.GroupId))
+			ctx.GetLogger().Debugf("Generated key reported for group %x", t.group.GroupId)
 		}
 	}
 	return nil

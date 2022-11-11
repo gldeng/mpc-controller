@@ -27,6 +27,7 @@ contract MpcManager is Pausable, AccessControlEnumerable, IMpcManager, Initializ
     error InvalidGroupSize(); // A group requires 2 or more participants.
     error InvalidThreshold(); // Threshold has to be in range [1, n - 1].
     error InvalidPublicKey();
+    error PublicKeysNotSorted();
     error GroupNotFound();
     error InvalidGroupMembership();
     error AttemptToReaddGroup();
@@ -40,6 +41,8 @@ contract MpcManager is Pausable, AccessControlEnumerable, IMpcManager, Initializ
     error InvalidAmount();
     error QuorumAlreadyReached();
     error AttemptToRejoin();
+
+    error TransferFailed();
 
     // Events
     event ParticipantAdded(bytes indexed publicKey, bytes32 groupId, uint256 index);
@@ -119,7 +122,8 @@ contract MpcManager is Pausable, AccessControlEnumerable, IMpcManager, Initializ
     ) external payable whenNotPaused onlyAvaLido {
         if (lastGenAddress == address(0)) revert KeyNotGenerated();
         if (msg.value != amount) revert InvalidAmount();
-        payable(lastGenAddress).transfer(amount);
+        (bool success, ) = payable(lastGenAddress).call{value: amount}("");
+        if (!success) revert TransferFailed();
 
         uint256 requestNumber = _getNextStakeRequestNumber();
 
@@ -142,6 +146,7 @@ contract MpcManager is Pausable, AccessControlEnumerable, IMpcManager, Initializ
         bytes memory b;
         for (uint256 i = 0; i < groupSize; i++) {
             if (publicKeys[i].length != PUBKEY_LENGTH) revert InvalidPublicKey();
+            if (!_isSortedAscendingOrder(publicKeys)) revert PublicKeysNotSorted();
             b = bytes.concat(b, publicKeys[i]);
         }
         bytes32 groupId = IdHelpers.makeGroupId(keccak256(b), groupSize, threshold);
@@ -329,5 +334,18 @@ contract MpcManager is Pausable, AccessControlEnumerable, IMpcManager, Initializ
             mstore(0, hash)
             addr := mload(0)
         }
+    }
+
+    function _isSortedAscendingOrder(bytes[] calldata publicKeys) private pure returns (bool) {
+        uint256 prev = 0;
+
+        for (uint256 i = 0; i < publicKeys.length; i++) {
+            uint256 curr = uint256(bytes32(publicKeys[i][:32]));
+            if (curr < prev) {
+                return false;
+            }
+            prev = curr;
+        }
+        return true;
     }
 }

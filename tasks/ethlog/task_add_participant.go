@@ -36,19 +36,20 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	myPubKey, _ := ctx.GetMyPublicKey()
 	if h.Event.PublicKey != hash256.FromBytes(myPubKey) {
-		ctx.GetLogger().Debug(fmt.Sprintf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId))) // TODO: %x
-		h.Failed = true                                                                                // TODO: this expression is ambiguous
+		ctx.GetLogger().Debugf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId)) // TODO: %x
+		h.Done = true
 		return nil, nil
 	}
 
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
 	if err != nil {
-		ctx.GetLogger().Errorf("%v for %x, error:%+v", ErrMsgFailedToSaveGroup, myPubKey, err)
-	} else {
-		ctx.GetLogger().Debugf("Saved group %x for %x", h.Event.GroupId, myPubKey)
+		return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
 	}
-	return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
+
+	h.Done = true
+	ctx.GetLogger().Debugf("Saved group %x for %x", h.Event.GroupId, myPubKey)
+	return nil, nil
 }
 
 func (h *ParticipantAddedHandler) IsDone() bool {
@@ -80,7 +81,6 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to set group")
 	}
-	h.Done = true
 	return nil
 }
 

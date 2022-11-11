@@ -72,21 +72,34 @@ func NewStakeRequestAddedHandler(event contract.MpcManagerStakeRequestAdded) (*R
 func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	err := t.saveRequest(ctx)
 	if err != nil {
-		ctx.GetLogger().Errorf("Failed to save request %x, error:%+v", t.reqHash, err)
 		return nil, t.failIfError(err, fmt.Sprintf("failed to save request %x", t.reqHash))
 	}
-	t.Join = join.NewJoin(t.reqHash)
+
 	if t.Join == nil {
-		t.Failed = true
-		return nil, errors.Errorf("invalid joining task created for request %+x", t.reqHash)
+		join := join.NewJoin(t.reqHash)
+		if join == nil {
+			t.Failed = true
+			return nil, errors.Errorf("invalid sub joining task created for request %+x", t.reqHash)
+		}
+		t.Join = join
 	}
+
 	next, err := t.Join.Next(ctx)
 	if err != nil {
-		ctx.GetLogger().Errorf("Failed to join request %x, error:%+v", t.reqHash, err)
-		return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.reqHash))
+		ctx.GetLogger().Debugf("subtask got an error to join request %x, error:%v", t.reqHash, err)
 	}
-	t.Done = true
-	ctx.GetLogger().Debugf("Joined request %x", t.reqHash)
+
+	if t.Join.FailedPermanently() {
+		return next, t.failIfError(err, fmt.Sprintf("subtask failed to join request %x permanently", t.reqHash))
+	}
+
+	if t.Join.IsDone() {
+		t.Done = true
+		ctx.GetLogger().Debugf("Joined request %x", t.reqHash)
+		return next, nil
+	}
+
+	ctx.GetLogger().Debugf("Sub joining task not done, requestHash:%x", t.reqHash)
 	return next, nil
 }
 
