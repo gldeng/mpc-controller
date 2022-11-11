@@ -34,38 +34,44 @@ func NewRequestStartedHandler(event contract.MpcManagerRequestStarted) *RequestS
 
 func (h *RequestStartedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	p, err := h.participating(ctx)
+	if err != nil {
+		return nil, h.failIfErrorf(err, "failed to check index")
+	}
 	if !p {
-		return nil, h.failIfError(err, "failed to check index")
+		h.Done = true
+		ctx.GetLogger().Debugf("not participate %x", h.Event.RequestHash)
+		return nil, nil
 	}
 	hash := (types.RequestHash)(h.Event.RequestHash)
 	data, err := h.retrieveRequest(ctx)
 	if err != nil {
-		return nil, h.failIfError(err, "failed to retrieve request")
+		return nil, h.failIfErrorf(err, "failed to retrieve request")
 	}
+
+	var tasks []core.Task
 	switch hash.TaskType() {
 	case types.TaskTypStake:
 		r := new(stake.Request)
 		err := r.Decode(data)
 		if err != nil {
-			return nil, h.failIfError(err, "failed decode request")
+			return nil, h.failIfErrorf(err, "failed decode request")
 		}
-		quorum, err := h.getQuorumInfo(ctx, r.PubKey)
+		pubKeyKey := []byte("latestPubKey") // TODO: Always use latest public key?
+		quorum, err := h.getQuorumInfo(ctx, pubKeyKey)
 		if err != nil {
-			return nil, h.failIfError(err, "failed to get quorum info")
+			return nil, h.failIfErrorf(err, "failed to get quorum info")
 		}
 		task, err := stake.NewInitialStake(r, *quorum)
 		if err != nil {
-			return nil, h.failIfError(err, "failed to create stake task")
+			return nil, h.failIfErrorf(err, "failed to create stake task")
 		}
-		h.Done = true
-		return []core.Task{task}, nil
+		tasks = append(tasks, task)
 	case types.TaskTypRecover:
-	// TODO: Add logics here
-	default:
-		return nil, nil
+		// TODO: Add logics here
 	}
 
-	return nil, nil
+	h.Done = true
+	return tasks, nil
 }
 
 func (h *RequestStartedHandler) IsDone() bool {
@@ -77,14 +83,13 @@ func (h *RequestStartedHandler) IsSequential() bool {
 }
 
 func (h *RequestStartedHandler) participating(ctx core.TaskContext) (bool, error) {
-	id := ctx.GetParticipantID()
-	myIndex := id.Index()
-	for _, index := range ((*types.Indices)(h.Event.ParticipantIndices)).Indices() {
-		if myIndex == uint64(index) {
-			return true, nil
-		}
+	group, err := ctx.LoadGroupByLatestMpcPubKey()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to load group by latest mpc public key")
 	}
-	return false, nil
+	partiID := group.ParticipantID()
+	isParti := partiID.Joined(h.Event.ParticipantIndices)
+	return isParti, nil
 }
 
 func (h *RequestStartedHandler) retrieveRequest(ctx core.TaskContext) ([]byte, error) {
@@ -93,25 +98,23 @@ func (h *RequestStartedHandler) retrieveRequest(ctx core.TaskContext) ([]byte, e
 	return ctx.GetDb().Get(context.Background(), key)
 }
 
-func (h *RequestStartedHandler) retrieveKey(ctx core.TaskContext, pubKey []byte) (*types.MpcPublicKey, error) {
-	key := []byte("key/")
-	key = append(key, pubKey...)
+func (h *RequestStartedHandler) retrieveKey(ctx core.TaskContext, key []byte) (*types.MpcPublicKey, error) {
 	bytes, err := ctx.GetDb().Get(context.Background(), key)
 	if err != nil {
-		return nil, h.failIfError(err, "failed to load mpc key info")
+		return nil, h.failIfErrorf(err, "failed to load mpc key info")
 	}
 	keyInfo := new(types.MpcPublicKey)
 	err = keyInfo.Decode(bytes)
 	if err != nil {
-		return nil, h.failIfError(err, "failed to decode mpc key info")
+		return nil, h.failIfErrorf(err, "failed to decode mpc key info")
 	}
 	return keyInfo, nil
 }
 
-func (h *RequestStartedHandler) getQuorumInfo(ctx core.TaskContext, pubKey []byte) (*types.QuorumInfo, error) {
-	keyInfo, err := h.retrieveKey(ctx, pubKey)
+func (h *RequestStartedHandler) getQuorumInfo(ctx core.TaskContext, key []byte) (*types.QuorumInfo, error) {
+	keyInfo, err := h.retrieveKey(ctx, key)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to retrieve public key to %x", key)
 	}
 	indices := ((*types.Indices)(h.Event.ParticipantIndices)).Indices()
 	pks := make([][]byte, len(indices))
@@ -124,14 +127,14 @@ func (h *RequestStartedHandler) getQuorumInfo(ctx core.TaskContext, pubKey []byt
 	}
 	return &types.QuorumInfo{
 		ParticipantPubKeys: pks,
-		PubKey:             pubKey,
+		PubKey:             keyInfo.GenPubKey,
 	}, nil
 }
 
-func (h *RequestStartedHandler) failIfError(err error, msg string) error {
+func (h *RequestStartedHandler) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	h.Failed = true
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }
