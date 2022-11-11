@@ -93,6 +93,21 @@ func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
 	return t.inner.GetMyPublicKey()
 }
 
+func (t *TaskContextWrapper) GetMyTransactSigner() *bind.TransactOpts {
+	//TODO: implement me
+	panic("Implement me")
+}
+
+func (t *TaskContextWrapper) LoadGroup(groupID [32]byte) (*types2.Group, error) {
+	//TODO: implement me
+	panic("Implement me")
+}
+
+func (t *TaskContextWrapper) LoadGroupByLatestMpcPubKey() (*types2.Group, error) {
+	//TODO: implement me
+	panic("Implement me")
+}
+
 func (t *TaskContextWrapper) GetParticipantID() types2.ParticipantId {
 	return t.participantId
 }

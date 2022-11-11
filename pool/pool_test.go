@@ -78,6 +78,11 @@ func (m MockTaskContext) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	panic("implement me")
 }
 
+func (m MockTaskContext) LoadGroupByLatestMpcPubKey() (*types.Group, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m MockTaskContext) GetDb() core.Store {
 	//TODO implement me
 	panic("implement me")

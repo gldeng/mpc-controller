@@ -103,6 +103,11 @@ func (t *TaskContextWrapper) LoadGroup([32]byte) (*types2.Group, error) {
 	panic("implement me")
 }
 
+func (t *TaskContextWrapper) LoadGroupByLatestMpcPubKey() (*types2.Group, error) {
+	//TODO: implement me
+	panic("implement me")
+}
+
 func (t *TaskContextWrapper) GetParticipantID() types2.ParticipantId {
 	return t.participantId
 }
