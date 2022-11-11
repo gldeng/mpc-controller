@@ -16,23 +16,25 @@ func TestSimulatingMpcClient(t *testing.T) {
 	hash, _ := hex.DecodeString(hashStr)
 	privateKey, _ := ethCrypto.HexToECDSA(privKeyStr)
 	client, _ := NewSimulatingMpcClient(privKeyStr)
-	client.Keygen(context.Background(), &types.KeygenRequest{
+	err := client.Keygen(context.Background(), &types.KeygenRequest{
 		ReqID:                  "kg",
 		CompressedPartiPubKeys: []string{},
 		Threshold:              0,
 	})
+	require.Nil(t, err)
 	res, _ := client.Result(context.Background(), "kg")
 
 	pkBytes, _ := hex.DecodeString(res.Result)
 	pk, _ := ethCrypto.DecompressPubkey(pkBytes)
 
 	require.Equal(t, privateKey.PublicKey, *pk)
-	client.Sign(context.Background(), &types.SignRequest{
+	err = client.Sign(context.Background(), &types.SignRequest{
 		ReqID:                  reqIDStr,
 		Hash:                   hashStr,
 		CompressedGenPubKeyHex: "",
 		CompressedPartiPubKeys: []string{},
 	})
+	require.Nil(t, err)
 	pubKey := ethCrypto.FromECDSAPub(&privateKey.PublicKey)
 
 	res, _ = client.Result(context.Background(), "123")

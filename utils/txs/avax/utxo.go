@@ -44,7 +44,8 @@ func MpcUTXOFromUTXO(utxo *avax.UTXO) *MpcUTXO {
 	out := utxo.Out.(*secp256k1fx.TransferOutput)
 
 	outputOwners := MpcOutputOwners{}
-	copier.Copy(&outputOwners, out.OutputOwners)
+	err := copier.Copy(&outputOwners, out.OutputOwners)
+	_ = err // TODO: handle error
 
 	transferOutput := &MpcTransferOutput{
 		Amt:          out.Amt,

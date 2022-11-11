@@ -39,7 +39,10 @@ func MakeEventParticipantAdded(pubKey []byte, groupId [32]byte, index *big.Int) 
 	}
 	e := &contract.MpcManagerParticipantAdded{}
 	e.PublicKey = log.Topics[1]
-	abi.UnpackIntoInterface(e, "ParticipantAdded", data)
+	err = abi.UnpackIntoInterface(e, "ParticipantAdded", data)
+	if err != nil {
+		panic(err)
+	}
 	e.Raw = log
 	return e
 }
@@ -70,7 +73,10 @@ func MakeEventKeygenRequestAdded(groupId [32]byte, reqNo *big.Int) *contract.Mpc
 		Removed:     false,
 	}
 	e := &contract.MpcManagerKeygenRequestAdded{}
-	abi.UnpackIntoInterface(e, "KeygenRequestAdded", data)
+	err = abi.UnpackIntoInterface(e, "KeygenRequestAdded", data)
+	if err != nil {
+		panic(err)
+	}
 	e.Raw = log
 	return e
 }
@@ -99,7 +105,10 @@ func MakeEventRequestStarted(requestHash [32]byte, participantIndices *big.Int) 
 		Removed:     false,
 	}
 	e := &contract.MpcManagerRequestStarted{}
-	abi.UnpackIntoInterface(e, "RequestStarted", data)
+	err = abi.UnpackIntoInterface(e, "RequestStarted", data)
+	if err != nil {
+		panic(err)
+	}
 	e.Raw = log
 	return e
 }
@@ -131,7 +140,10 @@ func MakeEventKeyGenerated(groupId [32]byte, publicKey []byte) *contract.MpcMana
 		Removed:     false,
 	}
 	e := &contract.MpcManagerKeyGenerated{}
-	abi.UnpackIntoInterface(e, "KeyGenerated", data)
+	err = abi.UnpackIntoInterface(e, "KeyGenerated", data)
+	if err != nil {
+		panic(err)
+	}
 	e.Raw = log
 	return e
 }

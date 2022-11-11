@@ -55,7 +55,8 @@ func (r *Router) Start() error {
 					for _, handler := range r.logEventHandlers {
 						tasks, _ := handler.Handle(r.eventHandlerContext, evt) // TODO: Handle error
 						for _, task := range tasks {
-							r.submitter.Submit(task)
+							err := r.submitter.Submit(task)
+							_ = err // TODO: handle error
 						}
 					}
 				}
