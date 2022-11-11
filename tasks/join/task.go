@@ -93,7 +93,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
 		case core.TxStatusAborted:
 			t.Status = StatusInit // TODO: avoid endless repeating joining?
-			ctx.GetLogger().Errorf("Joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId)
+			ctx.GetLogger().Debugf("Joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId)
 			return nil, errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId)
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
