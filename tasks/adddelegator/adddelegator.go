@@ -77,7 +77,7 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 		status, err := ctx.CheckPChainTx(t.tx.ID())
 		ctx.GetLogger().Debugf("id %v AddDelegatorTx status is %v", t.Id, status)
 		if err != nil {
-			return nil, t.failIfError(err, ErrMsgFailedToCheckStatus)
+			return nil, t.failIfErrorf(err, ErrMsgFailedToCheckStatus)
 		}
 		if !core.IsPending(status) {
 			t.status = StatusDone
@@ -105,12 +105,12 @@ func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.signReq.ReqID)
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToCheckSignRequest)
+		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
 	}
 
 	if res.Status != types.StatusDone {
 		if strings.Contains(string(res.Status), "ERROR") {
-			return t.failIfError(err, "failed to sign tx")
+			return t.failIfErrorf(err, "failed to sign tx")
 		}
 		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
 		return nil
@@ -119,19 +119,19 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	sig := new(types.Signature).FromHex(res.Result)
 	err = t.tx.SetTxSig(*sig)
 	if err != nil {
-		return t.failIfError(err, "failed to set signature")
+		return t.failIfErrorf(err, "failed to set signature")
 	}
 
 	signedBytes, err := t.tx.SignedTxBytes()
 	if err != nil {
-		return t.failIfError(err, "failed to get signed AddDelegatorTx bytes")
+		return t.failIfErrorf(err, "failed to get signed AddDelegatorTx bytes")
 	}
 
 	t.TxID = t.tx.ID()
 
 	_, err = ctx.IssuePChainTx(signedBytes)
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToIssueTx)
+		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}
 
 	return nil
@@ -174,11 +174,10 @@ func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*types.SignRequest
 	return &signReq, nil
 }
 
-func (t *AddDelegator) failIfError(err error, msg string) error {
+func (t *AddDelegator) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	t.failed = true
-	msg = fmt.Sprintf("[%v] %v", t.Id, msg)
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }

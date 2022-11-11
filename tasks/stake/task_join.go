@@ -72,7 +72,7 @@ func NewStakeRequestAddedHandler(event contract.MpcManagerStakeRequestAdded) (*R
 func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	err := t.saveRequest(ctx)
 	if err != nil {
-		return nil, t.failIfError(err, fmt.Sprintf("failed to save request %x", t.reqHash))
+		return nil, t.failIfErrorf(err, "failed to save request %x", t.reqHash)
 	}
 
 	if t.Join == nil {
@@ -90,7 +90,7 @@ func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	}
 
 	if t.Join.FailedPermanently() {
-		return next, t.failIfError(err, fmt.Sprintf("subtask failed to join request %x permanently", t.reqHash))
+		return next, t.failIfErrorf(err, "subtask failed to join request %x permanently", t.reqHash)
 	}
 
 	if t.Join.IsDone() {
@@ -115,10 +115,10 @@ func (t *RequestAddedHandler) saveRequest(ctx core.TaskContext) error {
 	return ctx.GetDb().Set(context.Background(), key, rBytes)
 }
 
-func (t *RequestAddedHandler) failIfError(err error, msg string) error {
+func (t *RequestAddedHandler) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	t.Failed = true
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }

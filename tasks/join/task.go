@@ -38,7 +38,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 	if t.group == nil {
 		group, err := ctx.LoadGroupByLatestMpcPubKey() // TODO: should we always use the latest one?
 		if err != nil {
-			return nil, t.failIfError(err, fmt.Sprintf("failed to load group for joining request %x", t.RequestHash))
+			return nil, t.failIfErrorf(err, "failed to load group for joining request %x", t.RequestHash)
 		}
 		t.group = group
 	}
@@ -74,7 +74,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
-			return nil, t.failIfError(err, fmt.Sprintf("failed to join request %x", t.RequestHash))
+			return nil, t.failIfErrorf(err, "failed to join request %x", t.RequestHash)
 		}
 		t.TxHash = *txHash
 		t.Status = StatusTxSent
@@ -82,11 +82,11 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 		status, err := ctx.CheckEthTx(t.TxHash)
 		ctx.GetLogger().Debugf("id %v Join Status is %v", t.GetId(), status)
 		if err != nil {
-			return nil, t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", t.TxHash))
+			return nil, t.failIfErrorf(err, "failed to check status for tx %x", t.TxHash)
 		}
 		switch status {
 		case core.TxStatusUnknown:
-			return nil, t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
+			return nil, t.failIfErrorf(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
 		case core.TxStatusAborted:
 			t.Status = StatusInit // TODO: avoid endless repeating joining?
 			return nil, errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId)
@@ -98,10 +98,10 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	return nil, nil
 }
 
-func (t *Join) failIfError(err error, msg string) error {
+func (t *Join) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	t.Failed = true
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }

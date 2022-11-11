@@ -44,7 +44,7 @@ func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error
 	// TODO: Add all_groups, i.e. an array containing all historical groups
 	err := h.saveGroup(ctx)
 	if err != nil {
-		return nil, h.failIfError(err, fmt.Sprintf("%v for %x", ErrMsgFailedToSaveGroup, myPubKey))
+		return nil, h.failIfErrorf(err, "%v for %x", ErrMsgFailedToSaveGroup, myPubKey)
 	}
 
 	h.Done = true
@@ -84,10 +84,10 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 	return nil
 }
 
-func (h *ParticipantAddedHandler) failIfError(err error, msg string) error {
+func (h *ParticipantAddedHandler) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	h.Failed = true
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }

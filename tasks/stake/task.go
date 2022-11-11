@@ -122,13 +122,13 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 		return next, err
 	}
-	return nil, t.failIfError(errors.New("invalid state"), "invalid state of composite task")
+	return nil, t.failIfErrorf(errors.New("invalid state"), "invalid state of composite task")
 }
 
-func (t *InitialStake) failIfError(err error, msg string) error {
+func (t *InitialStake) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	t.Failed = true
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }

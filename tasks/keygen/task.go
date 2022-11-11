@@ -46,7 +46,7 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 		group, err := ctx.LoadGroup(t.Event.GroupId)
 		if err != nil {
 			ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
-			return nil, t.failIfError(err, ErrMsgFailedToLoadGroup)
+			return nil, t.failIfErrorf(err, ErrMsgFailedToLoadGroup)
 		}
 
 		ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
@@ -96,7 +96,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		normalized, err := pubKeys.CompressPubKeyHexs() // for mpc-server compatibility
 		if err != nil {
-			return t.failIfError(err, "failed to compress participant public keys")
+			return t.failIfErrorf(err, "failed to compress participant public keys")
 		}
 
 		t.KeygenRequest = &types.KeygenRequest{
@@ -106,18 +106,18 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
-			return t.failIfError(err, "failed to send keygen request")
+			return t.failIfErrorf(err, "failed to send keygen request")
 		}
 		t.Status = StatusKeygenReqSent
 	case StatusKeygenReqSent:
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.KeygenRequest.ReqID)
 		// TODO: Handle 404
 		if err != nil {
-			return t.failIfError(err, "failed to get keygen result")
+			return t.failIfErrorf(err, "failed to get keygen result")
 		}
 
 		if res == nil || res.Result == "" {
-			return t.failIfError(err, "empty keygen result")
+			return t.failIfErrorf(err, "empty keygen result")
 		}
 
 		if res.Status != types.StatusDone {
@@ -128,12 +128,12 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		genPubKeyHex := res.Result
 		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
 		if err != nil {
-			return t.failIfError(err, fmt.Sprintf("failed to decompress generated public key %v", genPubKeyHex))
+			return t.failIfErrorf(err, "failed to decompress generated public key %v", genPubKeyHex)
 		}
 
 		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
-			return t.failIfError(err, "failed to report GeneratedKey")
+			return t.failIfErrorf(err, "failed to report GeneratedKey")
 		}
 		t.TxHash = txHash
 		t.Status = StatusTxSent
@@ -141,12 +141,12 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
-			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
+			return t.failIfErrorf(err, "failed to check status for tx %x", *t.TxHash)
 		}
 
 		switch status {
 		case core.TxStatusUnknown:
-			return t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
+			return t.failIfErrorf(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
 				status, *t.TxHash, t.group.GroupId), "")
 		case core.TxStatusAborted:
 			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
@@ -159,11 +159,10 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *RequestAdded) failIfError(err error, msg string) error {
+func (t *RequestAdded) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	t.Failed = true
-	msg = fmt.Sprintf("[%v] %v", t.GetId(), msg)
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }

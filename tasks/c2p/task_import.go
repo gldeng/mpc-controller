@@ -119,24 +119,24 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
 	tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToBuildAndSignTx)
+		return t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 	}
 	t.Tx = tx
 	txHash, err := ImportTxHash(tx)
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToGetTxHash)
+		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
 	req, err := t.buildSignReq(t.Id+"/import", txHash)
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToCreateSignRequest)
+		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)
 	}
 
 	t.SignRequest = req
 
 	err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToSendSignRequest)
+		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToCheckSignRequest)
+		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
 	}
 
 	if res.Status != types.StatusDone {
@@ -154,27 +154,26 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToValidateCredential)
+		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
 	signed, err := t.SignedTx()
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToPrepareSignedTx)
+		return t.failIfErrorf(err, ErrMsgFailedToPrepareSignedTx)
 	}
 	txId := signed.ID()
 	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 	if err != nil {
-		return t.failIfError(err, ErrMsgFailedToIssueTx)
+		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}
 	t.TxID = &txId
 	return nil
 }
 
-func (t *ImportIntoPChain) failIfError(err error, msg string) error {
+func (t *ImportIntoPChain) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
 	t.Failed = true
-	msg = fmt.Sprintf("[%v] %v", t.Id, msg)
-	return errors.Wrap(err, msg)
+	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }
