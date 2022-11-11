@@ -38,7 +38,8 @@ func (d *ReDialer) GetClient(ctx context.Context) (client Client, clientCh chan 
 			return
 		}
 
-		if d.IsConnected(ctx, client); err != nil {
+		err = d.IsConnected(ctx, client)
+		if err != nil {
 			err = errors.Wrapf(err, "first client is disoconnected")
 			return
 		}
