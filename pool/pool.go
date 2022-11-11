@@ -46,8 +46,18 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		whichPool = e.sequentialWorker
 	}
 	taskWrapper := func() {
-		ctx, _ := e.contexts.Dequeue()               // TODO: Handle error
-		next, _ := task.Next(ctx.(core.TaskContext)) // TODO: Handle error
+		ctx, _ := e.contexts.Dequeue() // TODO: Handle error
+		taskCtx := ctx.(core.TaskContext)
+		next, err := task.Next(taskCtx) // TODO: Handle error
+		if err != nil {
+			taskCtx.GetLogger().Debugf("got an error for task %v, error:%v", task.GetId(), err)
+		}
+		if task.FailedPermanently() {
+			taskCtx.GetLogger().Debugf("task %v failed permanently, error:%v", task.GetId(), err)
+		}
+		if task.IsDone() {
+			taskCtx.GetLogger().Debugf("task %v was done", task.GetId())
+		}
 		if !task.IsDone() && !task.FailedPermanently() {
 			e.Submit(task)
 		}
