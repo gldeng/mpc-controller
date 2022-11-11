@@ -17,6 +17,7 @@ var (
 type RequestStartedHandler struct {
 	Event  contract.MpcManagerRequestStarted
 	Failed bool
+	Done   bool
 }
 
 func (h *RequestStartedHandler) GetId() string {
@@ -56,17 +57,19 @@ func (h *RequestStartedHandler) Next(ctx core.TaskContext) ([]core.Task, error) 
 		if err != nil {
 			return nil, h.failIfError(err, "failed to create stake task")
 		}
+		h.Done = true
 		return []core.Task{task}, nil
 	case types.TaskTypRecover:
 	// TODO: Add logics here
 	default:
 		return nil, nil
 	}
+
 	return nil, nil
 }
 
 func (h *RequestStartedHandler) IsDone() bool {
-	return true
+	return h.Done
 }
 
 func (h *RequestStartedHandler) IsSequential() bool {

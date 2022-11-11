@@ -141,20 +141,16 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		status, err := ctx.CheckEthTx(*t.TxHash)
 		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
 		if err != nil {
-			ctx.GetLogger().Errorf("Failed to check status for tx %x : %v", *t.TxHash, err)
 			return t.failIfError(err, fmt.Sprintf("failed to check status for tx %x", *t.TxHash))
 		}
 
 		switch status {
 		case core.TxStatusUnknown:
-			ctx.GetLogger().Debugf("Unkonw tx status (%v:%x) of reporting generated key for group %x", status, *t.TxHash, t.group.GroupId)
 			return t.failIfError(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
 				status, *t.TxHash, t.group.GroupId), "")
 		case core.TxStatusAborted:
 			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
-			errMsg := fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId)
-			ctx.GetLogger().Debug(errMsg)
-			return errors.Errorf(errMsg)
+			return errors.Errorf(fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId))
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
 			ctx.GetLogger().Debugf("Generated key reported for group %x", t.group.GroupId)

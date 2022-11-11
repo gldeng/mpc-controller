@@ -35,7 +35,6 @@ func NewKeyGeneratedHandler(event contract.MpcManagerKeyGenerated) *KeyGenerated
 func (h *KeyGeneratedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	group, err := ctx.LoadGroup(h.Event.GroupId)
 	if err != nil {
-		ctx.GetLogger().Errorf("Failed to load group %x, error:%+v", h.Event.GroupId, err)
 		return nil, h.failIfError(err, fmt.Sprintf("%s %x", ErrMsgFailedToLoadGroup, h.Event.GroupId))
 	}
 
@@ -43,9 +42,7 @@ func (h *KeyGeneratedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 
 	err = h.saveKey(ctx)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to save generated public key %x for group %x", h.Event.PublicKey, group.GroupId)
-		ctx.GetLogger().Error(errMsg)
-		return nil, h.failIfError(err, errMsg)
+		return nil, h.failIfError(err, fmt.Sprintf("failed to save generated public key %x for group %x", h.Event.PublicKey, group.GroupId))
 	}
 
 	ctx.GetLogger().Debugf("saved generated public key %x for group %x", h.Event.PublicKey, group.GroupId)

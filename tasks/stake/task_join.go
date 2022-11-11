@@ -72,7 +72,6 @@ func NewStakeRequestAddedHandler(event contract.MpcManagerStakeRequestAdded) (*R
 func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	err := t.saveRequest(ctx)
 	if err != nil {
-		ctx.GetLogger().Errorf("Failed to save request %x, error:%+v", t.reqHash, err)
 		return nil, t.failIfError(err, fmt.Sprintf("failed to save request %x", t.reqHash))
 	}
 
@@ -87,11 +86,10 @@ func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 
 	next, err := t.Join.Next(ctx)
 	if err != nil {
-		ctx.GetLogger().Debugf("subtask got an error to join request %x, error:%+v", t.reqHash, err)
+		ctx.GetLogger().Debugf("subtask got an error to join request %x, error:%v", t.reqHash, err)
 	}
 
 	if t.Join.FailedPermanently() {
-		ctx.GetLogger().Debugf("subtask failed to join request %x permanently, error:%+v", t.reqHash, err)
 		return next, t.failIfError(err, fmt.Sprintf("subtask failed to join request %x permanently", t.reqHash))
 	}
 
