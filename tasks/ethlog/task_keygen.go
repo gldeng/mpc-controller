@@ -48,7 +48,7 @@ func (h *KeyGeneratedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return nil, h.failIfError(err, errMsg)
 	}
 
-	ctx.GetLogger().Debug(fmt.Sprintf("saved generated public key %x for group %x", h.Event.PublicKey, group.GroupId))
+	ctx.GetLogger().Debugf("saved generated public key %x for group %x", h.Event.PublicKey, group.GroupId)
 	h.Done = true
 	return nil, nil
 }
