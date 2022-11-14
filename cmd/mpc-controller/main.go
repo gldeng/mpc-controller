@@ -18,13 +18,16 @@ import (
 	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"math/big"
 	"os"
@@ -37,6 +40,7 @@ const (
 	fnPort              = "port"
 	fnMpcManagerAddress = "mpc-manager-address"
 	fnPrivateKey        = "private-key"
+	fnPassword          = "password"
 )
 
 func printLog(event interface{}) {
@@ -45,6 +49,24 @@ func printLog(event interface{}) {
 		return
 	}
 	fmt.Printf("Received event log %v\n", evt)
+}
+
+func decryptKey(pss, cipherKey string) string {
+	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(cipherKey))
+	if err != nil {
+		err = errors.Wrapf(err, "failed to decrypt key %q", cipherKey)
+		panic(fmt.Sprintf("%+v", err))
+	}
+
+	var privKey string
+	switch len(cipherKey) {
+	case 192:
+		privKey = string(keyBytes)
+	case 128:
+		privKey = bytes.BytesToHex(keyBytes)
+	}
+
+	return privKey
 }
 
 type TestSuite struct {
@@ -152,8 +174,8 @@ func runController(c *cli.Context) error {
 
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 
-	privKey := c.String(fnPrivateKey)
-	// Parse private key
+	// Decrypt and parse private key
+	privKey := decryptKey(c.String(fnPassword), c.String(fnPrivateKey))
 	myPrivKey, err := crypto.HexToECDSA(privKey)
 	if err != nil {
 		panic("failed to parse private key")
@@ -296,6 +318,11 @@ func main() {
 				Name:     fnPrivateKey,
 				Required: true,
 				Usage:    "The private key for this participant.",
+			},
+			&cli.StringFlag{
+				Name:     fnPassword,
+				Required: true,
+				Usage:    "The password to decrypt private key",
 			},
 		},
 		Action: runController,
