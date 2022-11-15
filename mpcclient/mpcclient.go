@@ -79,7 +79,7 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 	err = backoff.RetryFnExponential10Times(c.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
 		resp, err = http.Post(c.MpcServerUrl+"/result/"+reqId, "application/json", payload)
 		if err != nil {
-			return true, errors.WithStack(err)
+			return true, errors.Wrap(err, "failed to post request")
 		}
 		return false, nil
 	})
@@ -91,7 +91,7 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var res types.Result
 	err = json.Unmarshal(body, &res)
-	return &res, errors.WithStack(err)
+	return &res, errors.Wrap(err, "failed to parse result")
 }
 
 type SimulatingMpcClient struct {
