@@ -28,7 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
 	"math/big"
 	"os"
 	"os/signal"
@@ -328,6 +327,11 @@ func main() {
 				Name:     fnPassword,
 				Required: true,
 				Usage:    "The password to decrypt private key",
+			},
+			&cli.StringFlag{
+				Name:     fnMpcServerUrl,
+				Required: true,
+				Usage:    "The URL of the MpcServer",
 			},
 		},
 		Action: runController,
