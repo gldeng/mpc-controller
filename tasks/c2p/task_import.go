@@ -127,7 +127,7 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
-	req, err := t.buildSignReq(t.Id+"/import", txHash)
+	req, err := t.buildSignReq(t.Id+"-import", txHash)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)
 	}

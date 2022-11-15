@@ -153,7 +153,7 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
-	req, err := t.buildSignReq(t.Id+"/export", txHash)
+	req, err := t.buildSignReq(t.Id+"-export", txHash)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)
 	}

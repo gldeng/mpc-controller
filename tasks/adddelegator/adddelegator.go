@@ -148,7 +148,7 @@ func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 		return errors.Wrapf(err, "failed to get AddDelegatorTx hash")
 	}
 
-	signReqs, err := t.buildSignReqs(t.Id+"/addDelegator", txHash)
+	signReqs, err := t.buildSignReqs(t.Id+"-addDelegator", txHash)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build AddDelegatorTx sign request")
 	}
