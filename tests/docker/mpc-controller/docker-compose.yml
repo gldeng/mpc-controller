@@ -8,9 +8,10 @@ services:
       /app/mpc-controller
       --host 34.172.25.188 
       --port 9650
+      --mpcServerUrl http://localhost:9000
       --private-key f6826fc16547130848ea32196c95457b4698feded1a8f109eb224ddcd27d66af7d0f88b44d2765a4a567a8999a4410852510deacdcb87e0c7cfe23fa1d0090a8
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7001:7001
     volumes:
@@ -24,9 +25,10 @@ services:
       /app/mpc-controller
       --host 34.172.25.188 
       --port 9650
+      --mpcServerUrl http://localhost:9000
       --private-key 9f099ed7a7615ce2d7de100a8feaf39adfa904146ee523f6dacaad6a3f69b4e9d10f2b01c13dc31b1265f9042d7437f63ad81c5113dec541bb799e49dd21c571
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7002:7002
     volumes:
@@ -40,9 +42,10 @@ services:
       /app/mpc-controller
       --host 34.172.25.188
       --port 9650
+      --mpcServerUrl http://localhost:9000
       --private-key e3858ec05c7762d79de30428a2561a520123b1e2b16687ae57ba0ba550e07ffac49861bab15fe62678435c8ae2a57522752a7b8af68d7591ca0e7b44c5f64a4d
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7003:7003
     volumes:
@@ -56,9 +59,10 @@ services:
       /app/mpc-controller
       --host 34.172.25.188 
       --port 9650 
+      --mpcServerUrl http://localhost:9000
       --private-key a8f68535da081ab3818d9f00f64730583b4d31b918b44771526c925d833df96b8c258fff5e730f6c806a99edc24ad90ef177c0918517527f81e908ec7009feaa 
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7004:7004
     volumes:
@@ -71,10 +75,11 @@ services:
     command: |
       /app/mpc-controller
       --host 34.172.25.188 
-      --port 9650 
+      --port 9650
+      --mpcServerUrl http://localhost:9000
       --private-key 7aa717fdbb98618c438224df53b1de435932a831f430495a06f00b5c0aabfc63eaf7e9439361a46ecac4a42b5ba39779373c57d6c45ac9ac06b7bd42e03abaf8 
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7005:7005
     volumes:
@@ -87,10 +92,11 @@ services:
     command: |
       /app/mpc-controller
       --host 34.172.25.188 
-      --port 9650 
+      --port 9650
+      --mpcServerUrl http://localhost:9000
       --private-key 5542f197e10c3b91c05767fe0906d7caad6380913df0f9b850f0044dd61b3b7358dd8db2e5f4961c2f799d1442f095b36ce12b1011861948e72575877ead7f7b 
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7006:7006
     volumes:
@@ -103,10 +109,11 @@ services:
     command: |
       /app/mpc-controller
       --host 34.172.25.188 
-      --port 9650 
+      --port 9650
+      --mpcServerUrl http://localhost:9000
       --private-key 0c56c3f0d5ae14d8853e964430f517b8016ac7e24dd15179d5d2657c38e7d6fa285ab0fcc748bd8c822a65e02f5a07d7e3be7ef3980bfd382bbda1bf5477fc3d 
       --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xc13f4e4028e77d3d83331bf722ebf9e589efd117
+      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
     ports:
       - 7007:7007
     volumes:

@@ -67,9 +67,9 @@ func (t *AddDelegatorTx) TxHash() ([]byte, error) {
 }
 
 func (t *AddDelegatorTx) SetTxSig(sig [SigLength]byte) error {
-	if t.addDelegatorTxCred != nil {
-		return errors.New(ErrMsgSignatureAlreadySet)
-	}
+	//if t.addDelegatorTxCred != nil { TODO: enabling this check cause error
+	//	return errors.New(ErrMsgSignatureAlreadySet)
+	//}
 
 	hash, err := t.TxHash()
 	if err != nil {

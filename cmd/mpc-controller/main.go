@@ -28,12 +28,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
 )
+
+// TODO: improve flags
 
 const (
 	fnHost              = "host"
@@ -41,6 +43,7 @@ const (
 	fnMpcManagerAddress = "mpc-manager-address"
 	fnPrivateKey        = "private-key"
 	fnPassword          = "password"
+	fnMpcServerUrl      = "mpcServerUrl"
 )
 
 func printLog(event interface{}) {
@@ -220,11 +223,13 @@ func runController(c *cli.Context) error {
 
 	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q)
 
-	db := storage.NewInMemoryDb()
-	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
-	if err != nil {
-		return err
-	}
+	db := storage.NewInMemoryDb() // TODO: use persistent db
+
+	// Create mpcClient
+	mpcClient := &mpcclient.MyMpcClient{
+		Logger:       myLogger,
+		MpcServerUrl: c.String(fnMpcServerUrl)}
+
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
 	syn := synchronizer.NewSyncer(services, q)
@@ -323,6 +328,11 @@ func main() {
 				Name:     fnPassword,
 				Required: true,
 				Usage:    "The password to decrypt private key",
+			},
+			&cli.StringFlag{
+				Name:     fnMpcServerUrl,
+				Required: true,
+				Usage:    "The URL of the MpcServer",
 			},
 		},
 		Action: runController,

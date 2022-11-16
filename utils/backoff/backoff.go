@@ -3,7 +3,7 @@ package backoff
 import (
 	"context"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/lestrrat-go/backoff/v2"
+	backoff "github.com/lestrrat-go/backoff/v2"
 	"github.com/pkg/errors"
 	"time"
 )
@@ -98,9 +98,7 @@ func RetryFn(log logger.Logger, ctx context.Context, policy backoff.Policy, fn F
 		}
 		retryNum++
 		if err != nil {
-			log.Debug("Retry", []logger.Field{
-				{"retryNum", retryNum},
-				{"retryAfter", time.Now().Sub(lastRetryAt).Seconds()}}...)
+			log.Debugf("retried %v times after %v seconds, error:%v", retryNum, time.Now().Sub(lastRetryAt).Seconds(), err)
 		}
 
 		lastRetryAt = time.Now()
