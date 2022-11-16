@@ -98,11 +98,9 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToGetSignatureAndSendTx, err)
 			return nil, err
-		} else {
-			if t.TxID != nil {
-				ctx.GetLogger().Debugf("id %v ExportTx ID is %v", t.Id, t.TxID.String())
-			}
-
+		}
+		if t.TxID != nil {
+			ctx.GetLogger().Debugf("id %v ExportTx ID is %v", t.Id, t.TxID.String())
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
@@ -186,12 +184,14 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToPrepareSignedTx)
 	}
+	txId := signed.ID()
+	t.TxID = &txId
+	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}
-	txId := signed.ID()
-	t.TxID = &txId
+
 	return nil
 }
 

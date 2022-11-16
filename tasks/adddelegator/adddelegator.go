@@ -22,7 +22,7 @@ type AddDelegator struct {
 	Id     string
 	Quorum types.QuorumInfo
 	Param  *StakeParam
-	TxID   ids.ID
+	TxID   *ids.ID
 
 	tx      *AddDelegatorTx
 	signReq *types.SignRequest
@@ -71,8 +71,10 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, err
 		}
 
-		ctx.GetLogger().Debugf("id %v AddDelegatorTx ID is %v", t.Id, t.tx.ID().String())
-		t.status = StatusTxSent
+		if t.TxID != nil {
+			ctx.GetLogger().Debugf("id %v AddDelegatorTx ID is %v", t.Id, t.tx.ID().String())
+			t.status = StatusTxSent
+		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(t.tx.ID())
 		ctx.GetLogger().Debugf("id %v AddDelegatorTx status is %v", t.Id, status)
@@ -127,9 +129,10 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, "failed to get signed AddDelegatorTx bytes")
 	}
 
-	t.TxID = t.tx.ID()
+	txID := t.tx.ID()
+	t.TxID = &txID
 
-	_, err = ctx.IssuePChainTx(signedBytes)
+	_, err = ctx.IssuePChainTx(signedBytes) // TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}

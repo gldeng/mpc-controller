@@ -77,11 +77,9 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToGetSignatureAndSendTx, err)
 			return nil, err
-		} else {
-			if t.TxID != nil {
-				ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.Id, t.TxID.String())
-			}
-
+		}
+		if t.TxID != nil {
+			ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.Id, t.TxID.String())
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
@@ -162,11 +160,12 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToPrepareSignedTx)
 	}
 	txId := signed.ID()
+	t.TxID = &txId
+	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}
-	t.TxID = &txId
 	return nil
 }
 
