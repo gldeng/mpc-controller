@@ -49,6 +49,8 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
+				{"pubKey", in.PublicKey},
+				{"partiKeys", in.ParticipantKeys},
 				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
 			return nil
@@ -103,6 +105,8 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
+				{"pubKey", in.PublicKey},
+				{"partiKeys", in.ParticipantKeys},
 				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
 			return errors.Errorf("Sign for request %q has been done, extra request not allowed", in.RequestId)
@@ -115,6 +119,8 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 				{"reqId", in.RequestId},
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
+				{"pubKey", in.PublicKey},
+				{"partiKeys", in.ParticipantKeys},
 				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
 			return nil
@@ -149,6 +155,8 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 			{"reqId", in.RequestId},
 			{"hits", lastSignReq.hits},
 			{"status", lastSignReq.status},
+			{"pubKey", in.PublicKey},
+			{"partiKeys", in.ParticipantKeys},
 			{"hash", in.Hash},
 			{"signature", lastSignReq.result}}...)
 

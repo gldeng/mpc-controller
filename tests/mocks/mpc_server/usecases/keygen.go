@@ -36,6 +36,9 @@ func Keygen(log logger.Logger) usecase.IOInteractor {
 			storer.StoreKeygenRequestModel(lastKeygenReq)
 			log.Debug("Mpc-server received keygen request", []logger.Field{
 				{"reqId", in.RequestId},
+				{"partiKeysLen", len(in.ParticipantKeys)},
+				{"threshold", in.Threshold},
+				{"partiKeys", in.ParticipantKeys},
 				{"hits", lastKeygenReq.hits},
 				{"status", lastKeygenReq.status},
 				{"pubkey", lastKeygenReq.result}}...)
@@ -47,6 +50,9 @@ func Keygen(log logger.Logger) usecase.IOInteractor {
 			storer.StoreKeygenRequestModel(lastKeygenReq)
 			log.Error("Received redundant keygen request", []logger.Field{
 				{"reqId", in.RequestId},
+				{"partiKeysLen", len(in.ParticipantKeys)},
+				{"threshold", in.Threshold},
+				{"partiKeys", in.ParticipantKeys},
 				{"hits", lastKeygenReq.hits},
 				{"status", lastKeygenReq.status},
 				{"pubkey", lastKeygenReq.result}}...)
@@ -58,6 +64,9 @@ func Keygen(log logger.Logger) usecase.IOInteractor {
 			storer.StoreKeygenRequestModel(lastKeygenReq)
 			log.Debug("Mpc-server received keygen request", []logger.Field{
 				{"reqId", in.RequestId},
+				{"partiKeysLen", len(in.ParticipantKeys)},
+				{"threshold", in.Threshold},
+				{"partiKeys", in.ParticipantKeys},
 				{"hits", lastKeygenReq.hits},
 				{"status", lastKeygenReq.status},
 				{"pubkey", lastKeygenReq.result}}...)
@@ -73,6 +82,9 @@ func Keygen(log logger.Logger) usecase.IOInteractor {
 		storer.StoreKeygenRequestModel(lastKeygenReq)
 		log.Debug("Mpc-server received keygen request", []logger.Field{
 			{"reqId", in.RequestId},
+			{"partiKeysLen", len(in.ParticipantKeys)},
+			{"threshold", in.Threshold},
+			{"partiKeys", in.ParticipantKeys},
 			{"hits", lastKeygenReq.hits},
 			{"status", lastKeygenReq.status},
 			{"pubkey", lastKeygenReq.result}}...)
