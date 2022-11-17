@@ -50,6 +50,7 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
 				{"pubKey", in.PublicKey},
+				{"partiKeysLen", len(in.ParticipantKeys)},
 				{"partiKeys", in.ParticipantKeys},
 				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
@@ -106,6 +107,7 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
 				{"pubKey", in.PublicKey},
+				{"partiKeysLen", len(in.ParticipantKeys)},
 				{"partiKeys", in.ParticipantKeys},
 				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
@@ -120,6 +122,7 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 				{"hits", lastSignReq.hits},
 				{"status", lastSignReq.status},
 				{"pubKey", in.PublicKey},
+				{"partiKeysLen", len(in.ParticipantKeys)},
 				{"partiKeys", in.ParticipantKeys},
 				{"hash", in.Hash},
 				{"signature", lastSignReq.result}}...)
@@ -156,6 +159,7 @@ func Sign(log logger.Logger) usecase.IOInteractor {
 			{"hits", lastSignReq.hits},
 			{"status", lastSignReq.status},
 			{"pubKey", in.PublicKey},
+			{"partiKeysLen", len(in.ParticipantKeys)},
 			{"partiKeys", in.ParticipantKeys},
 			{"hash", in.Hash},
 			{"signature", lastSignReq.result}}...)
