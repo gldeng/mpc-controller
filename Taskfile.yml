@@ -1,8 +1,5 @@
 version: '3'
 
-includes:
-  tests: ./tests
-
 tasks:
   # ----------Tasks to deploy account----------
   deploy:
