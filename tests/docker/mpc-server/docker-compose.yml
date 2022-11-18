@@ -1,0 +1,164 @@
+version: "2.4"
+
+services:
+  server1:
+    image: avalido/mpc-server
+    container_name: mpc_server1
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key1
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8001
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server1.db
+    ports:
+      - 8001:8001
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
+  server2:
+    image: avalido/mpc-server
+    container_name: mpc_server2
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key2
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8002
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server2.db
+    ports:
+      - 8002:8002
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
+  server3:
+    image: avalido/mpc-server
+    container_name: mpc_server3
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key3
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8003
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server3.db
+    ports:
+      - 8003:8003
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
+  server4:
+    image: avalido/mpc-server
+    container_name: mpc_server4
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key4
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8004
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server4.db
+    ports:
+      - 8004:8004
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
+  server5:
+    image: avalido/mpc-server
+    container_name: mpc_server5
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key5
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8005
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server5.db
+    ports:
+      - 8005:8005
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
+  server6:
+    image: avalido/mpc-server
+    container_name: mpc_server6
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key6
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8006
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server6.db
+    ports:
+      - 8006:8006
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
+  server7:
+    image: avalido/mpc-server
+    container_name: mpc_server7
+    environment:
+      - RUST_LOG=debug
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: |
+      /app/mpc-server
+      -s /app/configs/key7
+      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
+      -a 0.0.0.0
+      --port 8007
+      -r redis://rockx-mpc-cluster-test.us-central1-a.c.rockx-mpc-lab.internal:6379/
+      --db-path /app/data/server7.db
+    ports:
+      - 8007:8007
+    volumes:
+      - ./configs:/app/configs/
+      - ./data:/app/data/
+      - ./logs:/app/logs/
