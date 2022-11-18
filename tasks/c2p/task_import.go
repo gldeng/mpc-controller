@@ -137,6 +137,7 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
+	ctx.GetLogger().Debugf("sent signing ImportTx request into P-Chain, requestID:%v", req.ReqID)
 	return nil
 }
 

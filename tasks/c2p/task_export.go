@@ -162,6 +162,7 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
+	ctx.GetLogger().Debugf("sent signing ExportTx request from C-Chain, requestID:%v", req.ReqID)
 	return nil
 }
 

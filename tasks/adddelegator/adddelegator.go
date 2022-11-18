@@ -100,7 +100,7 @@ func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to send AddDelegator signing request")
 	}
-
+	ctx.GetLogger().Debugf("sent signing AddDelegatorTx request, requestID:%v", t.signReq.ReqID)
 	return nil
 }
 
