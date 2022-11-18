@@ -23,8 +23,8 @@ type KeygenRequest struct {
 type SignRequest struct {
 	ReqID                  string   `json:"request_id"`
 	Hash                   string   `json:"message"`
-	CompressedGenPubKeyHex string   `json:"public_key"`
-	CompressedPartiPubKeys []string `json:"participant_public_keys"`
+	CompressedGenPubKeyHex string   `json:"public_key"`              // TODO: add format check
+	CompressedPartiPubKeys []string `json:"participant_public_keys"` // TODO: add format check
 }
 
 type Result struct {
