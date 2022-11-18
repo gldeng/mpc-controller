@@ -2,7 +2,6 @@ package addDelegator
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
@@ -163,15 +162,15 @@ func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 }
 
 func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*types.SignRequest, error) {
-	var participantPks []string
-	for _, pk := range t.Quorum.ParticipantPubKeys {
-		participantPks = append(participantPks, hex.EncodeToString(pk))
+	partiPubKeys, genPubKey, err := t.Quorum.CompressKeys()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compress public keys")
 	}
 
 	signReq := types.SignRequest{
 		ReqID:                  id,
-		CompressedGenPubKeyHex: hex.EncodeToString(t.Quorum.PubKey),
-		CompressedPartiPubKeys: participantPks,
+		CompressedGenPubKeyHex: genPubKey,
+		CompressedPartiPubKeys: partiPubKeys,
 		Hash:                   bytes.BytesToHex(hash),
 	}
 
