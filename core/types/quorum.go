@@ -6,16 +6,16 @@ import (
 )
 
 type QuorumInfo struct {
-	ParticipantPubKeys [][]byte
-	PubKey             []byte
+	ParticipantPubKeys PubKeys
+	PubKey             PubKey
 }
 
 func (q *QuorumInfo) CChainAddress() common.Address {
-	addr, _ := PubKey(q.PubKey).CChainAddress()
+	addr, _ := q.PubKey.CChainAddress()
 	return addr
 }
 
 func (q *QuorumInfo) PChainAddress() ids.ShortID {
-	addr, _ := PubKey(q.PubKey).PChainAddress()
+	addr, _ := q.PubKey.PChainAddress()
 	return addr
 }

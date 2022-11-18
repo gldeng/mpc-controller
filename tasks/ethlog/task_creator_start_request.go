@@ -117,7 +117,7 @@ func (h *RequestStartedHandler) getQuorumInfo(ctx core.TaskContext, key []byte) 
 		return nil, errors.Wrapf(err, "failed to retrieve public key to %x", key)
 	}
 	indices := ((*types.Indices)(h.Event.ParticipantIndices)).Indices()
-	pks := make([][]byte, len(indices))
+	pks := make([]types.PubKey, len(indices))
 	for i, index := range indices {
 		k := keyInfo.ParticipantPubKeys[index-1]
 		if k == nil {
