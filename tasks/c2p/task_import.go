@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 var (
@@ -147,7 +148,11 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 
 	if res.Status != types.StatusDone {
-		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
+		status := strings.ToLower(string(res.Status))
+		if strings.Contains(status, "error") || strings.Contains(status, "err") {
+			return t.failIfErrorf(err, "failed to sign ImportTx into P-Chain, status:%v", status)
+		}
+		ctx.GetLogger().Debugf("signing ImportTx into P-Chain not done, requestID:%v, status:%v", t.SignRequest.ReqID, status) // TODO: timeout and quit
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())

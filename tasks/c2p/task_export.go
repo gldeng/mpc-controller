@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"math/big"
+	"strings"
 	"time"
 )
 
@@ -76,7 +77,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		}
 	}
 
-	return nil, nil
+	return nil, nil // TODO: handle dead code
 }
 
 func (t *ExportFromCChain) SignedTx() (*evm.Tx, error) {
@@ -172,7 +173,11 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 
 	if res.Status != types.StatusDone {
-		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
+		status := strings.ToLower(string(res.Status))
+		if strings.Contains(status, "error") || strings.Contains(status, "err") {
+			return t.failIfErrorf(err, "failed to sign ExportTx from C-Chain, status:%v", status)
+		}
+		ctx.GetLogger().Debugf("signing ExportTx from C-Chain not done, requestID:%v, status:%v", t.SignRequest.ReqID, status) // TODO: timeout and quit
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())

@@ -111,10 +111,11 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 
 	if res.Status != types.StatusDone {
-		if strings.Contains(string(res.Status), "ERROR") {
-			return t.failIfErrorf(err, "failed to sign tx")
+		status := strings.ToLower(string(res.Status))
+		if strings.Contains(status, "error") || strings.Contains(status, "err") {
+			return t.failIfErrorf(err, "failed to sign AddDelegatorTx, status:%v", status)
 		}
-		ctx.GetLogger().Debug(DebugMsgSignRequestNotDone)
+		ctx.GetLogger().Debugf("signing AddDelegatorTx not done, requestID:%v, status:%v", t.signReq.ReqID, status) // TODO: timeout and quit
 		return nil
 	}
 
