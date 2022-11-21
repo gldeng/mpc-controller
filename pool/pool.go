@@ -4,6 +4,7 @@ import (
 	"github.com/alitto/pond"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/enriquebris/goconcurrentqueue"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -21,7 +22,10 @@ func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*Exte
 	parallelPool := pond.New(size, 1024)
 	contexts := goconcurrentqueue.NewFIFO()
 	for i := 0; i < size+1; i++ {
-		contexts.Enqueue(makeContext())
+		err := contexts.Enqueue(makeContext())
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to enqueue task context")
+		}
 	}
 	return &ExtendedWorkerPool{
 		sequentialWorker: sequentialWorker,
@@ -61,7 +65,10 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		if !task.IsDone() && !task.FailedPermanently() {
 			e.Submit(task)
 		}
-		e.contexts.Enqueue(ctx)
+		err = e.contexts.Enqueue(ctx)
+		if err != nil {
+			taskCtx.GetLogger().Debugf("failed to enqueue task context, error:%v", err)
+		}
 		if next != nil {
 			for _, t := range next {
 				e.Submit(t) // Task needs to continue with itself or succeeding tasks
