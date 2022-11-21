@@ -63,7 +63,10 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 			taskCtx.GetLogger().Debugf("%v done", task.GetId())
 		}
 		if !task.IsDone() && !task.FailedPermanently() {
-			e.Submit(task)
+			err = e.Submit(task)
+			if err != nil {
+				taskCtx.GetLogger().Debugf("failed to submit task, error:%v", err)
+			}
 		}
 		err = e.contexts.Enqueue(ctx)
 		if err != nil {
@@ -71,7 +74,10 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		}
 		if next != nil {
 			for _, t := range next {
-				e.Submit(t) // Task needs to continue with itself or succeeding tasks
+				err = e.Submit(t) // Task needs to continue with itself or succeeding tasks
+				if err != nil {
+					taskCtx.GetLogger().Debugf("failed to submit task, error:%v", err)
+				}
 			}
 		}
 	}
