@@ -25,8 +25,8 @@ func (p *MetricsService) Start() error {
 
 	wg := &sync.WaitGroup{}
 	var err error
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		err = srv.ListenAndServe()
 		wg.Done()
 	}()
