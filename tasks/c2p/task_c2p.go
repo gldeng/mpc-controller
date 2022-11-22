@@ -31,10 +31,7 @@ func (t *C2P) FailedPermanently() bool {
 }
 
 func (t *C2P) IsSequential() bool {
-	if t.ExportTask.IsDone() {
-		return false
-	}
-	return true
+	return !t.ExportTask.IsDone()
 }
 
 func (t *C2P) Next(ctx core.TaskContext) ([]core.Task, error) {
