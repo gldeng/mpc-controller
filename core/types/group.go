@@ -35,5 +35,5 @@ func (g Groups) Encode() ([]byte, error) {
 }
 
 func (g Groups) Decode(data []byte) error {
-	return json.Unmarshal(data, g)
+	return json.Unmarshal(data, &g)
 }
