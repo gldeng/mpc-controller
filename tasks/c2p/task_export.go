@@ -64,19 +64,22 @@ func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*E
 func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	interval := 100 * time.Millisecond
 	timer := time.NewTimer(interval)
+	var next []core.Task
+	var err error
+loop:
 	for {
 		select {
 		case <-timer.C:
-			next, err := t.run(ctx)
-			if err != nil || t.Status == StatusDone {
-				return next, err
-			} else {
-				timer.Reset(interval)
+			next, err = t.run(ctx)
+			if t.Status == StatusDone || t.Failed {
+				break loop
 			}
+
+			timer.Reset(interval)
 		}
 	}
 
-	return nil, nil // TODO: handle dead code
+	return next, errors.Wrap(err, "failed to export from C-Chain")
 }
 
 func (t *ExportFromCChain) SignedTx() (*evm.Tx, error) {
