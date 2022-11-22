@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"time"
 )
 
 var (
@@ -42,37 +43,33 @@ func (t *RequestAdded) GetId() string {
 }
 
 func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if t.group == nil {
-		group, err := ctx.LoadGroup(t.Event.GroupId)
-		if err != nil {
-			ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
-			return nil, t.failIfErrorf(err, ErrMsgFailedToLoadGroup)
-		}
+	t.retrieveGroup(ctx)
+	// TODO: improve retry strategy, involving further error handling
+	startTime := time.Now()
+	timeOut := 10 * time.Minute
+	interval := 1 * time.Second
+	timer := time.NewTimer(interval)
+	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
 
-		ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
-		t.group = group
+	var err error
+
+loop:
+	for {
+		select {
+		case <-timer.C:
+			err = t.run(ctx)
+			if t.Failed || t.Status == StatusDone {
+				break loop
+			}
+			if time.Now().Sub(startTime) >= timeOut {
+				break loop
+			}
+
+			timer.Reset(interval)
+		}
 	}
 
-	// TODO: improve retry strategy, involving further error handling
-	//	interval := 100 * time.Millisecond
-	//	timer := time.NewTimer(interval)
-	//	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
-	//
-	//loop:
-	//	for {
-	//		select {
-	//		case <-timer.C:
-	//			err = t.run(ctx)
-	//			if t.Failed || t.Status == StatusDone {
-	//				break loop
-	//			}
-	//
-	//			timer.Reset(interval)
-	//		}
-	//	}
-	//
-	//	return nil, err
-	return nil, t.run(ctx)
+	return nil, err
 }
 
 func (t *RequestAdded) IsDone() bool {
@@ -84,7 +81,7 @@ func (t *RequestAdded) FailedPermanently() bool {
 }
 
 func (t *RequestAdded) IsSequential() bool {
-	return false
+	return true
 }
 
 func (t *RequestAdded) run(ctx core.TaskContext) error {
@@ -165,4 +162,18 @@ func (t *RequestAdded) failIfErrorf(err error, format string, a ...any) error {
 	}
 	t.Failed = true
 	return errors.Wrap(err, fmt.Sprintf(format, a...))
+}
+
+func (t *RequestAdded) retrieveGroup(ctx core.TaskContext) error {
+	if t.group == nil {
+		group, err := ctx.LoadGroup(t.Event.GroupId)
+		if err != nil {
+			ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
+			return t.failIfErrorf(err, ErrMsgFailedToLoadGroup)
+		}
+
+		ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
+		t.group = group
+	}
+	return nil
 }
