@@ -71,6 +71,13 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 	if time.Now().Sub(t.StartTime) >= 30*time.Minute {
 		return nil, errors.New(ErrMsgTimedOut)
 	}
+	defer func() {
+		t.LastStepTime = time.Now()
+	}()
+	return t.run(ctx)
+}
+
+func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 	switch t.status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
