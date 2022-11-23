@@ -36,7 +36,7 @@ func (t *InitialStake) GetId() string {
 }
 
 func (t *InitialStake) FailedPermanently() bool {
-	return t.Failed || t.C2P.FailedPermanently()
+	return t.Failed || t.C2P.FailedPermanently() // TODO: Should purely base on sub-tasks? i.e. no own Failed flag
 }
 
 func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, error) {
@@ -109,7 +109,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			ctx.GetLogger().Errorf("Failed to run C2P, error: %v", err)
 		}
-		return next, err
+		return next, t.failIfErrorf(err, "c2p failed")
 	}
 
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
@@ -120,7 +120,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 				ctx.GetLogger().Errorf("%v AddDelegator got error:%+v", t.Id, err)
 			}
 		}
-		return next, err
+		return next, t.failIfErrorf(err, "add delegator failed")
 	}
 	return nil, t.failIfErrorf(errors.New("invalid state"), "invalid state of composite task")
 }

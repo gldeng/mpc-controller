@@ -169,7 +169,7 @@ func idFromString(str string) ids.ID {
 func runController(c *cli.Context) error {
 
 	logger.DevMode = true
-	logger.UseConsoleEncoder = true // temporally for easier debug only
+	logger.UseConsoleEncoder = false // temporally for easier debug only
 	myLogger := logger.Default()
 
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
