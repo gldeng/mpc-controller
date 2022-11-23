@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/pkg/errors"
@@ -60,6 +61,11 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 }
 
 func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
+	pubKeys, _, _ := t.Quorum.CompressKeys()
+	ctx.GetLogger().Debug("running initial stake", logger.Field{
+		Key:   "participants",
+		Value: pubKeys,
+	})
 	tasks, err := t.run(ctx)
 	if err != nil {
 		t.SubTaskHasError = err
