@@ -62,7 +62,7 @@ loop:
 				break loop
 			}
 			if time.Now().Sub(startTime) >= timeOut {
-				break loop
+				return nil, errors.New("task timed out")
 			}
 
 			timer.Reset(interval)

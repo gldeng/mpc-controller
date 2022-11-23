@@ -12,6 +12,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"strings"
+	"time"
 )
 
 var (
@@ -30,6 +31,8 @@ type ImportIntoPChain struct {
 	TxID           *ids.ID
 	SignRequest    *types.SignRequest
 	Failed         bool
+	StartTime      time.Time
+	LastStepTime   time.Time
 }
 
 func (t *ImportIntoPChain) GetId() string {
@@ -59,10 +62,19 @@ func NewImportIntoPChain(id string, quorum types.QuorumInfo, signedExportTx *evm
 		TxCred:         nil,
 		TxID:           nil,
 		SignRequest:    nil,
+		Failed:         false,
+		StartTime:      time.Now(),
+		LastStepTime:   time.Now(),
 	}, nil
 }
 
 func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if time.Now().Sub(t.LastStepTime) < 2*time.Second { // Min delay between steps
+		return nil, nil
+	}
+	if time.Now().Sub(t.StartTime) >= 10*time.Minute {
+		return nil, errors.New(ErrMsgTimedOut)
+	}
 	switch t.Status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)

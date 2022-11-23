@@ -20,4 +20,5 @@ const (
 	ErrMsgFailedToValidateCredential    = "failed to validate cred"
 	ErrMsgFailedToPrepareSignedTx       = "failed to get signed tx"
 	ErrMsgFailedToIssueTx               = "failed to issue tx"
+	ErrMsgTimedOut                      = "task timed out"
 )

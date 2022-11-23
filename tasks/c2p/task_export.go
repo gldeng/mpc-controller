@@ -30,6 +30,7 @@ type ExportFromCChain struct {
 	TxID        *ids.ID
 	SignRequest *types.SignRequest
 	Failed      bool
+	StartTime   time.Time
 }
 
 func (t *ExportFromCChain) GetId() string {
@@ -57,13 +58,18 @@ func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*E
 		Tx:          nil,
 		TxHash:      nil,
 		TxCred:      nil,
+		TxID:        nil,
 		SignRequest: nil,
+		Failed:      false,
+		StartTime:   time.Now(),
 	}, nil
 }
 
 func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
-	interval := 100 * time.Millisecond
+	timeOut := 10 * time.Minute
+	interval := 2 * time.Second
 	timer := time.NewTimer(interval)
+	defer timer.Stop()
 	var next []core.Task
 	var err error
 loop:
@@ -73,6 +79,9 @@ loop:
 			next, err = t.run(ctx)
 			if t.Status == StatusDone || t.Failed {
 				break loop
+			}
+			if time.Now().Sub(t.StartTime) >= timeOut {
+				return nil, errors.New(ErrMsgTimedOut)
 			}
 
 			timer.Reset(interval)

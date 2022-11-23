@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"strings"
+	"time"
 )
 
 // todo: use ErrMsg
@@ -26,15 +27,24 @@ type AddDelegator struct {
 	tx      *AddDelegatorTx
 	signReq *types.SignRequest
 
-	status Status
-	failed bool
+	status       Status
+	failed       bool
+	StartTime    time.Time
+	LastStepTime time.Time
 }
 
 func NewAddDelegator(id string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
 	return &AddDelegator{
-		Id:     id,
-		Quorum: quorum,
-		Param:  param,
+		Id:           id,
+		Quorum:       quorum,
+		Param:        param,
+		TxID:         nil,
+		tx:           nil,
+		signReq:      nil,
+		status:       StatusInit,
+		failed:       false,
+		StartTime:    time.Now(),
+		LastStepTime: time.Now(),
 	}, nil
 }
 
@@ -55,6 +65,12 @@ func (t *AddDelegator) IsDone() bool {
 }
 
 func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if time.Now().Sub(t.LastStepTime) < 2*time.Second { // Min delay between steps
+		return nil, nil
+	}
+	if time.Now().Sub(t.StartTime) >= 10*time.Minute {
+		return nil, errors.New(ErrMsgTimedOut)
+	}
 	switch t.status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
