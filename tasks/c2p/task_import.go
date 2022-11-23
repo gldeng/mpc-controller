@@ -72,7 +72,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	if time.Now().Sub(t.LastStepTime) < 2*time.Second { // Min delay between steps
 		return nil, nil
 	}
-	if time.Now().Sub(t.StartTime) >= 10*time.Minute {
+	if time.Now().Sub(t.StartTime) >= 30*time.Minute {
 		return nil, errors.New(ErrMsgTimedOut)
 	}
 	switch t.Status {
