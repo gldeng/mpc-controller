@@ -80,7 +80,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToBuildAndSignTx, err)
-			return nil, err
+			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		} else {
 			t.Status = StatusSignReqSent
 		}
@@ -88,7 +88,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToGetSignatureAndSendTx, err)
-			return nil, err
+			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 		if t.TxID != nil {
 			ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.Id, t.TxID.String())
