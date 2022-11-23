@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/pkg/errors"
 )
@@ -56,6 +57,10 @@ func (h *RequestStartedHandler) Next(ctx core.TaskContext) ([]core.Task, error) 
 		if err != nil {
 			return nil, h.failIfErrorf(err, "failed decode request")
 		}
+		ctx.GetLogger().Debug("stake request", logger.Field{
+			Key:   "request",
+			Value: r,
+		})
 		pubKeyKey := []byte("latestPubKey") // TODO: Always use latest public key?
 		quorum, err := h.getQuorumInfo(ctx, pubKeyKey)
 		if err != nil {
