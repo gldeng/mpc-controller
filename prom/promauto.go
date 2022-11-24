@@ -10,6 +10,33 @@ const (
 )
 
 var (
+	// evt
+
+	EvtParticipantAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "evt_participant_added_total",
+		Help: "The total number of EvtParticipantAdded",
+	})
+
+	EvtKeygenRequestAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "evt_keygen_request_added_total",
+		Help: "The total number of EvtKeygenRequestAdded",
+	})
+
+	EvtKeyGenerated = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "evt_key_generated_total",
+		Help: "The total number of EvtKeyGenerated",
+	})
+
+	EvtStakeRequestAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "evt_stake_request_added_total",
+		Help: "The total number of EvtStakeRequestAdded",
+	})
+
+	EvtRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "evt_request_started_total",
+		Help: "The total number of EvtRequestStarted",
+	})
+
 	// keygen
 
 	KeygenRequestPosted = promauto.NewCounter(prometheus.CounterOpts{
@@ -23,10 +50,6 @@ var (
 	})
 	// stake
 
-	StakeRequestAdded = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "stake_request_added_total",
-		Help: "The total number of StakeRequestAddedEvent",
-	})
 	StakeRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "stake_request_started_total",
 		Help: "The total number of StakeRequestStartedEvent",

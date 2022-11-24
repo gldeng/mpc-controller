@@ -20,6 +20,7 @@ type RequestCreator struct {
 func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]core.Task, error) {
 
 	if log.Topics[0] == ctx.GetEventID(EvtRequestStarted) {
+		prom.EvtRequestStarted.Inc()
 		event := new(binding.MpcManagerRequestStarted)
 		err := ctx.GetContract().UnpackLog(event, EvtRequestStarted, log)
 		if err != nil {
@@ -30,6 +31,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		return []core.Task{task}, nil
 	}
 	if log.Topics[0] == ctx.GetEventID(EvtParticipantAdded) {
+		prom.EvtParticipantAdded.Inc()
 		event := new(binding.MpcManagerParticipantAdded)
 		err := ctx.GetContract().UnpackLog(event, EvtParticipantAdded, log)
 		if err != nil {
@@ -40,6 +42,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		return []core.Task{task}, nil
 	}
 	if log.Topics[0] == ctx.GetEventID(EvtKeygenRequestAdded) {
+		prom.EvtKeygenRequestAdded.Inc()
 		event := new(binding.MpcManagerKeygenRequestAdded)
 		err := ctx.GetContract().UnpackLog(event, EvtKeygenRequestAdded, log)
 		if err != nil {
@@ -50,6 +53,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		return []core.Task{task}, nil
 	}
 	if log.Topics[0] == ctx.GetEventID(EvtKeyGenerated) {
+		prom.EvtKeyGenerated.Inc()
 		event := new(binding.MpcManagerKeyGenerated)
 		err := ctx.GetContract().UnpackLog(event, EvtKeyGenerated, log)
 		if err != nil {
@@ -60,6 +64,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		return []core.Task{task}, nil
 	}
 	if log.Topics[0] == ctx.GetEventID(EvtStakeRequestAdded) {
+		prom.EvtStakeRequestAdded.Inc()
 		event := new(binding.MpcManagerStakeRequestAdded)
 		err := ctx.GetContract().UnpackLog(event, EvtStakeRequestAdded, log)
 		if err != nil {
@@ -69,7 +74,6 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create task")
 		}
-		prom.StakeRequestAdded.Inc()
 		return []core.Task{task}, nil
 	}
 	return nil, nil
