@@ -205,7 +205,7 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
+		return t.failIfErrorf(err, ErrMsgFailedToIssueTx+fmt.Sprintf(" tx: %v", signed))
 	}
 
 	return nil
