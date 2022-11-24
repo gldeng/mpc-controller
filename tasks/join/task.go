@@ -73,8 +73,6 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 			timer.Reset(interval)
 		}
 	}
-
-	return t.run(ctx)
 }
 
 func (t *Join) IsDone() bool {
