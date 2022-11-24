@@ -98,7 +98,7 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToCheckStatus)
 		}
 		if !core.IsPending(status) {
-			prom.AddDelegatorDone.Inc()
+			prom.AddDelegatorTxCommitted.Inc()
 			t.status = StatusDone
 			return nil, nil
 		}
@@ -154,7 +154,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}
-
+	prom.AddDelegatorTxIssued.Inc()
 	return nil
 }
 

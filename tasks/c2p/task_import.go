@@ -9,6 +9,7 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"strings"
@@ -102,6 +103,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		}
 		if !core.IsPending(status) {
 			t.Status = StatusDone
+			prom.C2PImportTxCommitted.Inc()
 			return nil, nil
 		}
 	}
@@ -183,6 +185,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 	}
+	prom.C2PImportTxIssued.Inc()
 	return nil
 }
 
