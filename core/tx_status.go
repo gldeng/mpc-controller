@@ -1,6 +1,8 @@
 package core
 
-type TxStatus = int
+import "fmt"
+
+type TxStatus int
 
 const (
 	TxStatusUnknown    TxStatus = 0
@@ -9,6 +11,23 @@ const (
 	TxStatusProcessing TxStatus = 6
 	TxStatusDropped    TxStatus = 8
 )
+
+func (s TxStatus) String() string {
+	switch s {
+	case TxStatusUnknown:
+		return "Unknown"
+	case TxStatusCommitted:
+		return "Committed"
+	case TxStatusAborted:
+		return "Aborted"
+	case TxStatusProcessing:
+		return "Processing"
+	case TxStatusDropped:
+		return "Dropped"
+	default:
+		return fmt.Sprintf("%d", int(s))
+	}
+}
 
 func IsPending(status TxStatus) bool {
 	if status == TxStatusUnknown {
