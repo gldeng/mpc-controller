@@ -19,9 +19,10 @@ type Join struct {
 
 	group *types.Group
 
-	TxHash    common.Hash
-	Failed    bool
-	StartTime time.Time
+	TxHash            common.Hash
+	Failed            bool
+	StartTime         time.Time
+	RemainingAttempts int
 }
 
 func (t *Join) GetId() string {
@@ -34,12 +35,13 @@ func (t *Join) FailedPermanently() bool {
 
 func NewJoin(requestHash [32]byte) *Join {
 	return &Join{
-		RequestHash: requestHash,
-		Status:      StatusInit,
-		group:       nil,
-		TxHash:      common.Hash{},
-		Failed:      false,
-		StartTime:   time.Now(),
+		RequestHash:       requestHash,
+		Status:            StatusInit,
+		group:             nil,
+		TxHash:            common.Hash{},
+		Failed:            false,
+		StartTime:         time.Now(),
+		RemainingAttempts: 2,
 	}
 }
 
@@ -103,6 +105,12 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
 		case core.TxStatusAborted:
 			t.Status = StatusInit // TODO: avoid endless repeating joining?
+			if t.RemainingAttempts > 0 {
+				// TODO: Figure out why sometimes join mysteriously fail and replace this workaround
+				// https://github.com/AvaLido/mpc-controller/issues/98
+				t.RemainingAttempts--
+				return nil, nil
+			}
 			return nil, t.failIfErrorf(errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId), "")
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
