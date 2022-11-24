@@ -3,6 +3,7 @@ package ethlog
 import (
 	binding "github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/keygen"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -68,6 +69,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create task")
 		}
+		prom.StakeRequestAdded.Inc()
 		return []core.Task{task}, nil
 	}
 	return nil, nil
