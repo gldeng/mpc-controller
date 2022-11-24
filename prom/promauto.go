@@ -68,7 +68,7 @@ var (
 		Help: "The total number of mpc sign done",
 	})
 
-	// Avalanche tx
+	// Issue tx
 
 	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "c2p_export_tx_issued_total",
