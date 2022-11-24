@@ -157,7 +157,9 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 
 	_, err = ctx.IssuePChainTx(signedBytes) // TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
+		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
+		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
+		return nil
 	}
 
 	return nil

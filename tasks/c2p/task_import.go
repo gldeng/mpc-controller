@@ -188,7 +188,9 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
 	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
+		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
+		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
+		return nil
 	}
 	return nil
 }
