@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/core/global.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/global.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c2p/task_export.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/c2p/task_export.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_creator_start_request.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_creator_start_request.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/join/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/join/task.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

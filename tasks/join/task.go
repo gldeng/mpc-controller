@@ -118,6 +118,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId), "")
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
+			atomic.AddInt32(&core.NonceConsumers, 1)
 			ctx.GetLogger().Debugf("Joined request. participantId:%x requestHash:%x group:%x", t.group.ParticipantID(), t.RequestHash, t.group.GroupId)
 		}
 	}
