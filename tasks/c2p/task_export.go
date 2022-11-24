@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -77,10 +78,12 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		select {
 		case <-timer.C:
 			next, err = t.run(ctx)
-			if t.Status == StatusDone || t.Failed {
+			if t.IsDone() || t.Failed {
+				atomic.AddInt32(&core.NonceConsumers, -1)
 				return next, errors.Wrap(err, "failed to export from C-Chain")
 			}
 			if time.Now().Sub(t.StartTime) >= timeOut {
+				atomic.AddInt32(&core.NonceConsumers, -1)
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 

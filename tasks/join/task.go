@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"sync/atomic"
 	"time"
 )
 
@@ -46,6 +47,9 @@ func NewJoin(requestHash [32]byte) *Join {
 }
 
 func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if atomic.LoadInt32(&core.NonceConsumers) > 0 {
+		return nil, nil
+	}
 	if t.group == nil {
 		group, err := ctx.LoadGroupByLatestMpcPubKey() // TODO: should we always use the latest one?
 		if err != nil {
