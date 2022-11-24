@@ -71,7 +71,7 @@ func (h *RequestStartedHandler) Next(ctx core.TaskContext) ([]core.Task, error) 
 		if err != nil {
 			return nil, h.failIfErrorf(err, "failed to create stake task")
 		}
-		atomic.AddUint32(&core.NonceConsumers, 1)
+		atomic.AddInt32(&core.NonceConsumers, 1)
 		tasks = append(tasks, task)
 	case types.TaskTypRecover:
 		// TODO: Add logics here
