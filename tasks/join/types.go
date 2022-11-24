@@ -7,3 +7,7 @@ const (
 )
 
 type Status int
+
+var (
+	ErrMsgTimedOut = "task timed out"
+)

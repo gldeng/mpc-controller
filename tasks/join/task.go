@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"time"
 )
 
 var (
@@ -18,8 +19,9 @@ type Join struct {
 
 	group *types.Group
 
-	TxHash common.Hash
-	Failed bool
+	TxHash    common.Hash
+	Failed    bool
+	StartTime time.Time
 }
 
 func (t *Join) GetId() string {
@@ -31,7 +33,14 @@ func (t *Join) FailedPermanently() bool {
 }
 
 func NewJoin(requestHash [32]byte) *Join {
-	return &Join{RequestHash: requestHash}
+	return &Join{
+		RequestHash: requestHash,
+		Status:      StatusInit,
+		group:       nil,
+		TxHash:      common.Hash{},
+		Failed:      false,
+		StartTime:   time.Now(),
+	}
 }
 
 func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
@@ -43,21 +52,28 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 		t.group = group
 	}
 
-	//interval := 100 * time.Millisecond
-	//timer := time.NewTimer(interval)
-	//for {
-	//	select {
-	//	case <-timer.C:
-	//		next, err := t.run(ctx)
-	//		if err != nil || t.Status == StatusDone {
-	//			return next, err
-	//		} else {
-	//			timer.Reset(interval)
-	//		}
-	//	}
-	//}
+	timeOut := 30 * time.Minute
+	interval := 2 * time.Second
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+	var next []core.Task
+	var err error
 
-	//return nil, nil //
+	for {
+		select {
+		case <-timer.C:
+			next, err = t.run(ctx)
+			if t.Status == StatusDone || t.Failed {
+				return next, errors.Wrap(err, "failed to export from C-Chain")
+			}
+			if time.Now().Sub(t.StartTime) >= timeOut {
+				return nil, errors.New(ErrMsgTimedOut)
+			}
+
+			timer.Reset(interval)
+		}
+	}
+
 	return t.run(ctx)
 }
 
@@ -66,7 +82,7 @@ func (t *Join) IsDone() bool {
 }
 
 func (t *Join) IsSequential() bool {
-	return false
+	return true
 }
 
 func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
@@ -89,7 +105,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
 		case core.TxStatusAborted:
 			t.Status = StatusInit // TODO: avoid endless repeating joining?
-			return nil, errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId)
+			return nil, t.failIfErrorf(errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId), "")
 		case core.TxStatusCommitted:
 			t.Status = StatusDone
 			ctx.GetLogger().Debugf("Joined request. participantId:%x requestHash:%x group:%x", t.group.ParticipantID(), t.RequestHash, t.group.GroupId)
