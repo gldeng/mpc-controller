@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/pool"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/router"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
@@ -44,6 +45,7 @@ const (
 	fnPrivateKey        = "private-key"
 	fnPassword          = "password"
 	fnMpcServerUrl      = "mpcServerUrl"
+	fnMetricsServeAddr  = "metricsServeAddr"
 )
 
 func printLog(event interface{}) {
@@ -277,6 +279,11 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
+	metricsService := prom.MetricsService{
+		Ctx:       shutdownCtx,
+		ServeAddr: c.String(fnMetricsServeAddr),
+	}
+
 	//ts.enqueueMessages()
 	go func() {
 		quit := make(chan os.Signal)
@@ -286,9 +293,14 @@ func runController(c *cli.Context) error {
 		rt.Close()
 		sub.Close()
 		wp.Close()
+		metricsService.Close()
 	}()
 
 	_ = syn.Start()
+
+	go func() {
+		metricsService.Start()
+	}()
 
 	<-shutdownCtx.Done()
 
@@ -333,6 +345,11 @@ func main() {
 				Name:     fnMpcServerUrl,
 				Required: true,
 				Usage:    "The URL of the MpcServer",
+			},
+			&cli.StringFlag{
+				Name:     fnMetricsServeAddr,
+				Required: false,
+				Usage:    "The URL of Prometheus metrics service",
 			},
 		},
 		Action: runController,

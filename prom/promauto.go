@@ -10,106 +10,93 @@ const (
 )
 
 var (
-	// keygen
+	// Contract events
 
-	KeygenRequestPosted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "keygen_request_posted_total",
-		Help: "The total number of keygen request posted",
-	})
-
-	KeygenRequestDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "keygen_request_done_total",
-		Help: "The total number of keygen request done",
-	})
-	// stake
-
-	StakeRequestAdded = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "stake_request_added_total",
-		Help: "The total number of StakeRequestAddedEvent",
-	})
-	StakeRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "stake_request_started_total",
-		Help: "The total number of StakeRequestStartedEvent",
-	})
-	StakeTaskDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "stake_task_done_total",
-		Help: "The total number of StakeTaskDoneEvent",
+	ContractEvtParticipantAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_participant_added_total",
+		Help: "The total number of contract event ParticipantAdded",
 	})
 
-	// reward
-
-	UTXOExportRequestJoined = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "utxo_export_request_joined_total",
-		Help: "The total number of UTXO export request joined",
-	})
-	PrincipalUTXOExportRequestJoined = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "principal_utxo_export_request_joined_total",
-		Help: "The total number of principal UTXO export request joined",
-	})
-	RewardUTXOExportRequestJoined = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "reward_utxo_export_request_joined_total",
-		Help: "The total number of reward UTXO export request joined",
-	})
-	UTXOExportRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "utxo_export_request_started_total",
-		Help: "The total number of UTXO export request started",
-	})
-	UTXOExported = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "utxo_exported_total",
-		Help: "The total number of UTXO exported",
-	})
-	PrincipalUTXOExported = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "principal_utxo_exported_total",
-		Help: "The total number of PrincipalUTXOExportedEvent",
-	})
-	RewardUTXOExported = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "reward_utxo_exported_total",
-		Help: "The total number of RewardUTXOExportedEvent",
+	ContractEvtKeygenRequestAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_keygen_request_added_total",
+		Help: "The total number of contract event KeygenRequestAdded",
 	})
 
-	// sign task added
-
-	StakeSignTaskAdded = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: prefix + "stake_sign_task_added_total",
-		Help: "The total number of stake sign task added",
+	ContractEvtKeyGenerated = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_key_generated_total",
+		Help: "The total number of contract event KeyGenerated",
 	})
 
-	PrincipalUTXOSignTaskAdded = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: prefix + "principal_utxo_sign_task_added_total",
-		Help: "The total number of principal UTXO sign task added",
+	ContractEvtStakeRequestAdded = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_stake_request_added_total",
+		Help: "The total number of contract event StakeRequestAdded",
 	})
 
-	RewardUTXOSignTaskAdded = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: prefix + "reward_utxo_sign_task_added_total",
-		Help: "The total number of reward UTXO sign task added",
+	ContractEvtRequestStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_request_started_total",
+		Help: "The total number of contract event RequestStarted",
 	})
 
-	// sign task done
+	// Mpc keygen
 
-	StakeSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "stake_sign_task_done_total",
-		Help: "The total number of of stake sign task done",
+	MpcKeygenPosted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_keygen_posted_total",
+		Help: "The total number of mpc keygen posted",
 	})
 
-	PrincipalUTXOSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "principal_utxo_sign_task_done_total",
-		Help: "The total number of of principal UTXO sign task done",
+	MpcKeygenDone = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_keygen_done_total",
+		Help: "The total number of mpc keygen done",
 	})
 
-	RewardUTXOSignTaskDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "reward_utxo_sign_task_done_total",
-		Help: "The total number of reward UTXO sign task done",
-	})
-)
+	// Mpc join
 
-var (
-	DispatcherPublishedEvents = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "dispatcher_published_events_total",
-		Help: "The total number of dispatcher published events",
+	MpcJoinStake = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_stake_total",
+		Help: "The total number of mpc join stake",
 	})
 
-	WorkshopWorkspaces = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: prefix + "workshop_workspaces_total",
-		Help: "The total number of workshop workspaces",
+	// Mpc sign
+
+	MpcSignPosted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total",
+		Help: "The total number of mpc sign posted",
+	})
+
+	MpcSignDone = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total",
+		Help: "The total number of mpc sign done",
+	})
+
+	// Issue tx
+
+	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "c2p_export_tx_issued_total",
+		Help: "The total number of c2p ExportTx issued",
+	})
+
+	C2PExportTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "c2p_export_tx_committed_total",
+		Help: "The total number of c2p ExportTx committed",
+	})
+
+	C2PImportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "cp2_import_tx_issued_total",
+		Help: "The total number of cp2 ImportTx issued",
+	})
+
+	C2PImportTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "cp2_import_tx_committed_total",
+		Help: "The total number of cp2 ImportTx committed",
+	})
+
+	AddDelegatorTxIssued = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "add_delegator_tx_issued_total",
+		Help: "The total number of AddDelegatorTx issued",
+	})
+
+	AddDelegatorTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "add_delegator_tx_committed_total",
+		Help: "The total number of AddDelegatorTx committed",
 	})
 )

@@ -35,7 +35,7 @@ func (c *MyMpcClient) Keygen(ctx context.Context, req *types.KeygenRequest) erro
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		prom.KeygenRequestPosted.Inc()
+		prom.MpcKeygenPosted.Inc()
 		return false, nil
 	})
 
@@ -59,7 +59,7 @@ func (c *MyMpcClient) Sign(ctx context.Context, req *types.SignRequest) (err err
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-
+		prom.MpcSignPosted.Inc()
 		return false, nil
 	})
 
@@ -91,6 +91,12 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var res types.Result
 	err = json.Unmarshal(body, &res)
+	switch res.Type {
+	case types.TypKeygen:
+		prom.MpcKeygenDone.Inc()
+	case types.TypSign:
+		prom.MpcSignDone.Inc()
+	}
 	return &res, errors.Wrap(err, "failed to parse result")
 }
 
@@ -152,7 +158,7 @@ func (c *SimulatingMpcClient) Result(ctx context.Context, reqID string) (*types.
 		return &types.Result{
 			ReqID:  reqID,
 			Result: hex.EncodeToString(sig),
-			Type:   types.TypSignSign,
+			Type:   types.TypSign,
 			Status: types.StatusDone,
 		}, nil
 	}

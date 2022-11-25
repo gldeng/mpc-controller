@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
 	"strings"
@@ -104,6 +105,7 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToCheckStatus)
 		}
 		if !core.IsPending(status) {
+			prom.AddDelegatorTxCommitted.Inc()
 			t.status = StatusDone
 			return nil, nil
 		}
@@ -161,7 +163,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
 		return nil
 	}
-
+	prom.AddDelegatorTxIssued.Inc()
 	return nil
 }
 

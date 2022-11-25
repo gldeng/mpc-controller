@@ -1,8 +1,8 @@
 package types
 
 const (
-	TypKeygen   Type = "KEYGEN"
-	TypSignSign Type = "SIGN"
+	TypKeygen Type = "KEYGEN"
+	TypSign   Type = "SIGN"
 )
 
 const (

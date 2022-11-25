@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/pkg/errors"
 )
@@ -52,6 +53,7 @@ func (h *RequestStartedHandler) Next(ctx core.TaskContext) ([]core.Task, error) 
 	var tasks []core.Task
 	switch hash.TaskType() {
 	case types.TaskTypStake:
+		prom.StakeRequestStarted.Inc()
 		r := new(stake.Request)
 		err := r.Decode(data)
 		if err != nil {
