@@ -5,6 +5,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/pkg/errors"
+	"sync/atomic"
 )
 
 var (
@@ -58,9 +59,11 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		}
 		if task.FailedPermanently() {
 			taskCtx.GetLogger().Debugf("%v failed permanently, error:%v", task.GetId(), err)
+			taskCtx.GetLogger().Debugf("NonceConsumers: %v", atomic.LoadInt32(&core.NonceConsumers))
 		}
 		if task.IsDone() {
 			taskCtx.GetLogger().Debugf("%v done", task.GetId())
+			taskCtx.GetLogger().Debugf("NonceConsumers: %v", atomic.LoadInt32(&core.NonceConsumers))
 		}
 		if !task.IsDone() && !task.FailedPermanently() {
 			err = e.Submit(task)
