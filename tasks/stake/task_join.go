@@ -101,7 +101,6 @@ func (t *RequestAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return next, nil
 	}
 
-	ctx.GetLogger().Debugf("Sub joining task not done, requestHash:%x", t.reqHash)
 	return next, nil
 }
 
