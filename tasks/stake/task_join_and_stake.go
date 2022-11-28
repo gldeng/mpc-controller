@@ -23,7 +23,7 @@ type JoinAndStake struct {
 	Request          Request
 	ReqHash          types.RequestHash
 	GroupId          [32]byte
-	GroupIdCached    bool
+	GroupInfoLoaded  bool
 	Threshold        int64
 	Indices          []uint
 
@@ -66,7 +66,7 @@ func NewStakeJoinAndStake(event contract.MpcManagerStakeRequestAdded) (*JoinAndS
 		Request:          Request{},
 		ReqHash:          types.RequestHash{},
 		GroupId:          [32]byte{},
-		GroupIdCached:    false,
+		GroupInfoLoaded:  false,
 		Threshold:        0,
 		Indices:          nil,
 		Join:             nil,
@@ -85,6 +85,10 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 		err := t.createRequest(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to create request")
+		}
+		err = t.loadGroupInfo(ctx)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "failed to load group info")
 		}
 		t.RequestInitiated = true
 	}
@@ -203,16 +207,20 @@ func (t *JoinAndStake) getQuorumInfo(ctx core.TaskContext) (*types.QuorumInfo, e
 
 }
 
-func (t *JoinAndStake) getConfirmationCount(ctx core.TaskContext) (int64, error) {
-	if !t.GroupIdCached {
+func (t *JoinAndStake) loadGroupInfo(ctx core.TaskContext) error {
+	if !t.GroupInfoLoaded {
 		groupId, err := ctx.GetGroupIdByKey(nil, t.Request.PubKey)
 		if err != nil {
-			return 0, err
+			return err
 		}
 		t.GroupId = groupId
 		t.Threshold = extractThreshold(groupId)
-		t.GroupIdCached = true
+		t.GroupInfoLoaded = true
 	}
+	return nil
+}
+
+func (t *JoinAndStake) getConfirmationCount(ctx core.TaskContext) (int64, error) {
 	confirmation, err := ctx.RequestConfirmations(nil, t.GroupId, t.ReqHash)
 	if err != nil {
 		return 0, err
