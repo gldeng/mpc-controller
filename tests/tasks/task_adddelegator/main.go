@@ -30,6 +30,14 @@ func idFromString(str string) ids.ID {
 	return id
 }
 
+func extractThreshold(groupId [32]byte) int64 {
+	n := new(big.Int)
+	n.SetBytes(groupId[:])
+	n.Rsh(n, 8)
+	n.And(n, big.NewInt(255))
+	return n.Int64()
+}
+
 func main() {
 	logger.DevMode = true
 	logger.UseConsoleEncoder = true

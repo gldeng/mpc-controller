@@ -24,8 +24,22 @@ var (
 
 type TaskContextWrapper struct {
 	inner         core.TaskContext
-	group         [][]byte
+	group         types2.Group
 	participantId [32]byte
+}
+
+func (t *TaskContextWrapper) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {
+	return nil, nil
+}
+
+func (t *TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (t *TaskContextWrapper) GetMyTransactSigner() *bind.TransactOpts {
@@ -49,7 +63,7 @@ func (t *TaskContextWrapper) CheckEthTx(txHash common.Hash) (core.TxStatus, erro
 }
 
 func (t *TaskContextWrapper) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
-	return t.group, nil
+	return t.group.MemberPublicKeys, nil
 }
 
 func (t *TaskContextWrapper) GetLogger() logger.Logger {
@@ -100,7 +114,7 @@ func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
 }
 
 func (t *TaskContextWrapper) LoadGroup([32]byte) (*types2.Group, error) {
-	panic("implement me")
+	return &t.group, nil
 }
 
 func (t *TaskContextWrapper) LoadGroupByLatestMpcPubKey() (*types2.Group, error) {
@@ -153,14 +167,18 @@ func TestAddParticipant(t *testing.T) {
 	ctx0, err := taskcontext.NewTaskContextImp(services)
 	ctx := &TaskContextWrapper{
 		inner: ctx0,
-		group: [][]byte{
-			common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
-			common.Hex2Bytes("72eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4d3c33a90bd5b304344e1bea939ef7d16f428d50d25cada4225d9299d35ef1644"),
-			common.Hex2Bytes("73ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6f06766bde6ff723360cee7f89abab428717f811f460ebf67f5186f75a9f4288d"),
-			common.Hex2Bytes("8196e06c3e803d0af06693a504ad14317550b4be4396ef57cf5f520c0f84833db8ed1056383ea329b8586cb62c37d80a3d7bb80742bc1bec6d650e6632a62905"),
-			common.Hex2Bytes("c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66defafb10f0932dc5c649debab82e6c816e164c7b7ad8abbe974d15a94cd1c2937"),
-			common.Hex2Bytes("d0639e479fa1ca8ee13fd966c216e662408ff00349068bdc9c6966c4ea10fe3e5f4d4ffc52db1898fe83742a8732e53322c178acb7113072c8dc6f82bbc00b99"),
-			common.Hex2Bytes("df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f3456dab26cdf995e6cb7cf772ba892044da9c64b095db7725d9e3c306c484cf54e2"),
+		group: types2.Group{
+			GroupId: groupId32,
+			Index:   big.NewInt(1),
+			MemberPublicKeys: [][]byte{
+				common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
+				common.Hex2Bytes("72eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4d3c33a90bd5b304344e1bea939ef7d16f428d50d25cada4225d9299d35ef1644"),
+				common.Hex2Bytes("73ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6f06766bde6ff723360cee7f89abab428717f811f460ebf67f5186f75a9f4288d"),
+				common.Hex2Bytes("8196e06c3e803d0af06693a504ad14317550b4be4396ef57cf5f520c0f84833db8ed1056383ea329b8586cb62c37d80a3d7bb80742bc1bec6d650e6632a62905"),
+				common.Hex2Bytes("c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66defafb10f0932dc5c649debab82e6c816e164c7b7ad8abbe974d15a94cd1c2937"),
+				common.Hex2Bytes("d0639e479fa1ca8ee13fd966c216e662408ff00349068bdc9c6966c4ea10fe3e5f4d4ffc52db1898fe83742a8732e53322c178acb7113072c8dc6f82bbc00b99"),
+				common.Hex2Bytes("df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f3456dab26cdf995e6cb7cf772ba892044da9c64b095db7725d9e3c306c484cf54e2"),
+			},
 		},
 		participantId: pId,
 	}

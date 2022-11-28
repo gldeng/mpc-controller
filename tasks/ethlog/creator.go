@@ -20,15 +20,19 @@ type RequestCreator struct {
 func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]core.Task, error) {
 
 	if log.Topics[0] == ctx.GetEventID(EvtRequestStarted) {
-		prom.ContractEvtRequestStarted.Inc()
-		event := new(binding.MpcManagerRequestStarted)
-		err := ctx.GetContract().UnpackLog(event, EvtRequestStarted, log)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to unpack log")
-		}
-		event.Raw = log
-		task := NewRequestStartedHandler(*event)
-		return []core.Task{task}, nil
+		// Ignore
+		return nil, nil
+		/*
+			prom.ContractEvtRequestStarted.Inc()
+			event := new(binding.MpcManagerRequestStarted)
+			err := ctx.GetContract().UnpackLog(event, EvtRequestStarted, log)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to unpack log")
+			}
+			event.Raw = log
+			task := NewRequestStartedHandler(*event)
+			return []core.Task{task}, nil
+		*/
 	}
 	if log.Topics[0] == ctx.GetEventID(EvtParticipantAdded) {
 		prom.ContractEvtParticipantAdded.Inc()
@@ -70,7 +74,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
-		task, err := stake.NewStakeRequestAddedHandler(*event)
+		task, err := stake.NewStakeJoinAndStake(*event)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create task")
 		}

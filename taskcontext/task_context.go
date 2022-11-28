@@ -3,6 +3,7 @@ package taskcontext
 import (
 	"context"
 	"github.com/avalido/mpc-controller/core"
+	"math/big"
 	"strings"
 	"time"
 
@@ -162,6 +163,30 @@ func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]by
 		return nil, errors.Wrap(err, "failed to create MpcManagerCaller")
 	}
 	return caller.GetGroup(opts, groupId)
+}
+
+func (t *TaskContextImp) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create MpcManagerCaller")
+	}
+	return caller.LastGenPubKey(opts)
+}
+
+func (t *TaskContextImp) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return [32]byte{}, errors.Wrap(err, "failed to create MpcManagerCaller")
+	}
+	return caller.GetGroupIdByKey(opts, publicKey)
+}
+
+func (t *TaskContextImp) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create MpcManagerCaller")
+	}
+	return caller.RequestConfirmations(opts, groupId, requestHash)
 }
 
 func NewTaskContextImp(services *core.ServicePack) (*TaskContextImp, error) {

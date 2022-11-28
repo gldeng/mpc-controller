@@ -6,7 +6,6 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"sync/atomic"
 	"time"
 )
 
@@ -47,10 +46,6 @@ func NewJoin(requestHash [32]byte) *Join {
 }
 
 func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if atomic.LoadInt32(&core.NonceConsumers) > 0 {
-		return nil, nil
-	}
-	atomic.AddInt32(&core.NonceConsumers, 1)
 	if t.group == nil {
 		group, err := ctx.LoadGroupByLatestMpcPubKey() // TODO: should we always use the latest one?
 		if err != nil {
@@ -71,13 +66,9 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 		case <-timer.C:
 			next, err = t.run(ctx)
 			if t.Status == StatusDone || t.Failed {
-				if t.Failed {
-					atomic.AddInt32(&core.NonceConsumers, -1)
-				}
 				return next, errors.Wrap(err, "failed to export from C-Chain")
 			}
 			if time.Now().Sub(t.StartTime) >= timeOut {
-				atomic.AddInt32(&core.NonceConsumers, -1)
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 

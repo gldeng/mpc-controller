@@ -5,9 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/.gitmodules" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contract/contracts" beforeDir="false" afterPath="$PROJECT_DIR$/contract/contracts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/pool_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/taskcontext/task_context.go" beforeDir="false" afterPath="$PROJECT_DIR$/taskcontext/task_context.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/ethlog/creator.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/creator.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/keygen/task_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/stake/task_join_and_stake.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/task_join_and_stake.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/stake/task_join_and_stake_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/task_join_and_stake_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,7 +97,7 @@
       <recent name="\\wsl$\Ubuntu-20.04\home\gldeng\go\src\github.com\avalido\mpc-controller\pool" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)">
+  <component name="RunManager" selected="Go Test.TestKeyGeneratedHandler in github.com/avalido/mpc-controller/tasks/ethlog">
     <configuration name="go build github.com/avalido/mpc-controller/cmd/mpc-controller1" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
       <module name="mpc-controller" />
       <working_directory value="$PROJECT_DIR$" />
@@ -101,28 +108,7 @@
       <filePath value="$PROJECT_DIR$/cmd/mpc-controller1/main.go" />
       <method v="2" />
     </configuration>
-    <configuration name="go build github.com/avalido/mpc-controller/tests/tasks/task_adddelegator" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
-      <module name="mpc-controller" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/avalido/mpc-controller/tests/tasks/task_adddelegator" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="mpc-controller" />
-      <working_directory value="$PROJECT_DIR$/tasks/ethlog" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/avalido/mpc-controller/tasks/ethlog" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestAddParticipant\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="mpc-controller" />
       <working_directory value="$PROJECT_DIR$/tasks/ethlog" />
       <root_directory value="$PROJECT_DIR$" />
@@ -146,6 +132,18 @@
       <pattern value="^\QTestKeyGeneratedHandler\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestPool in github.com/avalido/mpc-controller/pool" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mpc-controller" />
+      <working_directory value="$PROJECT_DIR$/pool" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/avalido/mpc-controller/pool" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestPool\E$" />
+      <method v="2" />
+    </configuration>
     <configuration name="TestRequestAdded in github.com/avalido/mpc-controller/tasks/keygen" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="mpc-controller" />
       <working_directory value="$PROJECT_DIR$/tasks/keygen" />
@@ -158,21 +156,33 @@
       <pattern value="^\QTestRequestAdded\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestRequestAdded in github.com/avalido/mpc-controller/tasks/stake" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="mpc-controller" />
+      <working_directory value="$PROJECT_DIR$/tasks/stake" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/avalido/mpc-controller/tasks/stake" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestRequestAdded\E$" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/cmd/mpc-controller1" />
-      <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/tests/tasks/task_adddelegator" />
-      <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)" />
-      <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (1)" />
+      <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog" />
+      <item itemvalue="Go Test.TestPool in github.com/avalido/mpc-controller/pool" />
+      <item itemvalue="Go Test.TestRequestAdded in github.com/avalido/mpc-controller/tasks/stake" />
       <item itemvalue="Go Test.TestKeyGeneratedHandler in github.com/avalido/mpc-controller/tasks/ethlog" />
       <item itemvalue="Go Test.TestRequestAdded in github.com/avalido/mpc-controller/tasks/keygen" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (2)" />
-        <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog (1)" />
-        <item itemvalue="Go Build.go build github.com/avalido/mpc-controller/tests/tasks/task_adddelegator" />
         <item itemvalue="Go Test.TestKeyGeneratedHandler in github.com/avalido/mpc-controller/tasks/ethlog" />
         <item itemvalue="Go Test.TestRequestAdded in github.com/avalido/mpc-controller/tasks/keygen" />
+        <item itemvalue="Go Test.TestPool in github.com/avalido/mpc-controller/pool" />
+        <item itemvalue="Go Test.TestRequestAdded in github.com/avalido/mpc-controller/tasks/stake" />
+        <item itemvalue="Go Test.TestAddParticipant in github.com/avalido/mpc-controller/tasks/ethlog" />
       </list>
     </recent_temporary>
   </component>
@@ -218,6 +228,61 @@
           <line>70</line>
           <option name="timeStamp" value="12" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tests/tasks/task_adddelegator/main.go</url>
+          <line>41</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>153</line>
+          <option name="timeStamp" value="28" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>158</line>
+          <option name="timeStamp" value="29" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>161</line>
+          <option name="timeStamp" value="30" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>162</line>
+          <option name="timeStamp" value="31" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>168</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/join/task.go</url>
+          <line>48</line>
+          <option name="timeStamp" value="33" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/join/task.go</url>
+          <line>67</line>
+          <option name="timeStamp" value="35" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>214</line>
+          <option name="timeStamp" value="36" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
+          <line>221</line>
+          <option name="timeStamp" value="37" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake_test.go</url>
+          <line>200</line>
+          <option name="timeStamp" value="38" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
     <watches-manager>
@@ -227,5 +292,8 @@
         <watch expression="*(*&quot;github.com/ethereum/go-ethereum/accounts/abi.Argument&quot;)(824633938432)" />
       </configuration>
     </watches-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/mpc_controller$TestRequestAdded_in_github_com_avalido_mpc_controller_tasks_stake.out" NAME="TestRequestAdded in github.com/avalido/mpc-controller/tasks/stake Coverage Results" MODIFIED="1669615754540" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
 </project>
