@@ -28,6 +28,16 @@ type TaskContextWrapper struct {
 	participantId [32]byte
 }
 
+func (t *TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (t *TaskContextWrapper) GetMyTransactSigner() *bind.TransactOpts {
 	//TODO implement me
 	panic("implement me")

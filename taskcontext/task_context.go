@@ -3,6 +3,7 @@ package taskcontext
 import (
 	"context"
 	"github.com/avalido/mpc-controller/core"
+	"math/big"
 	"strings"
 	"time"
 
@@ -41,6 +42,16 @@ type TaskContextImp struct {
 	Db           core.Store
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
+}
+
+func (t *TaskContextImp) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextImp) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {

@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"math/big"
 	"testing"
 )
 
@@ -36,8 +37,7 @@ func (i *IncrementTask) IsDone() bool {
 }
 
 func (i *IncrementTask) IsSequential() bool {
-	//TODO implement me
-	panic("implement me")
+	return false
 }
 
 func (i *IncrementTask) Next(ctx core.TaskContext) ([]core.Task, error) {
@@ -46,6 +46,16 @@ func (i *IncrementTask) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 type MockTaskContext struct {
+}
+
+func (m MockTaskContext) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m MockTaskContext) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m MockTaskContext) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {

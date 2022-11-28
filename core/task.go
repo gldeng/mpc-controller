@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 type Task interface {
@@ -20,6 +21,8 @@ type MpcManager interface {
 	GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error)
 	ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error)
 	JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error)
+	GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error)
+	RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error)
 }
 
 type TaskContext interface {

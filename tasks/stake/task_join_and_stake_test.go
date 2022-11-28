@@ -1,7 +1,6 @@
-package keygen
+package stake
 
 import (
-	"context"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/core"
@@ -18,106 +17,120 @@ import (
 	"testing"
 )
 
-var (
-	_ core.TaskContext = (*TaskContextWrapper)(nil)
-)
-
 type TaskContextWrapper struct {
 	inner         core.TaskContext
 	participantId [32]byte
-	group         types2.Group
+	//group           [][]byte
+	group           types2.Group
+	myPublicKey     []byte
+	dummyJoinTxHash common.Hash
 }
 
-func (t *TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+func (t TaskContextWrapper) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+func (t TaskContextWrapper) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *TaskContextWrapper) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
-	//TODO implement me
-	panic("implement me")
+func (t TaskContextWrapper) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
+	h := common.BytesToHash([]byte{0x01})
+	return &h, nil
 }
 
-func (t *TaskContextWrapper) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
-	hash := common.HexToHash("1111111111111111111111111111111111111111111111111111111111111111")
-	return &hash, nil
+func (t TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
+	return t.group.GroupId, nil
 }
 
-func (t *TaskContextWrapper) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
-	return core.TxStatusCommitted, nil
+func (t TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+	c := new(big.Int)
+	for i := 0; i < 5; i++ {
+		c.SetBit(c, 255-i, 1)
+	}
+	c.Add(c, big.NewInt(5))
+	return c, nil
 }
 
-func (t *TaskContextWrapper) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
-	return t.group.MemberPublicKeys, nil
-}
-
-func (t *TaskContextWrapper) GetLogger() logger.Logger {
+func (t TaskContextWrapper) GetLogger() logger.Logger {
 	return t.inner.GetLogger()
 }
 
-func (t *TaskContextWrapper) GetNetwork() *core.NetworkContext {
-	return t.inner.GetNetwork()
+func (t TaskContextWrapper) GetNetwork() *core.NetworkContext {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) GetMpcClient() core.MpcClient {
-	return t.inner.GetMpcClient()
+func (t TaskContextWrapper) GetMpcClient() core.MpcClient {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) IssueCChainTx(txBytes []byte) (ids.ID, error) {
-	return t.inner.IssueCChainTx(txBytes)
+func (t TaskContextWrapper) IssueCChainTx(txBytes []byte) (ids.ID, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) IssuePChainTx(txBytes []byte) (ids.ID, error) {
-	return t.inner.IssuePChainTx(txBytes)
+func (t TaskContextWrapper) IssuePChainTx(txBytes []byte) (ids.ID, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
-	return t.inner.CheckCChainTx(id)
+func (t TaskContextWrapper) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
+	return core.TxStatusCommitted, nil
 }
 
-func (t *TaskContextWrapper) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
-	return t.inner.CheckPChainTx(id)
+func (t TaskContextWrapper) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) NonceAt(account common.Address) (uint64, error) {
-	return t.inner.NonceAt(account)
+func (t TaskContextWrapper) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) Emit(event interface{}) {
+func (t TaskContextWrapper) NonceAt(account common.Address) (uint64, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) GetDb() core.Store {
-	return t.inner.GetDb()
+func (t TaskContextWrapper) Emit(event interface{}) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) GetEventID(event string) (common.Hash, error) {
-	return t.inner.GetEventID(event)
+func (t TaskContextWrapper) GetDb() core.Store {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
-	return t.inner.GetMyPublicKey()
+func (t TaskContextWrapper) GetEventID(event string) (common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (t *TaskContextWrapper) GetMyTransactSigner() *bind.TransactOpts {
+func (t TaskContextWrapper) GetMyPublicKey() ([]byte, error) {
+	return t.myPublicKey, nil
+}
+
+func (t TaskContextWrapper) GetMyTransactSigner() *bind.TransactOpts {
 	return nil
 }
 
-func (t *TaskContextWrapper) LoadGroup(groupID [32]byte) (*types2.Group, error) {
+func (t TaskContextWrapper) LoadGroup(groupID [32]byte) (*types2.Group, error) {
 	return &t.group, nil
 }
 
-func (t *TaskContextWrapper) LoadGroupByLatestMpcPubKey() (*types2.Group, error) {
-	//TODO: implement me
-	panic("Implement me")
+func (t TaskContextWrapper) LoadGroupByLatestMpcPubKey() (*types2.Group, error) {
+	return &t.group, nil
 }
 
-func (t *TaskContextWrapper) GetParticipantID() types2.ParticipantId {
-	return t.participantId
+func (t TaskContextWrapper) GetParticipantID() types2.ParticipantId {
+	//TODO implement me
+	panic("implement me")
 }
 
 func idFromString(str string) ids.ID {
@@ -125,8 +138,7 @@ func idFromString(str string) ids.ID {
 	return id
 }
 
-func TestRequestAdded(t *testing.T) {
-
+func TestJoinAndStake(t *testing.T) {
 	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	config := core.Config{
 		Host:              "localhost",
@@ -174,25 +186,14 @@ func TestRequestAdded(t *testing.T) {
 				common.Hex2Bytes("df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f3456dab26cdf995e6cb7cf772ba892044da9c64b095db7725d9e3c306c484cf54e2"),
 			},
 		},
+		myPublicKey: config.MyPublicKey,
 	}
 
-	//myPubKey := common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1")
+	event := testingutils.MakeEventStakeRequestAdded(1, config.MyPublicKey)
 
-	key := []byte("group/")
-	key = append(key, groupId...)
-
-	//group := types2.Group{
-	//	GroupId:          groupId32,
-	//	Index:            big.NewInt(1),
-	//	MemberPublicKeys: ctx.group,
-	//}
-	groupBytes, err := ctx.group.Encode()
-	err = db.Set(context.Background(), key, groupBytes)
-
-	event := testingutils.MakeEventKeygenRequestAdded(groupId32, big.NewInt(1))
-
-	handler := NewRequestAdded(*event)
-	next, err := handler.Next(ctx)
-	require.Nil(t, next)
+	task, err := NewStakeJoinAndStake(*event, config.MyPublicKey)
 	require.NoError(t, err)
+	next, err := task.Next(ctx)
+	require.NoError(t, err)
+	require.Nil(t, next)
 }
