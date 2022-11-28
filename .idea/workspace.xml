@@ -5,8 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/contract/contracts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/.gitmodules" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_creator_start_request.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_creator_start_request.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/MpcManager.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/abigen.go" beforeDir="false" afterPath="$PROJECT_DIR$/contract/abigen.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/abigen.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/lib/openzeppelin-contracts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/lib/openzeppelin-contracts-upgradeable" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/src/AvaLidoMock.sol" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/src/MpcManager.sol" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/src/Roles.sol" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/src/Types.sol" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/src/interfaces/IMpcManager.sol" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,7 +50,6 @@
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/ethereum/go-ethereum@v1.10.19/accounts/abi/abi.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../../../../pkg/mod/github.com/ethereum/go-ethereum@v1.10.19/accounts/abi/bind/base.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/cmd/mpc-controller/main.go" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/contract/MpcManager.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/core/config.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/core/event_handler.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/core/types/quorum.go" root0="FORCE_HIGHLIGHTING" />
@@ -217,16 +229,6 @@
           <url>file://$PROJECT_DIR$/utils/crypto/normalize_public_key.go</url>
           <line>70</line>
           <option name="timeStamp" value="12" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/contract/MpcManager.go</url>
-          <line>7682</line>
-          <option name="timeStamp" value="16" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/contract/MpcManager.go</url>
-          <line>8017</line>
-          <option name="timeStamp" value="20" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
