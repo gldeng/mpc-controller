@@ -302,7 +302,7 @@ func (t *TaskContextImp) LoadGroup(groupID [32]byte) (*types.Group, error) {
 	group := &types.Group{}
 	err = group.Decode(groupBytes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode group: %v", groupBytes)
+		return nil, errors.Wrapf(err, "failed to decode group: %v %v", key, groupBytes)
 	}
 	return group, nil
 }
