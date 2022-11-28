@@ -48,6 +48,11 @@ func (i *IncrementTask) Next(ctx core.TaskContext) ([]core.Task, error) {
 type MockTaskContext struct {
 }
 
+func (m MockTaskContext) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m MockTaskContext) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
 	//TODO implement me
 	panic("implement me")

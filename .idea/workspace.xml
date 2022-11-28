@@ -7,8 +7,14 @@
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contract/contracts" beforeDir="false" afterPath="$PROJECT_DIR$/contract/contracts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/task.go" beforeDir="false" afterPath="$PROJECT_DIR$/core/task.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pool/pool_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pool/pool_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/taskcontext/task_context.go" beforeDir="false" afterPath="$PROJECT_DIR$/taskcontext/task_context.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/ethlog/creator.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/creator.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_add_participant_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/ethlog/task_keygen_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/ethlog/task_keygen_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/keygen/task_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/keygen/task_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/stake/task_join_and_stake.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/task_join_and_stake.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/stake/task_join_and_stake_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/stake/task_join_and_stake_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -229,32 +235,27 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>60</line>
-          <option name="timeStamp" value="23" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>133</line>
+          <line>153</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>138</line>
+          <line>158</line>
           <option name="timeStamp" value="29" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>141</line>
+          <line>161</line>
           <option name="timeStamp" value="30" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>142</line>
+          <line>162</line>
           <option name="timeStamp" value="31" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>148</line>
+          <line>168</line>
           <option name="timeStamp" value="32" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -269,17 +270,17 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>194</line>
+          <line>214</line>
           <option name="timeStamp" value="36" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake.go</url>
-          <line>201</line>
+          <line>221</line>
           <option name="timeStamp" value="37" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/tasks/stake/task_join_and_stake_test.go</url>
-          <line>196</line>
+          <line>200</line>
           <option name="timeStamp" value="38" />
         </line-breakpoint>
       </breakpoints>

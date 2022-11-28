@@ -18,13 +18,14 @@ var (
 )
 
 type JoinAndStake struct {
-	Event         contract.MpcManagerStakeRequestAdded
-	Request       Request
-	ReqHash       types.RequestHash
-	GroupId       [32]byte
-	GroupIdCached bool
-	Threshold     int64
-	Indices       []uint
+	Event            contract.MpcManagerStakeRequestAdded
+	RequestInitiated bool
+	Request          Request
+	ReqHash          types.RequestHash
+	GroupId          [32]byte
+	GroupIdCached    bool
+	Threshold        int64
+	Indices          []uint
 
 	Join          *join.Join
 	InitialStake  *InitialStake
@@ -57,42 +58,37 @@ func (t *JoinAndStake) IsSequential() bool {
 	return true
 }
 
-func NewStakeJoinAndStake(event contract.MpcManagerStakeRequestAdded, pubKey []byte) (*JoinAndStake, error) {
-	request := Request{
-		ReqNo:     event.RequestNumber.Uint64(),
-		TxHash:    common.Hash{},
-		PubKey:    pubKey,
-		NodeID:    event.NodeID,
-		Amount:    event.Amount.String(),
-		StartTime: event.StartTime.Uint64(),
-		EndTime:   event.EndTime.Uint64(),
-	}
-
-	hash, err := request.Hash()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get request hash")
-	}
+func NewStakeJoinAndStake(event contract.MpcManagerStakeRequestAdded) (*JoinAndStake, error) {
 
 	h := &JoinAndStake{
-		Event:         event,
-		Request:       request,
-		ReqHash:       hash,
-		GroupId:       [32]byte{},
-		GroupIdCached: false,
-		Threshold:     0,
-		Indices:       nil,
-		Join:          nil,
-		InitialStake:  nil,
-		StartTime:     time.Now(),
-		QuorumReached: false,
-		Failed:        false,
-		Done:          false,
+		Event:            event,
+		RequestInitiated: false,
+		Request:          Request{},
+		ReqHash:          types.RequestHash{},
+		GroupId:          [32]byte{},
+		GroupIdCached:    false,
+		Threshold:        0,
+		Indices:          nil,
+		Join:             nil,
+		InitialStake:     nil,
+		StartTime:        time.Now(),
+		QuorumReached:    false,
+		Failed:           false,
+		Done:             false,
 	}
 
 	return h, nil
 }
 
 func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if !t.RequestInitiated {
+		err := t.createRequest(ctx)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "failed to create request")
+		}
+		t.RequestInitiated = true
+	}
+
 	if t.InitialStake == nil {
 		err := t.initJoin(ctx)
 		if err != nil {
@@ -119,6 +115,30 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 	}
 
 	return nil, nil
+}
+
+func (t *JoinAndStake) createRequest(ctx core.TaskContext) error {
+	pubKey, err := ctx.LastGenPubKey(nil)
+	if err != nil {
+		return err
+	}
+	request := Request{
+		ReqNo:     t.Event.RequestNumber.Uint64(),
+		TxHash:    common.Hash{},
+		PubKey:    pubKey,
+		NodeID:    t.Event.NodeID,
+		Amount:    t.Event.Amount.String(),
+		StartTime: t.Event.StartTime.Uint64(),
+		EndTime:   t.Event.EndTime.Uint64(),
+	}
+	t.Request = request
+
+	hash, err := request.Hash()
+	if err != nil {
+		return errors.Wrap(err, "failed to get request hash")
+	}
+	t.ReqHash = hash
+	return nil
 }
 
 func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error {

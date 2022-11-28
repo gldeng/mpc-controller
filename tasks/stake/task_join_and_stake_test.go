@@ -26,6 +26,10 @@ type TaskContextWrapper struct {
 	dummyJoinTxHash common.Hash
 }
 
+func (t TaskContextWrapper) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {
+	return nil, nil
+}
+
 func (t TaskContextWrapper) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
 	//TODO implement me
 	panic("implement me")
@@ -191,7 +195,7 @@ func TestJoinAndStake(t *testing.T) {
 
 	event := testingutils.MakeEventStakeRequestAdded(1, config.MyPublicKey)
 
-	task, err := NewStakeJoinAndStake(*event, config.MyPublicKey)
+	task, err := NewStakeJoinAndStake(*event)
 	require.NoError(t, err)
 	next, err := task.Next(ctx)
 	require.NoError(t, err)

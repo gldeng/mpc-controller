@@ -23,6 +23,7 @@ type MpcManager interface {
 	JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error)
 	GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error)
 	RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error)
+	LastGenPubKey(opts *bind.CallOpts) ([]byte, error)
 }
 
 type TaskContext interface {

@@ -28,6 +28,10 @@ type TaskContextWrapper struct {
 	participantId [32]byte
 }
 
+func (t *TaskContextWrapper) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {
+	return nil, nil
+}
+
 func (t *TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
 	//TODO implement me
 	panic("implement me")

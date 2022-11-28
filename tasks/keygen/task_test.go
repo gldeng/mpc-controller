@@ -26,11 +26,15 @@ type TaskContextWrapper struct {
 	inner         core.TaskContext
 	participantId [32]byte
 	group         types2.Group
+	lastGenPubKey []byte
+}
+
+func (t *TaskContextWrapper) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {
+	return t.lastGenPubKey, nil
 }
 
 func (t *TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	return t.group.GroupId, nil
 }
 
 func (t *TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
@@ -147,7 +151,8 @@ func TestRequestAdded(t *testing.T) {
 			10000,
 			300,
 		),
-		MyPublicKey: common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
+		MyPublicKey:      common.Hex2Bytes("3217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8bdd1c124d85f6c0b10b6ef24460ff4acd0fc2cd84bd5b9c7534118f472d0c7a1"),
+		MyTransactSigner: nil,
 	}
 	groupId := common.Hex2Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
 	var groupId32, pId [32]byte
