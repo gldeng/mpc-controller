@@ -82,6 +82,8 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to set group")
 	}
+	retrieved, err := ctx.GetDb().Get(context.Background(), key)
+	ctx.GetLogger().Debugf("retrieved group %v", retrieved)
 	return nil
 }
 
