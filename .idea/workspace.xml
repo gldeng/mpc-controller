@@ -5,21 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="40d69e8c-0e78-4ccb-8795-616b0f5d21a3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/contract/contracts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/.gitmodules" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/MpcManager.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/abigen.go" beforeDir="false" afterPath="$PROJECT_DIR$/contract/abigen.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/abigen.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/lib/openzeppelin-contracts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/lib/openzeppelin-contracts-upgradeable" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/src/AvaLidoMock.sol" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/src/MpcManager.sol" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/src/Roles.sol" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/src/Types.sol" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/contract/src/interfaces/IMpcManager.sol" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/contract/contracts" beforeDir="false" afterPath="$PROJECT_DIR$/contract/contracts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
