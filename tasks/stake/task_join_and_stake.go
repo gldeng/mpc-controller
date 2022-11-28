@@ -52,7 +52,7 @@ func (t *JoinAndStake) FailedPermanently() bool {
 }
 
 func (t *JoinAndStake) IsSequential() bool {
-	if t.InitialStake == nil {
+	if t.InitialStake != nil {
 		return t.InitialStake.IsSequential()
 	}
 	return true
