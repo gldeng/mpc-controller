@@ -71,6 +71,7 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 		Index:            h.Event.Index,
 		MemberPublicKeys: members,
 	}
+	ctx.GetLogger().Debugf("saving group %v", group)
 	key := []byte("group/")
 	key = append(key, group.GroupId[:]...)
 	groupBytes, err := group.Encode()
