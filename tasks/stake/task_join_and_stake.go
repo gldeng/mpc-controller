@@ -161,8 +161,11 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 
 			if !t.isJoinDone() {
 				_, err := t.Join.Next(ctx)
-				if err != nil {
+				if err != nil || t.Join.FailedPermanently() {
 					return t.failIfErrorf(err, "failed to run join")
+				}
+				if t.Join.IsDone() {
+					return nil
 				}
 			}
 
@@ -172,9 +175,8 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 					return t.failIfErrorf(err, "failed to get confirmation count")
 				}
 				if count == t.Threshold+1 {
+					t.QuorumReached = true
 					return nil // Done without error
-				} else {
-					return nil
 				}
 			}
 
