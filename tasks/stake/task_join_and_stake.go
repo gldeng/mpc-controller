@@ -196,6 +196,9 @@ func (t *JoinAndStake) getQuorumInfo(ctx core.TaskContext) (*types.QuorumInfo, e
 		return nil, t.failIfErrorf(err, "failed to load group")
 	}
 
+	ctx.GetLogger().Debugf("loaded group id: %v %v", t.GroupId, group)
+	ctx.GetLogger().Debugf("indices: %v", t.Indices)
+
 	var pubKeys types.PubKeys
 	for _, ind := range t.Indices {
 		pubKeys = append(pubKeys, group.MemberPublicKeys[ind-1])
@@ -215,6 +218,7 @@ func (t *JoinAndStake) loadGroupInfo(ctx core.TaskContext) error {
 			return err
 		}
 		t.GroupId = groupId
+		ctx.GetLogger().Debugf("retrieved group id: %x", groupId)
 		t.Threshold = extractThreshold(groupId)
 		t.GroupInfoLoaded = true
 	}
