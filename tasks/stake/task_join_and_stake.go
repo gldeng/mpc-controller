@@ -106,6 +106,7 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to get quorum info")
 		}
+		ctx.GetLogger().Debugf("quorum info: %v", quorumInfo)
 		initStake, err := NewInitialStake(&t.Request, *quorumInfo)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "create InitialStake task")
