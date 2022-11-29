@@ -169,9 +169,9 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 				if err != nil || t.Join.FailedPermanently() {
 					return t.failIfErrorf(err, "failed to run join")
 				}
-				if t.Join.IsDone() {
-					return nil
-				}
+				//if t.Join.IsDone() {
+				//	return nil
+				//}
 			}
 
 			if !t.QuorumReached {
