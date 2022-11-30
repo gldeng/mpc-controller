@@ -9,6 +9,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
@@ -16,15 +17,20 @@ import (
 
 // todo: use ErrMsg
 
+const (
+	taskTypeExport = "addDelegator"
+)
+
 var (
 	_ core.Task = (*AddDelegator)(nil)
 )
 
 type AddDelegator struct {
-	FlowId string
-	Quorum types.QuorumInfo
-	Param  *StakeParam
-	TxID   *ids.ID
+	FlowId   string
+	TaskType string
+	Quorum   types.QuorumInfo
+	Param    *StakeParam
+	TxID     *ids.ID
 
 	tx      *AddDelegatorTx
 	signReq *types.SignRequest
@@ -38,6 +44,7 @@ type AddDelegator struct {
 func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
 	return &AddDelegator{
 		FlowId:       flowId,
+		TaskType:     taskTypeExport,
 		Quorum:       quorum,
 		Param:        param,
 		TxID:         nil,
@@ -84,24 +91,24 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToBuildAndSignTx, err)
+			t.logError(ctx, ErrMsgFailedToBuildAndSignTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		}
 		t.status = StatusSignReqSent
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToGetSignatureAndSendTx, err)
+			t.logError(ctx, ErrMsgFailedToGetSignatureAndSendTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 
 		if t.TxID != nil {
-			ctx.GetLogger().Debugf("id %v AddDelegatorTx ID is %v", t.FlowId, t.tx.ID().String())
+			t.logDebug(ctx, "sent addDelegatorTx", logger.Field{"addDelegatorTx", t.TxID})
 			t.status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(t.tx.ID())
-		ctx.GetLogger().Debugf("id %v AddDelegatorTx status is %v", t.FlowId, status)
+		t.logDebug(ctx, "checked addDelegatorTx status", []logger.Field{{"addDelegatorTx", t.TxID}, {"status", status}}...)
 		if err != nil {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToCheckStatus)
 		}
@@ -125,7 +132,7 @@ func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to send AddDelegator signing request")
 	}
-	ctx.GetLogger().Debugf("sent signing AddDelegatorTx request, requestID:%v", t.signReq.ReqID)
+	t.logDebug(ctx, "sent signing request", []logger.Field{{"signReq", t.signReq.ReqID}}...)
 	return nil
 }
 
@@ -140,7 +147,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 		if strings.Contains(status, "error") || strings.Contains(status, "err") {
 			return t.failIfErrorf(err, "failed to sign AddDelegatorTx, status:%v", status)
 		}
-		ctx.GetLogger().Debugf("signing AddDelegatorTx not done, requestID:%v, status:%v", t.signReq.ReqID, status) // TODO: timeout and quit
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.signReq.ReqID}, {"status", status}}...)
 		return nil
 	}
 
@@ -211,4 +218,21 @@ func (t *AddDelegator) failIfErrorf(err error, format string, a ...any) error {
 	}
 	t.failed = true
 	return errors.Wrap(err, fmt.Sprintf(format, a...))
+}
+
+func (t *AddDelegator) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+2)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	ctx.GetLogger().Debug(msg, allFields...)
+}
+
+func (t *AddDelegator) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+3)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+	ctx.GetLogger().Error(msg, allFields...)
 }
