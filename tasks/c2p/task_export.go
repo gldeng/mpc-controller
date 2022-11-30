@@ -107,7 +107,7 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			t.logError(ctx.GetLogger(), ErrMsgFailedToBuildAndSignTx, err)
+			t.logError(ctx, ErrMsgFailedToBuildAndSignTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		} else {
 			t.Status = StatusSignReqSent
@@ -115,18 +115,18 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			t.logError(ctx.GetLogger(), ErrMsgFailedToGetSignatureAndSendTx, err)
+			t.logError(ctx, ErrMsgFailedToGetSignatureAndSendTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 		if t.TxID != nil {
-			t.logDebug(ctx.GetLogger(), "sent exportTx", logger.Field{"exportTx", t.TxID})
+			t.logDebug(ctx, "sent exportTx", logger.Field{"exportTx", t.TxID})
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
-		t.logDebug(ctx.GetLogger(), "checked exportTx status", []logger.Field{{"exportTx", t.TxID}, {"status", status}}...)
+		t.logDebug(ctx, "checked exportTx status", []logger.Field{{"exportTx", t.TxID}, {"status", status}}...)
 		if err != nil {
-			t.logError(ctx.GetLogger(), ErrMsgFailedToCheckStatus, err, logger.Field{"exportTx", t.TxID})
+			t.logError(ctx, ErrMsgFailedToCheckStatus, err, logger.Field{"exportTx", t.TxID})
 			return nil, err
 		}
 		if !core.IsPending(status) {
@@ -182,7 +182,7 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
-	t.logDebug(ctx.GetLogger(), "sent signing request", logger.Field{"signReq", req.ReqID})
+	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.ReqID})
 	return nil
 }
 
@@ -198,7 +198,7 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		if strings.Contains(status, "error") || strings.Contains(status, "err") {
 			return t.failIfErrorf(err, "failed to sign ExportTx from C-Chain, status:%v", status)
 		}
-		t.logDebug(ctx.GetLogger(), "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
@@ -231,19 +231,19 @@ func (t *ExportFromCChain) failIfErrorf(err error, format string, a ...any) erro
 	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }
 
-func (t *ExportFromCChain) logDebug(log logger.Logger, msg string, fields ...logger.Field) {
+func (t *ExportFromCChain) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field) {
 	allFields := make([]logger.Field, 0, len(fields)+2)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
 	allFields = append(allFields, fields...)
-	log.Debug(msg, allFields...)
+	ctx.GetLogger().Debug(msg, allFields...)
 }
 
-func (t *ExportFromCChain) logError(log logger.Logger, msg string, err error, fields ...logger.Field) {
+func (t *ExportFromCChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
 	allFields := make([]logger.Field, 0, len(fields)+3)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
 	allFields = append(allFields, fields...)
 	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
-	log.Error(msg, allFields...)
+	ctx.GetLogger().Error(msg, allFields...)
 }
