@@ -18,6 +18,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	taskType = "export"
+)
+
 var (
 	_ core.Task = (*ExportFromCChain)(nil)
 )
@@ -25,6 +29,7 @@ var (
 type ExportFromCChain struct {
 	Status      Status
 	FlowId      string
+	TaskType    string
 	Amount      big.Int
 	Quorum      types.QuorumInfo
 	Tx          *evm.UnsignedExportTx
@@ -56,6 +61,7 @@ func NewExportFromCChain(flowId string, quorum types.QuorumInfo, amount big.Int)
 	return &ExportFromCChain{
 		Status:      StatusInit,
 		FlowId:      flowId,
+		TaskType:    taskType,
 		Amount:      amount,
 		Quorum:      quorum,
 		Tx:          nil,
@@ -226,15 +232,17 @@ func (t *ExportFromCChain) failIfErrorf(err error, format string, a ...any) erro
 }
 
 func (t *ExportFromCChain) logDebug(log logger.Logger, msg string, fields ...logger.Field) {
-	allFields := make([]logger.Field, 0, len(fields)+1)
+	allFields := make([]logger.Field, 0, len(fields)+2)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
 	allFields = append(allFields, fields...)
 	log.Debug(msg, allFields...)
 }
 
 func (t *ExportFromCChain) logError(log logger.Logger, msg string, err error, fields ...logger.Field) {
-	allFields := make([]logger.Field, 0, len(fields)+2)
+	allFields := make([]logger.Field, 0, len(fields)+3)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
 	allFields = append(allFields, fields...)
 	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
 	log.Error(msg, allFields...)
