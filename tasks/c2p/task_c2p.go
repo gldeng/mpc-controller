@@ -2,10 +2,11 @@ package c2p
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 var (
@@ -14,7 +15,7 @@ var (
 
 type C2P struct {
 	Status Status
-	Id     string
+	FlowId string
 	Quorum types.QuorumInfo
 
 	ExportTask      *ExportFromCChain
@@ -23,7 +24,7 @@ type C2P struct {
 }
 
 func (t *C2P) GetId() string {
-	return fmt.Sprintf("C2P(%v)", t.Id)
+	return fmt.Sprintf("%v-c2p", t.FlowId)
 }
 
 func (t *C2P) FailedPermanently() bool {
@@ -51,7 +52,7 @@ func (t *C2P) startImport() error {
 	if err != nil {
 		return err
 	}
-	importTask, err := NewImportIntoPChain(t.Id, t.Quorum, signedExport)
+	importTask, err := NewImportIntoPChain(t.FlowId, t.Quorum, signedExport)
 	if err != nil {
 		return err
 	}
@@ -76,21 +77,21 @@ func (t *C2P) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.SubTaskHasError = err
 		}
 		if t.ImportTask.IsDone() {
-			ctx.GetLogger().Debugf("%v imported", t.Id)
+			ctx.GetLogger().Debugf("%v imported", t.FlowId)
 		}
 		return next, err
 	}
 	return nil, errors.New("invalid state of composite task")
 }
 
-func NewC2P(id string, quorum types.QuorumInfo, amount big.Int) (*C2P, error) {
-	exportTask, err := NewExportFromCChain(id, quorum, amount)
+func NewC2P(FlowId string, quorum types.QuorumInfo, amount big.Int) (*C2P, error) {
+	exportTask, err := NewExportFromCChain(FlowId, quorum, amount)
 	if err != nil {
 		return nil, err
 	}
 	return &C2P{
 		Status:     StatusInit,
-		Id:         id,
+		FlowId:     FlowId,
 		Quorum:     quorum,
 		ExportTask: exportTask,
 	}, nil
