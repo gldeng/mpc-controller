@@ -3,6 +3,10 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
@@ -11,9 +15,6 @@ import (
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
-	"math/big"
-	"strings"
-	"time"
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 
 type ExportFromCChain struct {
 	Status      Status
-	Id          string
+	FlowId      string
 	Amount      big.Int
 	Quorum      types.QuorumInfo
 	Tx          *evm.UnsignedExportTx
@@ -35,7 +36,7 @@ type ExportFromCChain struct {
 }
 
 func (t *ExportFromCChain) GetId() string {
-	return fmt.Sprintf("ExportC(%v)", t.Id)
+	return fmt.Sprintf("%v-export", t.FlowId)
 }
 
 func (t *ExportFromCChain) FailedPermanently() bool {
@@ -50,10 +51,10 @@ func (t *ExportFromCChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewExportFromCChain(id string, quorum types.QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
+func NewExportFromCChain(flowId string, quorum types.QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
 	return &ExportFromCChain{
 		Status:      StatusInit,
-		Id:          id,
+		FlowId:      flowId,
 		Amount:      amount,
 		Quorum:      quorum,
 		Tx:          nil,
@@ -111,12 +112,12 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 		if t.TxID != nil {
-			ctx.GetLogger().Debugf("id %v ExportTx ID is %v", t.Id, t.TxID.String())
+			ctx.GetLogger().Debugf("id %v ExportTx ID is %v", t.FlowId, t.TxID.String())
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckCChainTx(*t.TxID)
-		ctx.GetLogger().Debugf("id %v ExportTx Status is %v", t.Id, status)
+		ctx.GetLogger().Debugf("id %v ExportTx Status is %v", t.FlowId, status)
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToCheckStatus, err)
 			return nil, err
@@ -164,7 +165,7 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
-	req, err := t.buildSignReq(t.Id+"-export", txHash)
+	req, err := t.buildSignReq(t.GetId(), txHash)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)
 	}

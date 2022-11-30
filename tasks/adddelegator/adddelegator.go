@@ -3,14 +3,15 @@ package addDelegator
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
-	"strings"
-	"time"
 )
 
 // todo: use ErrMsg
@@ -20,7 +21,7 @@ var (
 )
 
 type AddDelegator struct {
-	Id     string
+	FlowId string
 	Quorum types.QuorumInfo
 	Param  *StakeParam
 	TxID   *ids.ID
@@ -34,9 +35,9 @@ type AddDelegator struct {
 	LastStepTime time.Time
 }
 
-func NewAddDelegator(id string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
+func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
 	return &AddDelegator{
-		Id:           id,
+		FlowId:       flowId,
 		Quorum:       quorum,
 		Param:        param,
 		TxID:         nil,
@@ -50,7 +51,7 @@ func NewAddDelegator(id string, quorum types.QuorumInfo, param *StakeParam) (*Ad
 }
 
 func (t *AddDelegator) GetId() string {
-	return fmt.Sprintf("AddDelegator(%v)", t.Id)
+	return fmt.Sprintf("%v-addDelegator", t.FlowId)
 }
 
 func (t *AddDelegator) FailedPermanently() bool {
@@ -95,12 +96,12 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 
 		if t.TxID != nil {
-			ctx.GetLogger().Debugf("id %v AddDelegatorTx ID is %v", t.Id, t.tx.ID().String())
+			ctx.GetLogger().Debugf("id %v AddDelegatorTx ID is %v", t.FlowId, t.tx.ID().String())
 			t.status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(t.tx.ID())
-		ctx.GetLogger().Debugf("id %v AddDelegatorTx status is %v", t.Id, status)
+		ctx.GetLogger().Debugf("id %v AddDelegatorTx status is %v", t.FlowId, status)
 		if err != nil {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToCheckStatus)
 		}
@@ -178,7 +179,7 @@ func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 		return errors.Wrapf(err, "failed to get AddDelegatorTx hash")
 	}
 
-	signReqs, err := t.buildSignReqs(t.Id+"-addDelegator", txHash)
+	signReqs, err := t.buildSignReqs(t.GetId(), txHash)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build AddDelegatorTx sign request")
 	}

@@ -3,6 +3,9 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -12,8 +15,6 @@ import (
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
-	"strings"
-	"time"
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 
 type ImportIntoPChain struct {
 	Status Status
-	Id     string
+	FlowId string
 	Quorum types.QuorumInfo
 
 	SignedExportTx *evm.Tx
@@ -37,7 +38,7 @@ type ImportIntoPChain struct {
 }
 
 func (t *ImportIntoPChain) GetId() string {
-	return fmt.Sprintf("ImportP(%v)", t.Id)
+	return fmt.Sprintf("%v-import", t.FlowId)
 }
 
 func (t *ImportIntoPChain) FailedPermanently() bool {
@@ -52,10 +53,10 @@ func (t *ImportIntoPChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewImportIntoPChain(id string, quorum types.QuorumInfo, signedExportTx *evm.Tx) (*ImportIntoPChain, error) {
+func NewImportIntoPChain(flowId string, quorum types.QuorumInfo, signedExportTx *evm.Tx) (*ImportIntoPChain, error) {
 	return &ImportIntoPChain{
 		Status:         StatusInit,
-		Id:             id,
+		FlowId:         flowId,
 		Quorum:         quorum,
 		SignedExportTx: signedExportTx,
 		Tx:             nil,
@@ -99,12 +100,12 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 		if t.TxID != nil {
-			ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.Id, t.TxID.String())
+			ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.FlowId, t.TxID.String())
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
-		ctx.GetLogger().Debugf("id %v ImportTx Status is %v", t.Id, status)
+		ctx.GetLogger().Debugf("id %v ImportTx Status is %v", t.FlowId, status)
 		if err != nil {
 			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToCheckStatus, err)
 		}
@@ -146,7 +147,7 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
-	req, err := t.buildSignReq(t.Id+"-import", txHash)
+	req, err := t.buildSignReq(t.GetId(), txHash)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)
 	}
