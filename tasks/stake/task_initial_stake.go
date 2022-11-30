@@ -3,13 +3,14 @@ package stake
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 type Status int
 
 type InitialStake struct {
-	Id     string
+	FlowId string
 	Quorum types.QuorumInfo
 
 	C2P          *c2p.C2P
@@ -32,7 +33,7 @@ type InitialStake struct {
 }
 
 func (t *InitialStake) GetId() string {
-	return fmt.Sprintf("Stake(%v)", t.Id)
+	return fmt.Sprintf("%v-initialStake", t.FlowId)
 }
 
 func (t *InitialStake) FailedPermanently() bool {
@@ -52,7 +53,7 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 
 	return &InitialStake{
-		Id:      hex.EncodeToString(id[:]),
+		FlowId:  hex.EncodeToString(id[:]),
 		Quorum:  quorum,
 		C2P:     c2pInstance,
 		request: request,
@@ -88,7 +89,7 @@ func (t *InitialStake) startAddDelegator() error {
 		UTXOs:     signedImportTx.UTXOs(),
 	}
 
-	addDelegator, err := addDelegator.NewAddDelegator(t.Id, t.Quorum, &stakeParam)
+	addDelegator, err := addDelegator.NewAddDelegator(t.FlowId, t.Quorum, &stakeParam)
 	if err != nil {
 		return errors.Wrap(err, "failed to create AddDelegator")
 	}
@@ -101,7 +102,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		next, err := t.C2P.Next(ctx)
 		if t.C2P.IsDone() {
 			err = t.startAddDelegator()
-			ctx.GetLogger().Debugf("%v C2P done", t.Id)
+			ctx.GetLogger().Debugf("%v C2P done", t.FlowId)
 			if err != nil {
 				ctx.GetLogger().Errorf("Failed to start AddDelegator, error:%+v", err)
 			}
@@ -115,9 +116,9 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
-			ctx.GetLogger().Debugf("%v added delegator", t.Id)
+			ctx.GetLogger().Debugf("%v added delegator", t.FlowId)
 			if err != nil {
-				ctx.GetLogger().Errorf("%v AddDelegator got error:%+v", t.Id, err)
+				ctx.GetLogger().Errorf("%v AddDelegator got error:%+v", t.FlowId, err)
 			}
 		}
 		return next, t.failIfErrorf(err, "add delegator failed")
