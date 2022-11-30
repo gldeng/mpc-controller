@@ -8,9 +8,14 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/pkg/errors"
+)
+
+const (
+	taskTypeInitialStake = "initialStake"
 )
 
 var (
@@ -20,8 +25,9 @@ var (
 type Status int
 
 type InitialStake struct {
-	FlowId string
-	Quorum types.QuorumInfo
+	FlowId   string
+	TaskType string
+	Quorum   types.QuorumInfo
 
 	C2P          *c2p.C2P
 	AddDelegator *addDelegator.AddDelegator
@@ -53,10 +59,11 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 
 	return &InitialStake{
-		FlowId:  hex.EncodeToString(id[:]),
-		Quorum:  quorum,
-		C2P:     c2pInstance,
-		request: request,
+		FlowId:   hex.EncodeToString(id[:]),
+		TaskType: taskTypeInitialStake,
+		Quorum:   quorum,
+		C2P:      c2pInstance,
+		request:  request,
 	}, nil
 }
 
@@ -102,13 +109,13 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		next, err := t.C2P.Next(ctx)
 		if t.C2P.IsDone() {
 			err = t.startAddDelegator()
-			ctx.GetLogger().Debugf("%v C2P done", t.FlowId)
+			t.logDebug(ctx, "C2P done")
 			if err != nil {
-				ctx.GetLogger().Errorf("Failed to start AddDelegator, error:%+v", err)
+				t.logError(ctx, "Failed to start AddDelegator", err)
 			}
 		}
 		if err != nil {
-			ctx.GetLogger().Errorf("Failed to run C2P, error: %v", err)
+			t.logError(ctx, "Failed to run C2P", err)
 		}
 		return next, t.failIfErrorf(err, "c2p failed")
 	}
@@ -116,9 +123,9 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
-			ctx.GetLogger().Debugf("%v added delegator", t.FlowId)
+			t.logDebug(ctx, "added delegator")
 			if err != nil {
-				ctx.GetLogger().Errorf("%v AddDelegator got error:%+v", t.FlowId, err)
+				t.logError(ctx, "AddDelegator got error", err)
 			}
 		}
 		return next, t.failIfErrorf(err, "add delegator failed")
@@ -132,4 +139,21 @@ func (t *InitialStake) failIfErrorf(err error, format string, a ...any) error {
 	}
 	t.Failed = true
 	return errors.Wrap(err, fmt.Sprintf(format, a...))
+}
+
+func (t *InitialStake) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+2)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	ctx.GetLogger().Debug(msg, allFields...)
+}
+
+func (t *InitialStake) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+3)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+	ctx.GetLogger().Error(msg, allFields...)
 }

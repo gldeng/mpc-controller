@@ -12,9 +12,14 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
+)
+
+const (
+	taskTypeImport = "import"
 )
 
 var (
@@ -22,9 +27,10 @@ var (
 )
 
 type ImportIntoPChain struct {
-	Status Status
-	FlowId string
-	Quorum types.QuorumInfo
+	Status   Status
+	FlowId   string
+	TaskType string
+	Quorum   types.QuorumInfo
 
 	SignedExportTx *evm.Tx
 	Tx             *txs.ImportTx
@@ -57,6 +63,7 @@ func NewImportIntoPChain(flowId string, quorum types.QuorumInfo, signedExportTx 
 	return &ImportIntoPChain{
 		Status:         StatusInit,
 		FlowId:         flowId,
+		TaskType:       taskTypeImport,
 		Quorum:         quorum,
 		SignedExportTx: signedExportTx,
 		Tx:             nil,
@@ -88,7 +95,7 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToBuildAndSignTx, err)
+			t.logError(ctx, ErrMsgFailedToBuildAndSignTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		} else {
 			t.Status = StatusSignReqSent
@@ -96,18 +103,18 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToGetSignatureAndSendTx, err)
+			t.logError(ctx, ErrMsgFailedToGetSignatureAndSendTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 		if t.TxID != nil {
-			ctx.GetLogger().Debugf("id %v ImportTx ID is %v", t.FlowId, t.TxID.String())
+			t.logDebug(ctx, "sent importTx", logger.Field{"importTx", t.TxID})
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
 		status, err := ctx.CheckPChainTx(*t.TxID)
-		ctx.GetLogger().Debugf("id %v ImportTx Status is %v", t.FlowId, status)
+		t.logDebug(ctx, "checked importTx status", []logger.Field{{"importTx", t.TxID}, {"status", status}}...)
 		if err != nil {
-			ctx.GetLogger().Errorf("%v, error:%+v", ErrMsgFailedToCheckStatus, err)
+			t.logError(ctx, ErrMsgFailedToCheckStatus, err, logger.Field{"importTx", t.TxID})
 		}
 		if !core.IsPending(status) {
 			t.Status = StatusDone
@@ -158,7 +165,7 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
-	ctx.GetLogger().Debugf("sent signing ImportTx request into P-Chain, requestID:%v", req.ReqID)
+	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.ReqID})
 	return nil
 }
 
@@ -174,7 +181,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		if strings.Contains(status, "error") || strings.Contains(status, "err") {
 			return t.failIfErrorf(err, "failed to sign ImportTx into P-Chain, status:%v", status)
 		}
-		ctx.GetLogger().Debugf("signing ImportTx into P-Chain not done, requestID:%v, status:%v", t.SignRequest.ReqID, status) // TODO: timeout and quit
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
 		return nil
 	}
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
@@ -205,4 +212,21 @@ func (t *ImportIntoPChain) failIfErrorf(err error, format string, a ...any) erro
 	}
 	t.Failed = true
 	return errors.Wrap(err, fmt.Sprintf(format, a...))
+}
+
+func (t *ImportIntoPChain) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+2)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	ctx.GetLogger().Debug(msg, allFields...)
+}
+
+func (t *ImportIntoPChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+3)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+	ctx.GetLogger().Error(msg, allFields...)
 }
