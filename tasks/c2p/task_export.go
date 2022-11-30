@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	taskType = "export"
+	taskTypeExport = "export"
 )
 
 var (
@@ -61,7 +61,7 @@ func NewExportFromCChain(flowId string, quorum types.QuorumInfo, amount big.Int)
 	return &ExportFromCChain{
 		Status:      StatusInit,
 		FlowId:      flowId,
-		TaskType:    taskType,
+		TaskType:    taskTypeExport,
 		Amount:      amount,
 		Quorum:      quorum,
 		Tx:          nil,
