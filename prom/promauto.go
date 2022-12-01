@@ -53,16 +53,6 @@ var (
 
 	// Mpc sign metrics
 
-	MpcSignPosted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_sign_posted_total",
-		Help: "The total number of mpc sign posted",
-	})
-
-	MpcSignDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_sign_done_total",
-		Help: "The total number of mpc sign done",
-	})
-
 	MpcSignPostedForC2PExportTx = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_sign_posted_total_for_c2p_export_tx",
 		Help: "The total number of mpc sign posted for c2p ExportTx",
@@ -91,17 +81,6 @@ var (
 	MpcSignDoneForAddDelegatorTx = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_sign_done_total_for_add_delegator_tx",
 		Help: "The total number of mpc sign done for AddDelegatorTx",
-	})
-
-	// Mpc result metrics
-
-	MpcResultPosted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_result_posted_total",
-		Help: "The total number of mpc result posted",
-	})
-	MpcResulDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_result_done_total",
-		Help: "The total number of mpc result done",
 	})
 
 	// Mpc join metrics

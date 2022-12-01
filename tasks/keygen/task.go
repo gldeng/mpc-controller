@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -105,6 +106,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		if err != nil {
 			return t.failIfErrorf(err, "failed to send keygen request")
 		}
+		prom.MpcKeygenPosted.Inc()
 		t.Status = StatusKeygenReqSent
 	case StatusKeygenReqSent:
 		res, err := ctx.GetMpcClient().Result(context.Background(), t.KeygenRequest.ReqID)
@@ -122,6 +124,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return nil
 		}
 
+		prom.MpcKeygenDone.Inc()
 		genPubKeyHex := res.Result
 		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
 		if err != nil {
