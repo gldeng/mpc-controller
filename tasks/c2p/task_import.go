@@ -165,6 +165,7 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
+	prom.MpcSignPostedForC2PImportTx.Inc()
 	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.ReqID})
 	return nil
 }
@@ -184,6 +185,7 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
 		return nil
 	}
+	prom.MpcSignDoneForC2PImportTx.Inc()
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
