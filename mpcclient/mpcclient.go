@@ -81,6 +81,7 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 		if err != nil {
 			return true, errors.Wrap(err, "failed to post request")
 		}
+		prom.MpcResultPosted.Inc()
 		return false, nil
 	})
 	if err != nil {

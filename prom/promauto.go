@@ -49,18 +49,6 @@ var (
 		Help: "The total number of mpc keygen done",
 	})
 
-	// Mpc join
-
-	MpcJoinStake = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_join_stake_total",
-		Help: "The total number of mpc join stake",
-	})
-
-	MpcJoinStakeQuorumReached = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_join_stake_quorum_reached_total",
-		Help: "The total number of mpc join stake quorum reached",
-	})
-
 	// Mpc sign
 
 	MpcSignPosted = promauto.NewCounter(prometheus.CounterOpts{
@@ -71,6 +59,25 @@ var (
 	MpcSignDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_sign_done_total",
 		Help: "The total number of mpc sign done",
+	})
+
+	// Mpc result
+
+	MpcResultPosted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_result_posted_total",
+		Help: "The total number of mpc result posted",
+	})
+
+	// Mpc join
+
+	MpcJoinStake = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_stake_total",
+		Help: "The total number of mpc join stake",
+	})
+
+	MpcJoinStakeQuorumReached = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_stake_quorum_reached_total",
+		Help: "The total number of mpc join stake quorum reached",
 	})
 
 	// Issue tx
