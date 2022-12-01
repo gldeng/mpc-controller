@@ -56,6 +56,11 @@ var (
 		Help: "The total number of mpc join stake",
 	})
 
+	MpcJoinStakeQuorumReached = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_stake_quorum_reached_total",
+		Help: "The total number of mpc join stake quorum reached",
+	})
+
 	// Mpc sign
 
 	MpcSignPosted = promauto.NewCounter(prometheus.CounterOpts{

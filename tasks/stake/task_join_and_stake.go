@@ -3,14 +3,16 @@ package stake
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/join"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"math/big"
-	"time"
 )
 
 var (
@@ -181,6 +183,7 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 				}
 				if count == t.Threshold+1 {
 					t.QuorumReached = true
+					prom.MpcJoinStakeQuorumReached.Inc()
 					return nil // Done without error
 				}
 			}
