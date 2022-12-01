@@ -92,13 +92,18 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var res types.Result
 	err = json.Unmarshal(body, &res)
-	switch res.Type {
-	case types.TypKeygen:
-		prom.MpcKeygenDone.Inc()
-	case types.TypSign:
-		prom.MpcSignDone.Inc()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse mpc result")
 	}
-	return &res, errors.Wrap(err, "failed to parse result")
+	if res.Status == types.StatusDone {
+		switch res.Type {
+		case types.TypKeygen:
+			prom.MpcKeygenDone.Inc()
+		case types.TypSign:
+			prom.MpcSignDone.Inc()
+		}
+	}
+	return &res, nil
 }
 
 type SimulatingMpcClient struct {
