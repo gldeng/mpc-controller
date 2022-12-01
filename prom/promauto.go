@@ -2,6 +2,7 @@ package prom
 
 import (
 	"github.com/alitto/pond"
+	goqueue "github.com/enriquebris/goconcurrentqueue"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -233,5 +234,26 @@ func ConfigWorkPoolAndTaskMetrics(poolType string, pool *pond.WorkerPool) {
 		},
 		func() float64 {
 			return float64(pool.CompletedTasks())
+		}))
+}
+
+// Reference: https://github.com/enriquebris/goconcurrentqueue
+
+func ConfigFIFOQueueMetrics(q *goqueue.FIFO) {
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + "fifo_queue_capacity",
+			Help: "FIFO queue's capacity",
+		},
+		func() float64 {
+			return float64(q.GetCap())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + "fifo_queue_length",
+			Help: "Number of enqueued elements",
+		},
+		func() float64 {
+			return float64(q.GetLen())
 		}))
 }
