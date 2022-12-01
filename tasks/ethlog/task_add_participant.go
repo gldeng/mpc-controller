@@ -3,10 +3,11 @@ package ethlog
 import (
 	"context"
 	"fmt"
+
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
-	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/crypto/hash256"
 	"github.com/pkg/errors"
 )
@@ -35,8 +36,9 @@ func NewParticipantAddedHandler(event contract.MpcManagerParticipantAdded) *Part
 
 func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 	myPubKey, _ := ctx.GetMyPublicKey()
+	groupId := fmt.Sprintf("%x", h.Event.GroupId)
 	if h.Event.PublicKey != hash256.FromBytes(myPubKey) {
-		ctx.GetLogger().Debugf("Group %v not for me", bytes.Bytes32ToHex(h.Event.GroupId)) // TODO: %x
+		ctx.GetLogger().Debug("group not for me", []logger.Field{{"group", groupId}}...)
 		h.Done = true
 		return nil, nil
 	}
@@ -48,7 +50,7 @@ func (h *ParticipantAddedHandler) Next(ctx core.TaskContext) ([]core.Task, error
 	}
 
 	h.Done = true
-	ctx.GetLogger().Debugf("Saved group %x for %x", h.Event.GroupId, myPubKey)
+	ctx.GetLogger().Debug("saved group", []logger.Field{{"group", groupId}, {"myPubKey", fmt.Sprintf("%x", myPubKey)}}...)
 	return nil, nil
 }
 
@@ -71,7 +73,8 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 		Index:            h.Event.Index,
 		MemberPublicKeys: members,
 	}
-	ctx.GetLogger().Debugf("saving group %v", group)
+
+	ctx.GetLogger().Debug("saving group", []logger.Field{{"group", fmt.Sprintf("%x", h.Event.GroupId)}}...)
 	key := []byte("group/")
 	key = append(key, group.GroupId[:]...)
 	groupBytes, err := group.Encode()
@@ -83,7 +86,7 @@ func (h *ParticipantAddedHandler) saveGroup(ctx core.TaskContext) error {
 		return errors.Wrap(err, "failed to set group")
 	}
 	retrieved, err := ctx.GetDb().Get(context.Background(), key)
-	ctx.GetLogger().Debugf("retrieved group %v", retrieved)
+	ctx.GetLogger().Debug("retrieved group", []logger.Field{{"group", fmt.Sprintf("%x", retrieved)}}...)
 	return nil
 }
 
