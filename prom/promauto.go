@@ -10,7 +10,7 @@ const (
 )
 
 var (
-	// Contract events
+	// Contract event metrics
 
 	ContractEvtParticipantAdded = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "contract_evt_participant_added_total",
@@ -37,7 +37,7 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
-	// Mpc keygen
+	// Mpc keygen metrics
 
 	MpcKeygenPosted = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_keygen_posted_total",
@@ -49,7 +49,7 @@ var (
 		Help: "The total number of mpc keygen done",
 	})
 
-	// Mpc sign
+	// Mpc sign metrics
 
 	MpcSignPosted = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_sign_posted_total",
@@ -91,7 +91,7 @@ var (
 		Help: "The total number of mpc sign done for AddDelegatorTx",
 	})
 
-	// Mpc result
+	// Mpc result metrics
 
 	MpcResultPosted = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_result_posted_total",
@@ -102,7 +102,7 @@ var (
 		Help: "The total number of mpc result done",
 	})
 
-	// Mpc join
+	// Mpc join metrics
 
 	MpcJoinStake = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_join_stake_total",
@@ -114,7 +114,7 @@ var (
 		Help: "The total number of mpc join stake quorum reached",
 	})
 
-	// Issue tx
+	// Issue tx metrics
 
 	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "c2p_export_tx_issued_total",
