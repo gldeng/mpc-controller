@@ -21,6 +21,12 @@ func DefaultWithCallerSkip(skip int) Logger {
 
 	if DevMode {
 		logConfig = uberZap.NewDevelopmentConfig()
+		logConfig.EncoderConfig.TimeKey = "ts"
+		logConfig.EncoderConfig.LevelKey = "level"
+		logConfig.EncoderConfig.NameKey = "logger"
+		logConfig.EncoderConfig.CallerKey = "caller"
+		logConfig.EncoderConfig.MessageKey = "msg"
+		logConfig.EncoderConfig.StacktraceKey = "stacktrace"
 		logConfig.EncoderConfig.EncodeTime = iso8601LocalTimeEncoder
 		if UseConsoleEncoder {
 			logConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
