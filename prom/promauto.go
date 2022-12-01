@@ -81,6 +81,16 @@ var (
 		Help: "The total number of mpc sign done for c2p ImportTx",
 	})
 
+	MpcSignPostedForAddDelegatorTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total_for_add_delegator_tx",
+		Help: "The total number of mpc sign posted for AddDelegatorx",
+	})
+
+	MpcSignDoneForAddDelegatorTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total_for_add_delegator_tx",
+		Help: "The total number of mpc sign done for AddDelegatorTx",
+	})
+
 	// Mpc result
 
 	MpcResultPosted = promauto.NewCounter(prometheus.CounterOpts{

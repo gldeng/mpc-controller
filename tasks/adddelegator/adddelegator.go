@@ -132,6 +132,7 @@ func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to send AddDelegator signing request")
 	}
+	prom.MpcSignPostedForAddDelegatorTx.Inc()
 	t.logDebug(ctx, "sent signing request", []logger.Field{{"signReq", t.signReq.ReqID}}...)
 	return nil
 }
@@ -151,6 +152,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return nil
 	}
 
+	prom.MpcSignDoneForAddDelegatorTx.Inc()
 	sig := new(types.Signature).FromHex(res.Result)
 	err = t.tx.SetTxSig(*sig)
 	if err != nil {
