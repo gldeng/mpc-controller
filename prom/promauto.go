@@ -1,6 +1,7 @@
 package prom
 
 import (
+	"github.com/alitto/pond"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -146,3 +147,91 @@ var (
 		Help: "The total number of AddDelegatorTx committed",
 	})
 )
+
+// Reference: https://github.com/alitto/pond
+
+func ConfigWorkPoolAndTaskMetrics(poolType string, pool *pond.WorkerPool) {
+	// Worker pool metrics
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_running",
+			Help: "Number of running worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.RunningWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_idle",
+			Help: "Number of idle worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.IdleWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_minimum",
+			Help: "Minimum number of worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.MinWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_maxmimum",
+			Help: "Maxmimum number of worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.MaxWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_queue_capacity",
+			Help: "Maximum number of tasks that can be waiting in the queue at any given time (queue capacity)",
+		},
+		func() float64 {
+			return float64(pool.MaxCapacity())
+		}))
+
+	// Task metrics
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_submitted_total",
+			Help: "Number of tasks submitted",
+		},
+		func() float64 {
+			return float64(pool.SubmittedTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_tasks_waiting_total",
+			Help: "Number of tasks waiting in the queue",
+		},
+		func() float64 {
+			return float64(pool.WaitingTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_successful_total",
+			Help: "Number of tasks that completed successfully",
+		},
+		func() float64 {
+			return float64(pool.SuccessfulTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_failed_total",
+			Help: "Number of tasks that completed with panic",
+		},
+		func() float64 {
+			return float64(pool.FailedTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_completed_total",
+			Help: "Number of tasks that completed either successfully or with panic",
+		},
+		func() float64 {
+			return float64(pool.CompletedTasks())
+		}))
+}

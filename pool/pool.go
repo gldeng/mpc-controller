@@ -4,8 +4,14 @@ import (
 	"github.com/alitto/pond"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/pkg/errors"
+)
+
+const (
+	poolTypeSequential = "sequential_"
+	poolTypeParallel   = "parallel_"
 )
 
 var (
@@ -28,6 +34,8 @@ func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*Exte
 			return nil, errors.Wrap(err, "failed to enqueue task context")
 		}
 	}
+	prom.ConfigWorkPoolAndTaskMetrics(poolTypeSequential, sequentialWorker)
+	prom.ConfigWorkPoolAndTaskMetrics(poolTypeParallel, parallelPool)
 	return &ExtendedWorkerPool{
 		sequentialWorker: sequentialWorker,
 		parallelPool:     parallelPool,
