@@ -3,6 +3,7 @@ package pool
 import (
 	"github.com/alitto/pond"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/pkg/errors"
 )
@@ -54,29 +55,29 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		taskCtx := ctx.(core.TaskContext)
 		next, err := task.Next(taskCtx) // TODO: Handle error
 		if err != nil {
-			taskCtx.GetLogger().Debugf("%v got error:%v", task.GetId(), err)
+			taskCtx.GetLogger().Debug("task got error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 		}
 		if task.FailedPermanently() {
-			taskCtx.GetLogger().Debugf("%v failed permanently, error:%v", task.GetId(), err)
+			taskCtx.GetLogger().Debug("task failed permanently", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 		}
 		if task.IsDone() {
-			taskCtx.GetLogger().Debugf("%v done", task.GetId())
+			taskCtx.GetLogger().Debug("task done", []logger.Field{{"task", task.GetId()}}...)
 		}
 		if !task.IsDone() && !task.FailedPermanently() {
 			err = e.Submit(task)
 			if err != nil {
-				taskCtx.GetLogger().Debugf("failed to submit task, error:%v", err)
+				taskCtx.GetLogger().Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 			}
 		}
 		err = e.contexts.Enqueue(ctx)
 		if err != nil {
-			taskCtx.GetLogger().Debugf("failed to enqueue task context, error:%v", err)
+			taskCtx.GetLogger().Debug("failed to enqueue task context", []logger.Field{{"error", err}}...)
 		}
 		if next != nil {
 			for _, t := range next {
 				err = e.Submit(t) // Task needs to continue with itself or succeeding tasks
 				if err != nil {
-					taskCtx.GetLogger().Debugf("failed to submit task, error:%v", err)
+					taskCtx.GetLogger().Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 				}
 			}
 		}
