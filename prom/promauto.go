@@ -67,6 +67,10 @@ var (
 		Name: prefix + "mpc_result_posted_total",
 		Help: "The total number of mpc result posted",
 	})
+	MpcResulDone = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_result_done_total",
+		Help: "The total number of mpc result done",
+	})
 
 	// Mpc join
 

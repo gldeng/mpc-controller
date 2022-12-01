@@ -96,6 +96,7 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 		return nil, errors.Wrap(err, "failed to parse mpc result")
 	}
 	if res.Status == types.StatusDone {
+		prom.MpcResulDone.Inc()
 		switch res.Type {
 		case types.TypKeygen:
 			prom.MpcKeygenDone.Inc()
