@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/core"
@@ -30,10 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
-	"math/big"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // TODO: improve flags
@@ -176,6 +177,7 @@ func runController(c *cli.Context) error {
 
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
 	q := goconcurrentqueue.NewFIFO()
+	prom.ConfigFIFOQueueMetrics(q)
 
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 

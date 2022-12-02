@@ -1,6 +1,8 @@
 package prom
 
 import (
+	"github.com/alitto/pond"
+	goqueue "github.com/enriquebris/goconcurrentqueue"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -10,7 +12,7 @@ const (
 )
 
 var (
-	// Contract events
+	// Contract event metrics
 
 	ContractEvtParticipantAdded = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "contract_evt_participant_added_total",
@@ -37,7 +39,7 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
-	// Mpc keygen
+	// Mpc keygen metrics
 
 	MpcKeygenPosted = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_keygen_posted_total",
@@ -49,26 +51,51 @@ var (
 		Help: "The total number of mpc keygen done",
 	})
 
-	// Mpc join
+	// Mpc sign metrics
+
+	MpcSignPostedForC2PExportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total_for_c2p_export_tx",
+		Help: "The total number of mpc sign posted for c2p ExportTx",
+	})
+
+	MpcSignDoneForC2PExportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total_for_c2p_export_tx",
+		Help: "The total number of mpc sign done for c2p ExportTx",
+	})
+
+	MpcSignPostedForC2PImportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total_for_c2p_import_tx",
+		Help: "The total number of mpc sign posted for c2p ImportTx",
+	})
+
+	MpcSignDoneForC2PImportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total_for_c2p_import_tx",
+		Help: "The total number of mpc sign done for c2p ImportTx",
+	})
+
+	MpcSignPostedForAddDelegatorTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total_for_add_delegator_tx",
+		Help: "The total number of mpc sign posted for AddDelegatorx",
+	})
+
+	MpcSignDoneForAddDelegatorTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total_for_add_delegator_tx",
+		Help: "The total number of mpc sign done for AddDelegatorTx",
+	})
+
+	// Mpc join metrics
 
 	MpcJoinStake = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_join_stake_total",
 		Help: "The total number of mpc join stake",
 	})
 
-	// Mpc sign
-
-	MpcSignPosted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_sign_posted_total",
-		Help: "The total number of mpc sign posted",
+	MpcJoinStakeQuorumReached = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_stake_quorum_reached_total",
+		Help: "The total number of mpc join stake quorum reached",
 	})
 
-	MpcSignDone = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "mpc_sign_done_total",
-		Help: "The total number of mpc sign done",
-	})
-
-	// Issue tx
+	// Issue tx metrics
 
 	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "c2p_export_tx_issued_total",
@@ -100,3 +127,112 @@ var (
 		Help: "The total number of AddDelegatorTx committed",
 	})
 )
+
+// Reference: https://github.com/alitto/pond
+
+func ConfigWorkPoolAndTaskMetrics(poolType string, pool *pond.WorkerPool) {
+	// Worker pool metrics
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_running",
+			Help: "Number of running worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.RunningWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_idle",
+			Help: "Number of idle worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.IdleWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_minimum",
+			Help: "Minimum number of worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.MinWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_workers_maxmimum",
+			Help: "Maxmimum number of worker goroutines",
+		},
+		func() float64 {
+			return float64(pool.MaxWorkers())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_queue_capacity",
+			Help: "Maximum number of tasks that can be waiting in the queue at any given time (queue capacity)",
+		},
+		func() float64 {
+			return float64(pool.MaxCapacity())
+		}))
+
+	// Task metrics
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_submitted_total",
+			Help: "Number of tasks submitted",
+		},
+		func() float64 {
+			return float64(pool.SubmittedTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + poolType + "pool_tasks_waiting_total",
+			Help: "Number of tasks waiting in the queue",
+		},
+		func() float64 {
+			return float64(pool.WaitingTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_successful_total",
+			Help: "Number of tasks that completed successfully",
+		},
+		func() float64 {
+			return float64(pool.SuccessfulTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_failed_total",
+			Help: "Number of tasks that completed with panic",
+		},
+		func() float64 {
+			return float64(pool.FailedTasks())
+		}))
+	prometheus.MustRegister(prometheus.NewCounterFunc(
+		prometheus.CounterOpts{
+			Name: prefix + poolType + "pool_tasks_completed_total",
+			Help: "Number of tasks that completed either successfully or with panic",
+		},
+		func() float64 {
+			return float64(pool.CompletedTasks())
+		}))
+}
+
+// Reference: https://github.com/enriquebris/goconcurrentqueue
+
+func ConfigFIFOQueueMetrics(q *goqueue.FIFO) {
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + "fifo_queue_capacity",
+			Help: "FIFO queue's capacity",
+		},
+		func() float64 {
+			return float64(q.GetCap())
+		}))
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: prefix + "fifo_queue_length",
+			Help: "Number of enqueued elements",
+		},
+		func() float64 {
+			return float64(q.GetLen())
+		}))
+}

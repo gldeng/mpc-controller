@@ -8,7 +8,6 @@ import (
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
@@ -35,7 +34,6 @@ func (c *MyMpcClient) Keygen(ctx context.Context, req *types.KeygenRequest) erro
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		prom.MpcKeygenPosted.Inc()
 		return false, nil
 	})
 
@@ -59,7 +57,6 @@ func (c *MyMpcClient) Sign(ctx context.Context, req *types.SignRequest) (err err
 		if err != nil {
 			return true, errors.WithStack(err)
 		}
-		prom.MpcSignPosted.Inc()
 		return false, nil
 	})
 
@@ -91,13 +88,10 @@ func (c *MyMpcClient) Result(ctx context.Context, reqId string) (*types.Result, 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var res types.Result
 	err = json.Unmarshal(body, &res)
-	switch res.Type {
-	case types.TypKeygen:
-		prom.MpcKeygenDone.Inc()
-	case types.TypSign:
-		prom.MpcSignDone.Inc()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse mpc result")
 	}
-	return &res, errors.Wrap(err, "failed to parse result")
+	return &res, nil
 }
 
 type SimulatingMpcClient struct {

@@ -3,14 +3,16 @@ package stake
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/join"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"math/big"
-	"time"
 )
 
 var (
@@ -98,10 +100,12 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to init join")
 		}
+		prom.MpcJoinStake.Inc()
 		err = t.joinAndWaitUntilQuorumReached(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to join")
 		}
+		prom.MpcJoinStakeQuorumReached.Inc()
 		quorumInfo, err := t.getQuorumInfo(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to get quorum info")
