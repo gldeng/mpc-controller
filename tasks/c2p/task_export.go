@@ -119,7 +119,11 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
 		}
 		if t.TxID != nil {
-			t.logDebug(ctx, "sent exportTx", logger.Field{"exportTx", t.TxID})
+			tx, _ := t.SignedTx()
+			t.logDebug(ctx, "sent exportTx",
+				logger.Field{Key: "txID", Value: t.TxID},
+				logger.Field{Key: "txBytes", Value: tx.SignedBytes()},
+			)
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
