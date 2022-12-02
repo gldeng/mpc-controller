@@ -115,6 +115,10 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, "create InitialStake task")
 		}
 		t.InitialStake = initStake
+		_, err = t.InitialStake.Next(ctx)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "failed to run InitialStake")
+		}
 	} else {
 		_, err := t.InitialStake.Next(ctx)
 		if err != nil {
