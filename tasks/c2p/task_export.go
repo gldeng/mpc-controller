@@ -219,9 +219,14 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if err != nil {
 		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
 		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx+fmt.Sprintf(" tx: %v", signed))
+		t.logError(
+			ctx, ErrMsgFailedToIssueTx, err,
+			logger.Field{Key: "txBytes", Value: signed.SignedBytes()},
+		)
 		return nil
+	} else {
+		prom.C2PExportTxIssued.Inc()
 	}
-	prom.C2PExportTxIssued.Inc()
 	return nil
 }
 
