@@ -219,7 +219,7 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	txId := signed.ID()
 	t.TxID = &txId
 	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
-	_, err = ctx.IssueCChainTx(signed.SignedBytes())
+	issuedTxID, err := ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
 		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
 		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx+fmt.Sprintf(" tx: %v", signed))
@@ -229,6 +229,9 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		)
 		return nil
 	} else {
+		t.logDebug(ctx, "issued tx",
+			logger.Field{Key: "txID", Value: issuedTxID},
+		)
 		prom.C2PExportTxIssued.Inc()
 	}
 	return nil
