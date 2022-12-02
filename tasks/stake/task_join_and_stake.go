@@ -100,10 +100,12 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to init join")
 		}
+		prom.MpcJoinStake.Inc()
 		err = t.joinAndWaitUntilQuorumReached(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to join")
 		}
+		prom.MpcJoinStakeQuorumReached.Inc()
 		quorumInfo, err := t.getQuorumInfo(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to get quorum info")
@@ -183,7 +185,6 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 				}
 				if count == t.Threshold+1 {
 					t.QuorumReached = true
-					prom.MpcJoinStakeQuorumReached.Inc()
 					return nil // Done without error
 				}
 			}
