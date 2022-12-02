@@ -122,7 +122,7 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			tx, _ := t.SignedTx()
 			t.logDebug(ctx, "sent exportTx",
 				logger.Field{Key: "txID", Value: t.TxID},
-				logger.Field{Key: "txBytes", Value: tx.SignedBytes()},
+				logger.Field{Key: "txBytes", Value: bytes.BytesToHex(tx.SignedBytes())},
 			)
 			t.Status = StatusTxSent
 		}
@@ -225,7 +225,7 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx+fmt.Sprintf(" tx: %v", signed))
 		t.logError(
 			ctx, ErrMsgFailedToIssueTx, err,
-			logger.Field{Key: "txBytes", Value: signed.SignedBytes()},
+			logger.Field{Key: "txBytes", Value: bytes.BytesToHex(signed.SignedBytes())},
 		)
 		return nil
 	} else {
