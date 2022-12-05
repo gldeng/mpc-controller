@@ -123,7 +123,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	if t.AddDelegator != nil && !t.AddDelegator.IsDone() {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
-			t.logDebug(ctx, "added delegator")
+			t.logDebug(ctx, "AddDelegator task done")
 			if err != nil {
 				t.logError(ctx, "AddDelegator got error", err)
 			}
