@@ -162,6 +162,7 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToGetNonce)
 	}
+	t.logDebug(ctx, "got nonce", []logger.Field{{"nonce", nonce}, {"address", t.Quorum.CChainAddress()}}...)
 	amount, err := ToGwei(&t.Amount)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToConvertAmount)
