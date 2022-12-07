@@ -51,6 +51,11 @@ var (
 		Help: "The total number of mpc keygen done",
 	})
 
+	MpcKeygenSaved = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_keygen_saved_total",
+		Help: "The total number of mpc keygen saved",
+	})
+
 	// Mpc sign metrics
 
 	MpcSignPostedForC2PExportTx = promauto.NewCounter(prometheus.CounterOpts{
