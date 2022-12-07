@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/pkg/errors"
 )
 
@@ -45,6 +46,7 @@ func (h *KeyGeneratedHandler) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return nil, h.failIfErrorf(err, "failed to save generated public key %x for group %x", h.Event.PublicKey, group.GroupId)
 	}
 
+	prom.MpcKeygenSaved.Inc()
 	ctx.GetLogger().Debugf("saved generated public key %x for group %x", h.Event.PublicKey, group.GroupId)
 	h.Done = true
 	return nil, nil
