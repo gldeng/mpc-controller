@@ -3,6 +3,7 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
 
@@ -160,6 +161,8 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	}
 
 	t.SignRequest = req
+
+	prom.MpcTxBuilt.With(prometheus.Labels{"flow": "initialStake", "chain": "pChain", "tx": "importTx"}).Inc()
 
 	err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {

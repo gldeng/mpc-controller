@@ -3,6 +3,7 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
 	"strings"
 	"time"
@@ -177,6 +178,9 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
+
+	prom.MpcTxBuilt.With(prometheus.Labels{"flow": "initialStake", "chain": "cChain", "tx": "exportTx"}).Inc()
+
 	req, err := t.buildSignReq(t.GetId(), txHash)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)

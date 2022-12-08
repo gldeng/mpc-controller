@@ -100,7 +100,14 @@ var (
 		Help: "The total number of mpc join stake quorum reached",
 	})
 
-	// Issue tx metrics
+	// Mpc tx built metrics
+
+	MpcTxBuilt = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "mpc_tx_built_total",
+		Help: "The total number of mpc tx built",
+	}, []string{"flow", "chain", "tx"})
+
+	// Mpc tx issued metrics
 
 	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "c2p_export_tx_issued_total",

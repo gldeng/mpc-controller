@@ -3,6 +3,7 @@ package addDelegator
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
 
@@ -187,6 +188,8 @@ func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to get AddDelegatorTx hash")
 	}
+
+	prom.MpcTxBuilt.With(prometheus.Labels{"flow": "initialStake", "chain": "pChain", "tx": "addDelegatorTx"}).Inc()
 
 	signReqs, err := t.buildSignReqs(t.GetId(), txHash)
 	if err != nil {
