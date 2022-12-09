@@ -1,73 +1,142 @@
 package taskcontext
 
 const (
-	errMsgFailedToCreateContractTransactor = "failed to create contract transactor"
-	errMsgContractExecutionReverted        = "contract execution reverted"
-	errMsgTxReceiptNotFound                = "tx receipt not found, maybe it is pending"
+	ErrMsgCreateTransactor  = "failed to create contract transactor"
+	ErrMsgCallTransactor    = "failed to call transactor"
+	ErrMsgTxAborted         = "tx aborted"
+	ErrMsgExecutionReverted = "contract execution reverted"
+	ErrMsgReceiptNotFound   = "receipt not found, maybe it is pending"
+	ErrMsgQueryReceipt      = "failed to query receipt "
 )
 
 // ----------error types ----------
 
-type ErrTypFailedToCreateContractTransactor struct {
-	msg string
-	pre error
+type ErrTypCreateTransactor struct {
+	Msg string
+	Pre error
 }
 
-func (e *ErrTypFailedToCreateContractTransactor) Error() string {
-	if e.msg == "" {
-		e.msg = errMsgFailedToCreateContractTransactor
+func (e *ErrTypCreateTransactor) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgCreateTransactor
 	}
-	return e.msg + ": " + e.pre.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
-func (e *ErrTypFailedToCreateContractTransactor) Cause() error {
-	return e.pre
+func (e *ErrTypCreateTransactor) Cause() error {
+	return e.Pre
 }
 
-func (e *ErrTypFailedToCreateContractTransactor) Unwrap() error {
-	return e.pre
+func (e *ErrTypCreateTransactor) Unwrap() error {
+	return e.Pre
 }
 
 // ----------
 
-type ErrTypContractExecutionReverted struct {
-	msg string
-	pre error
+type ErrTypCallTransactor struct {
+	Msg string
+	Pre error
 }
 
-func (e *ErrTypContractExecutionReverted) Error() string {
-	if e.msg == "" {
-		e.msg = errMsgContractExecutionReverted
+func (e *ErrTypCallTransactor) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgCallTransactor
 	}
-	return e.msg + ": " + e.pre.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
-func (e *ErrTypContractExecutionReverted) Cause() error {
-	return e.pre
+func (e *ErrTypCallTransactor) Cause() error {
+	return e.Pre
 }
 
-func (e *ErrTypContractExecutionReverted) Unwrap() error {
-	return e.pre
+func (e *ErrTypCallTransactor) Unwrap() error {
+	return e.Pre
 }
 
 // ----------
 
-type ErrTypTxReceiptNotFound struct {
-	msg string
-	pre error
+type ErrTypTxAborted struct {
+	Msg string
+	Pre error
 }
 
-func (e *ErrTypTxReceiptNotFound) Error() string {
-	if e.msg == "" {
-		e.msg = errMsgTxReceiptNotFound
+func (e *ErrTypTxAborted) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgTxAborted
 	}
-	return e.msg + ": " + e.pre.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
-func (e *ErrTypTxReceiptNotFound) Cause() error {
-	return e.pre
+func (e *ErrTypTxAborted) Cause() error {
+	return e.Pre
 }
 
-func (e *ErrTypTxReceiptNotFound) Unwrap() error {
-	return e.pre
+func (e *ErrTypTxAborted) Unwrap() error {
+	return e.Pre
+}
+
+// ----------
+
+type ErrTypExecutionReverted struct {
+	Msg string
+	Pre error
+}
+
+func (e *ErrTypExecutionReverted) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgExecutionReverted
+	}
+	return e.Msg + ": " + e.Pre.Error()
+}
+
+func (e *ErrTypExecutionReverted) Cause() error {
+	return e.Pre
+}
+
+func (e *ErrTypExecutionReverted) Unwrap() error {
+	return e.Pre
+}
+
+// ----------
+
+type ErrTypReceiptNotFound struct {
+	Msg string
+	Pre error
+}
+
+func (e *ErrTypReceiptNotFound) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgReceiptNotFound
+	}
+	return e.Msg + ": " + e.Pre.Error()
+}
+
+func (e *ErrTypReceiptNotFound) Cause() error {
+	return e.Pre
+}
+
+func (e *ErrTypReceiptNotFound) Unwrap() error {
+	return e.Pre
+}
+
+// ----------
+
+type ErrTypQueryReceipt struct {
+	Msg string
+	Pre error
+}
+
+func (e *ErrTypQueryReceipt) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgQueryReceipt
+	}
+	return e.Msg + ": " + e.Pre.Error()
+}
+
+func (e *ErrTypQueryReceipt) Cause() error {
+	return e.Pre
+}
+
+func (e *ErrTypQueryReceipt) Unwrap() error {
+	return e.Pre
 }
