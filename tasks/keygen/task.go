@@ -6,7 +6,9 @@ import (
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -25,6 +27,8 @@ type RequestAdded struct {
 	TxHash        *common.Hash
 
 	group *types.Group
+
+	keygenResult string
 
 	Failed bool
 }
@@ -124,37 +128,36 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return nil
 		}
 
+		t.keygenResult = res.Result
+		t.Status = StatusKeygenReqDone
 		prom.MpcKeygenDone.Inc()
-		genPubKeyHex := res.Result
-		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(genPubKeyHex) // for Ethereum compatibility
+	case StatusKeygenReqDone:
+		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(t.keygenResult) // for Ethereum compatibility
 		if err != nil {
-			return t.failIfErrorf(err, "failed to decompress generated public key %v", genPubKeyHex)
+			return t.failIfErrorf(err, "failed to decompress generated public key %v", t.keygenResult)
 		}
-
 		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
-			return t.failIfErrorf(err, "failed to report GeneratedKey")
+			if errors.As(err, &taskcontext.ErrTypCreateTransactor{}) || errors.As(err, taskcontext.ErrTypExecutionReverted{}) {
+				ctx.GetLogger().Error(ErrMsgReportGenPubKey, []logger.Field{{"error", err.Error()}}...)
+				return t.failIfErrorf(err, ErrMsgReportGenPubKey)
+			}
+			ctx.GetLogger().Error(ErrMsgReportGenPubKey, []logger.Field{{"error", err.Error()}}...)
+			return errors.Wrap(err, ErrMsgReportGenPubKey)
 		}
 		t.TxHash = txHash
 		t.Status = StatusTxSent
 	case StatusTxSent:
-		status, err := ctx.CheckEthTx(*t.TxHash)
-		ctx.GetLogger().Debugf("id %v ReportGeneratedKey Status is %v", t.GetId(), status)
+		_, err := ctx.CheckEthTx(*t.TxHash)
 		if err != nil {
-			return t.failIfErrorf(err, "failed to check status for tx %x", *t.TxHash)
+			ctx.GetLogger().Error(ErrMsgCheckTxStatus, []logger.Field{{"tx", t.TxHash.Hex()},
+				{"group", fmt.Sprintf("%x", t.group.GroupId)},
+				{"error", err.Error()}}...)
+			return errors.Wrapf(err, ErrMsgCheckTxStatus)
 		}
 
-		switch status {
-		case core.TxStatusUnknown:
-			return t.failIfErrorf(errors.Errorf("unkonw tx status (%v:%x) of reporting generated key for group %x",
-				status, *t.TxHash, t.group.GroupId), "")
-		case core.TxStatusAborted:
-			t.Status = StatusKeygenReqSent // TODO: avoid endless repeating ReportGenerateKey?
-			return errors.Errorf(fmt.Sprintf("ReportGeneratedKey tx %x aborted for group %x", *t.TxHash, t.group.GroupId))
-		case core.TxStatusCommitted:
-			t.Status = StatusDone
-			ctx.GetLogger().Debugf("Generated key reported for group %x", t.group.GroupId)
-		}
+		t.Status = StatusDone
+		ctx.GetLogger().Debug("key reported", []logger.Field{{"group", fmt.Sprintf("%x", t.group.GroupId)}}...)
 	}
 	return nil
 }
@@ -171,8 +174,8 @@ func (t *RequestAdded) retrieveGroup(ctx core.TaskContext) error {
 	if t.group == nil {
 		group, err := ctx.LoadGroup(t.Event.GroupId)
 		if err != nil {
-			ctx.GetLogger().Error(ErrMsgFailedToLoadGroup)
-			return t.failIfErrorf(err, ErrMsgFailedToLoadGroup)
+			ctx.GetLogger().Error(ErrMsgLoadGroup)
+			return t.failIfErrorf(err, ErrMsgLoadGroup)
 		}
 
 		ctx.GetLogger().Debugf("Loaded group %x", group.GroupId)
