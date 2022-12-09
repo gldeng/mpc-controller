@@ -47,9 +47,9 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 	rcp, err := t.EthClient.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
 		if strings.Contains(err.Error(), interfaces.NotFound.Error()) {
-			return core.TxStatusUnknown, errors.WithStack(&ErrTypReceiptNotFound{Pre: err})
+			return core.TxStatusUnknown, errors.WithStack(&ErrTypReceiptNotFound{Cause: err})
 		}
-		return core.TxStatusUnknown, errors.WithStack(&ErrTypQueryReceipt{Pre: err})
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypQueryReceipt{Cause: err})
 	}
 
 	if rcp.Status == coreTypes.ReceiptStatusFailed {
@@ -61,16 +61,16 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.WithStack(&ErrTypCreateTransactor{Pre: err})
+		return nil, errors.WithStack(&ErrTypCreateTransactor{Cause: err})
 	}
 
 	var hash common.Hash
 	tx, err := transactor.ReportGeneratedKey(opts, participantId, generatedPublicKey)
 	if err != nil {
 		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
-			return nil, errors.WithStack(&ErrTypExecutionReverted{Pre: err})
+			return nil, errors.WithStack(&ErrTypExecutionReverted{Cause: err})
 		}
-		return nil, errors.WithStack(&ErrTypCallTransactor{Pre: err})
+		return nil, errors.WithStack(&ErrTypCallTransactor{Cause: err})
 	}
 
 	hash = tx.Hash()
@@ -80,16 +80,16 @@ func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participant
 func (t *TaskContextImp) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.WithStack(&ErrTypCreateTransactor{Pre: err})
+		return nil, errors.WithStack(&ErrTypCreateTransactor{Cause: err})
 	}
 
 	var hash common.Hash
 	tx, err := transactor.JoinRequest(opts, participantId, requestHash)
 	if err != nil {
 		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
-			return nil, errors.WithStack(&ErrTypExecutionReverted{Pre: err})
+			return nil, errors.WithStack(&ErrTypExecutionReverted{Cause: err})
 		}
-		return nil, errors.WithStack(&ErrTypCallTransactor{Pre: err})
+		return nil, errors.WithStack(&ErrTypCallTransactor{Cause: err})
 	}
 
 	hash = tx.Hash()
