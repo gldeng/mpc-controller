@@ -153,6 +153,9 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			ctx.GetLogger().Error(ErrMsgCheckTxStatus, []logger.Field{{"tx", t.TxHash.Hex()},
 				{"group", fmt.Sprintf("%x", t.group.GroupId)},
 				{"error", err.Error()}}...)
+			if errors.As(err, &taskcontext.ErrTypTxAborted{}) {
+				t.Status = StatusKeygenReqDone
+			}
 			return errors.Wrapf(err, ErrMsgCheckTxStatus)
 		}
 
