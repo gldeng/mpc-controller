@@ -138,7 +138,9 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
-			if errors.As(err, &taskcontext.ErrTypCreateTransactor{}) || errors.As(err, taskcontext.ErrTypExecutionReverted{}) {
+			var errCreateTransactor *taskcontext.ErrTypTransactorCreate
+			var errExecutionReverted *taskcontext.ErrTypTxReverted
+			if errors.As(err, &errCreateTransactor) || errors.As(err, &errExecutionReverted) {
 				ctx.GetLogger().Error(ErrMsgReportGenPubKey, []logger.Field{{"error", err.Error()}}...)
 				return t.failIfErrorf(err, ErrMsgReportGenPubKey)
 			}
@@ -153,7 +155,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			ctx.GetLogger().Error(ErrMsgCheckTxStatus, []logger.Field{{"tx", t.TxHash.Hex()},
 				{"group", fmt.Sprintf("%x", t.group.GroupId)},
 				{"error", err.Error()}}...)
-			if errors.As(err, &taskcontext.ErrTypTxAborted{}) {
+			if errors.Is(err, taskcontext.ErrTxAborted) {
 				t.Status = StatusKeygenReqDone
 			}
 			return errors.Wrapf(err, ErrMsgCheckTxStatus)

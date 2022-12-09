@@ -1,24 +1,32 @@
 package taskcontext
 
+import (
+	"github.com/pkg/errors"
+)
+
 const (
-	ErrMsgCreateTransactor  = "failed to create contract transactor"
-	ErrMsgCallTransactor    = "failed to call transactor"
-	ErrMsgTxAborted         = "tx aborted"
-	ErrMsgExecutionReverted = "contract execution reverted"
-	ErrMsgReceiptNotFound   = "receipt not found, maybe tx is pending"
-	ErrMsgQueryReceipt      = "failed to query receipt "
+	ErrMsgTransactorCreate = "failed to create contract transactor"
+	ErrMsgTransactorCall   = "failed to call transactor"
+	ErrMsgTxReverted       = "tx reverted"
+	ErrMsgTxAborted        = "tx aborted"
+	ErrMsgTxReceiptQuery   = "failed to query tx receipt "
+	ErrMsgTxNotFound       = "tx not found, maybe it is pending"
+)
+
+var (
+	ErrTxAborted = errors.New(ErrMsgTxAborted)
 )
 
 // ----------error types ----------
 
-type ErrTypCreateTransactor struct {
+type ErrTypTransactorCreate struct {
 	Msg   string
 	Cause error
 }
 
-func (e *ErrTypCreateTransactor) Error() string {
+func (e *ErrTypTransactorCreate) Error() string {
 	if e.Msg == "" {
-		e.Msg = ErrMsgCreateTransactor
+		e.Msg = ErrMsgTransactorCreate
 	}
 	if e.Cause == nil {
 		return e.Msg
@@ -26,20 +34,20 @@ func (e *ErrTypCreateTransactor) Error() string {
 	return e.Msg + ": " + e.Cause.Error()
 }
 
-func (e *ErrTypCreateTransactor) Unwrap() error {
+func (e *ErrTypTransactorCreate) Unwrap() error {
 	return e.Cause
 }
 
 // ----------
 
-type ErrTypCallTransactor struct {
+type ErrTypTransactorCall struct {
 	Msg   string
 	Cause error
 }
 
-func (e *ErrTypCallTransactor) Error() string {
+func (e *ErrTypTransactorCall) Error() string {
 	if e.Msg == "" {
-		e.Msg = ErrMsgCallTransactor
+		e.Msg = ErrMsgTransactorCall
 	}
 	if e.Cause == nil {
 		return e.Msg
@@ -47,20 +55,20 @@ func (e *ErrTypCallTransactor) Error() string {
 	return e.Msg + ": " + e.Cause.Error()
 }
 
-func (e *ErrTypCallTransactor) Unwrap() error {
+func (e *ErrTypTransactorCall) Unwrap() error {
 	return e.Cause
 }
 
 // ----------
 
-type ErrTypTxAborted struct {
+type ErrTypTxReverted struct {
 	Msg   string
 	Cause error
 }
 
-func (e *ErrTypTxAborted) Error() string {
+func (e *ErrTypTxReverted) Error() string {
 	if e.Msg == "" {
-		e.Msg = ErrMsgTxAborted
+		e.Msg = ErrMsgTxReverted
 	}
 	if e.Cause == nil {
 		return e.Msg
@@ -68,20 +76,62 @@ func (e *ErrTypTxAborted) Error() string {
 	return e.Msg + ": " + e.Cause.Error()
 }
 
-func (e *ErrTypTxAborted) Unwrap() error {
+func (e *ErrTypTxReverted) Unwrap() error {
+	return e.Cause
+}
+
+//// ----------
+//
+//type ErrTypTxAborted struct {
+//	Msg   string
+//	Cause error
+//}
+//
+//func (e *ErrTypTxAborted) Error() string {
+//	if e.Msg == "" {
+//		e.Msg = ErrMsgTxAborted
+//	}
+//	if e.Cause == nil {
+//		return e.Msg
+//	}
+//	return e.Msg + ": " + e.Cause.Error()
+//}
+//
+//func (e *ErrTypTxAborted) Unwrap() error {
+//	return e.Cause
+//}
+
+// ----------
+
+type ErrTypTxReceiptQuery struct {
+	Msg   string
+	Cause error
+}
+
+func (e *ErrTypTxReceiptQuery) Error() string {
+	if e.Msg == "" {
+		e.Msg = ErrMsgTxReceiptQuery
+	}
+	if e.Cause == nil {
+		return e.Msg
+	}
+	return e.Msg + ": " + e.Cause.Error()
+}
+
+func (e *ErrTypTxReceiptQuery) Unwrap() error {
 	return e.Cause
 }
 
 // ----------
 
-type ErrTypExecutionReverted struct {
+type ErrTypTxNotFound struct {
 	Msg   string
 	Cause error
 }
 
-func (e *ErrTypExecutionReverted) Error() string {
+func (e *ErrTypTxNotFound) Error() string {
 	if e.Msg == "" {
-		e.Msg = ErrMsgExecutionReverted
+		e.Msg = ErrMsgTxNotFound
 	}
 	if e.Cause == nil {
 		return e.Msg
@@ -89,48 +139,6 @@ func (e *ErrTypExecutionReverted) Error() string {
 	return e.Msg + ": " + e.Cause.Error()
 }
 
-func (e *ErrTypExecutionReverted) Unwrap() error {
-	return e.Cause
-}
-
-// ----------
-
-type ErrTypReceiptNotFound struct {
-	Msg   string
-	Cause error
-}
-
-func (e *ErrTypReceiptNotFound) Error() string {
-	if e.Msg == "" {
-		e.Msg = ErrMsgReceiptNotFound
-	}
-	if e.Cause == nil {
-		return e.Msg
-	}
-	return e.Msg + ": " + e.Cause.Error()
-}
-
-func (e *ErrTypReceiptNotFound) Unwrap() error {
-	return e.Cause
-}
-
-// ----------
-
-type ErrTypQueryReceipt struct {
-	Msg   string
-	Cause error
-}
-
-func (e *ErrTypQueryReceipt) Error() string {
-	if e.Msg == "" {
-		e.Msg = ErrMsgQueryReceipt
-	}
-	if e.Cause == nil {
-		return e.Msg
-	}
-	return e.Msg + ": " + e.Cause.Error()
-}
-
-func (e *ErrTypQueryReceipt) Unwrap() error {
+func (e *ErrTypTxNotFound) Unwrap() error {
 	return e.Cause
 }
