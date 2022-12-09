@@ -49,7 +49,7 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 		if strings.Contains(err.Error(), interfaces.NotFound.Error()) {
 			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxNotFound{Cause: err})
 		}
-		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxReceiptQuery{Cause: err})
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQuery{Cause: err})
 	}
 
 	if rcp.Status == coreTypes.ReceiptStatusFailed {

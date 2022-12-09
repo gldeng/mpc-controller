@@ -6,11 +6,11 @@ import (
 
 const (
 	ErrMsgTransactorCreate = "failed to create contract transactor"
-	ErrMsgTransactorCall   = "failed to call transactor"
+	ErrMsgTransactorCall   = "failed to call contract transactor"
 	ErrMsgTxReverted       = "tx reverted"
-	ErrMsgTxAborted        = "tx aborted"
-	ErrMsgTxReceiptQuery   = "failed to query tx receipt "
-	ErrMsgTxNotFound       = "tx not found, maybe it is pending"
+	ErrMsgTxStatusQuery    = "failed to query tx status"
+	ErrMsgTxNotFound       = "tx not found, maybe currently pending in message pool"
+	ErrMsgTxAborted        = "tx aborted, maybe caused by mpc concurrent requests"
 )
 
 var (
@@ -80,37 +80,16 @@ func (e *ErrTypTxReverted) Unwrap() error {
 	return e.Cause
 }
 
-//// ----------
-//
-//type ErrTypTxAborted struct {
-//	Msg   string
-//	Cause error
-//}
-//
-//func (e *ErrTypTxAborted) Error() string {
-//	if e.Msg == "" {
-//		e.Msg = ErrMsgTxAborted
-//	}
-//	if e.Cause == nil {
-//		return e.Msg
-//	}
-//	return e.Msg + ": " + e.Cause.Error()
-//}
-//
-//func (e *ErrTypTxAborted) Unwrap() error {
-//	return e.Cause
-//}
-
 // ----------
 
-type ErrTypTxReceiptQuery struct {
+type ErrTypTxStatusQuery struct {
 	Msg   string
 	Cause error
 }
 
-func (e *ErrTypTxReceiptQuery) Error() string {
+func (e *ErrTypTxStatusQuery) Error() string {
 	if e.Msg == "" {
-		e.Msg = ErrMsgTxReceiptQuery
+		e.Msg = ErrMsgTxStatusQuery
 	}
 	if e.Cause == nil {
 		return e.Msg
@@ -118,7 +97,7 @@ func (e *ErrTypTxReceiptQuery) Error() string {
 	return e.Msg + ": " + e.Cause.Error()
 }
 
-func (e *ErrTypTxReceiptQuery) Unwrap() error {
+func (e *ErrTypTxStatusQuery) Unwrap() error {
 	return e.Cause
 }
 
@@ -142,3 +121,24 @@ func (e *ErrTypTxNotFound) Error() string {
 func (e *ErrTypTxNotFound) Unwrap() error {
 	return e.Cause
 }
+
+//// ----------
+//
+//type ErrTypTxAborted struct {
+//	Msg   string
+//	Cause error
+//}
+//
+//func (e *ErrTypTxAborted) Error() string {
+//	if e.Msg == "" {
+//		e.Msg = ErrMsgTxAborted
+//	}
+//	if e.Cause == nil {
+//		return e.Msg
+//	}
+//	return e.Msg + ": " + e.Cause.Error()
+//}
+//
+//func (e *ErrTypTxAborted) Unwrap() error {
+//	return e.Cause
+//}
