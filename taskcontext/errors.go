@@ -5,7 +5,7 @@ const (
 	ErrMsgCallTransactor    = "failed to call transactor"
 	ErrMsgTxAborted         = "tx aborted"
 	ErrMsgExecutionReverted = "contract execution reverted"
-	ErrMsgReceiptNotFound   = "receipt not found, maybe it is pending"
+	ErrMsgReceiptNotFound   = "receipt not found, maybe tx is pending"
 	ErrMsgQueryReceipt      = "failed to query receipt "
 )
 
