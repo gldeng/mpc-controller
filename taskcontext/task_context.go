@@ -2,27 +2,26 @@ package taskcontext
 
 import (
 	"context"
-	"github.com/avalido/mpc-controller/core"
-	"math/big"
-	"strings"
-	"time"
-
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
+	coreTypes "github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/interfaces"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/contract"
+	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/avalido/mpc-controller/utils/noncer"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	types2 "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
+	"math/big"
+	"strings"
 )
 
 var (
@@ -35,7 +34,7 @@ type TaskContextImp struct {
 	Services     *core.ServicePack
 	NonceGiver   noncer.Noncer
 	Network      core.NetworkContext
-	EthClient    *ethclient.Client
+	EthClient    *ethclient.Client // TODO: use ava-labs/coreth/ethclient instead for future 100% compatibility
 	MpcClient    core.MpcClient
 	CChainClient evm.Client
 	PChainClient platformvm.Client
@@ -45,116 +44,56 @@ type TaskContextImp struct {
 }
 
 func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
-	//rcp, err := t.EthClient.TransactionReceipt(context.Background(), txHash)
-	//if err != nil {
-	//	return TxStatusUnknown, errors.Wrap(err, "failed to check tx receipt")
-	//}
-	//if rcp.Status == 0 {
-	//	return TxStatusAborted, nil
-	//}
-	//if rcp.Status == 1 {
-	//	return TxStatusCommitted, nil
-	//}
-	//return TxStatusUnknown, errors.New(fmt.Sprintf("unknown tx status %v", rcp.Status))
-
-	var txStatus core.TxStatus
-	var rcp *types2.Receipt
-	var err error
-	err = backoff.RetryFnExponential10Times(t.Logger, context.Background(), time.Second, time.Second*10, func() (retry bool, err error) {
-		rcp, err = t.EthClient.TransactionReceipt(context.Background(), txHash)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				return true, nil // NOTE: tx already sent may take some time to process before being able to check by client
-			}
-			return true, errors.Wrapf(err, "failed to check receipt for tx %x", txHash)
-		}
-
-		if rcp.Status != 1 {
-			return true, nil // NOTE: tx maybe in intermediate status thus it makes sense to recheck after some time
-		}
-
-		return false, nil
-	})
-
+	rcp, err := t.EthClient.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
-		return core.TxStatusUnknown, errors.WithStack(err)
+		if strings.Contains(err.Error(), interfaces.NotFound.Error()) {
+			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxNotFound{Pre: err})
+		}
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQuery{Pre: err})
 	}
 
-	txStatus = core.TxStatusUnknown
-	switch rcp.Status {
-	case 0:
-		txStatus = core.TxStatusAborted
-	case 1:
-		txStatus = core.TxStatusCommitted
+	if rcp.Status == coreTypes.ReceiptStatusFailed {
+		return core.TxStatusAborted, errors.WithStack(ErrTxAborted)
 	}
-
-	return txStatus, nil
+	return core.TxStatusCommitted, nil
 }
 
 func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
-	//transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
-	//
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to MpcManagerTransactor")
-	//}
-	//tx, err := transactor.ReportGeneratedKey(opts, participantId, generatedPublicKey)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed send tx")
-	//}
-	//hash := tx.Hash()
-	//return &hash, nil
-
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create MpcManagerTransactor")
+		return nil, errors.WithStack(&ErrTypTransactorCreate{Pre: err})
 	}
-	var hash common.Hash
-	err = backoff.RetryFnExponential10Times(t.Logger, context.Background(), time.Second, time.Second*10, func() (bool, error) {
-		tx, err := transactor.ReportGeneratedKey(opts, participantId, generatedPublicKey)
-		if err != nil {
-			if strings.Contains(err.Error(), "execution reverted") {
-				return false, errors.Wrap(err, "ReportGeneratedKey reverted")
-			}
-			return true, errors.Wrap(err, "failed call ReportGeneratedKey")
-		}
-		hash = tx.Hash()
-		return false, nil
-	})
 
-	return &hash, errors.WithStack(err)
+	var hash common.Hash
+	tx, err := transactor.ReportGeneratedKey(opts, participantId, generatedPublicKey)
+	if err != nil {
+		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
+			return nil, errors.WithStack(&ErrTypTxReverted{Pre: err})
+		}
+		return nil, errors.WithStack(&ErrTypTransactorCall{Pre: err})
+	}
+
+	hash = tx.Hash()
+	return &hash, nil
 }
 
 func (t *TaskContextImp) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
-	//transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
-	//
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to MpcManagerTransactor")
-	//}
-	//tx, err := transactor.JoinRequest(opts, participantId, requestHash)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed send tx")
-	//}
-	//hash := tx.Hash()
-	//return &hash, nil
-
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create MpcManagerTransactor")
+		return nil, errors.WithStack(&ErrTypTransactorCreate{Pre: err})
 	}
-	var hash common.Hash
-	err = backoff.RetryFnExponential10Times(t.Logger, context.Background(), time.Second, time.Second*10, func() (bool, error) {
-		tx, err := transactor.JoinRequest(opts, participantId, requestHash)
-		if err != nil {
-			if strings.Contains(err.Error(), "execution reverted") {
-				return false, errors.Wrap(err, "JoinRequest reverted")
-			}
-			return true, errors.Wrap(err, "failed call JoinRequest")
-		}
-		hash = tx.Hash()
-		return false, nil
-	})
 
-	return &hash, errors.WithStack(err)
+	var hash common.Hash
+	tx, err := transactor.JoinRequest(opts, participantId, requestHash)
+	if err != nil {
+		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
+			return nil, errors.WithStack(&ErrTypTxReverted{Pre: err})
+		}
+		return nil, errors.WithStack(&ErrTypTransactorCall{Pre: err})
+	}
+
+	hash = tx.Hash()
+	return &hash, nil
 }
 
 func (t *TaskContextImp) GetGroup(opts *bind.CallOpts, groupId [32]byte) ([][]byte, error) {
