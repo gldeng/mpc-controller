@@ -20,125 +20,124 @@ var (
 // ----------error types ----------
 
 type ErrTypTransactorCreate struct {
-	Msg   string
-	Cause error
+	Msg string
+	Pre error
 }
 
 func (e *ErrTypTransactorCreate) Error() string {
 	if e.Msg == "" {
 		e.Msg = ErrMsgTransactorCreate
 	}
-	if e.Cause == nil {
+	if e.Pre == nil {
 		return e.Msg
 	}
-	return e.Msg + ": " + e.Cause.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
 func (e *ErrTypTransactorCreate) Unwrap() error {
-	return e.Cause
+	return e.Pre
+}
+
+func (e *ErrTypTransactorCreate) Cause() error {
+	return e.Pre
 }
 
 // ----------
 
 type ErrTypTransactorCall struct {
-	Msg   string
-	Cause error
+	Msg string
+	Pre error
 }
 
 func (e *ErrTypTransactorCall) Error() string {
 	if e.Msg == "" {
 		e.Msg = ErrMsgTransactorCall
 	}
-	if e.Cause == nil {
+	if e.Pre == nil {
 		return e.Msg
 	}
-	return e.Msg + ": " + e.Cause.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
 func (e *ErrTypTransactorCall) Unwrap() error {
-	return e.Cause
+	return e.Pre
+}
+
+func (e *ErrTypTransactorCall) Cause() error {
+	return e.Pre
 }
 
 // ----------
 
 type ErrTypTxReverted struct {
-	Msg   string
-	Cause error
+	Msg string
+	Pre error
 }
 
 func (e *ErrTypTxReverted) Error() string {
 	if e.Msg == "" {
 		e.Msg = ErrMsgTxReverted
 	}
-	if e.Cause == nil {
+	if e.Pre == nil {
 		return e.Msg
 	}
-	return e.Msg + ": " + e.Cause.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
 func (e *ErrTypTxReverted) Unwrap() error {
-	return e.Cause
+	return e.Pre
+}
+
+func (e *ErrTypTxReverted) Cause() error {
+	return e.Pre
 }
 
 // ----------
 
 type ErrTypTxStatusQuery struct {
-	Msg   string
-	Cause error
+	Msg string
+	Pre error
 }
 
 func (e *ErrTypTxStatusQuery) Error() string {
 	if e.Msg == "" {
 		e.Msg = ErrMsgTxStatusQuery
 	}
-	if e.Cause == nil {
+	if e.Pre == nil {
 		return e.Msg
 	}
-	return e.Msg + ": " + e.Cause.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
 func (e *ErrTypTxStatusQuery) Unwrap() error {
-	return e.Cause
+	return e.Pre
+}
+
+func (e *ErrTypTxStatusQuery) Cause() error {
+	return e.Pre
 }
 
 // ----------
 
 type ErrTypTxNotFound struct {
-	Msg   string
-	Cause error
+	Msg string
+	Pre error
 }
 
 func (e *ErrTypTxNotFound) Error() string {
 	if e.Msg == "" {
 		e.Msg = ErrMsgTxNotFound
 	}
-	if e.Cause == nil {
+	if e.Pre == nil {
 		return e.Msg
 	}
-	return e.Msg + ": " + e.Cause.Error()
+	return e.Msg + ": " + e.Pre.Error()
 }
 
 func (e *ErrTypTxNotFound) Unwrap() error {
-	return e.Cause
+	return e.Pre
 }
 
-//// ----------
-//
-//type ErrTypTxAborted struct {
-//	Msg   string
-//	Cause error
-//}
-//
-//func (e *ErrTypTxAborted) Error() string {
-//	if e.Msg == "" {
-//		e.Msg = ErrMsgTxAborted
-//	}
-//	if e.Cause == nil {
-//		return e.Msg
-//	}
-//	return e.Msg + ": " + e.Cause.Error()
-//}
-//
-//func (e *ErrTypTxAborted) Unwrap() error {
-//	return e.Cause
-//}
+func (e *ErrTypTxNotFound) Cause() error {
+	return e.Pre
+}
