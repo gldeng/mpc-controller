@@ -107,33 +107,13 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 		t.Status = StatusTxSent
 	case StatusTxSent:
 		_, err := ctx.CheckEthTx(t.TxHash)
-		//ctx.GetLogger().Debugf("id %v Join Status is %v", t.GetId(), status)
-		//if err != nil {
-		//	return nil, t.failIfErrorf(err, "failed to check status for tx %x", t.TxHash)
-		//}
-
-		//switch status {
-		//case core.TxStatusUnknown:
-		//	return nil, t.failIfErrorf(errors.Errorf("unkonw tx status (%v:%x) of joining request %x", status, t.TxHash, t.RequestHash), "")
-		//case core.TxStatusAborted:
-		//	t.Status = StatusInit // TODO: avoid endless repeating joining?
-		//	if t.RemainingAttempts > 0 {
-		//		// TODO: Figure out why sometimes join mysteriously fail and replace this workaround
-		//		// https://github.com/AvaLido/mpc-controller/issues/98
-		//		t.RemainingAttempts--
-		//		return nil, nil
-		//	}
-		//	return nil, t.failIfErrorf(errors.Errorf("joining request %x tx %x aborted for group %x", t.RequestHash, t.TxHash, t.group.GroupId), "")
-		//case core.TxStatusCommitted:
-		//	t.Status = StatusDone
-		//	ctx.GetLogger().Debugf("Joined request. participantId:%x requestHash:%x group:%x", t.group.ParticipantID(), t.RequestHash, t.group.GroupId)
-		//}
-
 		if err != nil {
 			ctx.GetLogger().Error(ErrMsgCheckTxStatus, []logger.Field{{"tx", t.TxHash.Hex()},
 				{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
 				{"group", fmt.Sprintf("%x", t.group.GroupId)},
 				{"error", err.Error()}}...)
+			// TODO: Figure out why sometimes join mysteriously fail and replace this workaround
+			//		// https://github.com/AvaLido/mpc-controller/issues/98
 			if errors.Is(err, taskcontext.ErrTxAborted) {
 				ctx.GetLogger().Debug("tx aborted", []logger.Field{{"tx", t.TxHash.Hex()},
 					{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
