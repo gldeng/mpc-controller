@@ -7,12 +7,12 @@ import (
 )
 
 type ErrTyp struct {
-	ErrMsg string
-	Cause  error
+	Msg string
+	Pre error
 }
 
 func (e *ErrTyp) Error() string {
-	return e.ErrMsg
+	return e.Msg
 }
 
 func TestWrap(t *testing.T) {
@@ -24,8 +24,8 @@ func TestWrap(t *testing.T) {
 	cause := errors.New("oops!")
 	outerErr = Wrap(cause, outer)
 	outer = outerErr.(*ErrTyp)
-	require.Equal(t, cause, outer.Cause)
-	require.Equal(t, "oops!", outer.Cause.Error())
+	require.Equal(t, cause, outer.Pre)
+	require.Equal(t, "oops!", outer.Pre.Error())
 }
 
 func TestWrapf(t *testing.T) {
@@ -38,9 +38,9 @@ func TestWrapf(t *testing.T) {
 	cause := errors.New("oops!")
 	outerErr = Wrapf(cause, outer, "something wrong, status: %v", status)
 	outer = outerErr.(*ErrTyp)
-	require.Equal(t, cause, outer.Cause)
-	require.Equal(t, "oops!", outer.Cause.Error())
-	require.Equal(t, "something wrong, status: 1", outer.ErrMsg)
+	require.Equal(t, cause, outer.Pre)
+	require.Equal(t, "oops!", outer.Pre.Error())
+	require.Equal(t, "something wrong, status: 1", outer.Msg)
 }
 
 func TestErrorf(t *testing.T) {
