@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"time"
@@ -90,7 +92,16 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
-			return nil, t.failIfErrorf(err, "failed to join request %x", t.RequestHash)
+			var errCreateTransactor *taskcontext.ErrTypTransactorCreate
+			var errExecutionReverted *taskcontext.ErrTypTxReverted
+			if errors.As(err, &errCreateTransactor) || errors.As(err, &errExecutionReverted) {
+				ctx.GetLogger().Error(ErrMsgJoinRequest, []logger.Field{{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
+					{"error", err.Error()}}...)
+				return nil, t.failIfErrorf(err, ErrMsgJoinRequest)
+			}
+			ctx.GetLogger().Debug(ErrMsgJoinRequest, []logger.Field{{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
+				{"error", err.Error()}}...)
+			return nil, errors.Wrap(err, ErrMsgJoinRequest)
 		}
 		t.TxHash = *txHash
 		t.Status = StatusTxSent
