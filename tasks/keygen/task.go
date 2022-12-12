@@ -144,7 +144,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 				ctx.GetLogger().Error(ErrMsgReportGenPubKey, []logger.Field{{"error", err.Error()}}...)
 				return t.failIfErrorf(err, ErrMsgReportGenPubKey)
 			}
-			ctx.GetLogger().Error(ErrMsgReportGenPubKey, []logger.Field{{"error", err.Error()}}...)
+			ctx.GetLogger().Debug(ErrMsgReportGenPubKey, []logger.Field{{"error", err.Error()}}...)
 			return errors.Wrap(err, ErrMsgReportGenPubKey)
 		}
 		t.TxHash = txHash
