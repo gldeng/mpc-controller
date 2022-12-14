@@ -3,6 +3,7 @@ package addDelegator
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
@@ -99,8 +100,7 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgFailedToGetSignatureAndSendTx, err)
-			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
+			return nil, errors.WithStack(err)
 		}
 
 		if t.TxID != nil {
@@ -108,16 +108,18 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.status = StatusTxSent
 		}
 	case StatusTxSent:
-		status, err := ctx.CheckPChainTx(t.tx.ID())
-		t.logDebug(ctx, "checked addDelegatorTx status", []logger.Field{{"addDelegatorTx", t.TxID}, {"status", status}}...)
+		status, err := t.checkTxStatus(ctx)
 		if err != nil {
-			return nil, t.failIfErrorf(err, ErrMsgFailedToCheckStatus)
+			return nil, errors.WithStack(err)
 		}
-		if !core.IsPending(status) {
-			prom.AddDelegatorTxCommitted.Inc()
+
+		if status == core.TxStatusCommitted {
 			t.status = StatusDone
+			prom.AddDelegatorTxCommitted.Inc()
+			t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
 			return nil, nil
 		}
+		t.logDebug(ctx, "tx issued but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
 	}
 	return nil, nil
 }
@@ -171,10 +173,19 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	_, err = ctx.IssuePChainTx(signedBytes) // TODO: check tx status before issuing, which may has been committed by other mpc-controller?
 	if err != nil {
 		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
-		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx)
+		//var errInputsInvalid *taskcontext.ErrTypeTxInputsInvalid
+		//var errUTXOConsumedFail *taskcontext.ErrTypeUTXOConsumeFail
+		//if errors.As(err, &errInputsInvalid) || errors.As(err, errUTXOConsumedFail) {
+		//	t.logError(ctx, ErrMsgTxFail, err, logger.Field{Key: "txId", Value: t.TxID})
+		//	return t.failIfErrorf(err, "%v, txId:%v", ErrMsgTxFail, t.TxID)
+		//}
+		//t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		//return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
+		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
 		return nil
 	}
 	prom.AddDelegatorTxIssued.Inc()
+	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
 	return nil
 }
 
@@ -215,6 +226,33 @@ func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*types.SignRequest
 	}
 
 	return &signReq, nil
+}
+
+func (t *AddDelegator) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
+	status, err := ctx.CheckPChainTx(*t.TxID)
+	if err != nil {
+		var errTxStatusUndefined *taskcontext.ErrTypTxStatusInvalid
+		if errors.As(err, &errTxStatusUndefined) {
+			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		}
+
+		var errTxStatusAborted *taskcontext.ErrTypTxStatusAborted
+		if errors.As(err, &errTxStatusAborted) {
+			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		}
+
+		var errTxStatusDropped *taskcontext.ErrTypTxStatusDropped
+		if errors.As(err, &errTxStatusDropped) {
+			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		}
+
+		t.logDebug(ctx, ErrMsgCheckTxStatusFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		return status, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+	}
+	return status, nil
 }
 
 func (t *AddDelegator) failIfErrorf(err error, format string, a ...any) error {

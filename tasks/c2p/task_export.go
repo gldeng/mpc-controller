@@ -3,6 +3,7 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
 	"strings"
@@ -116,9 +117,9 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqSent:
 		err := t.getSignatureAndSendTx(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgFailedToGetSignatureAndSendTx, err)
-			return nil, t.failIfErrorf(err, ErrMsgFailedToGetSignatureAndSendTx)
+			return nil, errors.WithStack(err)
 		}
+
 		if t.TxID != nil {
 			tx, _ := t.SignedTx()
 			t.logDebug(ctx, "sent exportTx",
@@ -128,17 +129,18 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.Status = StatusTxSent
 		}
 	case StatusTxSent:
-		status, err := ctx.CheckCChainTx(*t.TxID)
-		t.logDebug(ctx, "checked exportTx status", []logger.Field{{"exportTx", t.TxID}, {"status", status}}...)
+		status, err := t.checkTxStatus(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgFailedToCheckStatus, err, logger.Field{"exportTx", t.TxID})
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
-		if !core.IsPending(status) {
+
+		if status == core.TxStatusCommitted {
 			t.Status = StatusDone
 			prom.C2PExportTxCommitted.Inc()
+			t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
 			return nil, nil
 		}
+		t.logDebug(ctx, "tx issued but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
 	}
 	return nil, nil
 }
@@ -224,22 +226,42 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	txId := signed.ID()
 	t.TxID = &txId
 	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
-	issuedTxID, err := ctx.IssueCChainTx(signed.SignedBytes())
+	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
 		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
-		//return t.failIfErrorf(err, ErrMsgFailedToIssueTx+fmt.Sprintf(" tx: %v", signed))
-		t.logError(
-			ctx, ErrMsgFailedToIssueTx, err,
-			logger.Field{Key: "txBytes", Value: bytes.BytesToHex(signed.SignedBytes())},
-		)
+		//var errInputsInvalid *taskcontext.ErrTypeTxInputsInvalid
+		//if errors.As(err, &errInputsInvalid) {
+		//	t.logError(ctx, ErrMsgTxFail, err, logger.Field{Key: "txId", Value: t.TxID})
+		//	return t.failIfErrorf(err, "%v, txId:%v", ErrMsgTxFail, t.TxID)
+		//}
+		//t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		//return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
+		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
 		return nil
-	} else {
-		t.logDebug(ctx, "issued tx",
-			logger.Field{Key: "txID", Value: issuedTxID},
-		)
-		prom.C2PExportTxIssued.Inc()
 	}
+	prom.C2PExportTxIssued.Inc()
+	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
 	return nil
+}
+
+func (t *ExportFromCChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
+	status, err := ctx.CheckCChainTx(*t.TxID)
+	if err != nil {
+		var errTxStatusUndefined *taskcontext.ErrTypTxStatusInvalid
+		if errors.As(err, &errTxStatusUndefined) {
+			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		}
+
+		if errors.Is(err, taskcontext.ErrTxStatusDropped) {
+			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		}
+
+		t.logDebug(ctx, ErrMsgCheckTxStatusFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		return status, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+	}
+	return status, nil
 }
 
 func (t *ExportFromCChain) failIfErrorf(err error, format string, a ...any) error {

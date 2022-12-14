@@ -43,17 +43,20 @@ type TaskContextImp struct {
 	Dispatcher   kbcevents.Dispatcher[interface{}]
 }
 
+// Reference: https://github.com/ethereum/go-ethereum/blob/v1.10.26/core/types/receipt.go
+// Reference: https://github.com/ava-labs/coreth/blob/v0.8.13/interfaces/interfaces.go
+
 func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 	rcp, err := t.EthClient.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
 		if strings.Contains(err.Error(), interfaces.NotFound.Error()) {
-			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxNotFound{Pre: err})
+			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusNotFound{Pre: err})
 		}
-		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQuery{Pre: err})
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
 	}
 
 	if rcp.Status == coreTypes.ReceiptStatusFailed {
-		return core.TxStatusAborted, errors.WithStack(ErrTxAborted)
+		return core.TxStatusAborted, errors.WithStack(ErrTxStatusAborted)
 	}
 	return core.TxStatusCommitted, nil
 }
@@ -61,16 +64,16 @@ func (t *TaskContextImp) CheckEthTx(txHash common.Hash) (core.TxStatus, error) {
 func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participantId [32]byte, generatedPublicKey []byte) (*common.Hash, error) {
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.WithStack(&ErrTypTransactorCreate{Pre: err})
+		return nil, errors.WithStack(&ErrTypContractBindFail{Pre: err})
 	}
 
 	var hash common.Hash
 	tx, err := transactor.ReportGeneratedKey(opts, participantId, generatedPublicKey)
-	if err != nil {
-		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
+	if err != nil { // reference: https://github.com/ava-labs/coreth/blob/v0.8.13/core/vm/errors.go
+		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) { // TODO: find and find more errors: https://github.com/AvaLido/mpc-controller/issues/156
 			return nil, errors.WithStack(&ErrTypTxReverted{Pre: err})
 		}
-		return nil, errors.WithStack(&ErrTypTransactorCall{Pre: err})
+		return nil, errors.WithStack(&ErrTypContractCallFail{Pre: err})
 	}
 
 	hash = tx.Hash()
@@ -80,16 +83,16 @@ func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participant
 func (t *TaskContextImp) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
-		return nil, errors.WithStack(&ErrTypTransactorCreate{Pre: err})
+		return nil, errors.WithStack(&ErrTypContractBindFail{Pre: err})
 	}
 
 	var hash common.Hash
 	tx, err := transactor.JoinRequest(opts, participantId, requestHash)
-	if err != nil {
-		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) {
+	if err != nil { // reference: https://github.com/ava-labs/coreth/blob/v0.8.13/core/vm/errors.go
+		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) { // TODO: find and find more errors: https://github.com/AvaLido/mpc-controller/issues/156
 			return nil, errors.WithStack(&ErrTypTxReverted{Pre: err})
 		}
-		return nil, errors.WithStack(&ErrTypTransactorCall{Pre: err})
+		return nil, errors.WithStack(&ErrTypContractCallFail{Pre: err})
 	}
 
 	hash = tx.Hash()
@@ -165,52 +168,95 @@ func (t *TaskContextImp) GetMpcClient() core.MpcClient {
 }
 
 func (t *TaskContextImp) IssueCChainTx(txBytes []byte) (ids.ID, error) {
-	return t.CChainClient.IssueTx(context.Background(), txBytes)
+	id, err := t.CChainClient.IssueTx(context.Background(), txBytes)
+	if err != nil { // reference: https://github.com/ava-labs/coreth/blob/v0.8.13/plugin/evm/vm.go#L147
+		switch { // TODO: find and find more errors: https://github.com/AvaLido/mpc-controller/issues/156
+		case strings.Contains(err.Error(), "insufficient funds"):
+			fallthrough
+		case strings.Contains(err.Error(), "invalid nonce"):
+			fallthrough
+		case strings.Contains(err.Error(), "conflicting atomic inputs"):
+			fallthrough
+		case strings.Contains(err.Error(), "tx has no imported inputs"):
+			return id, errors.WithStack(&ErrTypeTxInputsInvalid{Pre: err})
+		case strings.Contains(err.Error(), "import UTXOs not found"):
+			return id, errors.WithStack(&ErrTypeUTXOConsumeFail{Pre: err})
+		}
+		return id, errors.WithStack(&ErrTypeTxIssueFail{Pre: err})
+	}
+	return id, nil
 }
 
 func (t *TaskContextImp) IssuePChainTx(txBytes []byte) (ids.ID, error) {
-	return t.PChainClient.IssueTx(context.Background(), txBytes)
+	id, err := t.PChainClient.IssueTx(context.Background(), txBytes)
+	if err != nil {
+		switch { // TODO: find and handle more errors: https://github.com/AvaLido/mpc-controller/issues/156
+		case strings.Contains(err.Error(), "failed to get shared memory"): // reference: https://github.com/ava-labs/avalanchego/blob/v1.7.14/vms/platformvm/standard_tx_executor.go#L158
+			return id, errors.WithStack(&ErrTypSharedMemoryFail{Pre: err})
+		case strings.Contains(err.Error(), "failed to read consumed UTXO"): // reference: https://github.com/ava-labs/avalanchego/blob/v1.7.14/vms/platformvm/utxo/handler.go#L458
+			return id, errors.WithStack(&ErrTypeUTXOConsumeFail{Pre: err})
+		case strings.Contains(err.Error(), "not before validator's start time"): // reference: https://github.com/ava-labs/avalanchego/blob/v1.7.14/vms/platformvm/proposal_tx_executor.go#L380
+			return id, errors.WithStack(&ErrTypeTxInputsInvalid{Pre: err})
+		}
+		return id, errors.WithStack(&ErrTypeTxIssueFail{Pre: err})
+	}
+	return id, nil
 }
+
+// Reference: https://github.com/ava-labs/coreth/blob/v0.8.13/plugin/evm/status.go
 
 func (t *TaskContextImp) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
 	status, err := t.CChainClient.GetAtomicTxStatus(context.Background(), id)
 	if err != nil {
-		return core.TxStatusUnknown, errors.Wrapf(err, "failed to get C-Chain AtomicTx status for %v", id)
+		if strings.Contains(err.Error(), "unknown status") {
+			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
+		}
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
 	}
+
+	if err := status.Valid(); err != nil {
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
+	}
+
 	switch status {
-	case evm.Unknown:
-		return core.TxStatusUnknown, nil
 	case evm.Dropped:
-		return core.TxStatusDropped, nil
+		return core.TxStatusDropped, errors.WithStack(ErrTxStatusDropped)
 	case evm.Processing:
 		return core.TxStatusProcessing, nil
 	case evm.Accepted:
 		return core.TxStatusCommitted, nil
+	default:
+		return core.TxStatusUnknown, nil
 	}
-	return core.TxStatusUnknown, err
 }
+
+// Reference: https://github.com/ava-labs/avalanchego/blob/v1.7.14/vms/platformvm/status/status.go
 
 func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
 	resp, err := t.PChainClient.GetTxStatus(context.Background(), id)
 	if err != nil {
-		return core.TxStatusUnknown, errors.Wrapf(err, "failed to get P-Chain Tx status for %v", id)
+		if strings.Contains(err.Error(), "unknown status") {
+			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
+		}
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
 	}
-	if resp == nil {
-		return core.TxStatusUnknown, errors.Errorf("got nil P-Chain TxStatusResponse for %v", id)
+
+	if err := resp.Status.Verify(); err != nil {
+		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
 	}
+
 	switch resp.Status {
-	case pStatus.Unknown:
-		return core.TxStatusUnknown, nil
-	case pStatus.Committed:
-		return core.TxStatusCommitted, nil
 	case pStatus.Aborted:
-		return core.TxStatusAborted, nil
+		return core.TxStatusAborted, errors.WithStack(&ErrTypTxStatusAborted{Msg: ErrMsgTxStatusAborted, Pre: errors.New(resp.Reason)})
+	case pStatus.Dropped:
+		return core.TxStatusDropped, errors.WithStack(&ErrTypTxStatusDropped{Msg: ErrMsgTxStatusDropped, Pre: errors.New(resp.Reason)})
 	case pStatus.Processing:
 		return core.TxStatusProcessing, nil
-	case pStatus.Dropped:
-		return core.TxStatusDropped, nil
+	case pStatus.Committed:
+		return core.TxStatusCommitted, nil
+	default:
+		return core.TxStatusUnknown, nil
 	}
-	return core.TxStatusUnknown, err
 }
 
 func (t *TaskContextImp) NonceAt(account common.Address) (uint64, error) {

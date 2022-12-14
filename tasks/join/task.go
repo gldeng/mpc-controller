@@ -92,7 +92,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
-			var errCreateTransactor *taskcontext.ErrTypTransactorCreate
+			var errCreateTransactor *taskcontext.ErrTypContractBindFail
 			var errExecutionReverted *taskcontext.ErrTypTxReverted
 			if errors.As(err, &errCreateTransactor) || errors.As(err, &errExecutionReverted) {
 				ctx.GetLogger().Error(ErrMsgJoinRequest, []logger.Field{{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
@@ -114,7 +114,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 				{"error", err.Error()}}...)
 			// TODO: Figure out why sometimes join mysteriously fail and replace this workaround
 			//		// https://github.com/AvaLido/mpc-controller/issues/98
-			if errors.Is(err, taskcontext.ErrTxAborted) {
+			if errors.Is(err, taskcontext.ErrTxStatusAborted) {
 				ctx.GetLogger().Debug("tx aborted", []logger.Field{{"tx", t.TxHash.Hex()},
 					{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
 					{"group", fmt.Sprintf("%x", t.group.GroupId)},
