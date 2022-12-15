@@ -199,7 +199,11 @@ func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
 		_, err := ctx.IssuePChainTx(signed)
 		if err != nil {
 			// TODO: handle errors, including connection timeout
-			t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+			status, err = t.checkTxStatus(ctx)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"status", status.String()}, {"error", err.Error()}}...)
 			return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
 		}
 
