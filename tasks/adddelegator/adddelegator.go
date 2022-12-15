@@ -3,6 +3,7 @@ package addDelegator
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -42,6 +43,8 @@ type AddDelegator struct {
 	failed       bool
 	StartTime    time.Time
 	LastStepTime time.Time
+
+	issuedByOthers bool
 }
 
 func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
@@ -110,11 +113,19 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 
 		if status == core.TxStatusCommitted {
 			t.status = StatusDone
-			prom.AddDelegatorTxCommitted.Inc()
-			t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
+			if t.issuedByOthers {
+				t.logDebug(ctx, "tx committed, issued by others", []logger.Field{{"txId", t.TxID}}...)
+			} else {
+				prom.AddDelegatorTxCommitted.Inc()
+				t.logDebug(ctx, "tx committed, issued by myself", []logger.Field{{"txId", t.TxID}}...)
+			}
 			return nil, nil
 		}
-		t.logDebug(ctx, "tx issued but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		if t.issuedByOthers {
+			t.logDebug(ctx, "tx issued by others, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		} else {
+			t.logDebug(ctx, "tx issued by myself, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		}
 	}
 	return nil, nil
 }
@@ -170,14 +181,38 @@ func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 }
 
 func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
-	signed, _ := t.tx.SignedTxBytes()
-	_, err := ctx.IssuePChainTx(signed)
+	// waits for arbitrary duration to elapse to reduce race condition.
+	// TODO: tune the random number to a more suitable value
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int63n(5000)
+	<-time.After(time.Millisecond * time.Duration(random))
+
+	// check whether tx has been sent by other mpc-controller
+	status, err := t.checkTxStatus(ctx)
 	if err != nil {
-		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		return errors.WithStack(err)
 	}
-	prom.AddDelegatorTxIssued.Inc()
+
+	// if tx status is unknown, it's reasonable to send one
+	if status == core.TxStatusUnknown {
+		signed, _ := t.tx.SignedTxBytes()
+		_, err := ctx.IssuePChainTx(signed)
+		if err != nil {
+			// TODO: handle errors, including connection timeout
+			t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+			return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
+		}
+
+		prom.AddDelegatorTxIssued.Inc()
+		t.status = StatusTxSent
+		t.logDebug(ctx, "tx issued by myself", logger.Field{Key: "txId", Value: t.TxID})
+		return nil
+	}
+
+	// otherwise, it has been handled by other mpc-controller, don't need to re-send it
+	t.issuedByOthers = true
 	t.status = StatusTxSent
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
+	t.logDebug(ctx, "tx issued by others", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
 	return nil
 }
 
@@ -223,6 +258,7 @@ func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*types.SignRequest
 func (t *AddDelegator) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
 	status, err := ctx.CheckPChainTx(*t.TxID)
 	if err != nil {
+		// TODO: review correctness of error handling
 		var errTxStatusUndefined *taskcontext.ErrTypTxStatusInvalid
 		if errors.As(err, &errTxStatusUndefined) {
 			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)

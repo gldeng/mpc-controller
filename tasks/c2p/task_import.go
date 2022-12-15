@@ -3,6 +3,7 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ type ImportIntoPChain struct {
 	Failed         bool
 	StartTime      time.Time
 	LastStepTime   time.Time
+	issuedByOthers bool
 }
 
 func (t *ImportIntoPChain) GetId() string {
@@ -115,11 +117,19 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 
 		if status == core.TxStatusCommitted {
 			t.Status = StatusDone
-			prom.C2PImportTxCommitted.Inc()
-			t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
+			if t.issuedByOthers {
+				t.logDebug(ctx, "tx committed, issued by others", []logger.Field{{"txId", t.TxID}}...)
+			} else {
+				prom.C2PImportTxCommitted.Inc()
+				t.logDebug(ctx, "tx committed, issued by myself", []logger.Field{{"txId", t.TxID}}...)
+			}
 			return nil, nil
 		}
-		t.logDebug(ctx, "tx issued but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		if t.issuedByOthers {
+			t.logDebug(ctx, "tx issued by others, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		} else {
+			t.logDebug(ctx, "tx issued by myself, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		}
 	}
 	return nil, nil
 }
@@ -171,53 +181,6 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
-	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
-	// TODO: Handle 404
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
-	}
-
-	if res.Status != types.StatusDone {
-		status := strings.ToLower(string(res.Status))
-		if strings.Contains(status, "error") || strings.Contains(status, "err") {
-			return t.failIfErrorf(err, "failed to sign ImportTx into P-Chain, status:%v", status)
-		}
-		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
-		return nil
-	}
-	prom.MpcSignDoneForC2PImportTx.Inc()
-	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
-	}
-	t.TxCred = txCred
-	signed, err := t.SignedTx()
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToPrepareSignedTx)
-	}
-	txId := signed.ID()
-	t.TxID = &txId
-	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
-	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
-	if err != nil {
-		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
-		//var errInputsInvalid *taskcontext.ErrTypeTxInputsInvalid
-		//var errUTXOConsumedFail *taskcontext.ErrTypeUTXOConsumeFail
-		//if errors.As(err, &errInputsInvalid) || errors.As(err, errUTXOConsumedFail) {
-		//	t.logError(ctx, ErrMsgTxFail, err, logger.Field{Key: "txId", Value: t.TxID})
-		//	return t.failIfErrorf(err, "%v, txId:%v", ErrMsgTxFail, t.TxID)
-		//}
-		//t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		//return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
-		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		return nil
-	}
-	prom.C2PImportTxIssued.Inc()
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
-	return nil
-}
-
 func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
@@ -251,22 +214,45 @@ func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 }
 
 func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
-	signed, _ := t.SignedTx()
-	_, err := ctx.IssuePChainTx(signed.Bytes())
+	// waits for arbitrary duration to elapse to reduce race condition.
+	// TODO: tune the random number to a more suitable value
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int63n(5000)
+	<-time.After(time.Millisecond * time.Duration(random))
+
+	// check whether tx has been sent by other mpc-controller
+	status, err := t.checkTxStatus(ctx)
 	if err != nil {
-		// TODO: handle errors, including connection timeout
-		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		return errors.WithStack(err)
 	}
 
-	prom.C2PImportTxIssued.Inc()
+	// if tx status is unknown, it's reasonable to send one
+	if status == core.TxStatusUnknown {
+		signed, _ := t.SignedTx()
+		_, err := ctx.IssuePChainTx(signed.Bytes())
+		if err != nil {
+			// TODO: handle errors, including connection timeout
+			t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+			return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
+		}
+
+		prom.C2PImportTxIssued.Inc()
+		t.Status = StatusTxSent
+		t.logDebug(ctx, "tx issued by myself", logger.Field{Key: "txId", Value: t.TxID})
+		return nil
+	}
+
+	// otherwise, it has been handled by other mpc-controller, don't need to re-send it
+	t.issuedByOthers = true
 	t.Status = StatusTxSent
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
+	t.logDebug(ctx, "tx issued by others", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
 	return nil
 }
 
 func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
 	status, err := ctx.CheckPChainTx(*t.TxID)
 	if err != nil {
+		// TODO: review correctness of error handling
 		var errTxStatusUndefined *taskcontext.ErrTypTxStatusInvalid
 		if errors.As(err, &errTxStatusUndefined) {
 			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)

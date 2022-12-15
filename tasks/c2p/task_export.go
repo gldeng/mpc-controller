@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -30,18 +31,19 @@ var (
 )
 
 type ExportFromCChain struct {
-	Status      Status
-	FlowId      string
-	TaskType    string
-	Amount      big.Int
-	Quorum      types.QuorumInfo
-	Tx          *evm.UnsignedExportTx
-	TxHash      []byte
-	TxCred      *secp256k1fx.Credential
-	TxID        *ids.ID
-	SignRequest *types.SignRequest
-	Failed      bool
-	StartTime   time.Time
+	Status         Status
+	FlowId         string
+	TaskType       string
+	Amount         big.Int
+	Quorum         types.QuorumInfo
+	Tx             *evm.UnsignedExportTx
+	TxHash         []byte
+	TxCred         *secp256k1fx.Credential
+	TxID           *ids.ID
+	SignRequest    *types.SignRequest
+	Failed         bool
+	StartTime      time.Time
+	issuedByOthers bool
 }
 
 func (t *ExportFromCChain) GetId() string {
@@ -127,11 +129,19 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 
 		if status == core.TxStatusCommitted {
 			t.Status = StatusDone
-			prom.C2PExportTxCommitted.Inc()
-			t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
+			if t.issuedByOthers {
+				t.logDebug(ctx, "tx committed, issued by others", []logger.Field{{"txId", t.TxID}}...)
+			} else {
+				prom.C2PExportTxCommitted.Inc()
+				t.logDebug(ctx, "tx committed, issued by myself", []logger.Field{{"txId", t.TxID}}...)
+			}
 			return nil, nil
 		}
-		t.logDebug(ctx, "tx issued but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		if t.issuedByOthers {
+			t.logDebug(ctx, "tx issued by others, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		} else {
+			t.logDebug(ctx, "tx issued by myself, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		}
 	}
 	return nil, nil
 }
@@ -222,22 +232,45 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 }
 
 func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
-	signed, _ := t.SignedTx()
-	_, err := ctx.IssueCChainTx(signed.SignedBytes())
+	// waits for arbitrary duration to elapse to reduce race condition.
+	// TODO: tune the random number to a more suitable value
+	rand.Seed(time.Now().UnixNano())
+	random := rand.Int63n(5000)
+	<-time.After(time.Millisecond * time.Duration(random))
+
+	// check whether tx has been sent by other mpc-controller
+	status, err := t.checkTxStatus(ctx)
 	if err != nil {
-		// TODO: handle errors, including connection timeout
-		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		return errors.WithStack(err)
 	}
 
-	prom.C2PExportTxIssued.Inc()
+	// if tx status is unknown, it's reasonable to send one
+	if status == core.TxStatusUnknown {
+		signed, _ := t.SignedTx()
+		_, err := ctx.IssueCChainTx(signed.SignedBytes())
+		if err != nil {
+			// TODO: handle errors, including connection timeout
+			t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+			return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
+		}
+
+		prom.C2PExportTxIssued.Inc()
+		t.Status = StatusTxSent
+		t.logDebug(ctx, "tx issued by myself", logger.Field{Key: "txId", Value: t.TxID})
+		return nil
+	}
+
+	// otherwise, it has been handled by other mpc-controller, don't need to re-send it
+	t.issuedByOthers = true
 	t.Status = StatusTxSent
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
+	t.logDebug(ctx, "tx issued by others", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
 	return nil
 }
 
 func (t *ExportFromCChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
 	status, err := ctx.CheckCChainTx(*t.TxID)
 	if err != nil {
+		// TODO: review correctness of error handling
 		var errTxStatusUndefined *taskcontext.ErrTypTxStatusInvalid
 		if errors.As(err, &errTxStatusUndefined) {
 			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
