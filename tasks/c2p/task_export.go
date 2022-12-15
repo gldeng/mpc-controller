@@ -3,11 +3,12 @@ package c2p
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/taskcontext"
-	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/avalido/mpc-controller/taskcontext"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
@@ -115,19 +116,9 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.Status = StatusSignReqSent
 		}
 	case StatusSignReqSent:
-		err := t.getSignatureAndSendTx(ctx)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		if t.TxID != nil {
-			tx, _ := t.SignedTx()
-			t.logDebug(ctx, "sent exportTx",
-				logger.Field{Key: "txID", Value: t.TxID},
-				logger.Field{Key: "txBytes", Value: bytes.BytesToHex(tx.SignedBytes())},
-			)
-			t.Status = StatusTxSent
-		}
+		return nil, errors.WithStack(t.getSignature(ctx))
+	case StatusSignReqDone:
+		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
@@ -198,7 +189,7 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
+func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
 	if err != nil {
@@ -219,28 +210,28 @@ func (t *ExportFromCChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
+	t.Status = StatusSignReqDone
+
 	signed, err := t.SignedTx()
 	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToPrepareSignedTx)
+		return t.failIfErrorf(err, ErrMsgPrepareSignedTx)
 	}
 	txId := signed.ID()
 	t.TxID = &txId
-	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
-	_, err = ctx.IssueCChainTx(signed.SignedBytes())
+	return nil
+}
+
+func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
+	signed, _ := t.SignedTx()
+	_, err := ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
-		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
-		//var errInputsInvalid *taskcontext.ErrTypeTxInputsInvalid
-		//if errors.As(err, &errInputsInvalid) {
-		//	t.logError(ctx, ErrMsgTxFail, err, logger.Field{Key: "txId", Value: t.TxID})
-		//	return t.failIfErrorf(err, "%v, txId:%v", ErrMsgTxFail, t.TxID)
-		//}
-		//t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		//return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
+		// TODO: handle errors, including connection timeout
 		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		return nil
 	}
+
 	prom.C2PExportTxIssued.Inc()
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
+	t.Status = StatusTxSent
+	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
 	return nil
 }
 
