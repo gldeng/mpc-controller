@@ -126,9 +126,9 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, nil
 		}
 		if t.issuedByOthers {
-			t.logDebug(ctx, "tx issued by others, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+			t.logDebug(ctx, "tx issued by others, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status.String()}}...)
 		} else {
-			t.logDebug(ctx, "tx issued by myself, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+			t.logDebug(ctx, "tx issued by myself, but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status.String()}}...)
 		}
 	}
 	return nil, nil
@@ -245,7 +245,7 @@ func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
 	// otherwise, it has been handled by other mpc-controller, don't need to re-send it
 	t.issuedByOthers = true
 	t.Status = StatusTxSent
-	t.logDebug(ctx, "tx issued by others", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+	t.logDebug(ctx, "tx issued by others", []logger.Field{{"txId", t.TxID}, {"status", status.String()}}...)
 	return nil
 }
 
