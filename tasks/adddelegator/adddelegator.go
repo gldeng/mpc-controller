@@ -3,10 +3,11 @@ package addDelegator
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/taskcontext"
-	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
+
+	"github.com/avalido/mpc-controller/taskcontext"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
@@ -98,15 +99,9 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 		t.status = StatusSignReqSent
 	case StatusSignReqSent:
-		err := t.getSignatureAndSendTx(ctx)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		if t.TxID != nil {
-			t.logDebug(ctx, "sent addDelegatorTx", logger.Field{"addDelegatorTx", t.TxID})
-			t.status = StatusTxSent
-		}
+		return nil, errors.WithStack(t.getSignature(ctx))
+	case StatusSignReqDone:
+		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
@@ -140,8 +135,9 @@ func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
+func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.signReq.ReqID)
+	// TODO: Handle 404
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
 	}
@@ -149,7 +145,7 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if res.Status != types.StatusDone {
 		status := strings.ToLower(string(res.Status))
 		if strings.Contains(status, "error") || strings.Contains(status, "err") {
-			return t.failIfErrorf(err, "failed to sign AddDelegatorTx, status:%v", status)
+			return t.failIfErrorf(err, "failed to sign AddDelegatorTx from P-Chain, status:%v", status)
 		}
 		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.signReq.ReqID}, {"status", status}}...)
 		return nil
@@ -161,31 +157,27 @@ func (t *AddDelegator) getSignatureAndSendTx(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, "failed to set signature")
 	}
+	t.status = StatusSignReqDone
 
-	signedBytes, err := t.tx.SignedTxBytes()
+	_, err = t.tx.SignedTxBytes()
 	if err != nil {
-		return t.failIfErrorf(err, "failed to get signed AddDelegatorTx bytes")
+		return t.failIfErrorf(err, "failed to get signed bytes")
 	}
 
 	txID := t.tx.ID()
 	t.TxID = &txID
+	return nil
+}
 
-	_, err = ctx.IssuePChainTx(signedBytes) // TODO: check tx status before issuing, which may has been committed by other mpc-controller?
+func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
+	signed, _ := t.tx.SignedTxBytes()
+	_, err := ctx.IssuePChainTx(signed)
 	if err != nil {
-		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
-		//var errInputsInvalid *taskcontext.ErrTypeTxInputsInvalid
-		//var errUTXOConsumedFail *taskcontext.ErrTypeUTXOConsumeFail
-		//if errors.As(err, &errInputsInvalid) || errors.As(err, errUTXOConsumedFail) {
-		//	t.logError(ctx, ErrMsgTxFail, err, logger.Field{Key: "txId", Value: t.TxID})
-		//	return t.failIfErrorf(err, "%v, txId:%v", ErrMsgTxFail, t.TxID)
-		//}
-		//t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		//return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
 		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		return nil
 	}
 	prom.AddDelegatorTxIssued.Inc()
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
+	t.status = StatusTxSent
+	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
 	return nil
 }
 

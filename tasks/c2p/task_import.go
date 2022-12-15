@@ -3,10 +3,11 @@ package c2p
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/taskcontext"
-	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
+
+	"github.com/avalido/mpc-controller/taskcontext"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
@@ -103,15 +104,9 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.Status = StatusSignReqSent
 		}
 	case StatusSignReqSent:
-		err := t.getSignatureAndSendTx(ctx)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		if t.TxID != nil {
-			t.logDebug(ctx, "sent importTx", logger.Field{"importTx", t.TxID})
-			t.Status = StatusTxSent
-		}
+		return nil, errors.WithStack(t.getSignature(ctx))
+	case StatusSignReqDone:
+		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
@@ -220,6 +215,52 @@ func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
 	}
 	prom.C2PImportTxIssued.Inc()
 	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
+	return nil
+}
+
+func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
+	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
+	// TODO: Handle 404
+	if err != nil {
+		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
+	}
+
+	if res.Status != types.StatusDone {
+		status := strings.ToLower(string(res.Status))
+		if strings.Contains(status, "error") || strings.Contains(status, "err") {
+			return t.failIfErrorf(err, "failed to sign ImportTx from P-Chain, status:%v", status)
+		}
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
+		return nil
+	}
+	prom.MpcSignDoneForC2PImportTx.Inc()
+	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
+	if err != nil {
+		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
+	}
+	t.TxCred = txCred
+	t.Status = StatusSignReqDone
+
+	signed, err := t.SignedTx()
+	if err != nil {
+		return t.failIfErrorf(err, ErrMsgPrepareSignedTx)
+	}
+	txId := signed.ID()
+	t.TxID = &txId
+	return nil
+}
+
+func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
+	signed, _ := t.SignedTx()
+	_, err := ctx.IssuePChainTx(signed.Bytes())
+	if err != nil {
+		// TODO: handle errors, including connection timeout
+		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+	}
+
+	prom.C2PImportTxIssued.Inc()
+	t.Status = StatusTxSent
+	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
 	return nil
 }
 

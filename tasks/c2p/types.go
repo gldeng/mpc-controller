@@ -11,6 +11,7 @@ type ImportedEvent struct {
 const (
 	StatusInit Status = iota
 	StatusSignReqSent
+	StatusSignReqDone
 	StatusTxSent
 	StatusDone
 )

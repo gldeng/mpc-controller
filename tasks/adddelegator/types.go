@@ -8,6 +8,7 @@ import (
 const (
 	StatusInit Status = iota
 	StatusSignReqSent
+	StatusSignReqDone
 	StatusTxSent
 	StatusDone
 )
