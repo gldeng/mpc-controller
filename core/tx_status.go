@@ -1,7 +1,5 @@
 package core
 
-import "fmt"
-
 type TxStatus int
 
 const (
@@ -25,7 +23,7 @@ func (s TxStatus) String() string {
 	case TxStatusDropped:
 		return "Dropped"
 	default:
-		return fmt.Sprintf("%d", int(s))
+		return "invalid status"
 	}
 }
 
