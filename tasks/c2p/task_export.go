@@ -257,7 +257,7 @@ func (t *ExportFromCChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 		return false, nil
 	case core.TxStatusCommitted:
 		t.Status = StatusDone
-		prom.C2PImportTxCommitted.Inc()
+		prom.C2PExportTxCommitted.Inc()
 		t.logDebug(ctx, "tx already committed", []logger.Field{{"txId", t.TxID}}...)
 		return true, nil
 	case core.TxStatusProcessing:
