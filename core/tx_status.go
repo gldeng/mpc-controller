@@ -1,5 +1,7 @@
 package core
 
+import "fmt"
+
 type TxStatus int
 
 const (
@@ -8,6 +10,7 @@ const (
 	TxStatusAborted    TxStatus = 5
 	TxStatusProcessing TxStatus = 6
 	TxStatusDropped    TxStatus = 8
+	TxStatusInvalid    TxStatus = 10
 )
 
 func (s TxStatus) String() string {
@@ -52,4 +55,13 @@ func IsFailed(status TxStatus) bool {
 		return true
 	}
 	return false
+}
+
+type TxStatusWithReason struct {
+	Status TxStatus
+	Reason string
+}
+
+func (t *TxStatusWithReason) String() string {
+	return fmt.Sprintf("%v: %v", t.Status.String(), t.Reason)
 }
