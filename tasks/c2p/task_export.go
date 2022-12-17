@@ -120,8 +120,15 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqDone:
 		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
-		_, err := t.checkTxStatus(ctx)
-		return nil, errors.WithStack(err)
+		status, err := t.checkTxStatus(ctx)
+		if err != nil {
+			t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return nil, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+		}
+
+		t.logDebug(ctx, "checked tx status", []logger.Field{
+			{"txId", t.TxID},
+			{"status", status.String()}}...)
 	}
 	return nil, nil
 }
@@ -230,12 +237,8 @@ func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
 	signed, _ := t.SignedTx()
 	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
-		status, err := t.checkTxStatus(ctx)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		t.logError(ctx, ErrMsgIssueTxFail, err, []logger.Field{{"txId", t.TxID}, {"status", status.String()}}...)
-		return errors.Wrapf(err, "%v, txId: %v, status: %v", ErrMsgIssueTxFail, t.TxID, status.String())
+		_, err := t.checkIfTxIssued(ctx)
+		return errors.WithStack(err)
 	}
 
 	t.Status = StatusTxSent
@@ -245,58 +248,45 @@ func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
 }
 
 func (t *ExportFromCChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
-	status, err := ctx.CheckCChainTx(*t.TxID)
+	status, err := t.checkTxStatus(ctx)
 	if err != nil {
 		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 		return false, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 	}
 
+	t.logDebug(ctx, "checked tx status", []logger.Field{
+		{"txId", t.TxID},
+		{"status", status.String()}}...)
+
 	switch status {
-	case core.TxStatusUnknown:
-		t.logDebug(ctx, "tx status unknown", []logger.Field{{Key: "txId", Value: t.TxID}}...)
-		return false, nil
 	case core.TxStatusCommitted:
-		t.Status = StatusDone
-		prom.C2PExportTxCommitted.Inc()
-		t.logDebug(ctx, "tx already committed", []logger.Field{{"txId", t.TxID}}...)
 		return true, nil
 	case core.TxStatusProcessing:
-		t.logDebug(ctx, "tx already processing", []logger.Field{{"txId", t.TxID}}...)
+		t.Status = StatusTxSent
+		prom.C2PExportTxIssued.Inc()
 		return true, nil
-	case core.TxStatusDropped:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx already dropped"), []logger.Field{{"txId", t.TxID}}...)
-		return false, t.failIfErrorf(errors.New("tx already dropped"), "%v, txId: %v", ErrMsgTxFail, t.TxID)
 	default:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx status invalid"), []logger.Field{{"txId", t.TxID}}...)
-		return false, t.failIfErrorf(errors.New("tx status invalid"), "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		return false, nil
 	}
 }
 
 func (t *ExportFromCChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
 	status, err := ctx.CheckCChainTx(*t.TxID)
 	if err != nil {
-		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
-		return status, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+		return status, errors.WithStack(err)
 	}
 
 	switch status {
 	case core.TxStatusUnknown:
-		t.logDebug(ctx, "tx status unknown", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 		return status, nil
 	case core.TxStatusCommitted:
 		t.Status = StatusDone
 		prom.C2PExportTxCommitted.Inc()
-		t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
 		return status, nil
 	case core.TxStatusProcessing:
-		t.logDebug(ctx, "tx processing", []logger.Field{{"txId", t.TxID}}...)
 		return status, nil
-	case core.TxStatusDropped:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx dropped"), []logger.Field{{"txId", t.TxID}}...)
-		return status, t.failIfErrorf(errors.New("tx dropped"), "%v, txId: %v", ErrMsgTxFail, t.TxID)
 	default:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx status invalid"), []logger.Field{{"txId", t.TxID}}...)
-		return status, t.failIfErrorf(errors.New("tx status invalid"), "%v, txId: %v,", ErrMsgTxFail, t.TxID)
+		return status, t.failIfErrorf(errors.New(status.String()), ErrMsgTxFail)
 	}
 }
 

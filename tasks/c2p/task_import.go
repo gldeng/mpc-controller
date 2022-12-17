@@ -109,8 +109,16 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusSignReqDone:
 		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
-		_, err := t.checkTxStatus(ctx)
-		return nil, errors.WithStack(err)
+		status, err := t.checkTxStatus(ctx)
+		if err != nil {
+			t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return nil, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+		}
+
+		t.logDebug(ctx, "checked tx status", []logger.Field{
+			{"txId", t.TxID},
+			{"status", status.Status.String()},
+			{"reason", status.Reason}}...)
 	}
 	return nil, nil
 }
@@ -213,12 +221,8 @@ func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
 	signed, _ := t.SignedTx()
 	_, err = ctx.IssuePChainTx(signed.Bytes())
 	if err != nil {
-		status, err := t.checkTxStatus(ctx)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		t.logError(ctx, ErrMsgIssueTxFail, err, []logger.Field{{"txId", t.TxID}, {"status", status.Status.String()}, {"reason", status.Reason}}...)
-		return errors.Wrapf(err, "%v, txId: %v, status: %v, reason: %v", ErrMsgIssueTxFail, t.TxID, status.Status.String(), status.Reason)
+		_, err := t.checkIfTxIssued(ctx)
+		return errors.WithStack(err)
 	}
 
 	t.Status = StatusTxSent
@@ -228,64 +232,46 @@ func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
 }
 
 func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
-	status, err := ctx.CheckPChainTx(*t.TxID)
+	status, err := t.checkTxStatus(ctx)
 	if err != nil {
 		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 		return false, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 	}
 
+	t.logDebug(ctx, "checked tx status", []logger.Field{
+		{"txId", t.TxID},
+		{"status", status.Status.String()},
+		{"reason", status.Reason}}...)
+
 	switch status.Status {
-	case core.TxStatusUnknown:
-		t.logDebug(ctx, "tx status unknown", []logger.Field{{Key: "txId", Value: t.TxID}}...)
-		return false, nil
 	case core.TxStatusCommitted:
-		t.Status = StatusDone
-		prom.C2PImportTxCommitted.Inc()
-		t.logDebug(ctx, "tx already committed", []logger.Field{{"txId", t.TxID}}...)
 		return true, nil
 	case core.TxStatusProcessing:
-		t.logDebug(ctx, "tx already processing", []logger.Field{{"txId", t.TxID}}...)
+		t.Status = StatusTxSent
+		prom.C2PImportTxIssued.Inc()
 		return true, nil
-	case core.TxStatusAborted:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx already aborted"), []logger.Field{{"txId", t.TxID}, {"reason", status.Reason}}...)
-		return true, t.failIfErrorf(errors.New("tx already aborted"), "%v, txId: %v, reason: %v", ErrMsgTxFail, t.TxID, status.Reason)
-	case core.TxStatusDropped:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx already dropped"), []logger.Field{{"txId", t.TxID}, {"reason", status.Reason}}...)
-		return false, t.failIfErrorf(errors.New("tx already dropped"), "%v, txId: %v, reason: %v", ErrMsgTxFail, t.TxID, status.Reason)
 	default:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx status invalid"), []logger.Field{{"txId", t.TxID}}...)
-		return false, t.failIfErrorf(errors.New("tx status invalid"), "%v, txId: %v", ErrMsgTxFail, t.TxID)
+		return false, nil
 	}
 }
 
 func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.TxStatusWithReason, error) {
 	status, err := ctx.CheckPChainTx(*t.TxID)
 	if err != nil {
-		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
-		return status, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+		return status, errors.WithStack(err)
 	}
 
 	switch status.Status {
 	case core.TxStatusUnknown:
-		t.logDebug(ctx, "tx status unknown", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 		return status, nil
 	case core.TxStatusCommitted:
 		t.Status = StatusDone
 		prom.C2PImportTxCommitted.Inc()
-		t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
 		return status, nil
 	case core.TxStatusProcessing:
-		t.logDebug(ctx, "tx processing", []logger.Field{{"txId", t.TxID}}...)
 		return status, nil
-	case core.TxStatusAborted:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx aborted"), []logger.Field{{"txId", t.TxID}, {"reason", status.Reason}}...)
-		return status, t.failIfErrorf(errors.New("tx aborted"), "%v, txId: %v, reason: %v", ErrMsgTxFail, t.TxID, status.Reason)
-	case core.TxStatusDropped:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx dropped"), []logger.Field{{"txId", t.TxID}, {"reason", status.Reason}}...)
-		return status, t.failIfErrorf(errors.New("tx dropped"), "%v, txId: %v, reason: %v", ErrMsgTxFail, t.TxID, status.Reason)
 	default:
-		t.logError(ctx, ErrMsgTxFail, errors.New("tx status invalid"), []logger.Field{{"txId", t.TxID}}...)
-		return status, t.failIfErrorf(errors.New("tx status invalid"), "%v, txId: %v,", ErrMsgTxFail, t.TxID)
+		return status, t.failIfErrorf(errors.New(status.String()), ErrMsgTxFail)
 	}
 }
 
