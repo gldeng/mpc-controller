@@ -43,7 +43,8 @@ const (
 	fnHost              = "host"
 	fnPort              = "port"
 	fnMpcManagerAddress = "mpc-manager-address"
-	fnPrivateKey        = "private-key"
+	fnPublicKey         = "public-key"
+	fnKeystoreDir       = "keystore-dir"
 	fnPassword          = "password"
 	fnMpcServerUrl      = "mpcServerUrl"
 	fnMetricsServeAddr  = "metricsServeAddr"
@@ -334,9 +335,14 @@ func main() {
 				Usage:    "The address of the deployed MpcManager contract.",
 			},
 			&cli.StringFlag{
-				Name:     fnPrivateKey,
+				Name:     fnPublicKey,
 				Required: true,
-				Usage:    "The private key for this participant.",
+				Usage:    "The public key for this participant.",
+			},
+			&cli.StringFlag{
+				Name:     fnKeystoreDir,
+				Required: true,
+				Usage:    "The keystore directory for this participant.",
 			},
 			&cli.StringFlag{
 				Name:     fnPassword,
