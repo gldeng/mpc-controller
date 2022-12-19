@@ -219,6 +219,13 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 	return nil
 }
 
+// sendTx sends a tx to avalanche network. Without a consensus mechanism among the participants, every partiticipant
+// attempts to issue the tx. We do the following to mitigate the race condition:
+//   1. delay a random duration before sending tx
+//   2. check tx status on-chain in case other participants already send it, if already sent (i.e. the tx is known to
+// 		avalanche network already before sending tx
+//   3. check tx status again after sending failed which may be caused by another participant sending the same tx
+//  	at the same time
 func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
 	// waits for arbitrary duration to elapse to reduce race condition.
 	utilstime.RandomDelay(5000)
