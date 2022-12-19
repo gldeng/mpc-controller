@@ -117,7 +117,7 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 	case StatusSignReqSent:
 		return nil, errors.WithStack(t.getSignature(ctx))
-	case StatusSignReqDone:
+	case StatusSignedTxReady:
 		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
@@ -207,7 +207,6 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
-	t.Status = StatusSignReqDone
 
 	signed, err := t.SignedTx()
 	if err != nil {
@@ -215,6 +214,8 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 	}
 	txId := signed.ID()
 	t.TxID = &txId
+
+	t.Status = StatusSignedTxReady
 	return nil
 }
 

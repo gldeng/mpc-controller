@@ -102,7 +102,7 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 		t.status = StatusSignReqSent
 	case StatusSignReqSent:
 		return nil, errors.WithStack(t.getSignature(ctx))
-	case StatusSignReqDone:
+	case StatusSignedTxReady:
 		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
@@ -157,7 +157,6 @@ func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 	if err != nil {
 		return t.failIfErrorf(err, "failed to set signature")
 	}
-	t.status = StatusSignReqDone
 
 	_, err = t.tx.SignedTxBytes()
 	if err != nil {
@@ -166,6 +165,8 @@ func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 
 	txID := t.tx.ID()
 	t.TxID = &txID
+
+	t.status = StatusSignedTxReady
 	return nil
 }
 
