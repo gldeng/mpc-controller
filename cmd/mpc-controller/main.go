@@ -24,15 +24,17 @@ import (
 	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
+	"github.com/avalido/mpc-controller/utils/address"
 	"github.com/avalido/mpc-controller/utils/bytes"
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	ethkeystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 )
@@ -182,25 +184,36 @@ func runController(c *cli.Context) error {
 
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 
-	// Decrypt and parse private key
-	privKey := decryptKey(c.String(fnPassword), c.String(fnPrivateKey))
-	myPrivKey, err := crypto.HexToECDSA(privKey)
-	if err != nil {
-		panic("failed to parse private key")
-	}
+	// Create keystore
+	myKeystore := ethkeystore.NewKeyStore(c.String(fnKeystoreDir), ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
 
-	// Parse public key
-	myPubKeyBytes := utilsCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
-	//myPartiPubKey := storage.PubKey(myPubKeyBytes)
+	// Parse public key and address
+	pubKey, err := utilsCrypto.UnmarshalPubKeyHex(c.String(fnPublicKey))
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse public key %q", c.String(fnPublicKey)))
+	}
+	myAddr := address.PubkeyToAddresse(pubKey)
+
+	myPubKeyBytes := utilsCrypto.MarshalPubkey(pubKey)[1:]
 
 	// Convert chain ID
 	chainId := big.NewInt(43112)
 
 	// Create transaction signer
-	signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
-	if err != nil {
-		panic("failed to create tx signer")
+	var myAccount *accounts.Account
+	accounts := myKeystore.Accounts()
+	for _, account := range accounts {
+		if account.Address == *myAddr {
+			myAccount = &account
+			break
+		}
 	}
+
+	if myAccount == nil {
+		panic("found no account in keystore")
+	}
+
+	signer, err := bind.NewKeyStoreTransactorWithChainID(myKeystore, *myAccount, chainId)
 
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
