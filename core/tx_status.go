@@ -57,11 +57,11 @@ func IsFailed(status TxStatus) bool {
 	return false
 }
 
-type TxStatusWithReason struct {
-	Status TxStatus
+type Status struct {
+	Code   TxStatus
 	Reason string
 }
 
-func (t *TxStatusWithReason) String() string {
-	return fmt.Sprintf("%v: %v", t.Status.String(), t.Reason)
+func (t *Status) String() string {
+	return fmt.Sprintf("%v: %v", t.Code.String(), t.Reason)
 }

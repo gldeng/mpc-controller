@@ -117,7 +117,7 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 
 		t.logDebug(ctx, "checked tx status", []logger.Field{
 			{"txId", t.TxID},
-			{"status", status.Status.String()},
+			{"status", status.Code.String()},
 			{"reason", status.Reason}}...)
 	}
 	return nil, nil
@@ -242,17 +242,17 @@ func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 
 	t.logDebug(ctx, "checked tx status", []logger.Field{
 		{"txId", t.TxID},
-		{"status", status.Status.String()},
+		{"status", status.Code.String()},
 		{"reason", status.Reason}}...)
 
 	defer func() {
-		if status.Status == core.TxStatusProcessing {
+		if status.Code == core.TxStatusProcessing {
 			t.Status = StatusTxSent
 			prom.C2PImportTxIssued.Inc()
 		}
 	}()
 
-	switch status.Status {
+	switch status.Code {
 	case core.TxStatusCommitted:
 		return true, nil
 	case core.TxStatusProcessing:
@@ -262,20 +262,20 @@ func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	}
 }
 
-func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.TxStatusWithReason, error) {
+func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.Status, error) {
 	status, err := ctx.CheckPChainTx(*t.TxID)
 	if err != nil {
 		return status, errors.WithStack(err)
 	}
 
 	defer func() {
-		if status.Status == core.TxStatusCommitted {
+		if status.Code == core.TxStatusCommitted {
 			t.Status = StatusDone
 			prom.C2PImportTxCommitted.Inc()
 		}
 	}()
 
-	switch status.Status {
+	switch status.Code {
 	case core.TxStatusUnknown:
 		return status, nil
 	case core.TxStatusCommitted:

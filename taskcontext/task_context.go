@@ -227,25 +227,25 @@ func (t *TaskContextImp) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
 
 // Reference: https://github.com/ava-labs/avalanchego/blob/v1.7.14/vms/platformvm/status/status.go
 
-func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.TxStatusWithReason, error) {
+func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.Status, error) {
 	resp, err := t.PChainClient.GetTxStatus(context.Background(), id)
 	if err != nil {
-		return core.TxStatusWithReason{core.TxStatusUnknown, "failed to query status"}, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
+		return core.Status{core.TxStatusUnknown, "failed to query status"}, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
 	}
 
 	switch resp.Status {
 	case pStatus.Unknown:
-		return core.TxStatusWithReason{core.TxStatusUnknown, resp.Reason}, nil
+		return core.Status{core.TxStatusUnknown, resp.Reason}, nil
 	case pStatus.Committed:
-		return core.TxStatusWithReason{core.TxStatusCommitted, resp.Reason}, nil
+		return core.Status{core.TxStatusCommitted, resp.Reason}, nil
 	case pStatus.Aborted:
-		return core.TxStatusWithReason{core.TxStatusAborted, resp.Reason}, nil
+		return core.Status{core.TxStatusAborted, resp.Reason}, nil
 	case pStatus.Processing:
-		return core.TxStatusWithReason{core.TxStatusProcessing, resp.Reason}, nil
+		return core.Status{core.TxStatusProcessing, resp.Reason}, nil
 	case pStatus.Dropped:
-		return core.TxStatusWithReason{core.TxStatusDropped, resp.Reason}, nil
+		return core.Status{core.TxStatusDropped, resp.Reason}, nil
 	default:
-		return core.TxStatusWithReason{core.TxStatusInvalid, resp.Reason}, nil
+		return core.Status{core.TxStatusInvalid, resp.Reason}, nil
 	}
 }
 

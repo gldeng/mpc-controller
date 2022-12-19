@@ -35,7 +35,7 @@ type TaskContext interface {
 	IssuePChainTx(txBytes []byte) (ids.ID, error)
 	CheckEthTx(txHash common.Hash) (TxStatus, error)
 	CheckCChainTx(id ids.ID) (TxStatus, error)
-	CheckPChainTx(id ids.ID) (TxStatusWithReason, error)
+	CheckPChainTx(id ids.ID) (Status, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
 	GetDb() Store

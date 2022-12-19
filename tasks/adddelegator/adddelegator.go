@@ -113,7 +113,7 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 
 		t.logDebug(ctx, "checked tx status", []logger.Field{
 			{"txId", t.TxID},
-			{"status", status.Status.String()},
+			{"status", status.Code.String()},
 			{"reason", status.Reason}}...)
 	}
 	return nil, nil
@@ -248,17 +248,17 @@ func (t *AddDelegator) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 
 	t.logDebug(ctx, "checked tx status", []logger.Field{
 		{"txId", t.TxID},
-		{"status", status.Status.String()},
+		{"status", status.Code.String()},
 		{"reason", status.Reason}}...)
 
 	defer func() {
-		if status.Status == core.TxStatusProcessing {
+		if status.Code == core.TxStatusProcessing {
 			t.status = StatusTxSent
 			prom.AddDelegatorTxIssued.Inc()
 		}
 	}()
 
-	switch status.Status {
+	switch status.Code {
 	case core.TxStatusCommitted:
 		return true, nil
 	case core.TxStatusProcessing:
@@ -268,20 +268,20 @@ func (t *AddDelegator) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	}
 }
 
-func (t *AddDelegator) checkTxStatus(ctx core.TaskContext) (core.TxStatusWithReason, error) {
+func (t *AddDelegator) checkTxStatus(ctx core.TaskContext) (core.Status, error) {
 	status, err := ctx.CheckPChainTx(*t.TxID)
 	if err != nil {
 		return status, errors.WithStack(err)
 	}
 
 	defer func() {
-		if status.Status == core.TxStatusCommitted {
+		if status.Code == core.TxStatusCommitted {
 			t.status = StatusDone
 			prom.AddDelegatorTxCommitted.Inc()
 		}
 	}()
 
-	switch status.Status {
+	switch status.Code {
 	case core.TxStatusUnknown:
 		return status, nil
 	case core.TxStatusCommitted:
