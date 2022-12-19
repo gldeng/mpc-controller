@@ -10,6 +10,7 @@ const (
 	TxStatusAborted    TxStatus = 5
 	TxStatusProcessing TxStatus = 6
 	TxStatusDropped    TxStatus = 8
+	TxStatusInvalid    TxStatus = 10
 )
 
 func (s TxStatus) String() string {
@@ -25,7 +26,7 @@ func (s TxStatus) String() string {
 	case TxStatusDropped:
 		return "Dropped"
 	default:
-		return fmt.Sprintf("%d", int(s))
+		return "invalid status"
 	}
 }
 
@@ -54,4 +55,13 @@ func IsFailed(status TxStatus) bool {
 		return true
 	}
 	return false
+}
+
+type Status struct {
+	Code   TxStatus
+	Reason string
+}
+
+func (t *Status) String() string {
+	return fmt.Sprintf("%v: %v", t.Code.String(), t.Reason)
 }

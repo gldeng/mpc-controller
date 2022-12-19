@@ -209,54 +209,44 @@ func (t *TaskContextImp) IssuePChainTx(txBytes []byte) (ids.ID, error) {
 func (t *TaskContextImp) CheckCChainTx(id ids.ID) (core.TxStatus, error) {
 	status, err := t.CChainClient.GetAtomicTxStatus(context.Background(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "unknown status") {
-			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
-		}
 		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
 	}
 
-	if err := status.Valid(); err != nil {
-		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
-	}
-
 	switch status {
-	case evm.Dropped:
-		return core.TxStatusDropped, errors.WithStack(ErrTxStatusDropped)
-	case evm.Processing:
-		return core.TxStatusProcessing, nil
+	case evm.Unknown:
+		return core.TxStatusUnknown, nil
 	case evm.Accepted:
 		return core.TxStatusCommitted, nil
+	case evm.Processing:
+		return core.TxStatusProcessing, nil
+	case evm.Dropped:
+		return core.TxStatusDropped, nil
 	default:
-		return core.TxStatusUnknown, nil
+		return core.TxStatusInvalid, nil
 	}
 }
 
 // Reference: https://github.com/ava-labs/avalanchego/blob/v1.7.14/vms/platformvm/status/status.go
 
-func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.TxStatus, error) {
+func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.Status, error) {
 	resp, err := t.PChainClient.GetTxStatus(context.Background(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "unknown status") {
-			return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
-		}
-		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
-	}
-
-	if err := resp.Status.Verify(); err != nil {
-		return core.TxStatusUnknown, errors.WithStack(&ErrTypTxStatusInvalid{Pre: err})
+		return core.Status{core.TxStatusUnknown, "failed to query status"}, errors.WithStack(&ErrTypTxStatusQueryFail{Pre: err})
 	}
 
 	switch resp.Status {
-	case pStatus.Aborted:
-		return core.TxStatusAborted, errors.WithStack(&ErrTypTxStatusAborted{Msg: ErrMsgTxStatusAborted, Pre: errors.New(resp.Reason)})
-	case pStatus.Dropped:
-		return core.TxStatusDropped, errors.WithStack(&ErrTypTxStatusDropped{Msg: ErrMsgTxStatusDropped, Pre: errors.New(resp.Reason)})
-	case pStatus.Processing:
-		return core.TxStatusProcessing, nil
+	case pStatus.Unknown:
+		return core.Status{core.TxStatusUnknown, resp.Reason}, nil
 	case pStatus.Committed:
-		return core.TxStatusCommitted, nil
+		return core.Status{core.TxStatusCommitted, resp.Reason}, nil
+	case pStatus.Aborted:
+		return core.Status{core.TxStatusAborted, resp.Reason}, nil
+	case pStatus.Processing:
+		return core.Status{core.TxStatusProcessing, resp.Reason}, nil
+	case pStatus.Dropped:
+		return core.Status{core.TxStatusDropped, resp.Reason}, nil
 	default:
-		return core.TxStatusUnknown, nil
+		return core.Status{core.TxStatusInvalid, resp.Reason}, nil
 	}
 }
 
