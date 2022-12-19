@@ -4,6 +4,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/mpc"
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mpcclient"
@@ -67,7 +68,7 @@ func (t TaskContextWrapper) GetNetwork() *core.NetworkContext {
 	panic("implement me")
 }
 
-func (t TaskContextWrapper) GetMpcClient() core.MpcClient {
+func (t TaskContextWrapper) GetMpcClient() mpc.MpcClient {
 	//TODO implement me
 	panic("implement me")
 }

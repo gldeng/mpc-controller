@@ -3,8 +3,8 @@ package c2p
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/avalido/mpc-controller/taskcontext"
@@ -39,7 +39,7 @@ type ExportFromCChain struct {
 	TxHash      []byte
 	TxCred      *secp256k1fx.Credential
 	TxID        *ids.ID
-	SignRequest *types.SignRequest
+	SignRequest *mpc.SignRequest
 	Failed      bool
 	StartTime   time.Time
 }
@@ -136,18 +136,17 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	return nil, nil
 }
 
-func (t *ExportFromCChain) buildSignReq(id string, hash []byte) (*types.SignRequest, error) {
+func (t *ExportFromCChain) buildSignReq(id string, hash []byte) (*mpc.SignRequest, error) {
 	partiPubKeys, genPubKey, err := t.Quorum.CompressKeys()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compress public keys")
 	}
-
-	return &types.SignRequest{
-		ReqID:                  id,
-		CompressedGenPubKeyHex: genPubKey,
-		CompressedPartiPubKeys: partiPubKeys,
-		Hash:                   bytes.BytesToHex(hash),
-	}, nil
+	s := &mpc.SignRequest{}
+	s.RequestId = id
+	s.ParticipantPublicKeys = partiPubKeys
+	s.PublicKey = genPubKey
+	s.Hash = bytes.BytesToHex(hash)
+	return s, nil
 }
 
 func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
@@ -180,28 +179,27 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	}
 	t.SignRequest = req
 
-	err = ctx.GetMpcClient().Sign(context.Background(), req)
+	_, err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
 	prom.MpcSignPostedForC2PExportTx.Inc()
-	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.ReqID})
+	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.RequestId})
 	return nil
 }
 
 func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
-	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
+	res, err := ctx.GetMpcClient().CheckResult(context.Background(), &mpc.CheckResultRequest{RequestId: t.SignRequest.RequestId})
 	// TODO: Handle 404
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
 	}
+	if res.RequestStatus == mpc.CheckResultResponse_ERROR {
+		return t.failIfErrorf(err, "failed to sign ExportTx from C-Chain, status:%v", res.RequestStatus.String())
+	}
 
-	if res.Status != types.StatusDone {
-		status := strings.ToLower(string(res.Status))
-		if strings.Contains(status, "error") || strings.Contains(status, "err") {
-			return t.failIfErrorf(err, "failed to sign ExportTx from C-Chain, status:%v", status)
-		}
-		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
+	if res.RequestStatus != mpc.CheckResultResponse_DONE {
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.RequestId}, {"status", res.RequestStatus.String()}}...)
 		return nil
 	}
 	prom.MpcSignDoneForC2PExportTx.Inc()
