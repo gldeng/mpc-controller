@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/ava-labs/avalanchego/ids"
@@ -18,6 +17,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/pkg/errors"
 )
 
@@ -44,6 +44,7 @@ type ImportIntoPChain struct {
 	Failed         bool
 	StartTime      time.Time
 	LastStepTime   time.Time
+	issuedByOthers bool
 }
 
 func (t *ImportIntoPChain) GetId() string {
@@ -105,21 +106,19 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 	case StatusSignReqSent:
 		return nil, errors.WithStack(t.getSignature(ctx))
-	case StatusSignReqDone:
+	case StatusSignedTxReady:
 		return nil, errors.WithStack(t.sendTx(ctx))
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
+			return nil, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 		}
 
-		if status == core.TxStatusCommitted {
-			t.Status = StatusDone
-			prom.C2PImportTxCommitted.Inc()
-			t.logDebug(ctx, "tx committed", []logger.Field{{"txId", t.TxID}}...)
-			return nil, nil
-		}
-		t.logDebug(ctx, "tx issued but uncommitted", []logger.Field{{"txId", t.TxID}, {"status", status}}...)
+		t.logDebug(ctx, "checked tx status", []logger.Field{
+			{"txId", t.TxID},
+			{"status", status.Code.String()},
+			{"reason", status.Reason}}...)
 	}
 	return nil, nil
 }
@@ -171,53 +170,6 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *ImportIntoPChain) getSignatureAndSendTx(ctx core.TaskContext) error {
-	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
-	// TODO: Handle 404
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
-	}
-
-	if res.Status != types.StatusDone {
-		status := strings.ToLower(string(res.Status))
-		if strings.Contains(status, "error") || strings.Contains(status, "err") {
-			return t.failIfErrorf(err, "failed to sign ImportTx into P-Chain, status:%v", status)
-		}
-		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
-		return nil
-	}
-	prom.MpcSignDoneForC2PImportTx.Inc()
-	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
-	}
-	t.TxCred = txCred
-	signed, err := t.SignedTx()
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToPrepareSignedTx)
-	}
-	txId := signed.ID()
-	t.TxID = &txId
-	// TODO: check tx status before issuing, which may has been committed by other mpc-controller?
-	_, err = ctx.IssuePChainTx(signed.Bytes()) // If it's dropped, no ID will be returned?
-	if err != nil {
-		// TODO: Better handling, if another participant already sent the tx, we can't send again. So err is not exception, but a normal outcome.
-		//var errInputsInvalid *taskcontext.ErrTypeTxInputsInvalid
-		//var errUTXOConsumedFail *taskcontext.ErrTypeUTXOConsumeFail
-		//if errors.As(err, &errInputsInvalid) || errors.As(err, errUTXOConsumedFail) {
-		//	t.logError(ctx, ErrMsgTxFail, err, logger.Field{Key: "txId", Value: t.TxID})
-		//	return t.failIfErrorf(err, "%v, txId:%v", ErrMsgTxFail, t.TxID)
-		//}
-		//t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		//return errors.Wrapf(err, "%v, txId:%v", ErrMsgIssueTxFail, t.TxID)
-		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		return nil
-	}
-	prom.C2PImportTxIssued.Inc()
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txID", Value: t.TxID})
-	return nil
-}
-
 func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
 	// TODO: Handle 404
@@ -239,7 +191,6 @@ func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
-	t.Status = StatusSignReqDone
 
 	signed, err := t.SignedTx()
 	if err != nil {
@@ -247,48 +198,89 @@ func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 	}
 	txId := signed.ID()
 	t.TxID = &txId
+
+	t.Status = StatusSignedTxReady
 	return nil
 }
 
 func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
-	signed, _ := t.SignedTx()
-	_, err := ctx.IssuePChainTx(signed.Bytes())
+	// waits for arbitrary duration to elapse to reduce race condition.
+	utilstime.RandomDelay(5000)
+
+	isIssued, err := t.checkIfTxIssued(ctx)
 	if err != nil {
-		// TODO: handle errors, including connection timeout
-		t.logDebug(ctx, ErrMsgIssueTxFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
+		return errors.WithStack(err)
 	}
 
-	prom.C2PImportTxIssued.Inc()
+	if isIssued {
+		return nil
+	}
+
+	signed, _ := t.SignedTx()
+	_, err = ctx.IssuePChainTx(signed.Bytes())
+	if err != nil {
+		_, err := t.checkIfTxIssued(ctx)
+		return errors.WithStack(err)
+	}
+
 	t.Status = StatusTxSent
-	t.logDebug(ctx, "issued tx", logger.Field{Key: "txId", Value: t.TxID})
+	prom.C2PImportTxIssued.Inc()
+	t.logDebug(ctx, "tx issued", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 	return nil
 }
 
-func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
+func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
+	status, err := t.checkTxStatus(ctx)
+	if err != nil {
+		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
+		return false, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+	}
+
+	t.logDebug(ctx, "checked tx status", []logger.Field{
+		{"txId", t.TxID},
+		{"status", status.Code.String()},
+		{"reason", status.Reason}}...)
+
+	defer func() {
+		if status.Code == core.TxStatusProcessing {
+			t.Status = StatusTxSent
+			prom.C2PImportTxIssued.Inc()
+		}
+	}()
+
+	switch status.Code {
+	case core.TxStatusCommitted:
+		return true, nil
+	case core.TxStatusProcessing:
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
+func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.Status, error) {
 	status, err := ctx.CheckPChainTx(*t.TxID)
 	if err != nil {
-		var errTxStatusUndefined *taskcontext.ErrTypTxStatusInvalid
-		if errors.As(err, &errTxStatusUndefined) {
-			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
-			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
-		}
-
-		var errTxStatusAborted *taskcontext.ErrTypTxStatusAborted
-		if errors.As(err, &errTxStatusAborted) {
-			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
-			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
-		}
-
-		var errTxStatusDropped *taskcontext.ErrTypTxStatusDropped
-		if errors.As(err, &errTxStatusDropped) {
-			t.logError(ctx, ErrMsgTxFail, err, []logger.Field{{"txId", t.TxID}}...)
-			return status, t.failIfErrorf(err, "%v, txId: %v", ErrMsgTxFail, t.TxID)
-		}
-
-		t.logDebug(ctx, ErrMsgCheckTxStatusFail, []logger.Field{{"txId", t.TxID}, {"error", err.Error()}}...)
-		return status, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
+		return status, errors.WithStack(err)
 	}
-	return status, nil
+
+	defer func() {
+		if status.Code == core.TxStatusCommitted {
+			t.Status = StatusDone
+			prom.C2PImportTxCommitted.Inc()
+		}
+	}()
+
+	switch status.Code {
+	case core.TxStatusUnknown:
+		return status, nil
+	case core.TxStatusCommitted:
+		return status, nil
+	case core.TxStatusProcessing:
+		return status, nil
+	default:
+		return status, t.failIfErrorf(errors.New(status.String()), ErrMsgTxFail)
+	}
 }
 
 func (t *ImportIntoPChain) failIfErrorf(err error, format string, a ...any) error {
