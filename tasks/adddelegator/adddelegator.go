@@ -249,12 +249,17 @@ func (t *AddDelegator) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 		{"status", status.Status.String()},
 		{"reason", status.Reason}}...)
 
+	defer func() {
+		if status.Status == core.TxStatusProcessing {
+			t.status = StatusTxSent
+			prom.AddDelegatorTxIssued.Inc()
+		}
+	}()
+
 	switch status.Status {
 	case core.TxStatusCommitted:
 		return true, nil
 	case core.TxStatusProcessing:
-		t.status = StatusTxSent
-		prom.AddDelegatorTxIssued.Inc()
 		return true, nil
 	default:
 		return false, nil
@@ -267,12 +272,17 @@ func (t *AddDelegator) checkTxStatus(ctx core.TaskContext) (core.TxStatusWithRea
 		return status, errors.WithStack(err)
 	}
 
+	defer func() {
+		if status.Status == core.TxStatusCommitted {
+			t.status = StatusDone
+			prom.AddDelegatorTxCommitted.Inc()
+		}
+	}()
+
 	switch status.Status {
 	case core.TxStatusUnknown:
 		return status, nil
 	case core.TxStatusCommitted:
-		t.status = StatusDone
-		prom.AddDelegatorTxCommitted.Inc()
 		return status, nil
 	case core.TxStatusProcessing:
 		return status, nil

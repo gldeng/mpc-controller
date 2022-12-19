@@ -243,12 +243,17 @@ func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 		{"status", status.Status.String()},
 		{"reason", status.Reason}}...)
 
+	defer func() {
+		if status.Status == core.TxStatusProcessing {
+			t.Status = StatusTxSent
+			prom.C2PImportTxIssued.Inc()
+		}
+	}()
+
 	switch status.Status {
 	case core.TxStatusCommitted:
 		return true, nil
 	case core.TxStatusProcessing:
-		t.Status = StatusTxSent
-		prom.C2PImportTxIssued.Inc()
 		return true, nil
 	default:
 		return false, nil
@@ -261,12 +266,17 @@ func (t *ImportIntoPChain) checkTxStatus(ctx core.TaskContext) (core.TxStatusWit
 		return status, errors.WithStack(err)
 	}
 
+	defer func() {
+		if status.Status == core.TxStatusCommitted {
+			t.Status = StatusDone
+			prom.C2PImportTxCommitted.Inc()
+		}
+	}()
+
 	switch status.Status {
 	case core.TxStatusUnknown:
 		return status, nil
 	case core.TxStatusCommitted:
-		t.Status = StatusDone
-		prom.C2PImportTxCommitted.Inc()
 		return status, nil
 	case core.TxStatusProcessing:
 		return status, nil

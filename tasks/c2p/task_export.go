@@ -258,12 +258,17 @@ func (t *ExportFromCChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 		{"txId", t.TxID},
 		{"status", status.String()}}...)
 
+	defer func() {
+		if status == core.TxStatusProcessing {
+			t.Status = StatusTxSent
+			prom.C2PExportTxIssued.Inc()
+		}
+	}()
+
 	switch status {
 	case core.TxStatusCommitted:
 		return true, nil
 	case core.TxStatusProcessing:
-		t.Status = StatusTxSent
-		prom.C2PExportTxIssued.Inc()
 		return true, nil
 	default:
 		return false, nil
@@ -276,12 +281,17 @@ func (t *ExportFromCChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, e
 		return status, errors.WithStack(err)
 	}
 
+	defer func() {
+		if status == core.TxStatusCommitted {
+			t.Status = StatusDone
+			prom.C2PExportTxCommitted.Inc()
+		}
+	}()
+
 	switch status {
 	case core.TxStatusUnknown:
 		return status, nil
 	case core.TxStatusCommitted:
-		t.Status = StatusDone
-		prom.C2PExportTxCommitted.Inc()
 		return status, nil
 	case core.TxStatusProcessing:
 		return status, nil
