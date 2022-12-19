@@ -203,13 +203,13 @@ func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 	return nil
 }
 
-// Logically speaking, a tx need to be exactly committed only once to be included in a block.
-// But mpc participants has a big chance to send the same tx concurrently.
-// That says some participants can resend the same tx unnecessarily, no matter it'll be success or failure.
-// Thus it makes sense to check whether a tx has been issued before sending it to avoid resending.
-// When delay the initial tx status check, it'll be more effective, because the race condition can be reduce.
-// Also, mpc participant can resend tx even after this initial check, in this case do tx status check again.
-
+// sendTx sends a tx to avalanche network. Without a consensus mechanism among the participants, every partiticipant
+// attempts to issue the tx. We do the following to mitigate the race condition:
+//   1. delay a random duration before sending tx
+//   2. check tx status on-chain in case other participants already send it, if already sent (i.e. the tx is known to
+// 		avalanche network already before sending tx
+//   3. check tx status again after sending failed which may be caused by another participant sending the same tx
+//  	at the same time
 func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
 	// waits for arbitrary duration to elapse to reduce race condition.
 	utilstime.RandomDelay(5000)
