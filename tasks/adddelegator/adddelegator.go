@@ -3,7 +3,6 @@ package addDelegator
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/pkg/errors"
 )
 
@@ -171,11 +171,7 @@ func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 }
 
 func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
-	// waits for arbitrary duration to elapse to reduce race condition.
-	// TODO: tune the random number to a more suitable value
-	rand.Seed(time.Now().UnixNano())
-	random := rand.Int63n(5000)
-	<-time.After(time.Millisecond * time.Duration(random))
+	t.randomDelay(5000)
 
 	isIssued, err := t.checkIfTxIssued(ctx)
 	if err != nil {
@@ -197,6 +193,11 @@ func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
 	prom.AddDelegatorTxIssued.Inc()
 	t.logDebug(ctx, "tx issued", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 	return nil
+}
+
+// randomDelay waits for arbitrary duration to elapse to reduce race condition.
+func (t *AddDelegator) randomDelay(milliSeconds int64) {
+	utilstime.RandomAfter(milliSeconds)
 }
 
 func (t *AddDelegator) buildTask(ctx core.TaskContext) error {

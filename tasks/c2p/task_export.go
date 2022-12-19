@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/pkg/errors"
 )
 
@@ -220,11 +220,7 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 }
 
 func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
-	// waits for arbitrary duration to elapse to reduce race condition.
-	// TODO: tune the random number to a more suitable value
-	rand.Seed(time.Now().UnixNano())
-	random := rand.Int63n(5000)
-	<-time.After(time.Millisecond * time.Duration(random))
+	t.randomDelay(5000)
 
 	isIssued, err := t.checkIfTxIssued(ctx)
 	if err != nil {
@@ -246,6 +242,11 @@ func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
 	prom.C2PExportTxIssued.Inc()
 	t.logDebug(ctx, "tx issued", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 	return nil
+}
+
+// randomDelay waits for arbitrary duration to elapse to reduce race condition.
+func (t *ExportFromCChain) randomDelay(milliSeconds int64) {
+	utilstime.RandomAfter(milliSeconds)
 }
 
 func (t *ExportFromCChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
