@@ -204,7 +204,8 @@ func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 }
 
 func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
-	t.randomDelay(5000)
+	// waits for arbitrary duration to elapse to reduce race condition.
+	utilstime.RandomDelay(5000)
 
 	isIssued, err := t.checkIfTxIssued(ctx)
 	if err != nil {
@@ -226,11 +227,6 @@ func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
 	prom.C2PImportTxIssued.Inc()
 	t.logDebug(ctx, "tx issued", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 	return nil
-}
-
-// randomDelay waits for arbitrary duration to elapse to reduce race condition.
-func (t *ImportIntoPChain) randomDelay(milliSeconds int64) {
-	utilstime.RandomAfter(milliSeconds)
 }
 
 func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
