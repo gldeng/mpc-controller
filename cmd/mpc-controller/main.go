@@ -195,8 +195,7 @@ func runController(c *cli.Context) error {
 
 	myLogger.Info("set mpc account", []logger.Field{
 		{"address", myAccount.Address},
-		{"pubKey", c.String(fnPublicKey)},
-		{"pubKeyUncompressed", fmt.Sprintf("%x", myPubKeyBytes)}}...)
+		{"pubKey", c.String(fnPublicKey)}}...)
 
 	signer, err := bind.NewKeyStoreTransactorWithChainID(myEthKeystore, *myAccount, chainId)
 	myKeyStore := keystore.KeyStore{myEthKeystore, myAccount, c.String(fnPassword)}
