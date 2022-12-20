@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"math/big"
 	"os"
 	"os/signal"
@@ -25,9 +26,7 @@ import (
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/avalido/mpc-controller/utils/address"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -35,7 +34,6 @@ import (
 	ethkeystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -58,24 +56,6 @@ func printLog(event interface{}) {
 		return
 	}
 	fmt.Printf("Received event log %v\n", evt)
-}
-
-func decryptKey(pss, cipherKey string) string {
-	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(cipherKey))
-	if err != nil {
-		err = errors.Wrapf(err, "failed to decrypt key %q", cipherKey)
-		panic(fmt.Sprintf("%+v", err))
-	}
-
-	var privKey string
-	switch len(cipherKey) {
-	case 192:
-		privKey = string(keyBytes)
-	case 128:
-		privKey = bytes.BytesToHex(keyBytes)
-	}
-
-	return privKey
 }
 
 type TestSuite struct {
@@ -185,7 +165,7 @@ func runController(c *cli.Context) error {
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 
 	// Create keystore
-	myKeystore := ethkeystore.NewKeyStore(c.String(fnKeystoreDir), ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
+	myEthKeystore := ethkeystore.NewKeyStore(c.String(fnKeystoreDir), ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
 
 	// Parse public key and address
 	pubKey, err := utilsCrypto.UnmarshalPubKeyHex(c.String(fnPublicKey))
@@ -201,7 +181,7 @@ func runController(c *cli.Context) error {
 
 	// Create transaction signer
 	var myAccount *accounts.Account
-	accounts := myKeystore.Accounts()
+	accounts := myEthKeystore.Accounts()
 	for _, account := range accounts {
 		if account.Address == *myAddr {
 			myAccount = &account
@@ -218,7 +198,8 @@ func runController(c *cli.Context) error {
 		{"pubKey", c.String(fnPublicKey)},
 		{"pubKeyUncompressed", fmt.Sprintf("%x", myPubKeyBytes)}}...)
 
-	signer, err := bind.NewKeyStoreTransactorWithChainID(myKeystore, *myAccount, chainId)
+	signer, err := bind.NewKeyStoreTransactorWithChainID(myEthKeystore, *myAccount, chainId)
+	myKeyStore := keystore.KeyStore{myEthKeystore, myAccount, c.String(fnPassword)}
 
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
@@ -253,7 +234,7 @@ func runController(c *cli.Context) error {
 		Logger:       myLogger,
 		MpcServerUrl: c.String(fnMpcServerUrl)}
 
-	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
+	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db, &myKeyStore)
 
 	syn := synchronizer.NewSyncer(services, q)
 

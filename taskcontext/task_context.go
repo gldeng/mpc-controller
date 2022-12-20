@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+
 	kbcevents "github.com/kubecost/events"
 	"github.com/pkg/errors"
 	"math/big"
@@ -31,6 +32,7 @@ var (
 type TaskContextImp struct {
 	Logger logger.Logger
 
+	KeyStore     core.KeyStore
 	Services     *core.ServicePack
 	NonceGiver   noncer.Noncer
 	Network      core.NetworkContext
@@ -41,6 +43,14 @@ type TaskContextImp struct {
 	Db           core.Store
 	abi          *abi.ABI
 	Dispatcher   kbcevents.Dispatcher[interface{}]
+}
+
+func (t *TaskContextImp) Lock() error {
+	return errors.WithStack(t.KeyStore.Lock())
+}
+
+func (t *TaskContextImp) Unlock() error {
+	return errors.WithStack(t.KeyStore.Unlock())
 }
 
 // Reference: https://github.com/ethereum/go-ethereum/blob/v1.10.26/core/types/receipt.go

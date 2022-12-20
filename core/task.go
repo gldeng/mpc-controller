@@ -26,8 +26,14 @@ type MpcManager interface {
 	LastGenPubKey(opts *bind.CallOpts) ([]byte, error)
 }
 
+type KeyStore interface {
+	Lock() error
+	Unlock() error
+}
+
 type TaskContext interface {
 	MpcManager
+	KeyStore
 	GetLogger() logger.Logger
 	GetNetwork() *NetworkContext
 	GetMpcClient() MpcClient
