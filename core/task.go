@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -30,7 +31,7 @@ type TaskContext interface {
 	MpcManager
 	GetLogger() logger.Logger
 	GetNetwork() *NetworkContext
-	GetMpcClient() MpcClient
+	GetMpcClient() mpc.MpcClient
 	IssueCChainTx(txBytes []byte) (ids.ID, error)
 	IssuePChainTx(txBytes []byte) (ids.ID, error)
 	CheckEthTx(txHash common.Hash) (TxStatus, error)

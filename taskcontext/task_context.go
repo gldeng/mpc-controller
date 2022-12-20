@@ -11,6 +11,7 @@ import (
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/utils/noncer"
@@ -35,7 +36,7 @@ type TaskContextImp struct {
 	NonceGiver   noncer.Noncer
 	Network      core.NetworkContext
 	EthClient    *ethclient.Client // TODO: use ava-labs/coreth/ethclient instead for future 100% compatibility
-	MpcClient    core.MpcClient
+	MpcClient    mpc.MpcClient
 	CChainClient evm.Client
 	PChainClient platformvm.Client
 	Db           core.Store
@@ -163,7 +164,7 @@ func (t *TaskContextImp) GetNetwork() *core.NetworkContext {
 	return &t.Network
 }
 
-func (t *TaskContextImp) GetMpcClient() core.MpcClient {
+func (t *TaskContextImp) GetMpcClient() mpc.MpcClient {
 	return t.MpcClient
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
@@ -23,7 +24,7 @@ type RequestAdded struct {
 	Status Status
 
 	Event         contract.MpcManagerKeygenRequestAdded
-	KeygenRequest *types.KeygenRequest
+	KeygenRequest *mpc.KeygenRequest
 	TxHash        *common.Hash
 
 	group *types.Group
@@ -101,19 +102,19 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return t.failIfErrorf(err, "failed to compress participant public keys")
 		}
 
-		t.KeygenRequest = &types.KeygenRequest{
-			ReqID:                  t.GetId(),
-			CompressedPartiPubKeys: normalized,
-			Threshold:              t.group.ParticipantID().Threshold(),
-		}
-		err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
+		kg := &mpc.KeygenRequest{}
+		kg.RequestId = t.GetId()
+		kg.ParticipantPublicKeys = normalized
+		kg.Threshold = uint32(t.group.ParticipantID().Threshold())
+		t.KeygenRequest = kg
+		_, err = ctx.GetMpcClient().Keygen(context.Background(), t.KeygenRequest)
 		if err != nil {
 			return t.failIfErrorf(err, "failed to send keygen request")
 		}
 		prom.MpcKeygenPosted.Inc()
 		t.Status = StatusKeygenReqSent
 	case StatusKeygenReqSent:
-		res, err := ctx.GetMpcClient().Result(context.Background(), t.KeygenRequest.ReqID)
+		res, err := ctx.GetMpcClient().CheckResult(context.Background(), &mpc.CheckResultRequest{RequestId: t.KeygenRequest.RequestId})
 		// TODO: Handle 404
 		if err != nil {
 			return t.failIfErrorf(err, "failed to get keygen result")
@@ -123,7 +124,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 			return t.failIfErrorf(err, "empty keygen result")
 		}
 
-		if res.Status != types.StatusDone {
+		if res.RequestStatus != mpc.CheckResultResponse_DONE {
 			ctx.GetLogger().Debug("Keygen not done")
 			return nil
 		}
