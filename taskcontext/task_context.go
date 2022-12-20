@@ -32,7 +32,6 @@ var (
 type TaskContextImp struct {
 	Logger logger.Logger
 
-	KeyStore     core.KeyStore
 	Services     *core.ServicePack
 	NonceGiver   noncer.Noncer
 	Network      core.NetworkContext
@@ -46,11 +45,11 @@ type TaskContextImp struct {
 }
 
 func (t *TaskContextImp) Lock() error {
-	return errors.WithStack(t.KeyStore.Lock())
+	return errors.WithStack(t.Services.KeyStore.Lock())
 }
 
 func (t *TaskContextImp) Unlock() error {
-	return errors.WithStack(t.KeyStore.Unlock())
+	return errors.WithStack(t.Services.KeyStore.Unlock())
 }
 
 // Reference: https://github.com/ethereum/go-ethereum/blob/v1.10.26/core/types/receipt.go
