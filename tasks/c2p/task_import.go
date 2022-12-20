@@ -189,6 +189,13 @@ func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
+	signed, err := t.SignedTx()
+	if err != nil {
+		return t.failIfErrorf(err, ErrMsgPrepareSignedTx)
+	}
+	txId := signed.ID()
+	t.TxID = &txId
+
 	t.Status = StatusSignedTxReady
 	return nil
 }
