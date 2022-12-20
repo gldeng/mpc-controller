@@ -45,8 +45,8 @@ const (
 	fnHost              = "host"
 	fnPort              = "port"
 	fnMpcManagerAddress = "mpc-manager-address"
-	fnPublicKey         = "public-key"
-	fnKeystoreDir       = "keystore-dir"
+	fnPublicKey         = "publicKey"
+	fnKeystoreDir       = "keystoreDir"
 	fnPassword          = "password"
 	fnMpcServerUrl      = "mpcServerUrl"
 	fnMetricsServeAddr  = "metricsServeAddr"
@@ -190,7 +190,7 @@ func runController(c *cli.Context) error {
 	// Parse public key and address
 	pubKey, err := utilsCrypto.UnmarshalPubKeyHex(c.String(fnPublicKey))
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse public key %q", c.String(fnPublicKey)))
+		panic(fmt.Sprintf("failed to parse public key %q, error: %v", c.String(fnPublicKey), err))
 	}
 	myAddr := address.PubkeyToAddresse(pubKey)
 
@@ -212,6 +212,11 @@ func runController(c *cli.Context) error {
 	if myAccount == nil {
 		panic("found no account in keystore")
 	}
+
+	myLogger.Info("set mpc account", []logger.Field{
+		{"address", myAccount.Address},
+		{"pubKey", c.String(fnPublicKey)},
+		{"pubKeyUncompressed", fmt.Sprintf("%x", myPubKeyBytes)}}...)
 
 	signer, err := bind.NewKeyStoreTransactorWithChainID(myKeystore, *myAccount, chainId)
 
