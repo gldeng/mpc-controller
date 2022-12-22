@@ -176,7 +176,10 @@ func runController(c *cli.Context) error {
 		panic(fmt.Sprintf("failed to create keystore, error: %v", err))
 	}
 
-	myKeyStore.Unlock()
+	err = myKeyStore.Unlock()
+	if err != nil {
+		panic(fmt.Sprintf("failed to unlock keystore, error: %v", err))
+	}
 	defer myKeyStore.Lock()
 
 	myLogger.Info("set mpc account", []logger.Field{
