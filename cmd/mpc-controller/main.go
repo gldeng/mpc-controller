@@ -199,6 +199,8 @@ func runController(c *cli.Context) error {
 
 	signer, err := bind.NewKeyStoreTransactorWithChainID(myEthKeystore, *myAccount, chainId)
 	myKeyStore := keystore.KeyStore{myEthKeystore, myAccount, c.String(fnPassword)}
+	myKeyStore.Unlock()
+	defer myKeyStore.Lock()
 
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
@@ -233,7 +235,7 @@ func runController(c *cli.Context) error {
 		Logger:       myLogger,
 		MpcServerUrl: c.String(fnMpcServerUrl)}
 
-	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db, &myKeyStore)
+	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
 	syn := synchronizer.NewSyncer(services, q)
 

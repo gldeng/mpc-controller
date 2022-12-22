@@ -90,11 +90,6 @@ func (t *Join) IsSequential() bool {
 func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	switch t.Status {
 	case StatusInit:
-		err := ctx.Unlock()
-		if err != nil {
-			return nil, t.failIfErrorf(err, "failed to unlock account")
-		}
-		defer ctx.Lock()
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
 			var errCreateTransactor *taskcontext.ErrTypContractBindFail

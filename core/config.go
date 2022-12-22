@@ -91,15 +91,13 @@ type ServicePack struct {
 	Logger    logger.Logger
 	MpcClient MpcClient
 	Db        Store
-	KeyStore  KeyStore
 }
 
-func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db Store, ks KeyStore) *ServicePack {
+func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db Store) *ServicePack {
 	return &ServicePack{
 		Config:    config,
 		Logger:    logger,
 		MpcClient: mpcClient,
 		Db:        db,
-		KeyStore:  ks,
 	}
 }

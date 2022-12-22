@@ -136,11 +136,6 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		if err != nil {
 			return t.failIfErrorf(err, "failed to decompress generated public key %v", t.keygenResult)
 		}
-		err = ctx.Unlock()
-		if err != nil {
-			return t.failIfErrorf(err, "failed to unlock account")
-		}
-		defer ctx.Lock()
 		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
 			var errCreateTransactor *taskcontext.ErrTypContractBindFail

@@ -44,14 +44,6 @@ type TaskContextImp struct {
 	Dispatcher   kbcevents.Dispatcher[interface{}]
 }
 
-func (t *TaskContextImp) Lock() error {
-	return errors.WithStack(t.Services.KeyStore.Lock())
-}
-
-func (t *TaskContextImp) Unlock() error {
-	return errors.WithStack(t.Services.KeyStore.Unlock())
-}
-
 // Reference: https://github.com/ethereum/go-ethereum/blob/v1.10.26/core/types/receipt.go
 // Reference: https://github.com/ava-labs/coreth/blob/v0.8.13/interfaces/interfaces.go
 
