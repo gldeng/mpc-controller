@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+var ErrUnsafeFilePermissions = errors.New("unsafe file permissions, want 0400")
+
 type KeyStore struct {
 	passwordFile string
 	account      *accounts.Account
@@ -16,7 +18,6 @@ type KeyStore struct {
 
 func New(addr common.Address, passwordFile, keystoreDir string) (*KeyStore, error) {
 	var ks KeyStore
-	// TODO: check 0400 for safe read
 	ks.passwordFile = passwordFile
 	ethKeystore := ethkeystore.NewKeyStore(keystoreDir, ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
 	accounts_ := ethKeystore.Accounts()
@@ -41,8 +42,7 @@ func (ks *KeyStore) Lock() error {
 }
 
 func (ks *KeyStore) Unlock() error {
-	// TODO: check 0400 for safe read
-	pass, err := os.ReadFile(ks.passwordFile)
+	pass, err := safeReadFile(ks.passwordFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file")
 	}
@@ -56,4 +56,18 @@ func (ks *KeyStore) Account() *accounts.Account {
 
 func (ks *KeyStore) EthKeyStore() *ethkeystore.KeyStore {
 	return ks.keystore
+}
+
+// safeReadFile check permissions is '0400' and read file
+func safeReadFile(file string) ([]byte, error) {
+	fi, err := os.Stat(file)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if fi.Mode() != 0400 {
+		return nil, errors.WithStack(ErrUnsafeFilePermissions)
+	}
+
+	bytes, err := os.ReadFile(file)
+	return bytes, errors.WithStack(err)
 }
