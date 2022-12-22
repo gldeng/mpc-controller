@@ -8,8 +8,6 @@ import (
 	"os"
 )
 
-var ErrUnsafeFilePermissions = errors.New("unsafe file permissions, want 0400")
-
 type KeyStore struct {
 	passwordFile string
 	account      *accounts.Account
@@ -65,7 +63,7 @@ func safeReadFile(file string) ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 	if fi.Mode() != 0400 {
-		return nil, errors.WithStack(ErrUnsafeFilePermissions)
+		return nil, errors.New("unsafe file permissions, want 0400")
 	}
 
 	bytes, err := os.ReadFile(file)
