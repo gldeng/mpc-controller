@@ -29,9 +29,7 @@ import (
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	ethkeystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	cli "github.com/urfave/cli/v2"
@@ -45,7 +43,7 @@ const (
 	fnMpcManagerAddress = "mpc-manager-address"
 	fnPublicKey         = "publicKey"
 	fnKeystoreDir       = "keystoreDir"
-	fnPassword          = "password"
+	fnPasswordFile      = "passwordFile"
 	fnMpcServerUrl      = "mpcServerUrl"
 	fnMetricsServeAddr  = "metricsServeAddr"
 )
@@ -164,43 +162,32 @@ func runController(c *cli.Context) error {
 
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 
-	// Create keystore
-	myEthKeystore := ethkeystore.NewKeyStore(c.String(fnKeystoreDir), ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
-
 	// Parse public key and address
 	pubKey, err := utilsCrypto.UnmarshalPubKeyHex(c.String(fnPublicKey))
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse public key %q, error: %v", c.String(fnPublicKey), err))
 	}
 	myAddr := address.PubkeyToAddresse(pubKey)
-
 	myPubKeyBytes := utilsCrypto.MarshalPubkey(pubKey)[1:]
+
+	// Create keystore
+	myKeyStore, err := keystore.New(*myAddr, c.String(fnPasswordFile), c.String(fnKeystoreDir))
+	if err != nil {
+		panic(fmt.Sprintf("failed to create keystore, error: %v", err))
+	}
+
+	myKeyStore.Unlock()
+	defer myKeyStore.Lock()
+
+	myLogger.Info("set mpc account", []logger.Field{
+		{"address", *myAddr},
+		{"pubKey", c.String(fnPublicKey)}}...)
 
 	// Convert chain ID
 	chainId := big.NewInt(43112)
 
-	// Create transaction signer
-	var myAccount *accounts.Account
-	accounts := myEthKeystore.Accounts()
-	for _, account := range accounts {
-		if account.Address == *myAddr {
-			myAccount = &account
-			break
-		}
-	}
-
-	if myAccount == nil {
-		panic("found no account in keystore")
-	}
-
-	myLogger.Info("set mpc account", []logger.Field{
-		{"address", myAccount.Address},
-		{"pubKey", c.String(fnPublicKey)}}...)
-
-	signer, err := bind.NewKeyStoreTransactorWithChainID(myEthKeystore, *myAccount, chainId)
-	myKeyStore := keystore.KeyStore{myEthKeystore, myAccount, c.String(fnPassword)}
-	myKeyStore.Unlock()
-	defer myKeyStore.Lock()
+	// Create signer
+	signer, err := bind.NewKeyStoreTransactorWithChainID(myKeyStore.EthKeyStore(), *myKeyStore.Account(), chainId)
 
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
@@ -345,9 +332,9 @@ func main() {
 				Usage:    "The keystore directory for this participant.",
 			},
 			&cli.StringFlag{
-				Name:     fnPassword,
+				Name:     fnPasswordFile,
 				Required: true,
-				Usage:    "The password to decrypt private key",
+				Usage:    "The password file to decrypt private key",
 			},
 			&cli.StringFlag{
 				Name:     fnMpcServerUrl,
