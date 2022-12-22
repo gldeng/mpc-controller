@@ -9,30 +9,30 @@ import (
 )
 
 type KeyStore struct {
-	PasswordFile string
-	KeystoreDir  string
-	Address      common.Address
-
-	account  *accounts.Account
-	keystore *ethkeystore.KeyStore
+	passwordFile string
+	account      *accounts.Account
+	keystore     *ethkeystore.KeyStore
 }
 
-func (ks *KeyStore) Init() error {
-	ethKeystore := ethkeystore.NewKeyStore(ks.KeystoreDir, ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
+func New(addr common.Address, passwordFile, keystoreDir string) (*KeyStore, error) {
+	var ks KeyStore
+	// TODO: check 0400 for safe read
+	ks.passwordFile = passwordFile
+	ethKeystore := ethkeystore.NewKeyStore(keystoreDir, ethkeystore.StandardScryptN, ethkeystore.StandardScryptP)
 	accounts_ := ethKeystore.Accounts()
 	for _, account := range accounts_ {
-		if account.Address == ks.Address {
+		if account.Address == addr {
 			ks.account = &account
 			break
 		}
 	}
 
 	if ks.account == nil {
-		return errors.New("found no account in keystore")
+		return nil, errors.New("found no account in keystore")
 	}
 
 	ks.keystore = ethKeystore
-	return nil
+	return &ks, nil
 }
 
 func (ks *KeyStore) Lock() error {
@@ -42,7 +42,7 @@ func (ks *KeyStore) Lock() error {
 
 func (ks *KeyStore) Unlock() error {
 	// TODO: check 0400 for safe read
-	pass, err := os.ReadFile(ks.PasswordFile)
+	pass, err := os.ReadFile(ks.passwordFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file")
 	}
