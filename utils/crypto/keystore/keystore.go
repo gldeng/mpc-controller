@@ -9,6 +9,8 @@ import (
 	"os"
 )
 
+// KeyStore is a wrapper around go-ethereum KeyStore
+// to provide convenient keystore service dedicated to one account
 type KeyStore struct {
 	passwordFile string
 	account      *accounts.Account
