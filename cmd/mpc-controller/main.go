@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
+	"github.com/avalido/mpc-controller/core/mpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"math/big"
 	"os"
 	"os/signal"
@@ -15,7 +18,6 @@ import (
 	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/eventhandlercontext"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/router"
@@ -221,10 +223,12 @@ func runController(c *cli.Context) error {
 	db := storage.NewInMemoryDb() // TODO: use persistent db
 
 	// Create mpcClient
-	mpcClient := &mpcclient.MyMpcClient{
-		Logger:       myLogger,
-		MpcServerUrl: c.String(fnMpcServerUrl)}
 
+	conn, err := grpc.Dial(c.String(fnMpcServerUrl), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return errors.Wrap(err, "failed to dial to mpc server")
+	}
+	mpcClient := mpc.NewMpcClient(conn)
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
 
 	syn := synchronizer.NewSyncer(services, q)

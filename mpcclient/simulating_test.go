@@ -3,7 +3,7 @@ package mpcclient
 import (
 	"context"
 	"encoding/hex"
-	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/core/mpc"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,29 +15,32 @@ func TestSimulatingMpcClient(t *testing.T) {
 	hashStr := "1111111111111111111111111111111111111111111111111111111111111111"
 	hash, _ := hex.DecodeString(hashStr)
 	privateKey, _ := ethCrypto.HexToECDSA(privKeyStr)
-	client, _ := NewSimulatingMpcClient(privKeyStr)
-	err := client.Keygen(context.Background(), &types.KeygenRequest{
-		ReqID:                  "kg",
-		CompressedPartiPubKeys: []string{},
-		Threshold:              0,
-	})
+	client, _ := NewSimulatingClient(privKeyStr)
+	kg := &mpc.KeygenRequest{}
+	kg.RequestId = "kg"
+	kg.ParticipantPublicKeys = []string{}
+	kg.Threshold = 0
+	_, err := client.Keygen(context.Background(), kg)
 	require.Nil(t, err)
-	res, _ := client.Result(context.Background(), "kg")
+	c := &mpc.CheckResultRequest{}
+	c.RequestId = "kg"
+	res, _ := client.CheckResult(context.Background(), c)
 
 	pkBytes, _ := hex.DecodeString(res.Result)
 	pk, _ := ethCrypto.DecompressPubkey(pkBytes)
 
 	require.Equal(t, privateKey.PublicKey, *pk)
-	err = client.Sign(context.Background(), &types.SignRequest{
-		ReqID:                  reqIDStr,
-		Hash:                   hashStr,
-		CompressedGenPubKeyHex: "",
-		CompressedPartiPubKeys: []string{},
-	})
+	s := &mpc.SignRequest{}
+	s.RequestId = reqIDStr
+	s.Hash = hashStr
+	s.ParticipantPublicKeys = []string{}
+	s.PublicKey = ""
+	_, err = client.Sign(context.Background(), s)
 	require.Nil(t, err)
 	pubKey := ethCrypto.FromECDSAPub(&privateKey.PublicKey)
 
-	res, _ = client.Result(context.Background(), "123")
+	c.RequestId = reqIDStr
+	res, _ = client.CheckResult(context.Background(), c)
 	sig, _ := hex.DecodeString(res.Result)
 
 	pubKeyRecovered, err := ethCrypto.Ecrecover(hash, sig)

@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -89,11 +90,11 @@ func (c Config) FetchNetworkInfo() {
 type ServicePack struct {
 	Config    Config
 	Logger    logger.Logger
-	MpcClient MpcClient
+	MpcClient mpc.MpcClient
 	Db        Store
 }
 
-func NewServicePack(config Config, logger logger.Logger, mpcClient MpcClient, db Store) *ServicePack {
+func NewServicePack(config Config, logger logger.Logger, mpcClient mpc.MpcClient, db Store) *ServicePack {
 	return &ServicePack{
 		Config:    config,
 		Logger:    logger,

@@ -3,6 +3,7 @@ package pool
 import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -123,7 +124,7 @@ func (m MockTaskContext) GetNetwork() *core.NetworkContext {
 	panic("implement me")
 }
 
-func (m MockTaskContext) GetMpcClient() core.MpcClient {
+func (m MockTaskContext) GetMpcClient() mpc.MpcClient {
 	//TODO implement me
 	panic("implement me")
 }

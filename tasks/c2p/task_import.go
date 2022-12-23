@@ -3,8 +3,9 @@ package c2p
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/avalido/mpc-controller/core/mpc"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -40,7 +41,7 @@ type ImportIntoPChain struct {
 	TxHash         []byte
 	TxCred         *secp256k1fx.Credential
 	TxID           *ids.ID
-	SignRequest    *types.SignRequest
+	SignRequest    *mpc.SignRequest
 	Failed         bool
 	StartTime      time.Time
 	LastStepTime   time.Time
@@ -127,17 +128,18 @@ func (t *ImportIntoPChain) SignedTx() (*txs.Tx, error) {
 	return PackSignedImportTx(t.Tx, t.TxCred)
 }
 
-func (t *ImportIntoPChain) buildSignReq(id string, hash []byte) (*types.SignRequest, error) {
+func (t *ImportIntoPChain) buildSignReq(id string, hash []byte) (*mpc.SignRequest, error) {
 	partiPubKeys, genPubKey, err := t.Quorum.CompressKeys()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compress public keys")
 	}
-	return &types.SignRequest{
-		ReqID:                  id,
-		CompressedGenPubKeyHex: genPubKey,
-		CompressedPartiPubKeys: partiPubKeys,
-		Hash:                   bytes.BytesToHex(hash),
-	}, nil
+
+	s := &mpc.SignRequest{}
+	s.RequestId = id
+	s.ParticipantPublicKeys = partiPubKeys
+	s.PublicKey = genPubKey
+	s.Hash = bytes.BytesToHex(hash)
+	return s, nil
 }
 
 func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
@@ -161,37 +163,32 @@ func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 
 	prom.MpcTxBuilt.With(prometheus.Labels{"flow": "initialStake", "chain": "pChain", "tx": "importTx"}).Inc()
 
-	err = ctx.GetMpcClient().Sign(context.Background(), req)
+	_, err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
 	prom.MpcSignPostedForC2PImportTx.Inc()
-	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.ReqID})
+	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.RequestId})
 	return nil
 }
 
 func (t *ImportIntoPChain) getSignature(ctx core.TaskContext) error {
-	res, err := ctx.GetMpcClient().Result(context.Background(), t.SignRequest.ReqID)
-	// TODO: Handle 404
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
+	res, err := ctx.GetMpcClient().CheckResult(context.Background(), &mpc.CheckResultRequest{RequestId: t.SignRequest.RequestId})
+	if res.RequestStatus == mpc.CheckResultResponse_ERROR {
+		return t.failIfErrorf(err, "failed to sign ImportTx from P-Chain, status:%v", res.RequestStatus.String())
 	}
 
-	if res.Status != types.StatusDone {
-		status := strings.ToLower(string(res.Status))
-		if strings.Contains(status, "error") || strings.Contains(status, "err") {
-			return t.failIfErrorf(err, "failed to sign ImportTx from P-Chain, status:%v", status)
-		}
-		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.ReqID}, {"status", status}}...)
+	if res.RequestStatus != mpc.CheckResultResponse_DONE {
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.RequestId}, {"status", res.RequestStatus.String()}}...)
 		return nil
 	}
+
 	prom.MpcSignDoneForC2PImportTx.Inc()
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
-
 	signed, err := t.SignedTx()
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgPrepareSignedTx)

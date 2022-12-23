@@ -3,7 +3,7 @@ package addDelegator
 import (
 	"context"
 	"fmt"
-	"strings"
+	"github.com/avalido/mpc-controller/core/mpc"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,7 +36,7 @@ type AddDelegator struct {
 	TxID     *ids.ID
 
 	tx      *AddDelegatorTx
-	signReq *types.SignRequest
+	signReq *mpc.SignRequest
 
 	status       Status
 	failed       bool
@@ -126,28 +126,28 @@ func (t *AddDelegator) buildAndSignTx(ctx core.TaskContext) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to build AddDelegator task")
 	}
-	err = ctx.GetMpcClient().Sign(context.Background(), t.signReq)
+	_, err = ctx.GetMpcClient().Sign(context.Background(), t.signReq)
 	if err != nil {
 		return errors.Wrapf(err, "failed to send AddDelegator signing request")
 	}
 	prom.MpcSignPostedForAddDelegatorTx.Inc()
-	t.logDebug(ctx, "sent signing request", []logger.Field{{"signReq", t.signReq.ReqID}}...)
+	t.logDebug(ctx, "sent signing request", []logger.Field{{"signReq", t.signReq.RequestId}}...)
 	return nil
 }
 
 func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
-	res, err := ctx.GetMpcClient().Result(context.Background(), t.signReq.ReqID)
+	res, err := ctx.GetMpcClient().CheckResult(context.Background(), &mpc.CheckResultRequest{RequestId: t.signReq.RequestId})
 	// TODO: Handle 404
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
 	}
 
-	if res.Status != types.StatusDone {
-		status := strings.ToLower(string(res.Status))
-		if strings.Contains(status, "error") || strings.Contains(status, "err") {
-			return t.failIfErrorf(err, "failed to sign AddDelegatorTx from P-Chain, status:%v", status)
-		}
-		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.signReq.ReqID}, {"status", status}}...)
+	if res.RequestStatus == mpc.CheckResultResponse_ERROR {
+		return t.failIfErrorf(err, "failed to sign AddDelegatorTx from P-Chain, status:%v", res.RequestStatus.String())
+	}
+
+	if res.RequestStatus != mpc.CheckResultResponse_DONE {
+		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.signReq.RequestId}, {"status", res.RequestStatus.String()}}...)
 		return nil
 	}
 
@@ -226,20 +226,19 @@ func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
 	return nil
 }
 
-func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*types.SignRequest, error) {
+func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*mpc.SignRequest, error) {
 	partiPubKeys, genPubKey, err := t.Quorum.CompressKeys()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compress public keys")
 	}
 
-	signReq := types.SignRequest{
-		ReqID:                  id,
-		CompressedGenPubKeyHex: genPubKey,
-		CompressedPartiPubKeys: partiPubKeys,
-		Hash:                   bytes.BytesToHex(hash),
-	}
+	s := &mpc.SignRequest{}
+	s.RequestId = id
+	s.ParticipantPublicKeys = partiPubKeys
+	s.PublicKey = genPubKey
+	s.Hash = bytes.BytesToHex(hash)
 
-	return &signReq, nil
+	return s, nil
 }
 
 func (t *AddDelegator) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
