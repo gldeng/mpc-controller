@@ -1,6 +1,7 @@
 package keystore
 
 import (
+	"github.com/awnumar/memguard"
 	"github.com/ethereum/go-ethereum/accounts"
 	ethkeystore "github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -40,11 +41,12 @@ func (ks *KeyStore) Lock() error {
 }
 
 func (ks *KeyStore) Unlock() error {
-	pass, err := safeReadFile(ks.passwordFile)
+	lb, err := readFileWithProtection(ks.passwordFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to read file")
 	}
-	err = ks.keystore.Unlock(*ks.account, string(pass))
+	defer lb.Destroy()
+	err = ks.keystore.Unlock(*ks.account, lb.String())
 	return errors.WithStack(err)
 }
 
@@ -56,16 +58,26 @@ func (ks *KeyStore) EthKeyStore() *ethkeystore.KeyStore {
 	return ks.keystore
 }
 
-// safeReadFile check permissions is '0400' and read file
-func safeReadFile(file string) ([]byte, error) {
+// readFileWithProtection check permissions is '0400' and read file into locked buffer
+func readFileWithProtection(file string) (*memguard.LockedBuffer, error) {
 	fi, err := os.Stat(file)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "failed to retrieve file info")
 	}
 	if fi.Mode() != 0400 {
-		return nil, errors.New("unsafe file permissions, want 0400")
+		return nil, errors.Errorf("file permission expects 0400, but got %v", fi.Mode())
 	}
 
-	bytes, err := os.ReadFile(file)
-	return bytes, errors.WithStack(err)
+	fil, err := os.Open(file)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open file")
+	}
+
+	memguard.CatchInterrupt()
+	lb, err := memguard.NewBufferFromReader(fil, int(fi.Size()))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create LockedBuffer")
+	}
+
+	return lb, nil
 }
