@@ -21,7 +21,7 @@ const (
 
 	ErrMsgSharedMemoryFail = "failed to get shared memory"
 	ErrMsgUTXOConsumeFail  = "failed to consume UTXO"
-	ErrMsgTxInputsInvalid      = "invalid tx inputs"
+	ErrMsgTxInputsInvalid  = "invalid tx inputs"
 )
 
 var (

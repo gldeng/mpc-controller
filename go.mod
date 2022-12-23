@@ -6,6 +6,7 @@ require (
 	github.com/alitto/pond v1.8.2
 	github.com/ava-labs/avalanchego v1.7.14
 	github.com/ava-labs/coreth v0.8.13-rc.5
+	github.com/awnumar/memguard v0.22.3
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/enriquebris/goconcurrentqueue v0.6.3
 	github.com/ethereum/go-ethereum v1.10.19
@@ -20,7 +21,6 @@ require (
 	github.com/swaggest/rest v0.2.29
 	github.com/swaggest/swgui v1.4.5
 	github.com/swaggest/usecase v1.1.3
-	github.com/tidwall/secret v0.1.0
 	github.com/urfave/cli/v2 v2.23.5
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.51.0
@@ -32,6 +32,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/VictoriaMetrics/fastcache v1.10.0 // indirect
 	github.com/aead/siphash v1.0.1 // indirect
+	github.com/awnumar/memcall v0.1.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.23.1 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect

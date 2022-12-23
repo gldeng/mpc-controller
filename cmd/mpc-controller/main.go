@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/core/mpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -26,16 +27,13 @@ import (
 	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/tasks/ethlog"
 	"github.com/avalido/mpc-controller/tasks/stake"
-	"github.com/avalido/mpc-controller/utils/bytes"
+	"github.com/avalido/mpc-controller/utils/address"
 	utilsCrypto "github.com/avalido/mpc-controller/utils/crypto"
-	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/utils/testingutils"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -45,8 +43,9 @@ const (
 	fnHost              = "host"
 	fnPort              = "port"
 	fnMpcManagerAddress = "mpc-manager-address"
-	fnPrivateKey        = "private-key"
-	fnPassword          = "password"
+	fnPublicKey         = "publicKey"
+	fnKeystoreDir       = "keystoreDir"
+	fnPasswordFile      = "passwordFile"
 	fnMpcServerUrl      = "mpcServerUrl"
 	fnMetricsServeAddr  = "metricsServeAddr"
 )
@@ -57,24 +56,6 @@ func printLog(event interface{}) {
 		return
 	}
 	fmt.Printf("Received event log %v\n", evt)
-}
-
-func decryptKey(pss, cipherKey string) string {
-	keyBytes, err := keystore.Decrypt(pss, bytes.HexToBytes(cipherKey))
-	if err != nil {
-		err = errors.Wrapf(err, "failed to decrypt key %q", cipherKey)
-		panic(fmt.Sprintf("%+v", err))
-	}
-
-	var privKey string
-	switch len(cipherKey) {
-	case 192:
-		privKey = string(keyBytes)
-	case 128:
-		privKey = bytes.BytesToHex(keyBytes)
-	}
-
-	return privKey
 }
 
 type TestSuite struct {
@@ -183,25 +164,35 @@ func runController(c *cli.Context) error {
 
 	mpcManagerAddr := common.HexToAddress(c.String(fnMpcManagerAddress))
 
-	// Decrypt and parse private key
-	privKey := decryptKey(c.String(fnPassword), c.String(fnPrivateKey))
-	myPrivKey, err := crypto.HexToECDSA(privKey)
+	// Parse public key and address
+	pubKey, err := utilsCrypto.UnmarshalPubKeyHex(c.String(fnPublicKey))
 	if err != nil {
-		panic("failed to parse private key")
+		panic(fmt.Sprintf("failed to parse public key %q, error: %v", c.String(fnPublicKey), err))
+	}
+	myAddr := address.PubkeyToAddresse(pubKey)
+	myPubKeyBytes := utilsCrypto.MarshalPubkey(pubKey)[1:]
+
+	// Create keystore
+	myKeyStore, err := keystore.New(*myAddr, c.String(fnPasswordFile), c.String(fnKeystoreDir))
+	if err != nil {
+		panic(fmt.Sprintf("failed to create keystore, error: %v", err))
 	}
 
-	// Parse public key
-	myPubKeyBytes := utilsCrypto.MarshalPubkey(&myPrivKey.PublicKey)[1:]
-	//myPartiPubKey := storage.PubKey(myPubKeyBytes)
+	err = myKeyStore.Unlock()
+	if err != nil {
+		panic(fmt.Sprintf("failed to unlock keystore, error: %v", err))
+	}
+	defer myKeyStore.Lock()
+
+	myLogger.Info("set mpc account", []logger.Field{
+		{"address", *myAddr},
+		{"pubKey", c.String(fnPublicKey)}}...)
 
 	// Convert chain ID
 	chainId := big.NewInt(43112)
 
-	// Create transaction signer
-	signer, err := bind.NewKeyedTransactorWithChainID(myPrivKey, chainId)
-	if err != nil {
-		panic("failed to create tx signer")
-	}
+	// Create signer
+	signer, err := bind.NewKeyStoreTransactorWithChainID(myKeyStore.EthKeyStore(), *myKeyStore.Account(), chainId)
 
 	coreConfig := core.Config{
 		Host:              c.String(fnHost),
@@ -338,14 +329,19 @@ func main() {
 				Usage:    "The address of the deployed MpcManager contract.",
 			},
 			&cli.StringFlag{
-				Name:     fnPrivateKey,
+				Name:     fnPublicKey,
 				Required: true,
-				Usage:    "The private key for this participant.",
+				Usage:    "The public key for this participant.",
 			},
 			&cli.StringFlag{
-				Name:     fnPassword,
+				Name:     fnKeystoreDir,
 				Required: true,
-				Usage:    "The password to decrypt private key",
+				Usage:    "The keystore directory for this participant.",
+			},
+			&cli.StringFlag{
+				Name:     fnPasswordFile,
+				Required: true,
+				Usage:    "The password file to decrypt private key",
 			},
 			&cli.StringFlag{
 				Name:     fnMpcServerUrl,

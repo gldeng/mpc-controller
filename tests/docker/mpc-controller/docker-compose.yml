@@ -6,123 +6,152 @@ services:
     container_name: mpc_controller1
     command: |
       /app/mpc-controller
-      --host 34.172.25.188 
+      --host localhost
       --port 9650
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7001"
-      --private-key 7aa717fdbb98618c438224df53b1de435932a831f430495a06f00b5c0aabfc63eaf7e9439361a46ecac4a42b5ba39779373c57d6c45ac9ac06b7bd42e03abaf8
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7001:7001
+      --publicKey  033217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8
+      --keystoreDir /app/keystore/
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7001:7001
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
 
   controller2:
     image: avalido/mpc-controller
     container_name: mpc_controller2
     command: |
       /app/mpc-controller
-      --host 34.172.25.188 
+      --host localhost
       --port 9650
       --mpcServerUrl http://localhost:9000
-      --metricsServeAddr: ":7002"
-      --private-key 0c56c3f0d5ae14d8853e964430f517b8016ac7e24dd15179d5d2657c38e7d6fa285ab0fcc748bd8c822a65e02f5a07d7e3be7ef3980bfd382bbda1bf5477fc3d
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7002:7002
+      --metricsServeAddr ":7002"
+      --publicKey  0272eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4
+      --keystoreDir /app/keystore/
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7002:7002
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
 
   controller3:
     image: avalido/mpc-controller
     container_name: mpc_controller3
     command: |
       /app/mpc-controller
-      --host 34.172.25.188
+      --host localhost
       --port 9650
       --mpcServerUrl http://localhost:9000
-      --metricsServeAddr: ":7003"
-      --private-key e3858ec05c7762d79de30428a2561a520123b1e2b16687ae57ba0ba550e07ffac49861bab15fe62678435c8ae2a57522752a7b8af68d7591ca0e7b44c5f64a4d
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7003:7003
+      --metricsServeAddr ":7003"
+      --publicKey  0373ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6
+      --keystoreDir /app/keystore/
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7003:7003
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
 
   controller4:
     image: avalido/mpc-controller
     container_name: mpc_controller4
     command: |
       /app/mpc-controller
-      --host 34.172.25.188 
-      --port 9650 
+      --host localhost
+      --port 9650
       --mpcServerUrl http://localhost:9000
-      --metricsServeAddr: ":7004"
-      --private-key a8f68535da081ab3818d9f00f64730583b4d31b918b44771526c925d833df96b8c258fff5e730f6c806a99edc24ad90ef177c0918517527f81e908ec7009feaa 
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7004:7004
+      --metricsServeAddr ":7004"
+      --publicKey  038196e06c3e803d0af06693a504ad14317550b4be4396ef57cf5f520c0f84833d
+      --keystoreDir /app/keystore/      
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7004:7004
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
+
 
   controller5:
     image: avalido/mpc-controller
     container_name: mpc_controller5
     command: |
       /app/mpc-controller
-      --host 34.172.25.188 
+      --host localhost
       --port 9650
       --mpcServerUrl http://localhost:9000
-      --metricsServeAddr: ":7005"
-      --private-key f6826fc16547130848ea32196c95457b4698feded1a8f109eb224ddcd27d66af7d0f88b44d2765a4a567a8999a4410852510deacdcb87e0c7cfe23fa1d0090a8 
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7005:7005
+      --metricsServeAddr ":7005"
+      --publicKey  03c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66d
+      --keystoreDir /app/keystore/
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7005:7005
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
 
   controller6:
     image: avalido/mpc-controller
     container_name: mpc_controller6
     command: |
       /app/mpc-controller
-      --host 34.172.25.188 
+      --host localhost
       --port 9650
       --mpcServerUrl http://localhost:9000
-      --metricsServeAddr: ":7006"
-      --private-key 9f099ed7a7615ce2d7de100a8feaf39adfa904146ee523f6dacaad6a3f69b4e9d10f2b01c13dc31b1265f9042d7437f63ad81c5113dec541bb799e49dd21c571 
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7006:7006
+      --metricsServeAddr ":7006"
+      --publicKey  03d0639e479fa1ca8ee13fd966c216e662408ff00349068bdc9c6966c4ea10fe3e
+      --keystoreDir /app/keystore/      
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7006:7006
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
 
   controller7:
     image: avalido/mpc-controller
     container_name: mpc_controller7
     command: |
       /app/mpc-controller
-      --host 34.172.25.188 
+      --host localhost
       --port 9650
       --mpcServerUrl http://localhost:9000
-      --metricsServeAddr: ":7007"
-      --private-key 5542f197e10c3b91c05767fe0906d7caad6380913df0f9b850f0044dd61b3b7358dd8db2e5f4961c2f799d1442f095b36ce12b1011861948e72575877ead7f7b 
-      --password RBuCJbmWY1Mtcl5LoMRqkQQpT5GJmCEvbuRR7ewCPDATBzFtm9a6jhIovftgddmL 
-      --mpc-manager-address 0xcde3651ec25dd45139d61505bc299c6aba3dcc9d
-    ports:
-      - 7007:7007
+      --metricsServeAddr ":7007"
+      --publicKey  02df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f345
+      --keystoreDir /app/keystore/      
+      --passwordFile /app/password/password
+      --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
+    #    ports:
+    #      - 7007:7007
+    network_mode: host
     volumes:
       - ./configs:/app/configs/
       - ./data:/app/data/
+      - ./keystore:/app/keystore/
+      - ./password/password:/app/password/password
