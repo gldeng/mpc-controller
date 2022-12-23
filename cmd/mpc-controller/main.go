@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/avalido/mpc-controller/core/mpc"
+	"github.com/avalido/mpc-controller/utils/crypto/keystore"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"math/big"
