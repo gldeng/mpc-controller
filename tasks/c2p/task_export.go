@@ -41,7 +41,7 @@ type ExportFromCChain struct {
 	TxID        *ids.ID
 	SignRequest *mpc.SignRequest
 	Failed      bool
-	StartTime   time.Time
+	StartTime   *time.Time
 }
 
 func (t *ExportFromCChain) GetId() string {
@@ -73,11 +73,15 @@ func NewExportFromCChain(flowId string, quorum types.QuorumInfo, amount big.Int)
 		TxID:        nil,
 		SignRequest: nil,
 		Failed:      false,
-		StartTime:   time.Now(),
 	}, nil
 }
 
 func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if t.StartTime == nil {
+		now := time.Now()
+		t.StartTime = &now
+	}
+
 	timeOut := 30 * time.Minute
 	interval := 2 * time.Second
 	timer := time.NewTimer(interval)
@@ -92,7 +96,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 			if t.IsDone() || t.Failed {
 				return next, errors.Wrap(err, "failed to export from C-Chain")
 			}
-			if time.Now().Sub(t.StartTime) >= timeOut {
+			if time.Now().Sub(*t.StartTime) >= timeOut {
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 
@@ -219,11 +223,11 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 
 // sendTx sends a tx to avalanche network. Without a consensus mechanism among the participants, every partiticipant
 // attempts to issue the tx. We do the following to mitigate the race condition:
-//   1. delay a random duration before sending tx
-//   2. check tx status on-chain in case other participants already send it, if already sent (i.e. the tx is known to
-// 		avalanche network already before sending tx
-//   3. check tx status again after sending failed which may be caused by another participant sending the same tx
-//  	at the same time
+//  1. delay a random duration before sending tx
+//  2. check tx status on-chain in case other participants already send it, if already sent (i.e. the tx is known to
+//     avalanche network already before sending tx
+//  3. check tx status again after sending failed which may be caused by another participant sending the same tx
+//     at the same time
 func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
 	// waits for arbitrary duration to elapse to reduce race condition.
 	utilstime.RandomDelay(5000)

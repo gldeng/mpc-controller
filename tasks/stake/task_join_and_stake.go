@@ -31,7 +31,7 @@ type JoinAndStake struct {
 
 	Join          *join.Join
 	InitialStake  *InitialStake
-	StartTime     time.Time
+	StartTime     *time.Time
 	QuorumReached bool
 	Failed        bool
 	Done          bool
@@ -73,7 +73,6 @@ func NewStakeJoinAndStake(event contract.MpcManagerStakeRequestAdded) (*JoinAndS
 		Indices:          nil,
 		Join:             nil,
 		InitialStake:     nil,
-		StartTime:        time.Now(),
 		QuorumReached:    false,
 		Failed:           false,
 		Done:             false,
@@ -154,6 +153,11 @@ func (t *JoinAndStake) createRequest(ctx core.TaskContext) error {
 }
 
 func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error {
+	if t.StartTime == nil {
+		now := time.Now()
+		t.StartTime = &now
+	}
+
 	timeOut := 30 * time.Minute
 	interval := 2 * time.Second
 	timer := time.NewTimer(interval)
@@ -163,7 +167,7 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 	for {
 		select {
 		case <-timer.C:
-			if time.Now().Sub(t.StartTime) >= timeOut {
+			if time.Now().Sub(*t.StartTime) >= timeOut {
 				return errors.New(ErrMsgTimedOut)
 			}
 

@@ -43,8 +43,8 @@ type ImportIntoPChain struct {
 	TxID           *ids.ID
 	SignRequest    *mpc.SignRequest
 	Failed         bool
-	StartTime      time.Time
-	LastStepTime   time.Time
+	StartTime      *time.Time
+	LastStepTime   *time.Time
 	issuedByOthers bool
 }
 
@@ -77,20 +77,25 @@ func NewImportIntoPChain(flowId string, quorum types.QuorumInfo, signedExportTx 
 		TxID:           nil,
 		SignRequest:    nil,
 		Failed:         false,
-		StartTime:      time.Now(),
-		LastStepTime:   time.Now(),
 	}, nil
 }
 
 func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if time.Now().Sub(t.LastStepTime) < 2*time.Second { // Min delay between steps
+	if t.StartTime == nil {
+		now := time.Now()
+		t.StartTime = &now
+		t.LastStepTime = &now
+	}
+
+	if time.Now().Sub(*t.LastStepTime) < 2*time.Second { // Min delay between steps
 		return nil, nil
 	}
-	if time.Now().Sub(t.StartTime) >= 30*time.Minute {
+	if time.Now().Sub(*t.StartTime) >= 30*time.Minute {
 		return nil, errors.New(ErrMsgTimedOut)
 	}
 	defer func() {
-		t.LastStepTime = time.Now()
+		now := time.Now()
+		t.LastStepTime = &now
 	}()
 	return t.run(ctx)
 }

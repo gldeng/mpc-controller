@@ -23,7 +23,7 @@ type Join struct {
 
 	TxHash    common.Hash
 	Failed    bool
-	StartTime time.Time
+	StartTime *time.Time
 	//RemainingAttempts int
 }
 
@@ -42,7 +42,6 @@ func NewJoin(requestHash [32]byte) *Join {
 		group:       nil,
 		TxHash:      common.Hash{},
 		Failed:      false,
-		StartTime:   time.Now(),
 		//RemainingAttempts: 2,
 	}
 }
@@ -54,6 +53,11 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 			return nil, t.failIfErrorf(err, "failed to load group for joining request %x", t.RequestHash)
 		}
 		t.group = group
+	}
+
+	if t.StartTime == nil {
+		now := time.Now()
+		t.StartTime = &now
 	}
 
 	timeOut := 30 * time.Minute
@@ -70,7 +74,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 			if t.Status == StatusDone || t.Failed {
 				return next, errors.Wrap(err, "failed to export from C-Chain")
 			}
-			if time.Now().Sub(t.StartTime) >= timeOut {
+			if time.Now().Sub(*t.StartTime) >= timeOut {
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 
