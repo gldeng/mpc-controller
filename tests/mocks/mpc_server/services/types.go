@@ -1,13 +1,7 @@
-package usecases
+package services
 
 import (
 	"github.com/avalido/mpc-controller/utils/crypto"
-)
-
-// Group info
-var (
-	Participants = 7
-	Threshold    = 4
 )
 
 // Types for network request input and output
@@ -15,7 +9,7 @@ var (
 type KeygenInput struct {
 	RequestId       string   `json:"request_id"`
 	ParticipantKeys []string `json:"public_keys"`
-	Threshold       uint64   `json:"t"`
+	Threshold       int      `json:"t"`
 }
 
 type SignInput struct {
@@ -30,10 +24,10 @@ type ResultInput struct {
 }
 
 type ResultOutput struct {
-	RequestId     string `json:"request_id"`
-	Result        string `json:"result"`
-	RequestType   string `json:"request_type"`
-	RequestStatus string `json:"request_status"`
+	RequestId     string        `json:"request_id"`
+	Result        string        `json:"result"`
+	RequestType   RequestType   `json:"request_type"`
+	RequestStatus RequestStatus `json:"request_status"`
 }
 
 // Types for internal status recordings
