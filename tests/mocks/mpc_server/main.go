@@ -13,20 +13,29 @@ import (
 const port = ":9000"
 
 type server struct {
-	K *services.KeyGenerator
-	S *services.Signer
-	P *services.Provider
+	Log logger.Logger
+	K   *services.KeyGenerator
+	S   *services.Signer
+	P   *services.Provider
 	mpc.UnimplementedMpcServer
 }
 
 func (s *server) Keygen(ctx context.Context, in *mpc.KeygenRequest) (*mpc.KeygenResponse, error) {
 	in_ := services.KeygenInput{in.RequestId, in.ParticipantPublicKeys, int(in.Threshold)}
-	return &mpc.KeygenResponse{RequestId: in.RequestId}, s.K.Keygen(&in_)
+	err := s.K.Keygen(&in_)
+	if err != nil {
+		s.Log.Error("keygen got an error", []logger.Field{{"reqId", in.RequestId}, {"error", err}}...)
+	}
+	return &mpc.KeygenResponse{RequestId: in.RequestId}, err
 }
 
 func (s *server) Sign(ctx context.Context, in *mpc.SignRequest) (*mpc.SignResponse, error) {
 	in_ := services.SignInput{in.RequestId, in.PublicKey, in.ParticipantPublicKeys, in.Hash}
-	return &mpc.SignResponse{RequestId: in.RequestId}, s.S.Sign(&in_)
+	err := s.S.Sign(&in_)
+	if err != nil {
+		s.Log.Error("sign got an error", []logger.Field{{"reqId", in.RequestId}, {"error", err}}...)
+	}
+	return &mpc.SignResponse{RequestId: in.RequestId}, err
 }
 
 func (s *server) CheckResult(ctx context.Context, in *mpc.CheckResultRequest) (*mpc.CheckResultResponse, error) {
@@ -37,6 +46,7 @@ func (s *server) CheckResult(ctx context.Context, in *mpc.CheckResultRequest) (*
 	res, err := s.P.Result(&in_)
 	if err != nil {
 		res_.RequestStatus = mpc.CheckResultResponse_ERROR
+		s.Log.Error("result got an error", []logger.Field{{"reqId", in.RequestId}, {"error", err}}...)
 		return &res_, err
 	}
 
@@ -88,7 +98,7 @@ func main() {
 		myLogger.Fatal("failed to listen", []logger.Field{{"error", err}}...)
 	}
 	s := grpc.NewServer()
-	mpc.RegisterMpcServer(s, &server{K: &services.KeyGenerator{myLogger, *participants}, S: &services.Signer{myLogger, *threshold}, P: &services.Provider{}})
+	mpc.RegisterMpcServer(s, &server{Log: myLogger, K: &services.KeyGenerator{myLogger, *participants}, S: &services.Signer{myLogger, *threshold}, P: &services.Provider{}})
 	myLogger.Info("server listening", []logger.Field{{"port", port}}...)
 	if err := s.Serve(lis); err != nil {
 		myLogger.Fatal("failed to serve", []logger.Field{{"error", err}}...)
