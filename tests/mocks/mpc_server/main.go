@@ -10,7 +10,7 @@ import (
 	"net"
 )
 
-const port = "9000"
+const port = ":9000"
 
 type server struct {
 	K *services.KeyGenerator
