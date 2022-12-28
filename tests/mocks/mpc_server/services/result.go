@@ -16,7 +16,7 @@ func (o *Provider) Result(in *ResultInput) (*ResultOutput, error) {
 	}
 
 	lastSignReq := storer.GetSignRequestModel(in.RequestId)
-	if lastKeygenReq == nil {
+	if lastSignReq == nil {
 		return nil, errors.Errorf("request id %q not exists", in.RequestId)
 	}
 	out.RequestId = in.RequestId
