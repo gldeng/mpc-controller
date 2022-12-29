@@ -3,7 +3,6 @@ package ethlog
 import (
 	binding "github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
-	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/keygen"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,7 +18,7 @@ type RequestCreator struct {
 
 func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]core.Task, error) {
 
-	if log.Topics[0] == ctx.GetEventID(EvtRequestStarted) {
+	if log.Topics[0] == ctx.GetEventID(core.EvtRequestStarted) {
 		// Ignore
 		return nil, nil
 		/*
@@ -34,10 +33,9 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 			return []core.Task{task}, nil
 		*/
 	}
-	if log.Topics[0] == ctx.GetEventID(EvtParticipantAdded) {
-		prom.ContractEvtParticipantAdded.Inc()
+	if log.Topics[0] == ctx.GetEventID(core.EvtParticipantAdded) {
 		event := new(binding.MpcManagerParticipantAdded)
-		err := ctx.GetContract().UnpackLog(event, EvtParticipantAdded, log)
+		err := ctx.GetContract().UnpackLog(event, core.EvtParticipantAdded, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
@@ -45,10 +43,9 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		task := NewParticipantAddedHandler(*event)
 		return []core.Task{task}, nil
 	}
-	if log.Topics[0] == ctx.GetEventID(EvtKeygenRequestAdded) {
-		prom.ContractEvtKeygenRequestAdded.Inc()
+	if log.Topics[0] == ctx.GetEventID(core.EvtKeygenRequestAdded) {
 		event := new(binding.MpcManagerKeygenRequestAdded)
-		err := ctx.GetContract().UnpackLog(event, EvtKeygenRequestAdded, log)
+		err := ctx.GetContract().UnpackLog(event, core.EvtKeygenRequestAdded, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
@@ -56,10 +53,9 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		task := keygen.NewRequestAdded(*event)
 		return []core.Task{task}, nil
 	}
-	if log.Topics[0] == ctx.GetEventID(EvtKeyGenerated) {
-		prom.ContractEvtKeyGenerated.Inc()
+	if log.Topics[0] == ctx.GetEventID(core.EvtKeyGenerated) {
 		event := new(binding.MpcManagerKeyGenerated)
-		err := ctx.GetContract().UnpackLog(event, EvtKeyGenerated, log)
+		err := ctx.GetContract().UnpackLog(event, core.EvtKeyGenerated, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
@@ -67,10 +63,9 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		task := NewKeyGeneratedHandler(*event)
 		return []core.Task{task}, nil
 	}
-	if log.Topics[0] == ctx.GetEventID(EvtStakeRequestAdded) {
-		prom.ContractEvtStakeRequestAdded.Inc()
+	if log.Topics[0] == ctx.GetEventID(core.EvtStakeRequestAdded) {
 		event := new(binding.MpcManagerStakeRequestAdded)
-		err := ctx.GetContract().UnpackLog(event, EvtStakeRequestAdded, log)
+		err := ctx.GetContract().UnpackLog(event, core.EvtStakeRequestAdded, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}

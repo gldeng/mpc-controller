@@ -219,8 +219,6 @@ func runController(c *cli.Context) error {
 	}
 	coreConfig.FetchNetworkInfo()
 
-	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q)
-
 	db := storage.NewInMemoryDb() // TODO: use persistent db
 
 	// Create mpcClient
@@ -250,6 +248,8 @@ func runController(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q, ehContext)
 
 	makeContext := func() core.TaskContext {
 		ctx, _ := taskcontext.NewTaskContextImp(services) // TODO: Handler error

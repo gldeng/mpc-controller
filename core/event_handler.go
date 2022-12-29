@@ -7,6 +7,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+const (
+	EvtParticipantAdded   = "ParticipantAdded"
+	EvtKeygenRequestAdded = "KeygenRequestAdded"
+	EvtKeyGenerated       = "KeyGenerated"
+	EvtStakeRequestAdded  = "StakeRequestAdded"
+	EvtRequestStarted     = "RequestStarted"
+)
+
 type LogEventHandler interface {
 	Handle(ctx EventHandlerContext, log types.Log) ([]Task, error)
 }

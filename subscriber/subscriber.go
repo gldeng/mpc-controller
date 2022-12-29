@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,12 +20,18 @@ type Subscriber struct {
 	client        *ethclient.Client
 	subscription  ethereum.Subscription
 	eventLogQueue Queue
+	eventIDGetter EventIDGetter
 }
+
 type Queue interface {
 	Enqueue(value interface{}) error
 }
 
-func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config, eventLogQueue Queue) (*Subscriber, error) {
+type EventIDGetter interface {
+	GetEventID(event string) common.Hash
+}
+
+func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config, eventLogQueue Queue, evtIDGetter EventIDGetter) (*Subscriber, error) {
 	return &Subscriber{
 		ctx:           ctx,
 		logger:        logger,
@@ -32,6 +39,7 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		client:        nil,
 		subscription:  nil,
 		eventLogQueue: eventLogQueue,
+		eventIDGetter: evtIDGetter,
 	}, nil
 }
 
@@ -52,6 +60,7 @@ func (s *Subscriber) Start() error {
 		for {
 			select {
 			case log := <-eventLogs:
+				s.updateMetrics(log)
 				s.eventLogQueue.Enqueue(log) // TODO: Handle failure. There should be only one publisher to this queue, so now it should be fine to ignore the error.
 			case err := <-sub.Err():
 				// TODO: Should we reconnect if this happens?
@@ -74,4 +83,18 @@ func (s *Subscriber) Close() error {
 		s.client = nil
 	}
 	return nil
+}
+
+func (s *Subscriber) updateMetrics(log types.Log) {
+	switch log.Topics[0] {
+	case s.eventIDGetter.GetEventID(core.EvtRequestStarted):
+	case s.eventIDGetter.GetEventID(core.EvtParticipantAdded):
+		prom.ContractEvtParticipantAdded.Inc()
+	case s.eventIDGetter.GetEventID(core.EvtKeygenRequestAdded):
+		prom.ContractEvtKeygenRequestAdded.Inc()
+	case s.eventIDGetter.GetEventID(core.EvtKeyGenerated):
+		prom.ContractEvtKeyGenerated.Inc()
+	case s.eventIDGetter.GetEventID(core.EvtStakeRequestAdded):
+		prom.ContractEvtStakeRequestAdded.Inc()
+	}
 }
