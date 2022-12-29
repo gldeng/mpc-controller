@@ -252,7 +252,10 @@ func runController(c *cli.Context) error {
 	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q, ehContext)
 
 	makeContext := func() core.TaskContext {
-		ctx, _ := taskcontext.NewTaskContextImp(services) // TODO: Handler error
+		ctx, err := taskcontext.NewTaskContextImp(services)
+		if err != nil {
+			myLogger.Fatal("failed to create TaskContext", []logger.Field{{"error", err}}...)
+		}
 		return ctx
 	}
 	wp, err := pool.NewExtendedWorkerPool(3, makeContext)
