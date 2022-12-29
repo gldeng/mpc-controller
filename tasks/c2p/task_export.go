@@ -204,6 +204,7 @@ func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
 		return nil
 	}
 	prom.MpcSignDoneForC2PExportTx.Inc()
+	t.logInfo(ctx, "signing done", []logger.Field{{"signReq", t.SignRequest.RequestId}}...)
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
@@ -321,6 +322,14 @@ func (t *ExportFromCChain) logDebug(ctx core.TaskContext, msg string, fields ...
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
 	allFields = append(allFields, fields...)
 	ctx.GetLogger().Debug(msg, allFields...)
+}
+
+func (t *ExportFromCChain) logInfo(ctx core.TaskContext, msg string, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+2)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	ctx.GetLogger().Info(msg, allFields...)
 }
 
 func (t *ExportFromCChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
