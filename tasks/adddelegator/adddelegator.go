@@ -157,6 +157,7 @@ func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 	}
 
 	prom.MpcSignDoneForAddDelegatorTx.Inc()
+	t.logInfo(ctx, "signing done", []logger.Field{{"signReq", t.signReq.RequestId}}...)
 	sig := new(types.Signature).FromHex(res.Result)
 	err = t.tx.SetTxSig(*sig)
 	if err != nil {
@@ -177,11 +178,11 @@ func (t *AddDelegator) getSignature(ctx core.TaskContext) error {
 
 // sendTx sends a tx to avalanche network. Without a consensus mechanism among the participants, every partiticipant
 // attempts to issue the tx. We do the following to mitigate the race condition:
-//   1. delay a random duration before sending tx
-//   2. check tx status on-chain in case other participants already send it, if already sent (i.e. the tx is known to
-// 		avalanche network already before sending tx
-//   3. check tx status again after sending failed which may be caused by another participant sending the same tx
-//  	at the same time
+//  1. delay a random duration before sending tx
+//  2. check tx status on-chain in case other participants already send it, if already sent (i.e. the tx is known to
+//     avalanche network already before sending tx
+//  3. check tx status again after sending failed which may be caused by another participant sending the same tx
+//     at the same time
 func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
 	// Delay for random duration to reduce race condition
 	utilstime.RandomDelay(5000)
@@ -314,6 +315,14 @@ func (t *AddDelegator) logDebug(ctx core.TaskContext, msg string, fields ...logg
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
 	allFields = append(allFields, fields...)
 	ctx.GetLogger().Debug(msg, allFields...)
+}
+
+func (t *AddDelegator) logInfo(ctx core.TaskContext, msg string, fields ...logger.Field) {
+	allFields := make([]logger.Field, 0, len(fields)+2)
+	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+	allFields = append(allFields, fields...)
+	ctx.GetLogger().Info(msg, allFields...)
 }
 
 func (t *AddDelegator) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
