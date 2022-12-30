@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/taskcontext"
+	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"time"
@@ -94,6 +95,9 @@ func (t *Join) IsSequential() bool {
 func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	switch t.Status {
 	case StatusInit:
+		// waits for arbitrary duration to elapse to reduce race condition.
+		utilstime.RandomDelay(5000)
+
 		txHash, err := ctx.JoinRequest(ctx.GetMyTransactSigner(), t.group.ParticipantID(), t.RequestHash)
 		if err != nil {
 			var errCreateTransactor *taskcontext.ErrTypContractBindFail

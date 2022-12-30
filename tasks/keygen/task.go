@@ -11,6 +11,7 @@ import (
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/taskcontext"
 	"github.com/avalido/mpc-controller/utils/crypto"
+	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"time"
@@ -137,6 +138,10 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		if err != nil {
 			return t.failIfErrorf(err, "failed to decompress generated public key %v", t.keygenResult)
 		}
+
+		// waits for arbitrary duration to elapse to reduce race condition.
+		utilstime.RandomDelay(5000)
+
 		txHash, err := ctx.ReportGeneratedKey(ctx.GetMyTransactSigner(), t.group.ParticipantID(), decompressedPubKeyBytes)
 		if err != nil {
 			var errCreateTransactor *taskcontext.ErrTypContractBindFail
