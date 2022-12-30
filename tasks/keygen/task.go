@@ -10,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/taskcontext"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/avalido/mpc-controller/utils/crypto"
 	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/ethereum/go-ethereum/common"
@@ -126,13 +127,14 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 
 		if res.RequestStatus != mpc.CheckResultResponse_DONE {
-			ctx.GetLogger().Debug("Keygen not done")
+			ctx.GetLogger().Debug("keygen not done")
 			return nil
 		}
 
 		t.keygenResult = res.Result
 		t.Status = StatusKeygenReqDone
 		prom.MpcKeygenDone.Inc()
+		ctx.GetLogger().Info("keygen done", []logger.Field{{"generatedKey", res.Result}}...)
 	case StatusKeygenReqDone:
 		decompressedPubKeyBytes, err := crypto.DenormalizePubKeyFromHex(t.keygenResult) // for Ethereum compatibility
 		if err != nil {
@@ -155,6 +157,7 @@ func (t *RequestAdded) run(ctx core.TaskContext) error {
 		}
 		t.TxHash = txHash
 		t.Status = StatusTxSent
+		ctx.GetLogger().Info("reported key", []logger.Field{{"reportedKey", bytes.BytesToHex(decompressedPubKeyBytes)}}...)
 	case StatusTxSent:
 		_, err := ctx.CheckEthTx(*t.TxHash)
 		if err != nil {
