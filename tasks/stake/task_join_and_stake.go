@@ -3,6 +3,7 @@ package stake
 import (
 	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/logger"
 	"math/big"
 	"time"
 
@@ -108,7 +109,17 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to get quorum info")
 		}
-		ctx.GetLogger().Debugf("quorum info: %v", quorumInfo)
+
+		partiKeys, genKey, err := quorumInfo.CompressKeys()
+		if err != nil {
+			return nil, t.failIfErrorf(err, "failed to compress keys")
+		}
+		ctx.GetLogger().Debug("got quorum info", []logger.Field{
+			{"genPubKey", genKey},
+			{"genCChainAddr", quorumInfo.CChainAddress()},
+			{"genPChainAddr", quorumInfo.PChainAddress()},
+			{"partiPubKeys", partiKeys}}...)
+
 		initStake, err := NewInitialStake(&t.Request, *quorumInfo)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "create InitialStake task")
