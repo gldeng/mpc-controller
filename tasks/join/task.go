@@ -72,7 +72,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 		case <-timer.C:
 			next, err = t.run(ctx)
 			if t.Status == StatusDone || t.Failed {
-				return next, errors.Wrap(err, "failed to export from C-Chain")
+				return next, errors.WithStack(err)
 			}
 			if time.Now().Sub(*t.StartTime) >= timeOut {
 				return nil, errors.New(ErrMsgTimedOut)
