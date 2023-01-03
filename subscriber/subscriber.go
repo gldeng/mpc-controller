@@ -23,8 +23,7 @@ type Subscriber struct {
 	eventLogQueue Queue
 	eventIDGetter EventIDGetter
 	filter        ethereum.FilterQuery
-	clientRenewCh chan *ethclient.Client
-	reconnecting  bool
+	resubscribeCh chan struct{}
 }
 
 type Queue interface {
@@ -45,7 +44,7 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		eventLogQueue: eventLogQueue,
 		eventIDGetter: evtIDGetter,
 		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
-		clientRenewCh: make(chan *ethclient.Client),
+		resubscribeCh: make(chan struct{}),
 	}, nil
 }
 
@@ -61,8 +60,6 @@ func (s *Subscriber) Start() error {
 	}
 
 	go s.resubscribe()
-	go s.reconnect()
-
 	return nil
 }
 
@@ -76,72 +73,6 @@ func (s *Subscriber) Close() error {
 		s.client = nil
 	}
 	return nil
-}
-
-func (s *Subscriber) resubscribe() {
-	s.logger.Debug("waiting for ws client recreated")
-
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case c := <-s.clientRenewCh:
-		resubscribe:
-			for {
-				select {
-				case <-s.ctx.Done():
-					return
-				default:
-					s.subscription.Unsubscribe()
-					s.client.Close()
-
-					s.client = c
-					if err := s.subscribe(); err != nil {
-						s.logger.Error("failed to re-subscribe", []logger.Field{{"error", err}}...)
-						break
-					}
-
-					s.logger.Debug("re-subscribed")
-					break resubscribe
-
-				}
-				time.Sleep(time.Second)
-			}
-		}
-	}
-}
-
-func (s *Subscriber) reconnect() {
-	s.logger.Debug("checking ws connectivity")
-
-	t := time.NewTicker(time.Second)
-	defer t.Stop()
-
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-t.C:
-			if !s.reconnecting {
-				_, err := s.client.NetworkID(s.ctx)
-				if err != nil {
-					s.logger.Error("failed to check ws connection", []logger.Field{{"error", err}}...)
-					s.reconnecting = true
-				}
-			}
-
-			if s.reconnecting {
-				client, err := s.config.CreateWsClient()
-				if err != nil {
-					s.logger.Error("failed to recreate ws client", []logger.Field{{"error", err}}...)
-					continue
-				}
-				s.clientRenewCh <- client
-				s.logger.Debug("ws client recreated")
-				s.reconnecting = false
-			}
-		}
-	}
 }
 
 func (s *Subscriber) subscribe() error {
@@ -162,6 +93,7 @@ func (s *Subscriber) subscribe() error {
 				}
 			case err := <-sub.Err():
 				s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
+				s.resubscribeCh <- struct{}{}
 				return err
 			case <-quit:
 				return nil
@@ -169,6 +101,42 @@ func (s *Subscriber) subscribe() error {
 		}
 	})
 	return nil
+}
+
+func (s *Subscriber) resubscribe() {
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-s.resubscribeCh:
+			s.subscription.Unsubscribe()
+			s.client.Close()
+
+		resubscribe:
+			for {
+				select {
+				case <-s.ctx.Done():
+					return
+				default:
+					client, err := s.config.CreateWsClient()
+					if err != nil {
+						s.logger.Error("failed to recreate ws client", []logger.Field{{"error", err}}...)
+						break
+					}
+					s.logger.Debug("ws client recreated")
+					s.client = client
+
+					if err := s.subscribe(); err != nil {
+						s.logger.Error("failed to re-subscribe", []logger.Field{{"error", err}}...)
+						break
+					}
+					s.logger.Debug("re-subscribed")
+					break resubscribe
+				}
+				time.Sleep(time.Second)
+			}
+		}
+	}
 }
 
 func (s *Subscriber) updateMetrics(log types.Log) {
