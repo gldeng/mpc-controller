@@ -126,23 +126,26 @@ func (s *Subscriber) restartOnWsClientRecreated() {
 		case <-s.ctx.Done():
 			return
 		case <-s.clientRenewCh:
+		restart:
 			for {
-				if _, ok := <-s.ctx.Done(); ok {
+				select {
+				case <-s.ctx.Done():
 					return
-				}
+				default:
+					if err := s.Close(); err != nil {
+						s.logger.Error("failed to close Subscriber", []logger.Field{{"error", err}}...)
+						break
+					}
+					if err := s.Start(); err != nil {
+						s.logger.Error("failed to restart Subscriber", []logger.Field{{"error", err}}...)
+						break
+					}
 
-				if err := s.Close(); err != nil {
-					s.logger.Error("failed to close Subscriber", []logger.Field{{"error", err}}...)
-					time.Sleep(time.Second)
-					continue
-				}
-				if err := s.Start(); err != nil {
-					s.logger.Error("failed to restart Subscriber", []logger.Field{{"error", err}}...)
-					time.Sleep(time.Second)
-					continue
-				}
+					s.logger.Debug("restarted Subscriber")
+					break restart
 
-				s.logger.Debug("restarted Subscriber")
+				}
+				time.Sleep(time.Second)
 			}
 		}
 	}
