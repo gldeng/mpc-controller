@@ -15,16 +15,16 @@ import (
 )
 
 type Subscriber struct {
-	ctx            context.Context
-	logger         logger.Logger
-	config         core.Config
-	client         *ethclient.Client
-	subscription   ethereum.Subscription
-	eventLogQueue  Queue
-	eventIDGetter  EventIDGetter
-	filter         ethereum.FilterQuery
-	clientRenewCh  chan *ethclient.Client
-	tryToReconnect bool
+	ctx           context.Context
+	logger        logger.Logger
+	config        core.Config
+	client        *ethclient.Client
+	subscription  ethereum.Subscription
+	eventLogQueue Queue
+	eventIDGetter EventIDGetter
+	filter        ethereum.FilterQuery
+	clientRenewCh chan *ethclient.Client
+	reconnecting  bool
 }
 
 type Queue interface {
@@ -122,15 +122,15 @@ func (s *Subscriber) reconnect() {
 		case <-s.ctx.Done():
 			return
 		case <-t.C:
-			if !s.tryToReconnect {
+			if !s.reconnecting {
 				_, err := s.client.NetworkID(s.ctx)
 				if err != nil {
 					s.logger.Error("failed to check ws connection", []logger.Field{{"error", err}}...)
-					s.tryToReconnect = true
+					s.reconnecting = true
 				}
 			}
 
-			if s.tryToReconnect {
+			if s.reconnecting {
 				client, err := s.config.CreateWsClient()
 				if err != nil {
 					s.logger.Error("failed to recreate ws client", []logger.Field{{"error", err}}...)
@@ -138,7 +138,7 @@ func (s *Subscriber) reconnect() {
 				}
 				s.clientRenewCh <- client
 				s.logger.Debug("ws client recreated")
-				s.tryToReconnect = false
+				s.reconnecting = false
 			}
 		}
 	}
