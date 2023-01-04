@@ -23,7 +23,6 @@ type Subscriber struct {
 	eventLogQueue Queue
 	eventIDGetter EventIDGetter
 	filter        ethereum.FilterQuery
-	resubscribeCh chan struct{}
 }
 
 type Queue interface {
@@ -44,7 +43,6 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		eventLogQueue: eventLogQueue,
 		eventIDGetter: evtIDGetter,
 		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
-		resubscribeCh: make(chan struct{}),
 	}, nil
 }
 
@@ -52,8 +50,6 @@ func (s *Subscriber) Start() error {
 	if err := s.dialAndSubscribe(); err != nil {
 		return errors.WithStack(err)
 	}
-
-	go s.resubscribeOnError()
 	return nil
 }
 
@@ -100,7 +96,7 @@ func (s *Subscriber) subscribe() error {
 				}
 			case err := <-sub.Err():
 				s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
-				s.resubscribeCh <- struct{}{}
+				go s.resubscribeOnError()
 				return err
 			case <-quit:
 				return nil
@@ -115,7 +111,7 @@ func (s *Subscriber) resubscribeOnError() {
 		select {
 		case <-s.ctx.Done():
 			return
-		case <-s.resubscribeCh:
+		default:
 			s.subscription.Unsubscribe()
 			s.client.Close()
 
