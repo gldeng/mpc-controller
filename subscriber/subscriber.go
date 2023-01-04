@@ -49,14 +49,8 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 }
 
 func (s *Subscriber) Start() error {
-	client, err := s.config.CreateWsClient()
-	if err != nil {
-		return errors.Wrap(err, "failed to create ws client")
-	}
-	s.client = client
-
-	if err := s.subscribe(); err != nil {
-		return errors.Wrap(err, "failed to subscribe")
+	if err := s.dialAndSubscribe(); err != nil {
+		return errors.WithStack(err)
 	}
 
 	go s.resubscribeOnError()
@@ -71,6 +65,19 @@ func (s *Subscriber) Close() error {
 	if s.client != nil {
 		s.client.Close()
 		s.client = nil
+	}
+	return nil
+}
+
+func (s *Subscriber) dialAndSubscribe() error {
+	client, err := s.config.CreateWsClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create ws client")
+	}
+	s.client = client
+
+	if err := s.subscribe(); err != nil {
+		return errors.Wrap(err, "failed to subscribe")
 	}
 	return nil
 }
@@ -118,16 +125,8 @@ func (s *Subscriber) resubscribeOnError() {
 				case <-s.ctx.Done():
 					return
 				default:
-					client, err := s.config.CreateWsClient()
-					if err != nil {
-						s.logger.Error("failed to recreate ws client", []logger.Field{{"error", err}}...)
-						break
-					}
-					s.logger.Debug("ws client recreated")
-					s.client = client
-
-					if err := s.subscribe(); err != nil {
-						s.logger.Error("failed to re-subscribe", []logger.Field{{"error", err}}...)
+					if err := s.dialAndSubscribe(); err != nil {
+						s.logger.Error("failed to redial or re-subscribe", []logger.Field{{"error", err}}...)
 						break
 					}
 					s.logger.Debug("re-subscribed")
