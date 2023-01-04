@@ -59,7 +59,7 @@ func (s *Subscriber) Start() error {
 		return errors.Wrap(err, "failed to subscribe")
 	}
 
-	go s.resubscribe()
+	go s.resubscribeOnError()
 	return nil
 }
 
@@ -103,7 +103,7 @@ func (s *Subscriber) subscribe() error {
 	return nil
 }
 
-func (s *Subscriber) resubscribe() {
+func (s *Subscriber) resubscribeOnError() {
 	for {
 		select {
 		case <-s.ctx.Done():
