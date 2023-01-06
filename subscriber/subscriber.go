@@ -49,7 +49,7 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 }
 
 func (s *Subscriber) Start() error {
-	resubscribeErrFunc := func(ctx context.Context, err error) (event.Subscription, error) {
+	resubscribeErrFunc := func(_ context.Context, err error) (event.Subscription, error) { // TODO: ctx
 		if err != nil {
 			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
 		}
@@ -66,17 +66,23 @@ func (s *Subscriber) Start() error {
 			return nil, errors.Wrap(err, "failed to subscribe contract events")
 		}
 
-		for {
-			select {
-			case log := <-eventLogs:
-				s.updateMetrics(log)
-				if err := s.eventLogQueue.Enqueue(log); err != nil {
-					s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
+		go func() {
+			for {
+				select {
+				case <-s.ctx.Done():
+					return
+				case log := <-eventLogs:
+					s.updateMetrics(log)
+					if err := s.eventLogQueue.Enqueue(log); err != nil {
+						s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
+					}
+				case <-sub.Err():
+					return
 				}
-			case err := <-sub.Err():
-				return nil, err
 			}
-		}
+		}()
+
+		return sub, nil
 	}
 
 	s.subscription = event.ResubscribeErr(s.backoffMax, resubscribeErrFunc)
