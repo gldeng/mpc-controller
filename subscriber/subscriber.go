@@ -49,16 +49,16 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 }
 
 func (s *Subscriber) Start() error {
+	client, err := s.config.CreateWsClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create ws client")
+	}
+	s.client = client
+
 	resubscribeErrFunc := func(_ context.Context, err error) (event.Subscription, error) { // TODO: ctx
 		if err != nil {
 			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
 		}
-
-		client, err := s.config.CreateWsClient()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create ws client")
-		}
-		s.client = client
 
 		eventLogs := make(chan types.Log, 1024)
 		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
