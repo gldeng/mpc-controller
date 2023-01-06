@@ -61,7 +61,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 		t.StartTime = &now
 	}
 
-	timeOut := 30 * time.Minute
+	timeout := 60 * time.Minute
 	interval := 2 * time.Second
 	timer := time.NewTimer(interval)
 	defer timer.Stop()
@@ -75,7 +75,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 			if t.Status == StatusDone || t.Failed {
 				return next, errors.WithStack(err)
 			}
-			if time.Now().Sub(*t.StartTime) >= timeOut {
+			if time.Now().Sub(*t.StartTime) >= timeout {
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 

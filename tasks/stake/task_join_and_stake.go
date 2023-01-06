@@ -169,7 +169,7 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 		t.StartTime = &now
 	}
 
-	timeOut := 30 * time.Minute
+	timeout := 60 * time.Minute
 	interval := 2 * time.Second
 	timer := time.NewTimer(interval)
 	defer timer.Stop()
@@ -178,7 +178,7 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 	for {
 		select {
 		case <-timer.C:
-			if time.Now().Sub(*t.StartTime) >= timeOut {
+			if time.Now().Sub(*t.StartTime) >= timeout {
 				return errors.New(ErrMsgTimedOut)
 			}
 

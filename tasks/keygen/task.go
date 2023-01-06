@@ -54,7 +54,7 @@ func (t *RequestAdded) Next(ctx core.TaskContext) ([]core.Task, error) {
 	t.retrieveGroup(ctx)
 	// TODO: improve retry strategy, involving further error handling
 	startTime := time.Now()
-	timeOut := 10 * time.Minute
+	timeout := 60 * time.Minute
 	interval := 1 * time.Second
 	timer := time.NewTimer(interval)
 	defer timer.Stop() // TODO: stop all other timers to avoid resource leak
@@ -69,7 +69,7 @@ loop:
 			if t.Failed || t.Status == StatusDone {
 				break loop
 			}
-			if time.Now().Sub(startTime) >= timeOut {
+			if time.Now().Sub(startTime) >= timeout {
 				return nil, errors.New("task timed out")
 			}
 
