@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type Subscriber struct {
@@ -21,6 +22,8 @@ type Subscriber struct {
 	subscription  ethereum.Subscription
 	eventLogQueue Queue
 	eventIDGetter EventIDGetter
+	filter        ethereum.FilterQuery
+	backoffMax    time.Duration
 }
 
 type Queue interface {
@@ -40,36 +43,51 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		subscription:  nil,
 		eventLogQueue: eventLogQueue,
 		eventIDGetter: evtIDGetter,
+		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
+		backoffMax:    time.Second * 5,
 	}, nil
 }
 
 func (s *Subscriber) Start() error {
-	s.client = s.config.CreateWsClient()
-	filter := ethereum.FilterQuery{
-		Addresses: []common.Address{s.config.MpcManagerAddress},
-	}
-
-	eventLogs := make(chan types.Log, 1024)
-	sub, err := s.client.SubscribeFilterLogs(s.ctx, filter, eventLogs)
+	client, err := s.config.CreateWsClient()
 	if err != nil {
-		return errors.Wrap(err, "failed to subscribe to contract events")
+		return errors.Wrap(err, "failed to create ws client")
+	}
+	s.client = client
+
+	resubscribeErrFunc := func(_ context.Context, err error) (event.Subscription, error) {
+		if err != nil {
+			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
+		}
+
+		eventLogs := make(chan types.Log, 1024)
+		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
+		if err != nil {
+			s.logger.Error("failed to subscribe contract events", []logger.Field{{"error", err}}...)
+			return nil, err
+		}
+		s.logger.Debug("subscribed contract events")
+
+		go func() {
+			for {
+				select {
+				case <-s.ctx.Done():
+					return
+				case log := <-eventLogs:
+					s.updateMetrics(log)
+					if err := s.eventLogQueue.Enqueue(log); err != nil {
+						s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
+					}
+				case <-sub.Err():
+					return
+				}
+			}
+		}()
+
+		return sub, nil
 	}
 
-	s.subscription = event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-eventLogs:
-				s.updateMetrics(log)
-				s.eventLogQueue.Enqueue(log) // TODO: Handle failure. There should be only one publisher to this queue, so now it should be fine to ignore the error.
-			case err := <-sub.Err():
-				// TODO: Should we reconnect if this happens?
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	})
+	s.subscription = event.ResubscribeErr(s.backoffMax, resubscribeErrFunc)
 	return nil
 }
 

@@ -40,12 +40,12 @@ func (c Config) getWsUri() string {
 	return fmt.Sprintf("%v://%v:%v", scheme, c.Host, c.Port)
 }
 
-func (c Config) CreateWsClient() *ethclient.Client {
+func (c Config) CreateWsClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(fmt.Sprintf("%s/ext/bc/C/ws", c.getWsUri()))
 	if err != nil {
-		panic(errors.Wrap(err, "failed to get eth client"))
+		return nil, errors.WithStack(err)
 	}
-	return client
+	return client, nil
 }
 
 func (c Config) CreateEthClient() *ethclient.Client {
