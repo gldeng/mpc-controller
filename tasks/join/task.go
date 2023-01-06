@@ -113,6 +113,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 		t.TxHash = *txHash
 		t.Status = StatusTxSent
+		ctx.GetLogger().Info("sent join request", []logger.Field{{"reqHash", fmt.Sprintf("%x", t.RequestHash)}}...)
 	case StatusTxSent:
 		_, err := ctx.CheckEthTx(t.TxHash)
 		if err != nil {
@@ -133,7 +134,7 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 		}
 
 		t.Status = StatusDone
-		ctx.GetLogger().Debug("joined request", []logger.Field{{"partiId", fmt.Sprintf("%x", t.group.ParticipantID())},
+		ctx.GetLogger().Info("joined request", []logger.Field{{"partiId", fmt.Sprintf("%x", t.group.ParticipantID())},
 			{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
 			{"group", fmt.Sprintf("%x", t.group.GroupId)}}...)
 	}
