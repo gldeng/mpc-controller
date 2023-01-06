@@ -23,6 +23,7 @@ type Subscriber struct {
 	eventLogQueue Queue
 	eventIDGetter EventIDGetter
 	filter        ethereum.FilterQuery
+	backoffMax    time.Duration
 }
 
 type Queue interface {
@@ -43,13 +44,42 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		eventLogQueue: eventLogQueue,
 		eventIDGetter: evtIDGetter,
 		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
+		backoffMax:    time.Minute * 10,
 	}, nil
 }
 
 func (s *Subscriber) Start() error {
-	if err := s.dialAndSubscribe(); err != nil {
-		return errors.WithStack(err)
+	resubscribeErrFunc := func(ctx context.Context, err error) (event.Subscription, error) {
+		if err != nil {
+			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
+		}
+
+		client, err := s.config.CreateWsClient()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create ws client")
+		}
+		s.client = client
+
+		eventLogs := make(chan types.Log, 1024)
+		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to subscribe contract events")
+		}
+
+		for {
+			select {
+			case log := <-eventLogs:
+				s.updateMetrics(log)
+				if err := s.eventLogQueue.Enqueue(log); err != nil {
+					s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
+				}
+			case err := <-sub.Err():
+				return nil, err
+			}
+		}
 	}
+
+	s.subscription = event.ResubscribeErr(s.backoffMax, resubscribeErrFunc)
 	return nil
 }
 
@@ -63,75 +93,6 @@ func (s *Subscriber) Close() error {
 		s.client = nil
 	}
 	return nil
-}
-
-func (s *Subscriber) dialAndSubscribe() error {
-	client, err := s.config.CreateWsClient()
-	if err != nil {
-		return errors.Wrap(err, "failed to create ws client")
-	}
-	s.client = client
-
-	if err := s.subscribe(); err != nil {
-		return errors.Wrap(err, "failed to subscribe")
-	}
-	return nil
-}
-
-func (s *Subscriber) subscribe() error {
-	eventLogs := make(chan types.Log, 1024)
-	sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
-	if err != nil {
-		return errors.Wrap(err, "failed to subscribe to contract events")
-	}
-
-	s.subscription = event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-eventLogs:
-				s.updateMetrics(log)
-				if err := s.eventLogQueue.Enqueue(log); err != nil {
-					s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
-				}
-			case err := <-sub.Err():
-				s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
-				go s.resubscribeOnError()
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	})
-	return nil
-}
-
-func (s *Subscriber) resubscribeOnError() {
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		default:
-			s.subscription.Unsubscribe()
-			s.client.Close()
-
-		resubscribe:
-			for {
-				select {
-				case <-s.ctx.Done():
-					return
-				default:
-					if err := s.dialAndSubscribe(); err != nil {
-						s.logger.Error("failed to redial or re-subscribe", []logger.Field{{"error", err}}...)
-						break
-					}
-					s.logger.Debug("re-subscribed")
-					break resubscribe
-				}
-				time.Sleep(time.Second)
-			}
-		}
-	}
 }
 
 func (s *Subscriber) updateMetrics(log types.Log) {
