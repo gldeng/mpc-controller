@@ -83,10 +83,12 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 		t.LastStepTime = &now
 	}
 
-	if time.Now().Sub(*t.LastStepTime) < 2*time.Second { // Min delay between steps
+	timeout := 60 * time.Minute
+	interval := 2 * time.Second // Min delay between steps
+	if time.Now().Sub(*t.LastStepTime) < interval {
 		return nil, nil
 	}
-	if time.Now().Sub(*t.StartTime) >= 30*time.Minute {
+	if time.Now().Sub(*t.StartTime) >= timeout {
 		return nil, errors.New(ErrMsgTimedOut)
 	}
 	defer func() {
