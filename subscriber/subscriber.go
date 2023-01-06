@@ -55,7 +55,7 @@ func (s *Subscriber) Start() error {
 	}
 	s.client = client
 
-	resubscribeErrFunc := func(_ context.Context, err error) (event.Subscription, error) { // TODO: ctx
+	resubscribeErrFunc := func(_ context.Context, err error) (event.Subscription, error) {
 		if err != nil {
 			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
 		}
@@ -63,7 +63,8 @@ func (s *Subscriber) Start() error {
 		eventLogs := make(chan types.Log, 1024)
 		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to subscribe contract events")
+			s.logger.Error("failed to subscribe contract events", []logger.Field{{"error", err}}...)
+			return nil, err
 		}
 		s.logger.Debug("subscribed contract events")
 
