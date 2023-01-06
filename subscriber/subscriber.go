@@ -63,6 +63,7 @@ func (s *Subscriber) Start() error {
 		eventLogs := make(chan types.Log, 1024)
 		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
 		if err != nil {
+			prom.ContractEvtSubErr.Inc()
 			s.logger.Error("failed to subscribe contract events", []logger.Field{{"error", err}}...)
 			return nil, err
 		}
