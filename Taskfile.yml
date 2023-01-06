@@ -181,7 +181,7 @@ tasks:
       - string={{.CLI_ARGS}}; echo ${#string}
     silent: false
 
-  buildMpcController:
+  build:
     cmds:
       - docker build --no-cache --progress=plain -t avalido/mpc-controller .
     silent: false
