@@ -65,6 +65,7 @@ func (s *Subscriber) Start() error {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to subscribe contract events")
 		}
+		s.logger.Debug("subscribed contract events")
 
 		go func() {
 			for {
