@@ -46,6 +46,13 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
+	// Inconsistent stake request number metric
+
+	InconsistentStakeReqNo = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "inconsistent_stake_request_number_total",
+		Help: "The total number of inconsistent stake request number",
+	})
+
 	// Mpc keygen metrics
 
 	MpcKeygenPosted = promauto.NewCounter(prometheus.CounterOpts{
