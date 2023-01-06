@@ -44,7 +44,7 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		eventLogQueue: eventLogQueue,
 		eventIDGetter: evtIDGetter,
 		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
-		backoffMax:    time.Second * 10,
+		backoffMax:    time.Second * 600,
 	}, nil
 }
 
