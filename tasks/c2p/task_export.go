@@ -180,6 +180,13 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	}
 	t.SignRequest = req
 
+	t.logDebug(ctx, "Built sign request", []logger.Field{
+		{"signReq", types.SignRequest{
+			ReqID:                  req.RequestId,
+			Hash:                   req.Hash,
+			CompressedGenPubKeyHex: req.PublicKey,
+			CompressedPartiPubKeys: req.ParticipantPublicKeys}}}...)
+
 	_, err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
