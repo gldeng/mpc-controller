@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
 	"time"
 
@@ -122,9 +123,11 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 
 		initStake, err := NewInitialStake(&t.Request, *quorumInfo)
 		if err != nil {
+			prom.FlowInitErr.With(prometheus.Labels{"flow": "initialStake"}).Inc()
 			return nil, t.failIfErrorf(err, "create InitialStake task")
 		}
 		t.InitialStake = initStake
+		prom.FlowInit.With(prometheus.Labels{"flow": "initialStake"}).Inc()
 		_, err = t.InitialStake.Next(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to run InitialStake")
