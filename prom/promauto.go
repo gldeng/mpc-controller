@@ -70,6 +70,18 @@ var (
 		Help: "The total number of mpc keygen saved",
 	})
 
+	// Flow initiated metrics
+
+	FlowInit = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "mpc_flow_init_total",
+		Help: "The total number of flow initiated",
+	}, []string{"flow"})
+
+	FlowInitErr = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "mpc_flow_init_error_total",
+		Help: "The total number of flow init error",
+	}, []string{"flow"})
+
 	// Mpc sign metrics
 
 	MpcSignPostedForC2PExportTx = promauto.NewCounter(prometheus.CounterOpts{
