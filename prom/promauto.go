@@ -53,6 +53,13 @@ var (
 		Help: "The total number of discontinuous value checked",
 	}, []string{"checker", "field"})
 
+	// Queue operation error metric
+
+	QueueOperationError = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "queue_operation_error_total",
+		Help: "The total number of queue operation error checked",
+	}, []string{"queue", "operation"})
+
 	// Mpc keygen metrics
 
 	MpcKeygenPosted = promauto.NewCounter(prometheus.CounterOpts{
