@@ -46,12 +46,12 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
-	// Inconsistent stake request number metric
+	// Discontinuous value metric
 
-	InconsistentStakeReqNo = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "inconsistent_stake_request_number_total",
-		Help: "The total number of inconsistent stake request number",
-	})
+	DiscontinuousValue = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "discontinuous_value_checked_total",
+		Help: "The total number of discontinuous value checked",
+	}, []string{"checker", "field"})
 
 	// Mpc keygen metrics
 

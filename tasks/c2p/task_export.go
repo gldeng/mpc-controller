@@ -211,7 +211,7 @@ func checkNonceContinuity(ctx core.TaskContext, newNonce int64, addr common.Addr
 	if lastQueriedNonce != -1 {
 		expectedNonce := lastQueriedNonce + 1
 		if expectedNonce != newNonce {
-			//prom.DiscontinuousNonce.Inc() // TODO: to be added
+			prom.DiscontinuousValue.With(prometheus.Labels{"checker": "c2p", "field": "nonce"}).Inc()
 			ctx.GetLogger().Warn("got discontinuous nonce", []logger.Field{
 				{"expectedNonce", expectedNonce},
 				{"gotNonce", newNonce},

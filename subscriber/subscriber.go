@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
 	"time"
 )
@@ -148,8 +149,8 @@ func (s *Subscriber) checkStakeReqNoContinuity(log types.Log) {
 		one := big.NewInt(1)
 		plusOne := new(big.Int).Add(s.lastStakeReqNo, one)
 		if plusOne.Cmp(newStakeReqNo) != 0 {
-			prom.InconsistentStakeReqNo.Inc()
-			s.logger.Warn("got inconsistent stake request number", []logger.Field{
+			prom.DiscontinuousValue.With(prometheus.Labels{"checker": "subscriber", "field": "stakeReqNo"}).Inc()
+			s.logger.Warn("got discontinuous stake request number", []logger.Field{
 				{"expectedStakeReqNo", plusOne},
 				{"gotStakeReqNo", newStakeReqNo},
 				{"blockNumber", log.BlockNumber},
