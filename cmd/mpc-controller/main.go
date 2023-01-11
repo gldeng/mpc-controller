@@ -34,7 +34,6 @@ import (
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -50,14 +49,6 @@ const (
 	fnMpcServerUrl      = "mpcServerUrl"
 	fnMetricsServeAddr  = "metricsServeAddr"
 )
-
-func printLog(event interface{}) {
-	evt, ok := event.(types.Log)
-	if !ok {
-		return
-	}
-	fmt.Printf("Received event log %v\n", evt)
-}
 
 type TestSuite struct {
 	db           core.Store
@@ -263,7 +254,6 @@ func runController(c *cli.Context) error {
 		return err
 	}
 	rt, _ := router.NewRouter(q, ehContext, wp)
-	rt.AddHandler(printLog)
 
 	rc := &ethlog.RequestCreator{}
 	rt.AddLogEventHandler(rc)
