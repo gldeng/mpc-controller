@@ -151,7 +151,9 @@ func (s *Subscriber) checkStakeReqNoContinuity(log types.Log) {
 			prom.InconsistentStakeReqNo.Inc()
 			s.logger.Warn("got inconsistent stake request number", []logger.Field{
 				{"expectedStakeReqNo", plusOne},
-				{"gotStakeReqNo", newStakeReqNo}}...)
+				{"gotStakeReqNo", newStakeReqNo},
+				{"blockNumber", log.BlockNumber},
+				{"txHash", log.TxHash}}...)
 		}
 	}
 }

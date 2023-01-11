@@ -7,6 +7,7 @@ import (
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/keygen"
 	"github.com/avalido/mpc-controller/tasks/stake"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"math/big"
@@ -73,7 +74,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
-		c.checkStakeReqNoContinuity(ctx, event.RequestNumber)
+		c.checkStakeReqNoContinuity(ctx, event.RequestNumber, log.BlockNumber, log.TxHash)
 		task, err := stake.NewStakeJoinAndStake(*event)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create task")
@@ -83,7 +84,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 	return nil, nil
 }
 
-func (c *RequestCreator) checkStakeReqNoContinuity(ctx core.EventHandlerContext, newStakeReqNo *big.Int) {
+func (c *RequestCreator) checkStakeReqNoContinuity(ctx core.EventHandlerContext, newStakeReqNo *big.Int, blockNumber uint64, txHash common.Hash) {
 	defer func() {
 		c.lastStakeReqNo = newStakeReqNo
 	}()
@@ -95,7 +96,9 @@ func (c *RequestCreator) checkStakeReqNoContinuity(ctx core.EventHandlerContext,
 			prom.InconsistentStakeReqNo.Inc()
 			ctx.GetLogger().Warn("got inconsistent stake request number", []logger.Field{
 				{"expectedStakeReqNo", plusOne},
-				{"gotStakeReqNo", newStakeReqNo}}...)
+				{"gotStakeReqNo", newStakeReqNo},
+				{"blockNumber", blockNumber},
+				{"txHash", txHash}}...)
 		}
 	}
 }
