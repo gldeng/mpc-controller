@@ -249,7 +249,7 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
-	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q, ehContext)
+	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q, ehContext, ehContext.GetContract())
 
 	makeContext := func() core.TaskContext {
 		ctx, err := taskcontext.NewTaskContextImp(services)
