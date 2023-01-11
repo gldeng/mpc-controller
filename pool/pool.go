@@ -1,12 +1,14 @@
 package pool
 
 import (
+	"fmt"
 	"github.com/alitto/pond"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/enriquebris/goconcurrentqueue"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -31,6 +33,7 @@ func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*Exte
 	for i := 0; i < size+1; i++ {
 		err := contexts.Enqueue(makeContext())
 		if err != nil {
+			prom.QueueOperationError.With(prometheus.Labels{"queue": "fifo", "operation": "enqueue"}).Inc()
 			return nil, errors.Wrap(err, "failed to enqueue task context")
 		}
 	}
@@ -59,7 +62,11 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		whichPool = e.sequentialWorker
 	}
 	taskWrapper := func() {
-		ctx, _ := e.contexts.Dequeue() // TODO: Handle error
+		ctx, err := e.contexts.Dequeue()
+		if err != nil {
+			prom.QueueOperationError.With(prometheus.Labels{"queue": "fifo", "operation": "dequeue"}).Inc()
+			panic(fmt.Sprintf("failed to submit task %v, dequeue error: %v", task.GetId(), err))
+		}
 		taskCtx := ctx.(core.TaskContext)
 		next, err := task.Next(taskCtx) // TODO: Handle error
 		if err != nil {
@@ -79,7 +86,8 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		}
 		err = e.contexts.Enqueue(ctx)
 		if err != nil {
-			taskCtx.GetLogger().Debug("failed to enqueue task context", []logger.Field{{"error", err}}...)
+			prom.QueueOperationError.With(prometheus.Labels{"queue": "fifo", "operation": "enqueue"}).Inc()
+			taskCtx.GetLogger().Fatal("failed to enqueue task context", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 		}
 		if next != nil {
 			for _, t := range next {
