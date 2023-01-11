@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
 )
 
@@ -93,8 +94,8 @@ func (c *RequestCreator) checkStakeReqNoContinuity(ctx core.EventHandlerContext,
 		one := big.NewInt(1)
 		plusOne := new(big.Int).Add(c.lastStakeReqNo, one)
 		if plusOne.Cmp(newStakeReqNo) != 0 {
-			prom.InconsistentStakeReqNo.Inc()
-			ctx.GetLogger().Warn("got inconsistent stake request number", []logger.Field{
+			prom.DiscontinuousValue.With(prometheus.Labels{"checker": "ethlog", "field": "stakeReqNo"}).Inc()
+			ctx.GetLogger().Warn("got discontinuous stake request number", []logger.Field{
 				{"expectedStakeReqNo", plusOne},
 				{"gotStakeReqNo", newStakeReqNo},
 				{"blockNumber", blockNumber},
