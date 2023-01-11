@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
@@ -53,7 +54,8 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 	amount := new(big.Int)
 	amount.SetString(request.Amount, 10)
-	c2pInstance, err := c2p.NewC2P(hex.EncodeToString(id[:]), quorum, *amount)
+	flowID := "initialStake" + "_" + strconv.FormatUint(request.ReqNo, 10) + "_" + id.String() // TODO: reuse initialStake from common package
+	c2pInstance, err := c2p.NewC2P(flowID, quorum, *amount)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create C2P instance")
 	}
