@@ -84,6 +84,9 @@ func (s *Subscriber) Start() error {
 				case <-s.ctx.Done():
 					return
 				case log := <-eventLogs:
+					s.logger.Debug("received event log", []logger.Field{
+						{"blockNumber", log.BlockNumber},
+						{"txHash", log.TxHash}}...)
 					s.updateMetrics(log)
 					if err := s.eventLogQueue.Enqueue(log); err != nil {
 						s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
