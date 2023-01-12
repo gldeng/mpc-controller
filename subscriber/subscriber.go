@@ -17,6 +17,12 @@ import (
 	"time"
 )
 
+// TODO: make it configurable?
+const (
+	eventLogChanCapacity    = 1024
+	queueBufferChanCapacity = 2048
+)
+
 type Subscriber struct {
 	ctx            context.Context
 	logger         logger.Logger
@@ -29,6 +35,7 @@ type Subscriber struct {
 	backoffMax     time.Duration
 	lastStakeReqNo *big.Int
 	logUnpacker    LogUnpacker
+	queueBufferCh  chan types.Log
 }
 
 type Queue interface {
@@ -55,6 +62,7 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
 		backoffMax:    time.Second * 5,
 		logUnpacker:   unpacker,
+		queueBufferCh: make(chan types.Log, queueBufferChanCapacity),
 	}, nil
 }
 
@@ -70,7 +78,7 @@ func (s *Subscriber) Start() error {
 			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
 		}
 
-		eventLogs := make(chan types.Log, 1024)
+		eventLogs := make(chan types.Log, eventLogChanCapacity)
 		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
 		if err != nil {
 			prom.ContractEvtSubErr.Inc()
@@ -89,7 +97,8 @@ func (s *Subscriber) Start() error {
 						{"blockNumber", log.BlockNumber},
 						{"txHash", log.TxHash}}...)
 					s.updateMetrics(log)
-					if err := s.eventLogQueue.Enqueue(log); err != nil {
+					s.queueBufferCh <- log
+					if err := s.eventLogQueue.Enqueue(<-s.queueBufferCh); err != nil {
 						s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
 					}
 				case <-sub.Err():
