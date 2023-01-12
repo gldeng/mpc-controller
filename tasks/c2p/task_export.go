@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/avalido/mpc-controller/core/mpc"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"time"
 
@@ -28,10 +27,6 @@ const (
 
 var (
 	_ core.Task = (*ExportFromCChain)(nil)
-)
-
-var (
-	lastQueriedNonce int64 = -1
 )
 
 type ExportFromCChain struct {
@@ -162,7 +157,6 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 		return t.failIfErrorf(err, ErrMsgFailedToGetNonce)
 	}
 	t.logDebug(ctx, "got nonce", []logger.Field{{"nonce", nonce}, {"address", t.Quorum.CChainAddress()}}...)
-	checkNonceContinuity(ctx, int64(nonce), t.Quorum.CChainAddress())
 
 	amount, err := ToGwei(&t.Amount)
 	if err != nil {
@@ -201,23 +195,6 @@ func (t *ExportFromCChain) buildAndSignTx(ctx core.TaskContext) error {
 	prom.MpcSignPostedForC2PExportTx.Inc()
 	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.RequestId})
 	return nil
-}
-
-func checkNonceContinuity(ctx core.TaskContext, newNonce int64, addr common.Address) {
-	defer func() {
-		lastQueriedNonce = newNonce
-	}()
-
-	if lastQueriedNonce != -1 {
-		expectedNonce := lastQueriedNonce + 1
-		if expectedNonce != newNonce {
-			prom.DiscontinuousValue.With(prometheus.Labels{"checker": "c2p", "field": "nonce"}).Inc()
-			ctx.GetLogger().Warn("got discontinuous nonce", []logger.Field{
-				{"expectedNonce", expectedNonce},
-				{"gotNonce", newNonce},
-				{"address", addr}}...)
-		}
-	}
 }
 
 func (t *ExportFromCChain) getSignature(ctx core.TaskContext) error {
