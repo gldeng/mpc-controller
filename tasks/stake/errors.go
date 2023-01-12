@@ -1,5 +1,5 @@
 package stake
 
 var (
-	ErrMsgTimedOut = "task timed out"
+	ErrMsgTimedOut = "task timeout"
 )

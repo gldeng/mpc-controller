@@ -24,5 +24,5 @@ func (s Status) String() string {
 }
 
 var (
-	ErrMsgTimedOut = "task timed out"
+	ErrMsgTimedOut = "task timeout"
 )

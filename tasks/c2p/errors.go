@@ -24,5 +24,5 @@ const (
 	ErrMsgIssueTxFail                   = "failed to issue tx"
 	ErrMsgCheckTxStatusFail             = "failed to check tx status"
 	ErrMsgTxFail                        = "tx failed"
-	ErrMsgTimedOut                      = "task timed out"
+	ErrMsgTimedOut                      = "task timeout"
 )
