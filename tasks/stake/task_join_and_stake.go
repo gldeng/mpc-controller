@@ -40,8 +40,9 @@ type JoinAndStake struct {
 }
 
 func (t *JoinAndStake) GetId() string {
-	hash, _ := t.Request.Hash()
-	return fmt.Sprintf("JoinAndStake(%x)", hash)
+	id, _ := t.Request.Hash()
+	flowID := "initialStake" + "_" + t.Event.RequestNumber.String() + "_" + id.String()
+	return fmt.Sprintf("JoinAndStake(%x)", flowID)
 }
 
 func (t *JoinAndStake) IsDone() bool {
