@@ -1,7 +1,6 @@
 package stake
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -61,7 +60,7 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 
 	return &InitialStake{
-		FlowId:   hex.EncodeToString(id[:]),
+		FlowId:   flowID,
 		TaskType: taskTypeInitialStake,
 		Quorum:   quorum,
 		C2P:      c2pInstance,
