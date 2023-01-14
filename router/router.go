@@ -3,17 +3,22 @@ package router
 import (
 	"context"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/prometheus/client_golang/prometheus"
 	"sync"
+	"time"
 )
 
 type Queue interface {
-	DequeueOrWaitForNextElementContext(ctx context.Context) (interface{}, error)
+	Dequeue() (interface{}, error)
 }
 
 type EventHandler = func(interface{})
 
 type Router struct {
+	logger              logger.Logger
 	unsub               chan struct{}
 	closeOnce           sync.Once
 	onCloseCtx          context.Context
@@ -25,9 +30,10 @@ type Router struct {
 	submitter           core.TaskSubmitter
 }
 
-func NewRouter(incomingQueue Queue, eventHandlerContext core.EventHandlerContext, submitter core.TaskSubmitter) (*Router, error) {
+func NewRouter(logger logger.Logger, incomingQueue Queue, eventHandlerContext core.EventHandlerContext, submitter core.TaskSubmitter) (*Router, error) {
 	onCloseCtx, cancel := context.WithCancel(context.Background())
 	return &Router{
+		logger:              logger,
 		unsub:               make(chan struct{}),
 		closeOnce:           sync.Once{},
 		onCloseCtx:          onCloseCtx,
@@ -47,7 +53,13 @@ func (r *Router) Start() error {
 			case <-r.onCloseCtx.Done():
 				return
 			default:
-				event, _ := r.incomingQueue.DequeueOrWaitForNextElementContext(r.onCloseCtx) // TODO: Handle error
+				event, err := r.incomingQueue.Dequeue()
+				if err != nil {
+					r.logger.Error("dequeue error", []logger.Field{{"error", err}}...)
+					prom.QueueOperationError.With(prometheus.Labels{"pkg": "router", "operation": "dequeue"}).Inc()
+					time.Sleep(time.Second)
+					continue
+				}
 				for _, handler := range r.handlers {
 					handler(event)
 				}

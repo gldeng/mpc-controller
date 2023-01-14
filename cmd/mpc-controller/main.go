@@ -253,7 +253,7 @@ func runController(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	rt, _ := router.NewRouter(q, ehContext, wp)
+	rt, _ := router.NewRouter(myLogger, q, ehContext, wp)
 
 	rc := &ethlog.RequestCreator{}
 	rt.AddLogEventHandler(rc)
