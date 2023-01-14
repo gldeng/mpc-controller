@@ -99,7 +99,8 @@ func (s *Subscriber) Start() error {
 					s.updateMetrics(log)
 					s.queueBufferCh <- log
 					if err := s.eventLogQueue.Enqueue(<-s.queueBufferCh); err != nil {
-						s.logger.Error("failed to enqueue event log", []logger.Field{{"error", err}}...)
+						prom.QueueOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "enqueue"}).Inc()
+						s.logger.Error("failed to enqueue event log, enqueue error", []logger.Field{{"error", err}}...)
 					}
 				case <-sub.Err():
 					return

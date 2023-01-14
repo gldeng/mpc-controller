@@ -33,8 +33,8 @@ func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*Exte
 	for i := 0; i < size+1; i++ {
 		err := contexts.Enqueue(makeContext())
 		if err != nil {
-			prom.QueueOperationError.With(prometheus.Labels{"queue": "fifo", "operation": "enqueue"}).Inc()
-			return nil, errors.Wrap(err, "failed to enqueue task context")
+			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
+			return nil, errors.Wrap(err, "failed to enqueue task context, enqueue error")
 		}
 	}
 	prom.ConfigWorkPoolAndTaskMetrics(poolTypeSequential, sequentialWorker)
@@ -64,7 +64,7 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 	taskWrapper := func() {
 		ctx, err := e.contexts.Dequeue()
 		if err != nil {
-			prom.QueueOperationError.With(prometheus.Labels{"queue": "fifo", "operation": "dequeue"}).Inc()
+			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
 			panic(fmt.Sprintf("failed to submit task %v, dequeue error: %v", task.GetId(), err))
 		}
 		taskCtx := ctx.(core.TaskContext)
@@ -86,8 +86,8 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		}
 		err = e.contexts.Enqueue(ctx)
 		if err != nil {
-			prom.QueueOperationError.With(prometheus.Labels{"queue": "fifo", "operation": "enqueue"}).Inc()
-			taskCtx.GetLogger().Fatal("failed to enqueue task context", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
+			taskCtx.GetLogger().Fatal("failed to enqueue task context, enqueue error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 		}
 		if next != nil {
 			for _, t := range next {

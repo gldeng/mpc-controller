@@ -58,7 +58,7 @@ var (
 	QueueOperationError = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: prefix + "queue_operation_error_total",
 		Help: "The total number of queue operation error checked",
-	}, []string{"queue", "operation"})
+	}, []string{"pkg", "operation"})
 
 	// Mpc keygen metrics
 
