@@ -33,6 +33,7 @@ type Router struct {
 func NewRouter(logger logger.Logger, incomingQueue Queue, eventHandlerContext core.EventHandlerContext, submitter core.TaskSubmitter) (*Router, error) {
 	onCloseCtx, cancel := context.WithCancel(context.Background())
 	return &Router{
+		logger:              logger,
 		unsub:               make(chan struct{}),
 		closeOnce:           sync.Once{},
 		onCloseCtx:          onCloseCtx,
