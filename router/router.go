@@ -60,6 +60,7 @@ func (r *Router) Start() error {
 					time.Sleep(time.Second)
 					continue
 				}
+				prom.QueueOperation.With(prometheus.Labels{"pkg": "router", "operation": "dequeue"}).Inc()
 				for _, handler := range r.handlers {
 					handler(event)
 				}

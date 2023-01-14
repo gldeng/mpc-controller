@@ -67,6 +67,7 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
 			panic(fmt.Sprintf("failed to submit task %v, dequeue error: %v", task.GetId(), err))
 		}
+		prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
 		taskCtx := ctx.(core.TaskContext)
 		next, err := task.Next(taskCtx) // TODO: Handle error
 		if err != nil {
@@ -89,6 +90,7 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
 			taskCtx.GetLogger().Fatal("failed to enqueue task context, enqueue error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 		}
+		prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
 		if next != nil {
 			for _, t := range next {
 				err = e.Submit(t) // Task needs to continue with itself or succeeding tasks

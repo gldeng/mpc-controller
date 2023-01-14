@@ -96,12 +96,14 @@ func (s *Subscriber) Start() error {
 					s.logger.Debug("received event log", []logger.Field{
 						{"blockNumber", log.BlockNumber},
 						{"txHash", log.TxHash}}...)
-					s.updateMetrics(log)
+					s.updateMetricOnEvtID(log)
 					s.queueBufferCh <- log
 					if err := s.eventLogQueue.Enqueue(<-s.queueBufferCh); err != nil {
 						prom.QueueOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "enqueue"}).Inc()
 						s.logger.Error("failed to enqueue event log, enqueue error", []logger.Field{{"error", err}}...)
+						continue
 					}
+					prom.QueueOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "enqueue"}).Inc()
 				case <-sub.Err():
 					return
 				}
@@ -127,7 +129,7 @@ func (s *Subscriber) Close() error {
 	return nil
 }
 
-func (s *Subscriber) updateMetrics(log types.Log) {
+func (s *Subscriber) updateMetricOnEvtID(log types.Log) {
 	switch log.Topics[0] {
 	case s.eventIDGetter.GetEventID(core.EvtRequestStarted):
 	case s.eventIDGetter.GetEventID(core.EvtParticipantAdded):

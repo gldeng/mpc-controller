@@ -55,6 +55,13 @@ var (
 
 	// Queue operation error metric
 
+	QueueOperation = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "queue_operation_total",
+		Help: "The total number of queue operation",
+	}, []string{"pkg", "operation"})
+
+	// Queue operation error metric
+
 	QueueOperationError = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: prefix + "queue_operation_error_total",
 		Help: "The total number of queue operation error checked",
