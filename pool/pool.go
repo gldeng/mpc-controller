@@ -24,9 +24,10 @@ type ExtendedWorkerPool struct {
 	sequentialWorker *pond.WorkerPool
 	parallelPool     *pond.WorkerPool
 	contexts         *goconcurrentqueue.FIFO
+	logger           logger.Logger
 }
 
-func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*ExtendedWorkerPool, error) {
+func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory, logger logger.Logger) (*ExtendedWorkerPool, error) {
 	sequentialWorker := pond.New(1, 1024)
 	parallelPool := pond.New(size, 1024)
 	contexts := goconcurrentqueue.NewFIFO()
@@ -43,6 +44,7 @@ func NewExtendedWorkerPool(size int, makeContext core.TaskContextFactory) (*Exte
 		sequentialWorker: sequentialWorker,
 		parallelPool:     parallelPool,
 		contexts:         contexts,
+		logger:           logger,
 	}, nil
 }
 
@@ -61,45 +63,54 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 	if task.IsSequential() {
 		whichPool = e.sequentialWorker
 	}
-	taskWrapper := func() {
-		ctx, err := e.contexts.Dequeue()
-		if err != nil {
-			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
-			panic(fmt.Sprintf("failed to submit task %v, dequeue error: %v", task.GetId(), err))
-		}
-		prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
-		taskCtx := ctx.(core.TaskContext)
-		next, err := task.Next(taskCtx) // TODO: Handle error
-		if err != nil {
-			taskCtx.GetLogger().Debug("task got error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-		}
-		if task.FailedPermanently() {
-			taskCtx.GetLogger().Debug("task failed permanently", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-		}
-		if task.IsDone() {
-			taskCtx.GetLogger().Debug("task done", []logger.Field{{"task", task.GetId()}}...)
-		}
-		if !task.IsDone() && !task.FailedPermanently() {
-			err = e.Submit(task)
+	executeTaskAndMaybeSubmitContinuation := func() {
+		continuation := e.getContextAndExecuteTask(task)
+		for _, t := range continuation {
+			err := e.Submit(t) // Note: This has to be after other task logics complete.
 			if err != nil {
-				taskCtx.GetLogger().Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-			}
-		}
-		err = e.contexts.Enqueue(ctx)
-		if err != nil {
-			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
-			taskCtx.GetLogger().Fatal("failed to enqueue task context, enqueue error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-		}
-		prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
-		if next != nil {
-			for _, t := range next {
-				err = e.Submit(t) // Task needs to continue with itself or succeeding tasks
-				if err != nil {
-					taskCtx.GetLogger().Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-				}
+				e.logger.Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
 			}
 		}
 	}
-	whichPool.Submit(taskWrapper)
+	whichPool.Submit(executeTaskAndMaybeSubmitContinuation)
 	return nil
+}
+
+func (e *ExtendedWorkerPool) getContextAndExecuteTask(task core.Task) []core.Task {
+	ctx, err := e.contexts.Dequeue()
+	if err != nil {
+		prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
+		panic(fmt.Sprintf("failed to submit task %v, dequeue error: %v", task.GetId(), err))
+	}
+	prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "dequeue"}).Inc()
+	defer func() {
+		err = e.contexts.Enqueue(ctx)
+		if err != nil {
+			prom.QueueOperationError.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
+			e.logger.Fatal("failed to enqueue task context, enqueue error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+		}
+		prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
+	}()
+	return executeTaskWithContext(task, ctx.(core.TaskContext))
+}
+
+func executeTaskWithContext(task core.Task, ctx core.TaskContext) (continuation []core.Task) {
+	next, err := task.Next(ctx) // TODO: Handle error
+	if err != nil {
+		ctx.GetLogger().Debug("task got error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+	}
+	if task.FailedPermanently() {
+		ctx.GetLogger().Debug("task failed permanently", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+	}
+	if task.IsDone() {
+		ctx.GetLogger().Debug("task done", []logger.Field{{"task", task.GetId()}}...)
+	}
+	continuation = append(continuation, next...)
+	if !task.IsDone() && !task.FailedPermanently() {
+		continuation = append(continuation, task)
+		if err != nil {
+			ctx.GetLogger().Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+		}
+	}
+	return
 }
