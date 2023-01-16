@@ -249,7 +249,7 @@ func runController(c *cli.Context) error {
 		}
 		return ctx
 	}
-	wp, err := pool.NewExtendedWorkerPool(3, makeContext)
+	wp, err := pool.NewExtendedWorkerPool(3, makeContext, myLogger)
 	if err != nil {
 		return err
 	}
