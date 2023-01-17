@@ -108,9 +108,6 @@ func executeTaskWithContext(task core.Task, ctx core.TaskContext) (continuation 
 	continuation = append(continuation, next...)
 	if !task.IsDone() && !task.FailedPermanently() {
 		continuation = append(continuation, task)
-		if err != nil {
-			ctx.GetLogger().Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-		}
 	}
 	return
 }
