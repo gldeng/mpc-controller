@@ -94,8 +94,12 @@ func (s *Subscriber) Start() error {
 					return
 				case log := <-eventLogs:
 					s.logger.Debug("received event log", []logger.Field{
+						{"address", log.Address},
+						{"txHash", log.TxHash},
+						{"topics", log.Topics},
 						{"blockNumber", log.BlockNumber},
-						{"txHash", log.TxHash}}...)
+						{"index", log.Index},
+						{"removed", log.Removed}}...)
 					s.updateMetricOnEvtID(log)
 					s.queueBufferCh <- log
 					if err := s.eventLogQueue.Enqueue(<-s.queueBufferCh); err != nil {
