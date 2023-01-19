@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/avalido/mpc-controller/core/mpc"
+	"github.com/avalido/mpc-controller/logger/adapter"
+	"github.com/avalido/mpc-controller/storage/badgerDB"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -22,7 +24,6 @@ import (
 	"github.com/avalido/mpc-controller/pool"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/router"
-	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/subscriber"
 	"github.com/avalido/mpc-controller/synchronizer"
 	"github.com/avalido/mpc-controller/taskcontext"
@@ -48,6 +49,7 @@ const (
 	fnPasswordFile      = "passwordFile"
 	fnMpcServerUrl      = "mpcServerUrl"
 	fnMetricsServeAddr  = "metricsServeAddr"
+	fnDBPath            = "dbPath"
 )
 
 type TestSuite struct {
@@ -210,10 +212,14 @@ func runController(c *cli.Context) error {
 	}
 	coreConfig.FetchNetworkInfo()
 
-	db := storage.NewInMemoryDb() // TODO: use persistent db
+	// Setup DB
+	badgerDBLogger := &adapter.BadgerDBLoggerAdapter{Logger: logger.DefaultWithCallerSkip(3)}
+	db := &badgerDB.BadgerDB{
+		Logger: myLogger,
+		DB:     badgerDB.NewBadgerDBWithDefaultOptions(c.String(fnDBPath), badgerDBLogger),
+	}
 
 	// Create mpcClient
-
 	conn, err := grpc.Dial(c.String(fnMpcServerUrl), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return errors.Wrap(err, "failed to dial to mpc server")
@@ -240,7 +246,7 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
-	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q, ehContext, ehContext.GetContract())
+	sub, err := subscriber.NewSubscriber(shutdownCtx, myLogger, coreConfig, q, ehContext, ehContext.GetContract(), db)
 
 	makeContext := func() core.TaskContext {
 		ctx, err := taskcontext.NewTaskContextImp(services)
@@ -346,6 +352,11 @@ func main() {
 				Name:     fnMetricsServeAddr,
 				Required: false,
 				Usage:    "The URL of Prometheus metrics service",
+			},
+			&cli.StringFlag{
+				Name:     fnDBPath,
+				Required: false,
+				Usage:    "The DB path",
 			},
 		},
 		Action: runController,

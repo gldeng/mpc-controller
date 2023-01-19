@@ -59,3 +59,25 @@ func (b *BadgerDB) Get(ctx context.Context, key []byte) (value []byte, err error
 	err = errors.Wrapf(err, "failed to get value by key. key:%v", string(key))
 	return
 }
+
+func (b *BadgerDB) Exists(ctx context.Context, key []byte) (found bool, err error) {
+	err = backoff.RetryFnExponential10Times(b.Logger, ctx, time.Second, time.Second*10, func() (bool, error) {
+		err = b.View(func(txn *badger.Txn) error {
+			_, err := txn.Get(key)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			return nil
+		})
+		if err != nil {
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return false, nil
+			}
+			return true, errors.WithStack(err)
+		}
+		found = true
+		return false, nil
+	})
+	err = errors.Wrapf(err, "failed to get value by key. key:%v", string(key))
+	return
+}

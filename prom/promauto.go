@@ -46,6 +46,25 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
+	// DB operation metrics
+
+	DBOperation = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "db_operation_total",
+		Help: "The total number of DB operation",
+	}, []string{"pkg", "operation"})
+
+	DBOperationError = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "db_operation_error_total",
+		Help: "The total number of DB operation error",
+	}, []string{"pkg", "operation"})
+
+	// Invalid received event metrics
+
+	InvalidReceivedEvent = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "invalid_received_event_total",
+		Help: "The total number of invalid received event",
+	}, []string{"type", "field"})
+
 	// Discontinuous value metric
 
 	DiscontinuousValue = promauto.NewCounterVec(prometheus.CounterOpts{
