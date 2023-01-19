@@ -25,3 +25,13 @@ type StdLogger interface {
 	Errorf(string, ...interface{})
 	Fatalf(string, ...interface{})
 }
+
+// BadgerDBLogger declares customized logging methods for BadgerDB
+// as defined in https://github.com/dgraph-io/badger/blob/master/logger.go.
+// Copy it here just for clarity.
+type BadgerDBLogger interface {
+	Errorf(string, ...interface{})
+	Warningf(string, ...interface{})
+	Infof(string, ...interface{})
+	Debugf(string, ...interface{})
+}
