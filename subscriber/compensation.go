@@ -17,7 +17,7 @@ func (s *Subscriber) compensateMissedLogs() error {
 
 	found, err := s.foundEnqueuedLog()
 	if err != nil {
-		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "readDb"}).Inc()
+		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "checkEnqueuedLogError"}).Inc()
 		return errors.Wrap(err, "failed to check the existence of enqueued log")
 	}
 
@@ -28,13 +28,13 @@ func (s *Subscriber) compensateMissedLogs() error {
 
 	storedLog, err := s.loadEnqueuedLog()
 	if err != nil {
-		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "readDb"}).Inc()
+		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "loadEnqueuedLogError"}).Inc()
 		return errors.Wrap(err, "failed to load enqueued log")
 	}
 
 	maybeMissedLogs, err := s.filterLatestLogs(storedLog.BlockNumber)
 	if err != nil {
-		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "filterLog"}).Inc()
+		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "filterLatestLogsError"}).Inc()
 		return errors.Wrap(err, "failed to filter latest logs")
 	}
 
@@ -47,7 +47,6 @@ func (s *Subscriber) compensateMissedLogs() error {
 	s.logger.Debug("continue to compensate missed logs")
 	err = s.enqueueAndSaveLogs(missedLogs)
 	if err != nil {
-		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "enqueueAndSaveLog"}).Inc()
 		return errors.Wrap(err, "failed to enqueue and save logs")
 	}
 	return nil
@@ -112,9 +111,16 @@ func (s *Subscriber) enqueueAndSaveLogs(logs []types.Log) error {
 
 		err := s.enqueueAndSaveLog(log)
 		if err != nil {
+			prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "enqueueAndSaveLogError"}).Inc()
+			s.logger.Error("failed to compensate missed log", []logger.Field{
+				{"blockNumber", log.BlockNumber},
+				{"index", log.Index}}...)
 			return errors.WithStack(err)
 		}
 		prom.EventCompensation.With(prometheus.Labels{"type": "ethLog"}).Inc()
+		s.logger.Debug("compensated missed log", []logger.Field{
+			{"blockNumber", log.BlockNumber},
+			{"index", log.Index}}...)
 	}
 	return nil
 }
