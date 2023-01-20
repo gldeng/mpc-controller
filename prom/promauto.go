@@ -46,6 +46,23 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
+	// Event compensation metrics
+
+	EventCompensation = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "event_compensation_total",
+		Help: "The total number of event compensation",
+	}, []string{"type"})
+
+	EventCompensationError = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "event_compensation_error_total",
+		Help: "The total number of event compensation error",
+	}, []string{"type", "reason"})
+
+	EventReverted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "event_reverted_total",
+		Help: "The total number of event reverted",
+	}, []string{"type"})
+
 	// DB operation metrics
 
 	DBOperation = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -60,9 +77,9 @@ var (
 
 	// Invalid received event metrics
 
-	InvalidReceivedEvent = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: prefix + "invalid_received_event_total",
-		Help: "The total number of invalid received event",
+	InvalidStreamingEvent = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "invalid_streaming_event_total",
+		Help: "The total number of invalid streaming event",
 	}, []string{"type", "field"})
 
 	// Discontinuous value metric

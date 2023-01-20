@@ -2,8 +2,6 @@ package subscriber
 
 import (
 	"context"
-	"encoding/json"
-	binding "github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
@@ -14,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"math/big"
 	"time"
 )
 
@@ -24,24 +21,19 @@ const (
 	queueBufferChanCapacity = 2048
 )
 
-var (
-	enqueuedLogKey = []byte("enqueued-eth-log")
-)
-
 type Subscriber struct {
-	ctx            context.Context
-	logger         logger.Logger
-	config         core.Config
-	client         *ethclient.Client
-	subscription   ethereum.Subscription
-	eventLogQueue  Queue
-	eventIDGetter  EventIDGetter
-	filter         ethereum.FilterQuery
-	backoffMax     time.Duration
-	lastStakeReqNo *big.Int
-	logUnpacker    LogUnpacker
-	queueBufferCh  chan types.Log
-	db             core.Store
+	ctx           context.Context
+	logger        logger.Logger
+	config        core.Config
+	client        *ethclient.Client
+	subscription  ethereum.Subscription
+	eventLogQueue Queue
+	eventIDGetter EventIDGetter
+	filter        ethereum.FilterQuery
+	backoffMax    time.Duration
+	logUnpacker   LogUnpacker
+	queueBufferCh chan types.Log
+	db            core.Store
 }
 
 type Queue interface {
@@ -85,6 +77,12 @@ func (s *Subscriber) Start() error {
 			s.logger.Error("got an error for subscription", []logger.Field{{"error", err}}...)
 		}
 
+		err = s.compensateMissedLogs()
+		if err != nil {
+			s.logger.Error("failed to compensate missed logs", []logger.Field{{"error", err}}...)
+			return nil, err
+		}
+
 		eventLogs := make(chan types.Log, eventLogChanCapacity)
 		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
 		if err != nil {
@@ -101,56 +99,21 @@ func (s *Subscriber) Start() error {
 					return
 				case log := <-eventLogs:
 					s.updateMetricOnEvtID(log)
-					s.logger.Debug("received event log", []logger.Field{
-						{"address", log.Address},
-						{"txHash", log.TxHash},
-						{"topics", log.Topics},
-						{"blockNumber", log.BlockNumber},
-						{"index", log.Index},
-						{"removed", log.Removed}}...)
 
-					valid, err := s.verifyReceivedLog(log)
+					err := s.verifyStreamingLog(log)
 					if err != nil {
-						s.logger.Error("failed to verify received log", []logger.Field{
+						s.logger.Error("failed to verify streaming log", []logger.Field{
 							{"blockNumber", log.BlockNumber},
 							{"index", log.Index},
 							{"error", err}}...)
 						continue
 					}
 
-					if !valid {
-						continue
-					}
-
-					s.checkStakeReqNoContinuity(log)
-
-					s.queueBufferCh <- log
-					if err := s.eventLogQueue.Enqueue(<-s.queueBufferCh); err != nil {
-						prom.QueueOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "enqueue"}).Inc()
-						s.logger.Error("failed to enqueue event log, enqueue error", []logger.Field{
-							{"blockNumber", log.BlockNumber},
-							{"index", log.Index},
-							{"error", err}}...)
-						continue
-					}
-					prom.QueueOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "enqueue"}).Inc()
-					s.logger.Debug("enqueued event log", []logger.Field{
-						{"blockNumber", log.BlockNumber},
-						{"index", log.Index}}...)
-
-					err = s.saveEnqueuedLog(enqueuedLog{log.BlockNumber, log.Index})
+					err = s.checkStakeReqNoContinuity(log)
 					if err != nil {
-						s.logger.Error("failed to save enqueued event log", []logger.Field{
-							{"blockNumber", log.BlockNumber},
-							{"index", log.Index},
-							{"error", err}}...)
-						prom.DBOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
-						continue
+						s.logger.Error("failed to check the continuity of stake request number")
 					}
-					prom.DBOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
-					s.logger.Debug("saved enqueued event log", []logger.Field{
-						{"blockNumber", log.BlockNumber},
-						{"index", log.Index}}...)
+					_ = s.enqueueAndSaveLog(log)
 				case <-sub.Err():
 					return
 				}
@@ -176,56 +139,44 @@ func (s *Subscriber) Close() error {
 	return nil
 }
 
-type enqueuedLog struct {
-	BlockNumber uint64
-	Index       uint
-}
-
-// validateReceivedLog verifies the block number and index of a received eth log against those of stored enqueued log
-func (s *Subscriber) verifyReceivedLog(receivedLog types.Log) (bool, error) {
-	found, err := s.db.Exists(s.ctx, enqueuedLogKey)
+// verifyStreamingLog verifies the block number and index of a streaming eth log against those of stored enqueued log
+func (s *Subscriber) verifyStreamingLog(streamingLog types.Log) error {
+	found, err := s.foundEnqueuedLog()
 	if err != nil {
-		return false, errors.WithStack(err)
+		return errors.Wrap(err, "failed to check enqueued log existence")
 	}
 
 	if !found {
-		return true, nil
+		return nil
 	}
 
-	storedBytes, err := s.db.Get(s.ctx, enqueuedLogKey)
+	storedLog, err := s.loadEnqueuedLog()
 	if err != nil {
-		return false, errors.WithStack(err)
+		return errors.Wrap(err, "failed to load enqueued log")
 	}
 
-	var storedLog enqueuedLog
-	_ = json.Unmarshal(storedBytes, &storedLog)
-
-	if receivedLog.BlockNumber < storedLog.BlockNumber {
-		prom.InvalidReceivedEvent.With(prometheus.Labels{"type": "ethLog", "field": "blockNumber"}).Inc()
-		s.logger.Error("invalid block number", []logger.Field{
-			{"minimumAccepted", storedLog.BlockNumber},
-			{"got", receivedLog.BlockNumber}}...)
-		return false, nil
+	if streamingLog.BlockNumber < storedLog.BlockNumber {
+		prom.InvalidStreamingEvent.With(prometheus.Labels{"type": "ethLog", "field": "blockNumber"}).Inc()
+		return errors.Errorf("invalid streaming log: block number unaccepted, minimumAccepted:%v, got:%v", storedLog.BlockNumber, streamingLog.BlockNumber)
 	}
 
-	if receivedLog.BlockNumber == storedLog.BlockNumber && receivedLog.Index <= storedLog.Index {
-		prom.InvalidReceivedEvent.With(prometheus.Labels{"type": "ethLog", "field": "index"}).Inc()
-		s.logger.Error("invalid block number", []logger.Field{
-			{"minimumAccepted", storedLog.Index + 1},
-			{"got", receivedLog.Index}}...)
-		return false, nil
+	if streamingLog.BlockNumber == storedLog.BlockNumber && streamingLog.Index <= storedLog.Index {
+		prom.InvalidStreamingEvent.With(prometheus.Labels{"type": "ethLog", "field": "index"}).Inc()
+		return errors.Errorf("invalid streaming log: index unaccepted, minimumAccepted:%v, got:%v", storedLog.Index+1, streamingLog.Index)
 	}
 
-	return true, nil
-}
-
-func (s *Subscriber) saveEnqueuedLog(log enqueuedLog) error {
-	logBytes, _ := json.Marshal(log)
-	err := s.db.Set(s.ctx, enqueuedLogKey, logBytes)
-	return errors.WithStack(err)
+	return nil
 }
 
 func (s *Subscriber) updateMetricOnEvtID(log types.Log) {
+	s.logger.Debug("received event log", []logger.Field{
+		{"address", log.Address},
+		{"txHash", log.TxHash},
+		{"topics", log.Topics},
+		{"blockNumber", log.BlockNumber},
+		{"index", log.Index},
+		{"removed", log.Removed}}...)
+
 	switch log.Topics[0] {
 	case s.eventIDGetter.GetEventID(core.EvtRequestStarted):
 	case s.eventIDGetter.GetEventID(core.EvtParticipantAdded):
@@ -236,35 +187,5 @@ func (s *Subscriber) updateMetricOnEvtID(log types.Log) {
 		prom.ContractEvtKeyGenerated.Inc()
 	case s.eventIDGetter.GetEventID(core.EvtStakeRequestAdded):
 		prom.ContractEvtStakeRequestAdded.Inc()
-	}
-}
-
-func (s *Subscriber) checkStakeReqNoContinuity(log types.Log) {
-	switch log.Topics[0] {
-	case s.eventIDGetter.GetEventID(core.EvtStakeRequestAdded):
-		event := new(binding.MpcManagerStakeRequestAdded)
-		err := s.logUnpacker.UnpackLog(event, core.EvtStakeRequestAdded, log)
-		if err != nil {
-			s.logger.Error("failed to unpack log for EvtStakeRequestAdded", []logger.Field{{"error", err}}...)
-		}
-
-		newStakeReqNo := event.RequestNumber
-
-		defer func() {
-			s.lastStakeReqNo = newStakeReqNo
-		}()
-
-		if s.lastStakeReqNo != nil {
-			one := big.NewInt(1)
-			plusOne := new(big.Int).Add(s.lastStakeReqNo, one)
-			if plusOne.Cmp(newStakeReqNo) != 0 {
-				prom.DiscontinuousValue.With(prometheus.Labels{"checker": "subscriber", "field": "stakeReqNo"}).Inc()
-				s.logger.Warn("got discontinuous stake request number", []logger.Field{
-					{"expectedStakeReqNo", plusOne},
-					{"gotStakeReqNo", newStakeReqNo},
-					{"blockNumber", log.BlockNumber},
-					{"txHash", log.TxHash}}...)
-			}
-		}
 	}
 }
