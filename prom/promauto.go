@@ -58,6 +58,11 @@ var (
 		Help: "The total number of event compensation error",
 	}, []string{"type", "reason"})
 
+	EventReverted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "event_reverted_total",
+		Help: "The total number of event reverted",
+	}, []string{"type"})
+
 	// DB operation metrics
 
 	DBOperation = promauto.NewCounterVec(prometheus.CounterOpts{
