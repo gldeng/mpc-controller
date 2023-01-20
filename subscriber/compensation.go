@@ -13,6 +13,8 @@ import (
 
 // compensateMissedLogs compensate occasionally missed eth log because of bad situations, such as network partition
 func (s *Subscriber) compensateMissedLogs() error {
+	s.logger.Debug("prepare to compensate missed logs")
+
 	found, err := s.foundEnqueuedLog()
 	if err != nil {
 		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "readDb"}).Inc()
@@ -20,6 +22,7 @@ func (s *Subscriber) compensateMissedLogs() error {
 	}
 
 	if !found {
+		s.logger.Debug("no need to compensate: no enqueued log found")
 		return nil
 	}
 
@@ -35,7 +38,14 @@ func (s *Subscriber) compensateMissedLogs() error {
 		return errors.Wrap(err, "failed to filter latest logs")
 	}
 
-	err = s.enqueueAndSaveLogs(s.filterMissedLogs(maybeMissedLogs, storedLog))
+	missedLogs := s.filterMissedLogs(maybeMissedLogs, storedLog)
+	if len(missedLogs) == 0 {
+		s.logger.Debug("no need to compensate: no missed logs found")
+		return nil
+	}
+
+	s.logger.Debug("continue to compensate missed logs")
+	err = s.enqueueAndSaveLogs(missedLogs)
 	if err != nil {
 		prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "enqueueAndSaveLog"}).Inc()
 		return errors.Wrap(err, "failed to enqueue and save logs")
