@@ -86,10 +86,6 @@ func (s *Subscriber) filterMissedLogs(maybeMissedLogs []types.Log, storedLog enq
 			{"index", maybeMissedLog.Index}}...)
 		missedLogs = append(missedLogs, maybeMissedLog)
 	}
-	if len(missedLogs) == 0 {
-		s.logger.Debug("no missed log found")
-		return nil
-	}
 	return missedLogs
 }
 
