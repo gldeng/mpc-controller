@@ -11,7 +11,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7001"
       --publicKey  033217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller1/
       --keystoreDir /app/keystore/
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
@@ -34,7 +34,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7002"
       --publicKey  0272eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller2/
       --keystoreDir /app/keystore/
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
@@ -57,7 +57,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7003"
       --publicKey  0373ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller3/
       --keystoreDir /app/keystore/
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
@@ -80,7 +80,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7004"
       --publicKey  038196e06c3e803d0af06693a504ad14317550b4be4396ef57cf5f520c0f84833d
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller4/
       --keystoreDir /app/keystore/      
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
@@ -104,7 +104,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7005"
       --publicKey  03c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66d
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller5/
       --keystoreDir /app/keystore/
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
@@ -127,7 +127,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7006"
       --publicKey  03d0639e479fa1ca8ee13fd966c216e662408ff00349068bdc9c6966c4ea10fe3e
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller6/
       --keystoreDir /app/keystore/      
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
@@ -150,7 +150,7 @@ services:
       --mpcServerUrl http://localhost:9000
       --metricsServeAddr ":7007"
       --publicKey  02df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f345
-      --dbPath /app/data/controller/
+      --dbPath /app/data/controller7/
       --keystoreDir /app/keystore/      
       --passwordFile /app/password/password
       --mpc-manager-address 0x3bc883c6bc0bb832987c7dfd132649133b77a3fc
