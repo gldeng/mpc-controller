@@ -22,10 +22,6 @@ const (
 	queueBufferChanCapacity = 2048
 )
 
-var (
-	enqueuedLogKey = []byte("enqueued-eth-log")
-)
-
 type Subscriber struct {
 	ctx            context.Context
 	logger         logger.Logger

@@ -9,6 +9,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+var (
+	enqueuedLogKey = []byte("enqueued-eth-log")
+)
+
 type enqueuedLog struct {
 	BlockNumber uint64
 	Index       uint
