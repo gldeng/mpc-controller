@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"math/big"
 	"time"
 )
 
@@ -23,19 +22,18 @@ const (
 )
 
 type Subscriber struct {
-	ctx            context.Context
-	logger         logger.Logger
-	config         core.Config
-	client         *ethclient.Client
-	subscription   ethereum.Subscription
-	eventLogQueue  Queue
-	eventIDGetter  EventIDGetter
-	filter         ethereum.FilterQuery
-	backoffMax     time.Duration
-	lastStakeReqNo *big.Int
-	logUnpacker    LogUnpacker
-	queueBufferCh  chan types.Log
-	db             core.Store
+	ctx           context.Context
+	logger        logger.Logger
+	config        core.Config
+	client        *ethclient.Client
+	subscription  ethereum.Subscription
+	eventLogQueue Queue
+	eventIDGetter EventIDGetter
+	filter        ethereum.FilterQuery
+	backoffMax    time.Duration
+	logUnpacker   LogUnpacker
+	queueBufferCh chan types.Log
+	db            core.Store
 }
 
 type Queue interface {
@@ -111,7 +109,10 @@ func (s *Subscriber) Start() error {
 						continue
 					}
 
-					s.checkStakeReqNoContinuity(log)
+					err = s.checkStakeReqNoContinuity(log)
+					if err != nil {
+						s.logger.Error("failed to check the continuity of stake request number")
+					}
 					_ = s.enqueueAndSaveLog(log)
 				case <-sub.Err():
 					return

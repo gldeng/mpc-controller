@@ -9,40 +9,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// ----------for log----------
+
 var (
 	enqueuedLogKey = []byte("enqueued-eth-log")
 )
-
-type enqueuedLog struct {
-	BlockNumber uint64
-	Index       uint
-}
-
-func (s *Subscriber) foundEnqueuedLog() (bool, error) {
-	found, err := s.db.Exists(s.ctx, enqueuedLogKey)
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-
-	return found, nil
-}
-
-func (s *Subscriber) loadEnqueuedLog() (enqueuedLog, error) {
-	storedBytes, err := s.db.Get(s.ctx, enqueuedLogKey)
-	if err != nil {
-		return enqueuedLog{}, errors.WithStack(err)
-	}
-
-	var storedLog enqueuedLog
-	_ = json.Unmarshal(storedBytes, &storedLog)
-	return storedLog, nil
-}
-
-func (s *Subscriber) saveEnqueuedLog(log enqueuedLog) error {
-	logBytes, _ := json.Marshal(log)
-	err := s.db.Set(s.ctx, enqueuedLogKey, logBytes)
-	return errors.WithStack(err)
-}
 
 func (s *Subscriber) enqueueAndSaveLog(log types.Log) error {
 	var gotErr error
@@ -75,4 +46,65 @@ func (s *Subscriber) enqueueAndSaveLog(log types.Log) error {
 	}
 	prom.DBOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
 	return nil
+}
+
+type enqueuedLog struct {
+	BlockNumber uint64
+	Index       uint
+}
+
+func (s *Subscriber) foundEnqueuedLog() (bool, error) {
+	found, err := s.db.Exists(s.ctx, enqueuedLogKey)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	return found, nil
+}
+
+func (s *Subscriber) loadEnqueuedLog() (enqueuedLog, error) {
+	storedBytes, err := s.db.Get(s.ctx, enqueuedLogKey)
+	if err != nil {
+		return enqueuedLog{}, errors.WithStack(err)
+	}
+
+	var storedLog enqueuedLog
+	_ = json.Unmarshal(storedBytes, &storedLog)
+	return storedLog, nil
+}
+
+func (s *Subscriber) saveEnqueuedLog(log enqueuedLog) error {
+	logBytes, _ := json.Marshal(log)
+	err := s.db.Set(s.ctx, enqueuedLogKey, logBytes)
+	return errors.WithStack(err)
+}
+
+// ----------for stake request number----------
+
+var (
+	stakeReqNoKey = []byte("stake-request-number")
+)
+
+type stakeReqNo string
+
+func (s *Subscriber) foundStakeReqNo() (bool, error) {
+	found, err := s.db.Exists(s.ctx, stakeReqNoKey)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	return found, nil
+}
+
+func (s *Subscriber) loadStakeReqNo() (stakeReqNo, error) {
+	storedBytes, err := s.db.Get(s.ctx, stakeReqNoKey)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return stakeReqNo(storedBytes), nil
+}
+
+func (s *Subscriber) saveStakeReqNo(reqNo stakeReqNo) error {
+	err := s.db.Set(s.ctx, stakeReqNoKey, []byte(reqNo))
+	return errors.WithStack(err)
 }

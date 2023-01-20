@@ -103,9 +103,12 @@ func (s *Subscriber) filterLatestLogs(fromBlock uint64) ([]types.Log, error) {
 func (s *Subscriber) enqueueAndSaveLogs(logs []types.Log) error {
 	for _, log := range logs {
 		s.updateMetricOnEvtID(log)
-		s.checkStakeReqNoContinuity(log)
+		err := s.checkStakeReqNoContinuity(log)
+		if err != nil {
+			s.logger.Error("failed to check the continuity of stake request number")
+		}
 
-		err := s.enqueueAndSaveLog(log)
+		err = s.enqueueAndSaveLog(log)
 		if err != nil {
 			prom.EventCompensationError.With(prometheus.Labels{"type": "ethLog", "reason": "enqueueAndSaveLogError"}).Inc()
 			s.logger.Error("failed to compensate missed log", []logger.Field{
