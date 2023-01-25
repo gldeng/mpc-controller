@@ -116,7 +116,7 @@ func (m PubKeys) CompressPubKeyHexs() ([]string, error) {
 // ParticipantId
 
 const (
-	InitBit = "8000000000000000000000000000000000000000000000000000000000000000"
+	InitBit = "800000000000000000"
 )
 
 type ParticipantId [32]byte
@@ -146,7 +146,7 @@ type Indices big.Int
 
 func (m *Indices) Indices() []uint {
 	var joinedPartiIndices []uint
-	for i := 0; i < 248; i++ {
+	for i := 0; i < 64; i++ {
 		indices := (big.Int)(*m)
 		initBit, _ := new(big.Int).SetString(InitBit, 16)
 		myConfirm := new(big.Int).Rsh(initBit, uint(i))

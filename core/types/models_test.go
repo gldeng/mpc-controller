@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"math/big"
 	"testing"
 )
 
@@ -15,6 +16,15 @@ func TestRequestHash_SetTaskType(t *testing.T) {
 	reqHash.SetTaskType(TaskTypStake)
 	require.True(t, reqHash.IsTaskType(TaskTypStake))
 	require.Equal(t, TaskType(1), reqHash.TaskType())
+}
+
+func TestIndices(t *testing.T) {
+	rec := &big.Int{}
+	rec.SetBytes(bytes.HexToBytes("0115cfc0993c48371b"))
+	indices := Indices(*rec)
+	actual := indices.Indices()
+	expected := []uint{8, 12, 14, 16, 17, 18, 21, 22, 23, 24, 25, 26, 33, 36, 37, 40, 43, 44, 45, 46, 50, 53, 59, 60, 62, 63, 64}
+	require.Equal(t, expected, actual)
 }
 
 // PubKey test suite
