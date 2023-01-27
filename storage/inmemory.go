@@ -3,6 +3,11 @@ package storage
 import (
 	"context"
 	"encoding/hex"
+	"github.com/avalido/mpc-controller/core"
+)
+
+var (
+	_ core.Store = (*InMemoryDb)(nil)
 )
 
 type InMemoryDb struct {
@@ -18,7 +23,12 @@ func (i *InMemoryDb) Set(ctx context.Context, key, val []byte) error {
 	return nil
 }
 
-func (i InMemoryDb) Get(ctx context.Context, key []byte) ([]byte, error) {
+func (i *InMemoryDb) Get(ctx context.Context, key []byte) ([]byte, error) {
 	bytes := i.data[hex.EncodeToString(key)]
 	return bytes, nil
+}
+
+func (i *InMemoryDb) Exists(ctx context.Context, key []byte) (bool, error) {
+	bytes, err := i.Get(ctx, key)
+	return bytes != nil, err
 }

@@ -18,7 +18,7 @@ import (
 
 func TestKeyGeneratedHandler(t *testing.T) {
 
-	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	mpcClient, err := mpcclient.NewSimulatingClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 	config := core.Config{
 		Host:              "localhost",
 		Port:              9650,

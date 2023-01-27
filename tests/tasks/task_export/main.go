@@ -32,11 +32,11 @@ func idFromString(str string) ids.ID {
 
 func main() {
 
-	mpcClient, err := mpcclient.NewSimulatingMpcClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
+	mpcClient, err := mpcclient.NewSimulatingClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
 
 	panicIfError(err)
 	config := core.Config{
-		Host:              "34.172.25.188",
+		Host:              "172.18.0.1",
 		Port:              9650,
 		SslEnabled:        false,
 		MpcManagerAddress: common.Address{},
@@ -65,7 +65,9 @@ func main() {
 		ParticipantPubKeys: nil,
 		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
 	}
-	task, err := c2p.NewExportFromCChain("abc", quorum, *big.NewInt(100))
+	amount := big.Int{}
+	amount.SetString("101000000000", 10)
+	task, err := c2p.NewExportFromCChain("abc", quorum, amount)
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
