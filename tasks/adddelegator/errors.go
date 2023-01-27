@@ -24,4 +24,5 @@ const (
 	ErrMsgCheckTxStatusFail             = "failed to check tx status"
 	ErrMsgTxFail                        = "tx failed"
 	ErrMsgTimedOut                      = "task timeout"
+	ErrMsgMemoOversized                 = "memo exceeds the max"
 )

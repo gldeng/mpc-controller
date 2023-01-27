@@ -69,7 +69,7 @@ func (t *TxBuilder) ExportFromCChain(pubKey types.PubKey, amount, nonce uint64) 
 	return tx, nil
 }
 
-func (t *TxBuilder) ImportIntoPChain(pubKey types.PubKey, signedExportTx *evm.Tx) (*txs.ImportTx, error) {
+func (t *TxBuilder) ImportIntoPChain(pubKey types.PubKey, signedExportTx *evm.Tx, memo []byte) (*txs.ImportTx, error) {
 	exportTx, ok := signedExportTx.UnsignedAtomicTx.(*evm.UnsignedExportTx)
 	if !ok {
 		return nil, errors.New("not a valid ExportTx")
@@ -87,6 +87,7 @@ func (t *TxBuilder) ImportIntoPChain(pubKey types.PubKey, signedExportTx *evm.Tx
 			Outs: []*avax.TransferableOutput{
 				utxo,
 			},
+			Memo: memo,
 		}},
 		SourceChain: t.net.CChainID(),
 		ImportedInputs: []*avax.TransferableInput{{

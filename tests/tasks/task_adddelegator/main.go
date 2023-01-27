@@ -39,6 +39,11 @@ func extractThreshold(groupId [32]byte) int64 {
 }
 
 func main() {
+
+	// CHANGE ME -->
+	host := "172.18.0.1"
+	// <--
+
 	logger.DevMode = true
 	logger.UseConsoleEncoder = true
 
@@ -46,7 +51,7 @@ func main() {
 	panicIfError(err)
 
 	config := core.Config{
-		Host:              "34.172.25.188",
+		Host:              host,
 		Port:              9650,
 		SslEnabled:        false,
 		MpcManagerAddress: common.Address{},
@@ -84,7 +89,7 @@ func main() {
 		NodeID:    "NodeID-P7oB2McjBGgW2NXXWVYjV8JEDFoW9xDE5",
 		Amount:    "100000000000000000000",
 		StartTime: timestamp,
-		EndTime:   timestamp + 2*60*60,
+		EndTime:   timestamp + 30*24*60*60,
 	}, quorum)
 
 	panicIfError(err)

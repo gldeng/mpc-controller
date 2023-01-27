@@ -47,6 +47,9 @@ type AddDelegator struct {
 }
 
 func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
+	if len(flowId) > 256 {
+		return nil, errors.New(ErrMsgMemoOversized)
+	}
 	return &AddDelegator{
 		FlowId:   flowId,
 		TaskType: taskTypeExport,
@@ -212,7 +215,7 @@ func (t *AddDelegator) sendTx(ctx core.TaskContext) error {
 }
 
 func (t *AddDelegator) buildTask(ctx core.TaskContext) error {
-	tx, err := NewAddDelegatorTx(t.Param, t.Quorum, ctx)
+	tx, err := NewAddDelegatorTx(t.Param, t.Quorum, t.FlowId, ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to build AddDelegatorTx")
 	}

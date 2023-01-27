@@ -65,6 +65,9 @@ func (t *ImportIntoPChain) IsDone() bool {
 }
 
 func NewImportIntoPChain(flowId string, quorum types.QuorumInfo, signedExportTx *evm.Tx) (*ImportIntoPChain, error) {
+	if len(flowId) > 256 {
+		return nil, errors.New(ErrMsgMemoOversized)
+	}
 	return &ImportIntoPChain{
 		Status:         StatusInit,
 		FlowId:         flowId,
@@ -151,7 +154,7 @@ func (t *ImportIntoPChain) buildSignReq(id string, hash []byte) (*mpc.SignReques
 
 func (t *ImportIntoPChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
-	tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx)
+	tx, err := builder.ImportIntoPChain(t.Quorum.PubKey, t.SignedExportTx, []byte(t.FlowId))
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 	}

@@ -16,6 +16,7 @@ import (
 )
 
 type AddDelegatorTx struct {
+	FlowId    string
 	NetworkID uint32
 	Asset     avax.Asset
 
@@ -33,8 +34,9 @@ type AddDelegatorTx struct {
 
 // ---
 
-func NewAddDelegatorTx(param *StakeParam, quorum types.QuorumInfo, ctx core.TaskContext) (*AddDelegatorTx, error) {
+func NewAddDelegatorTx(param *StakeParam, quorum types.QuorumInfo, flowId string, ctx core.TaskContext) (*AddDelegatorTx, error) {
 	tx := AddDelegatorTx{
+		FlowId:        flowId,
 		NetworkID:     ctx.GetNetwork().NetworkID(),
 		Asset:         ctx.GetNetwork().Asset(),
 		PChainAddress: quorum.PChainAddress(),
@@ -123,6 +125,7 @@ func (t *AddDelegatorTx) buildUnsignedTx() (*txs.AddDelegatorTx, error) {
 			NetworkID:    t.NetworkID,
 			BlockchainID: ids.Empty,
 			Ins:          ins,
+			Memo:         []byte(t.FlowId),
 		}},
 		Validator: validator.Validator{
 			NodeID: t.NodeID,
