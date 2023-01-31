@@ -5,6 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	pStatus "github.com/ava-labs/avalanchego/vms/platformvm/status"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	coreTypes "github.com/ava-labs/coreth/core/types"
 	"github.com/ava-labs/coreth/core/vm"
 	"github.com/ava-labs/coreth/interfaces"
@@ -250,6 +251,14 @@ func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.Status, error) {
 	default:
 		return core.Status{core.TxStatusInvalid, resp.Reason}, nil
 	}
+}
+
+func (t *TaskContextImp) GetPChainTx(txID ids.ID) (*txs.Tx, error) {
+	txBytes, err := t.PChainClient.GetTx(context.Background(), txID)
+	if err != nil {
+		return nil, err
+	}
+	return txs.Parse(txs.Codec, txBytes)
 }
 
 func (t *TaskContextImp) NonceAt(account common.Address) (uint64, error) {

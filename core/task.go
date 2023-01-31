@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
@@ -38,6 +39,7 @@ type TaskContext interface {
 	CheckEthTx(txHash common.Hash) (TxStatus, error)
 	CheckCChainTx(id ids.ID) (TxStatus, error)
 	CheckPChainTx(id ids.ID) (Status, error)
+	GetPChainTx(txID ids.ID) (*txs.Tx, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})
 	GetDb() Store
