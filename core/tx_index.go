@@ -6,9 +6,13 @@ import (
 	"time"
 )
 
-type TxIndex interface {
+type TxIndexReader interface {
 	// GetTxByType retrieves the tx for the request identified by request hash and type
 	GetTxByType(requestHash [32]byte, typ string) (ids.ID, error)
+}
+
+type TxIndex interface {
+	TxIndexReader
 	// SetTxByType sets the txID for the request identified by request hash and type
 	SetTxByType(requestHash [32]byte, typ string, txID ids.ID) error
 	// PurgeOlderThan removes all records older than the given time
