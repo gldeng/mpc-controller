@@ -41,7 +41,7 @@ func extractThreshold(groupId [32]byte) int64 {
 func main() {
 
 	// CHANGE ME -->
-	host := "172.18.0.1"
+	host := "172.21.128.1"
 	// <--
 
 	logger.DevMode = true

@@ -2,9 +2,6 @@ package stake
 
 import (
 	"fmt"
-	"math/big"
-	"strconv"
-
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -12,6 +9,8 @@ import (
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/pkg/errors"
+	"math/big"
+	"strconv"
 )
 
 const (
@@ -25,7 +24,7 @@ var (
 type Status int
 
 type InitialStake struct {
-	FlowId   string
+	FlowId   core.FlowId
 	TaskType string
 	Quorum   types.QuorumInfo
 
@@ -53,7 +52,11 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 	amount := new(big.Int)
 	amount.SetString(request.Amount, 10)
-	flowID := "initialStake" + "_" + strconv.FormatUint(request.ReqNo, 10) + "_" + id.String() // TODO: reuse initialStake from common package
+
+	flowID := core.FlowId{
+		Tag:         "initialStake" + "_" + strconv.FormatUint(request.ReqNo, 10),
+		RequestHash: id,
+	}
 	c2pInstance, err := c2p.NewC2P(flowID, quorum, *amount)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create C2P instance")

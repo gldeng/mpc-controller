@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
@@ -51,4 +52,14 @@ type TaskContext interface {
 type TaskContextFactory = func() TaskContext
 type TaskSubmitter interface {
 	Submit(task Task) error
+}
+
+// FlowId is used to link multiple tasks belonging to the same unit of work
+type FlowId struct {
+	Tag         string
+	RequestHash types.RequestHash
+}
+
+func (id FlowId) String() string {
+	return fmt.Sprintf("%v_%x", id.Tag, id.RequestHash)
 }
