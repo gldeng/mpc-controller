@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/common"
@@ -31,7 +32,8 @@ func (i *Indexer) Start() error {
 		for {
 			select {
 			case <-timer.C:
-				i.runCurrentValidators(client)
+				i.scanDelegators(client)
+				i.scanUTXOs(client)
 				interval := time.Now().Sub(nextRun)
 				timer.Reset(interval)
 			}
@@ -41,7 +43,7 @@ func (i *Indexer) Start() error {
 	return nil
 }
 
-func (i *Indexer) runCurrentValidators(client platformvm.Client) error {
+func (i *Indexer) scanDelegators(client platformvm.Client) error {
 	validators, err := client.GetCurrentValidators(context.Background(), ids.Empty, nil) // TODO: give proper context
 	if err != nil {
 		return err
@@ -81,5 +83,59 @@ func (i *Indexer) runCurrentValidators(client platformvm.Client) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (i *Indexer) scanUTXOs(client platformvm.Client) error {
+
+	addresses, err := common.LoadAllAddresses(i.services.Db)
+	if err != nil {
+		return err
+	}
+
+	var utxosAll [][]byte
+	startAddr := ids.ShortEmpty
+	startUtxoID := ids.Empty
+
+	for {
+		var utxos [][]byte
+		utxos, startAddr, startUtxoID, err = client.GetUTXOs(context.Background(), addresses.List(), 1024, startAddr, startUtxoID) // TODO: give proper context
+		if err != nil {
+			return err
+		}
+		if utxos == nil {
+			break
+		}
+		utxosAll = append(utxosAll, utxos...)
+	}
+
+	var txIDs []ids.ID
+	for _, bytes := range utxosAll {
+		utxo := &avax.UTXO{}
+		_, err := txs.Codec.Unmarshal(bytes, utxo)
+		if err != nil {
+			return err
+		}
+		txIDs = append(txIDs, utxo.TxID)
+	}
+
+	for _, txId := range txIDs {
+		txBytes, err := client.GetTx(context.Background(), txId)
+		if err != nil {
+			return err
+		}
+		tx, err := txs.Parse(txs.Codec, txBytes)
+		if err != nil {
+			return err
+		}
+		uTx := tx.Unsigned.(*txs.ImportTx)
+		reqHash := types.RequestHash{}
+		copy(reqHash[:], uTx.Memo)
+		err = i.services.TxIndex.SetTxByType(reqHash, "Import", txId)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

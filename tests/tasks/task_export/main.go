@@ -36,7 +36,7 @@ func main() {
 
 	panicIfError(err)
 	config := core.Config{
-		Host:              "172.18.0.1",
+		Host:              "172.21.128.1",
 		Port:              9650,
 		SslEnabled:        false,
 		MpcManagerAddress: common.Address{},
@@ -68,7 +68,10 @@ func main() {
 	}
 	amount := big.Int{}
 	amount.SetString("101000000000", 10)
-	task, err := c2p.NewExportFromCChain("abc", quorum, amount)
+	task, err := c2p.NewExportFromCChain(core.FlowId{
+		Tag:         "abc",
+		RequestHash: types.RequestHash{},
+	}, quorum, amount)
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
