@@ -31,7 +31,7 @@ var (
 
 type ExportFromCChain struct {
 	Status      Status
-	FlowId      string
+	FlowId      core.FlowId
 	TaskType    string
 	Amount      big.Int
 	Quorum      types.QuorumInfo
@@ -60,7 +60,7 @@ func (t *ExportFromCChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewExportFromCChain(flowId string, quorum types.QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
+func NewExportFromCChain(flowId core.FlowId, quorum types.QuorumInfo, amount big.Int) (*ExportFromCChain, error) {
 	return &ExportFromCChain{
 		Status:      StatusInit,
 		FlowId:      flowId,

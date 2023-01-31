@@ -20,7 +20,7 @@ var (
 
 type C2P struct {
 	Status   Status
-	FlowId   string
+	FlowId   core.FlowId
 	TaskType string
 	Quorum   types.QuorumInfo
 
@@ -29,14 +29,14 @@ type C2P struct {
 	SubTaskHasError error
 }
 
-func NewC2P(FlowId string, quorum types.QuorumInfo, amount big.Int) (*C2P, error) {
-	exportTask, err := NewExportFromCChain(FlowId, quorum, amount)
+func NewC2P(flowId core.FlowId, quorum types.QuorumInfo, amount big.Int) (*C2P, error) {
+	exportTask, err := NewExportFromCChain(flowId, quorum, amount)
 	if err != nil {
 		return nil, err
 	}
 	return &C2P{
 		Status:     StatusInit,
-		FlowId:     FlowId,
+		FlowId:     flowId,
 		TaskType:   taskTypeC2P,
 		Quorum:     quorum,
 		ExportTask: exportTask,

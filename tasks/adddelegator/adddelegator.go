@@ -3,8 +3,9 @@ package addDelegator
 import (
 	"context"
 	"fmt"
-	"github.com/avalido/mpc-controller/core/mpc"
 	"time"
+
+	"github.com/avalido/mpc-controller/core/mpc"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -29,7 +30,7 @@ var (
 )
 
 type AddDelegator struct {
-	FlowId   string
+	FlowId   core.FlowId
 	TaskType string
 	Quorum   types.QuorumInfo
 	Param    *StakeParam
@@ -46,10 +47,7 @@ type AddDelegator struct {
 	issuedByOthers bool
 }
 
-func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
-	if len(flowId) > 256 {
-		return nil, errors.New(ErrMsgMemoOversized)
-	}
+func NewAddDelegator(flowId core.FlowId, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
 	return &AddDelegator{
 		FlowId:   flowId,
 		TaskType: taskTypeExport,
@@ -64,7 +62,7 @@ func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) 
 }
 
 func (t *AddDelegator) GetId() string {
-	return fmt.Sprintf("%v-addDelegator", t.FlowId)
+	return fmt.Sprintf("%v-addDelegator", t.FlowId.String())
 }
 
 func (t *AddDelegator) FailedPermanently() bool {

@@ -71,7 +71,10 @@ func main() {
 		ParticipantPubKeys: nil,
 		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
 	}
-	task, err := c2p.NewC2P("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv", quorum, *big.NewInt(100 * params.GWei))
+	task, err := c2p.NewC2P(core.FlowId{
+		Tag:         "abc",
+		RequestHash: types.RequestHash{},
+	}, quorum, *big.NewInt(100 * params.GWei))
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
