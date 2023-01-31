@@ -34,6 +34,7 @@ func (i *Indexer) Start() error {
 			case <-timer.C:
 				i.scanDelegators(client)
 				i.scanUTXOs(client)
+				i.services.TxIndex.PurgeOlderThan(time.Now().Add(-720 * time.Hour)) // Purge older than 30 days
 				interval := time.Now().Sub(nextRun)
 				timer.Reset(interval)
 			}
