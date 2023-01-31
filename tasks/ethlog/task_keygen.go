@@ -1,8 +1,8 @@
 package ethlog
 
 import (
-	"context"
 	"fmt"
+	"github.com/avalido/mpc-controller/common"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -67,12 +67,11 @@ func (h *KeyGeneratedHandler) saveKey(ctx core.TaskContext) error {
 		ParticipantPubKeys: h.group.MemberPublicKeys,
 	}
 
-	pubKeyBytes, err := pubKey.Encode()
+	err := common.SaveLatestPubKey(ctx.GetDb(), pubKey)
 	if err != nil {
-		return errors.Wrap(err, "failed to encode generated public key")
+		return err
 	}
-	key := []byte("latestPubKey")
-	return ctx.GetDb().Set(context.Background(), key, pubKeyBytes)
+	return common.AddPubKey(ctx.GetDb(), *pubKey)
 }
 
 func (h *KeyGeneratedHandler) failIfErrorf(err error, format string, a ...any) error {

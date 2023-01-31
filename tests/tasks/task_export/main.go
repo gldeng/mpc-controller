@@ -58,7 +58,8 @@ func main() {
 	}
 
 	db := storage.NewInMemoryDb()
-	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
+	txIndex := core.NewInMemoryTxIndex()
+	services := core.NewServicePack(config, logger.Default(), mpcClient, db, txIndex)
 	ctx, err := taskcontext.NewTaskContextImp(services)
 	panicIfError(err)
 	quorum := types.QuorumInfo{

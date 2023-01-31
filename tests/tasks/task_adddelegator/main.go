@@ -41,7 +41,7 @@ func extractThreshold(groupId [32]byte) int64 {
 func main() {
 
 	// CHANGE ME -->
-	host := "172.18.0.1"
+	host := "172.21.128.1"
 	// <--
 
 	logger.DevMode = true
@@ -73,7 +73,8 @@ func main() {
 	}
 
 	db := storage.NewInMemoryDb()
-	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
+	txIndex := core.NewInMemoryTxIndex()
+	services := core.NewServicePack(config, logger.Default(), mpcClient, db, txIndex)
 	ctx, err := taskcontext.NewTaskContextImp(services)
 
 	quorum := types.QuorumInfo{

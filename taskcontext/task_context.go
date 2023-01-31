@@ -9,6 +9,7 @@ import (
 	"github.com/ava-labs/coreth/core/vm"
 	"github.com/ava-labs/coreth/interfaces"
 	"github.com/ava-labs/coreth/plugin/evm"
+	c "github.com/avalido/mpc-controller/common"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/mpc"
@@ -269,43 +270,11 @@ func (t *TaskContextImp) GetEventID(event string) (common.Hash, error) {
 }
 
 func (t *TaskContextImp) LoadGroup(groupID [32]byte) (*types.Group, error) {
-	key := []byte("group/")
-	key = append(key, groupID[:]...)
-	groupBytes, err := t.Db.Get(context.Background(), key)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load group")
-	}
-
-	group := &types.Group{}
-	err = group.Decode(groupBytes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode group: %v %v", key, groupBytes)
-	}
-	return group, nil
+	return c.LoadGroup(t.Db, groupID)
 }
 
 func (t *TaskContextImp) LoadGroupByLatestMpcPubKey() (*types.Group, error) {
-	bytes, err := t.Db.Get(context.Background(), []byte("latestPubKey"))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load latest mpc public key")
-	}
-
-	if bytes == nil {
-		return nil, errors.New("loaded empty mpc public key")
-	}
-
-	model := types.MpcPublicKey{}
-	err = model.Decode(bytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode mpc public key")
-	}
-
-	group, err := t.LoadGroup(model.GroupId)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load group")
-	}
-
-	return group, nil
+	return c.LoadGroupByLatestMpcPubKey(t.Db)
 }
 
 func (t *TaskContextImp) GetParticipantID() types.ParticipantId {

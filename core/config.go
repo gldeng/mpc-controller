@@ -92,13 +92,15 @@ type ServicePack struct {
 	Logger    logger.Logger
 	MpcClient mpc.MpcClient
 	Db        Store
+	TxIndex   TxIndex
 }
 
-func NewServicePack(config Config, logger logger.Logger, mpcClient mpc.MpcClient, db Store) *ServicePack {
+func NewServicePack(config Config, logger logger.Logger, mpcClient mpc.MpcClient, db Store, txIndex TxIndex) *ServicePack {
 	return &ServicePack{
 		Config:    config,
 		Logger:    logger,
 		MpcClient: mpcClient,
 		Db:        db,
+		TxIndex:   txIndex,
 	}
 }
