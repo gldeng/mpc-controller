@@ -6,8 +6,9 @@ import (
 	"github.com/ava-labs/avalanchego/vms/platformvm"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/common"
-	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
+	"github.com/avalido/mpc-controller/core/types"
+	"time"
 )
 
 type Indexer struct {
@@ -22,37 +23,25 @@ func (i *Indexer) Start() error {
 	client := i.services.Config.CreatePClient()
 
 	go func() {
+		nextRun := time.Now().Add(60 * time.Minute)
 
+		timer := time.NewTimer(1 * time.Minute) // First run after 1 minute
+		defer timer.Stop()
+
+		for {
+			select {
+			case <-timer.C:
+				i.runCurrentValidators(client)
+				interval := time.Now().Sub(nextRun)
+				timer.Reset(interval)
+			}
+		}
 	}()
 
-	instance, err := contract.NewMpcManagerFilterer(s.services.Config.MpcManagerAddress, ethClient)
-	if err != nil {
-		return err
-	}
-	it, err := instance.FilterParticipantAdded(nil, [][]byte{s.services.Config.MyPublicKey})
-	if err != nil {
-		return err
-	}
-	var groupIds [][32]byte
-	for it.Next() {
-		groupIds = append(groupIds, it.Event.GroupId)
-		err = s.eventLogQueue.Enqueue(it.Event.Raw)
-		if err != nil {
-			return err
-		}
-	}
-
-	it1, err := instance.FilterKeyGenerated(nil, groupIds)
-	for it1.Next() {
-		err = s.eventLogQueue.Enqueue(it1.Event.Raw)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func (i *Indexer) runCurrentValidators(client platformvm.Client, txIndex core.TxIndex) error {
+func (i *Indexer) runCurrentValidators(client platformvm.Client) error {
 	validators, err := client.GetCurrentValidators(context.Background(), ids.Empty, nil) // TODO: give proper context
 	if err != nil {
 		return err
@@ -73,7 +62,7 @@ func (i *Indexer) runCurrentValidators(client platformvm.Client, txIndex core.Tx
 		}
 	}
 	for _, txId := range txIds {
-		if txIndex.IsKnownTx(txId) {
+		if i.services.TxIndex.IsKnownTx(txId) {
 			continue
 		}
 		txBytes, err := client.GetTx(context.Background(), txId)
@@ -81,6 +70,13 @@ func (i *Indexer) runCurrentValidators(client platformvm.Client, txIndex core.Tx
 			return err
 		}
 		tx, err := txs.Parse(txs.Codec, txBytes)
+		if err != nil {
+			return err
+		}
+		uTx := tx.Unsigned.(*txs.AddDelegatorTx)
+		reqHash := types.RequestHash{}
+		copy(reqHash[:], uTx.Memo)
+		err = i.services.TxIndex.SetTxByType(reqHash, "AddDelegator", txId)
 		if err != nil {
 			return err
 		}
