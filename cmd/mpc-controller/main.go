@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/indexer"
 	"github.com/avalido/mpc-controller/logger/adapter"
+	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/storage/badgerDB"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/pkg/errors"
@@ -42,15 +43,16 @@ import (
 // TODO: improve flags
 
 const (
-	fnHost              = "host"
-	fnPort              = "port"
-	fnMpcManagerAddress = "mpc-manager-address"
-	fnPublicKey         = "publicKey"
-	fnKeystoreDir       = "keystoreDir"
-	fnPasswordFile      = "passwordFile"
-	fnMpcServerUrl      = "mpcServerUrl"
-	fnMetricsServeAddr  = "metricsServeAddr"
-	fnDBPath            = "dbPath"
+	fnHost                    = "host"
+	fnPort                    = "port"
+	fnMpcManagerAddress       = "mpc-manager-address"
+	fnPublicKey               = "publicKey"
+	fnKeystoreDir             = "keystoreDir"
+	fnPasswordFile            = "passwordFile"
+	fnMpcServerUrl            = "mpcServerUrl"
+	fnSimulationMpcPrivateKey = "simulationMpcPrivateKey"
+	fnMetricsServeAddr        = "metricsServeAddr"
+	fnDBPath                  = "dbPath"
 )
 
 type TestSuite struct {
@@ -221,11 +223,10 @@ func runController(c *cli.Context) error {
 	}
 
 	// Create mpcClient
-	conn, err := grpc.Dial(c.String(fnMpcServerUrl), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	mpcClient, err := getMpcClient(c)
 	if err != nil {
-		return errors.Wrap(err, "failed to dial to mpc server")
+		return errors.Wrap(err, "failed to get mpc client")
 	}
-	mpcClient := mpc.NewMpcClient(conn)
 	txIndex := core.NewInMemoryTxIndex()
 	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db, txIndex)
 
@@ -354,8 +355,13 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:     fnMpcServerUrl,
-				Required: true,
+				Required: false,
 				Usage:    "The URL of the MpcServer",
+			},
+			&cli.StringFlag{
+				Name:     fnSimulationMpcPrivateKey,
+				Required: false,
+				Usage:    "The private key to be used to simulate an MPC server.",
 			},
 			&cli.StringFlag{
 				Name:     fnMetricsServeAddr,
@@ -378,4 +384,24 @@ func main() {
 		fmt.Printf("Failed to run controller, error: %+v", err)
 		os.Exit(1)
 	}
+}
+
+func getMpcClient(c *cli.Context) (mpc.MpcClient, error) {
+	url := c.String(fnMpcServerUrl)
+	privKey := c.String(fnSimulationMpcPrivateKey)
+	useUrl := url != "" && privKey == ""
+	usePrivKey := url == "" && privKey != ""
+	if useUrl {
+		conn, err := grpc.Dial(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to dial to mpc server")
+		}
+		mpcClient := mpc.NewMpcClient(conn)
+		return mpcClient, nil
+	}
+	if usePrivKey {
+		return mpcclient.NewSimulatingClient(privKey)
+	}
+
+	return nil, errors.New(fmt.Sprintf("One and only one of %v or %v options is required", fnMpcServerUrl, fnSimulationMpcPrivateKey))
 }
