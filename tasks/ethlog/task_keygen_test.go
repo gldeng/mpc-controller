@@ -48,7 +48,8 @@ func TestKeyGeneratedHandler(t *testing.T) {
 	pId[31] = 1
 
 	db := storage.NewInMemoryDb()
-	services := core.NewServicePack(config, logger.Default(), mpcClient, db)
+	txIndex := core.NewInMemoryTxIndex()
+	services := core.NewServicePack(config, logger.Default(), mpcClient, db, txIndex)
 	ctx0, err := taskcontext.NewTaskContextImp(services)
 	ctx := &TaskContextWrapper{
 		participantId: pId,
