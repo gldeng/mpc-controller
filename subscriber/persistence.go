@@ -79,16 +79,20 @@ func (s *Subscriber) saveEnqueuedLog(log enqueuedLog) error {
 	return errors.WithStack(err)
 }
 
-// ----------for stake request number----------
+// ----------for stake request----------
 
 var (
-	stakeReqNoKey = []byte("stake-request-number")
+	stakeReqKey = []byte("stake-request")
 )
 
-type stakeReqNo string
+type stakeReq struct {
+	ReqNo          string
+	LogBlockNumber uint64
+	LogIndex       uint
+}
 
-func (s *Subscriber) foundStakeReqNo() (bool, error) {
-	found, err := s.db.Exists(s.ctx, stakeReqNoKey)
+func (s *Subscriber) foundStakeReq() (bool, error) {
+	found, err := s.db.Exists(s.ctx, stakeReqKey)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -96,15 +100,18 @@ func (s *Subscriber) foundStakeReqNo() (bool, error) {
 	return found, nil
 }
 
-func (s *Subscriber) loadStakeReqNo() (stakeReqNo, error) {
-	storedBytes, err := s.db.Get(s.ctx, stakeReqNoKey)
+func (s *Subscriber) loadStakeReq() (*stakeReq, error) {
+	storedBytes, err := s.db.Get(s.ctx, stakeReqKey)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
-	return stakeReqNo(storedBytes), nil
+	var result stakeReq
+	_ = json.Unmarshal(storedBytes, &result)
+	return &result, nil
 }
 
-func (s *Subscriber) saveStakeReqNo(reqNo stakeReqNo) error {
-	err := s.db.Set(s.ctx, stakeReqNoKey, []byte(reqNo))
+func (s *Subscriber) saveStakeReq(req *stakeReq) error {
+	bytes, _ := json.Marshal(*req)
+	err := s.db.Set(s.ctx, stakeReqKey, bytes)
 	return errors.WithStack(err)
 }
