@@ -1,3 +1,4 @@
 [submodule "contract/contracts"]
 	path = contract/contracts
 	url = ../contracts
+	branch = main
