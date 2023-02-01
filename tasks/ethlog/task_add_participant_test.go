@@ -38,7 +38,7 @@ func (t *TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []by
 	panic("implement me")
 }
 
-func (t *TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+func (t *TaskContextWrapper) RequestRecords(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -50,7 +50,7 @@ func (t TaskContextWrapper) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byt
 	return t.group.GroupId, nil
 }
 
-func (t TaskContextWrapper) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+func (t TaskContextWrapper) RequestRecords(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
 	c := new(big.Int)
 	for i := 0; i < 5; i++ {
 		c.SetBit(c, 255-i, 1)
