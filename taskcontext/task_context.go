@@ -130,7 +130,7 @@ func (t *TaskContextImp) RequestConfirmations(opts *bind.CallOpts, groupId [32]b
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create MpcManagerCaller")
 	}
-	return caller.RequestConfirmations(opts, groupId, requestHash)
+	return caller.RequestRecords(opts, groupId, requestHash)
 }
 
 func NewTaskContextImp(services *core.ServicePack) (*TaskContextImp, error) {
