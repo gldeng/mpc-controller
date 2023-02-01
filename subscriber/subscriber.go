@@ -90,6 +90,7 @@ func (s *Subscriber) Start() error {
 			s.logger.Error("failed to subscribe contract events", []logger.Field{{"error", err}}...)
 			return nil, err
 		}
+		prom.ContractEvtSub.Inc()
 		s.logger.Debug("subscribed contract events")
 
 		go func() {

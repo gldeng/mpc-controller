@@ -12,7 +12,12 @@ const (
 )
 
 var (
-	// Contract event subscription error metric
+	// Contract event subscription metric
+
+	ContractEvtSub = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_subscription_total",
+		Help: "The total number of contract event subscriptions",
+	})
 
 	ContractEvtSubErr = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "contract_evt_subscription_error_total",
