@@ -42,18 +42,18 @@ func (s *Subscriber) checkStakeReqNoContinuity(log types.Log) error {
 			return nil
 		}
 
-		storeStakeReqNo, err := s.loadStakeReq()
+		storeStakeReq, err := s.loadStakeReq()
 		if err != nil {
 			prom.DBOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "load"}).Inc()
 			return errors.Wrap(err, "failed to load stake request")
 		}
 		prom.DBOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "load"}).Inc()
 		s.logger.Debug("loaded stake request number", []logger.Field{
-			{"reqNo", newStakeReqNo.String()},
-			{"logBlockNumber", log.BlockNumber},
-			{"logIndex", log.Index}}...)
+			{"reqNo", storeStakeReq.ReqNo},
+			{"logBlockNumber", storeStakeReq.LogBlockNumber},
+			{"logIndex", storeStakeReq.LogIndex}}...)
 
-		lastStakeReqNo, _ := new(big.Int).SetString(storeStakeReqNo.ReqNo, 10)
+		lastStakeReqNo, _ := new(big.Int).SetString(storeStakeReq.ReqNo, 10)
 		one := big.NewInt(1)
 		plusOne := new(big.Int).Add(lastStakeReqNo, one)
 		if plusOne.Cmp(newStakeReqNo) != 0 {
