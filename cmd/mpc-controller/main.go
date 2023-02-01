@@ -225,7 +225,8 @@ func runController(c *cli.Context) error {
 		return errors.Wrap(err, "failed to dial to mpc server")
 	}
 	mpcClient := mpc.NewMpcClient(conn)
-	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db)
+	txIndex := core.NewInMemoryTxIndex()
+	services := core.NewServicePack(coreConfig, myLogger, mpcClient, db, txIndex)
 
 	syn := synchronizer.NewSyncer(services, q)
 
