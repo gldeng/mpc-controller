@@ -59,7 +59,7 @@ func (m MockTaskContext) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) 
 	panic("implement me")
 }
 
-func (m MockTaskContext) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+func (m MockTaskContext) RequestRecords(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
 	//TODO implement me
 	panic("implement me")
 }

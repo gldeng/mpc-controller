@@ -127,12 +127,12 @@ func (t *TaskContextImp) GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) 
 	return caller.GetGroupIdByKey(opts, publicKey)
 }
 
-func (t *TaskContextImp) RequestConfirmations(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
+func (t *TaskContextImp) RequestRecords(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error) {
 	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create MpcManagerCaller")
 	}
-	return caller.RequestConfirmations(opts, groupId, requestHash)
+	return caller.RequestRecords(opts, groupId, requestHash)
 }
 
 func NewTaskContextImp(services *core.ServicePack) (*TaskContextImp, error) {

@@ -253,7 +253,7 @@ func (t *JoinAndStake) loadGroupInfo(ctx core.TaskContext) error {
 }
 
 func (t *JoinAndStake) getConfirmationCount(ctx core.TaskContext) (int64, error) {
-	confirmation, err := ctx.RequestConfirmations(nil, t.GroupId, t.ReqHash)
+	confirmation, err := ctx.RequestRecords(nil, t.GroupId, t.ReqHash)
 	if err != nil {
 		return 0, err
 	}
