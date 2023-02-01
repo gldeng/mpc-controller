@@ -9,15 +9,25 @@ import (
 	"github.com/avalido/mpc-controller/common"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"sync"
 	"time"
 )
 
 type Indexer struct {
-	services *core.ServicePack
+	services         *core.ServicePack
+	closeOnce        sync.Once
+	onCloseCtx       context.Context
+	onCloseCtxCancel func()
 }
 
 func NewIndexer(services *core.ServicePack) *Indexer {
-	return &Indexer{services: services}
+	onCloseCtx, cancel := context.WithCancel(context.Background())
+	return &Indexer{
+		services:         services,
+		closeOnce:        sync.Once{},
+		onCloseCtx:       onCloseCtx,
+		onCloseCtxCancel: cancel,
+	}
 }
 
 func (i *Indexer) Start() error {
@@ -41,6 +51,13 @@ func (i *Indexer) Start() error {
 		}
 	}()
 
+	return nil
+}
+
+func (i *Indexer) Close() error {
+	i.closeOnce.Do(func() {
+		i.onCloseCtxCancel()
+	})
 	return nil
 }
 

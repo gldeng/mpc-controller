@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/avalido/mpc-controller/core/mpc"
+	"github.com/avalido/mpc-controller/indexer"
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/storage/badgerDB"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
@@ -277,6 +278,12 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
+	idx := indexer.NewIndexer(services)
+	err = idx.Start()
+	if err != nil {
+		return err
+	}
+
 	metricsService := prom.MetricsService{
 		Ctx:       shutdownCtx,
 		ServeAddr: c.String(fnMetricsServeAddr),
@@ -288,6 +295,7 @@ func runController(c *cli.Context) error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 		shutdown()
+		idx.Close()
 		rt.Close()
 		sub.Close()
 		wp.Close()
