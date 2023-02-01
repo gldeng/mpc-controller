@@ -23,7 +23,7 @@ abigen-prepare:
 
 .PHONY: abijson-prepare
 abijson-prepare:
-	git submodule update --init --recursive
+	git submodule update --init --recursive --remote
 
 .PHONY: abijson
 abijson: abijson-prepare

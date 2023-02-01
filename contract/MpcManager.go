@@ -1889,281 +1889,6 @@ func (_AddressUpgradeable *AddressUpgradeableTransactorRaw) Transact(opts *bind.
 	return _AddressUpgradeable.Contract.contract.Transact(opts, method, params...)
 }
 
-// ConfirmationHelpersMetaData contains all meta data concerning the ConfirmationHelpers contract.
-var ConfirmationHelpersMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"myIndex\",\"type\":\"uint8\"}],\"name\":\"confirm\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"confirmation\",\"type\":\"uint256\"}],\"name\":\"getConfirmationCount\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"confirmation\",\"type\":\"uint256\"}],\"name\":\"getIndices\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"indices\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"confirmationCount\",\"type\":\"uint8\"}],\"name\":\"makeConfirmation\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
-}
-
-// ConfirmationHelpersABI is the input ABI used to generate the binding from.
-// Deprecated: Use ConfirmationHelpersMetaData.ABI instead.
-var ConfirmationHelpersABI = ConfirmationHelpersMetaData.ABI
-
-// ConfirmationHelpers is an auto generated Go binding around an Ethereum contract.
-type ConfirmationHelpers struct {
-	ConfirmationHelpersCaller     // Read-only binding to the contract
-	ConfirmationHelpersTransactor // Write-only binding to the contract
-	ConfirmationHelpersFilterer   // Log filterer for contract events
-}
-
-// ConfirmationHelpersCaller is an auto generated read-only Go binding around an Ethereum contract.
-type ConfirmationHelpersCaller struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// ConfirmationHelpersTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type ConfirmationHelpersTransactor struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// ConfirmationHelpersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type ConfirmationHelpersFilterer struct {
-	contract *bind.BoundContract // Generic contract wrapper for the low level calls
-}
-
-// ConfirmationHelpersSession is an auto generated Go binding around an Ethereum contract,
-// with pre-set call and transact options.
-type ConfirmationHelpersSession struct {
-	Contract     *ConfirmationHelpers // Generic contract binding to set the session for
-	CallOpts     bind.CallOpts        // Call options to use throughout this session
-	TransactOpts bind.TransactOpts    // Transaction auth options to use throughout this session
-}
-
-// ConfirmationHelpersCallerSession is an auto generated read-only Go binding around an Ethereum contract,
-// with pre-set call options.
-type ConfirmationHelpersCallerSession struct {
-	Contract *ConfirmationHelpersCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts              // Call options to use throughout this session
-}
-
-// ConfirmationHelpersTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
-// with pre-set transact options.
-type ConfirmationHelpersTransactorSession struct {
-	Contract     *ConfirmationHelpersTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts              // Transaction auth options to use throughout this session
-}
-
-// ConfirmationHelpersRaw is an auto generated low-level Go binding around an Ethereum contract.
-type ConfirmationHelpersRaw struct {
-	Contract *ConfirmationHelpers // Generic contract binding to access the raw methods on
-}
-
-// ConfirmationHelpersCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type ConfirmationHelpersCallerRaw struct {
-	Contract *ConfirmationHelpersCaller // Generic read-only contract binding to access the raw methods on
-}
-
-// ConfirmationHelpersTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type ConfirmationHelpersTransactorRaw struct {
-	Contract *ConfirmationHelpersTransactor // Generic write-only contract binding to access the raw methods on
-}
-
-// NewConfirmationHelpers creates a new instance of ConfirmationHelpers, bound to a specific deployed contract.
-func NewConfirmationHelpers(address common.Address, backend bind.ContractBackend) (*ConfirmationHelpers, error) {
-	contract, err := bindConfirmationHelpers(address, backend, backend, backend)
-	if err != nil {
-		return nil, err
-	}
-	return &ConfirmationHelpers{ConfirmationHelpersCaller: ConfirmationHelpersCaller{contract: contract}, ConfirmationHelpersTransactor: ConfirmationHelpersTransactor{contract: contract}, ConfirmationHelpersFilterer: ConfirmationHelpersFilterer{contract: contract}}, nil
-}
-
-// NewConfirmationHelpersCaller creates a new read-only instance of ConfirmationHelpers, bound to a specific deployed contract.
-func NewConfirmationHelpersCaller(address common.Address, caller bind.ContractCaller) (*ConfirmationHelpersCaller, error) {
-	contract, err := bindConfirmationHelpers(address, caller, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &ConfirmationHelpersCaller{contract: contract}, nil
-}
-
-// NewConfirmationHelpersTransactor creates a new write-only instance of ConfirmationHelpers, bound to a specific deployed contract.
-func NewConfirmationHelpersTransactor(address common.Address, transactor bind.ContractTransactor) (*ConfirmationHelpersTransactor, error) {
-	contract, err := bindConfirmationHelpers(address, nil, transactor, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &ConfirmationHelpersTransactor{contract: contract}, nil
-}
-
-// NewConfirmationHelpersFilterer creates a new log filterer instance of ConfirmationHelpers, bound to a specific deployed contract.
-func NewConfirmationHelpersFilterer(address common.Address, filterer bind.ContractFilterer) (*ConfirmationHelpersFilterer, error) {
-	contract, err := bindConfirmationHelpers(address, nil, nil, filterer)
-	if err != nil {
-		return nil, err
-	}
-	return &ConfirmationHelpersFilterer{contract: contract}, nil
-}
-
-// bindConfirmationHelpers binds a generic wrapper to an already deployed contract.
-func bindConfirmationHelpers(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(ConfirmationHelpersABI))
-	if err != nil {
-		return nil, err
-	}
-	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
-}
-
-// Call invokes the (constant) contract method with params as input values and
-// sets the output to result. The result type might be a single field for simple
-// returns, a slice of interfaces for anonymous returns and a struct for named
-// returns.
-func (_ConfirmationHelpers *ConfirmationHelpersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _ConfirmationHelpers.Contract.ConfirmationHelpersCaller.contract.Call(opts, result, method, params...)
-}
-
-// Transfer initiates a plain transaction to move funds to the contract, calling
-// its default method if one is available.
-func (_ConfirmationHelpers *ConfirmationHelpersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _ConfirmationHelpers.Contract.ConfirmationHelpersTransactor.contract.Transfer(opts)
-}
-
-// Transact invokes the (paid) contract method with params as input values.
-func (_ConfirmationHelpers *ConfirmationHelpersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _ConfirmationHelpers.Contract.ConfirmationHelpersTransactor.contract.Transact(opts, method, params...)
-}
-
-// Call invokes the (constant) contract method with params as input values and
-// sets the output to result. The result type might be a single field for simple
-// returns, a slice of interfaces for anonymous returns and a struct for named
-// returns.
-func (_ConfirmationHelpers *ConfirmationHelpersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _ConfirmationHelpers.Contract.contract.Call(opts, result, method, params...)
-}
-
-// Transfer initiates a plain transaction to move funds to the contract, calling
-// its default method if one is available.
-func (_ConfirmationHelpers *ConfirmationHelpersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _ConfirmationHelpers.Contract.contract.Transfer(opts)
-}
-
-// Transact invokes the (paid) contract method with params as input values.
-func (_ConfirmationHelpers *ConfirmationHelpersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _ConfirmationHelpers.Contract.contract.Transact(opts, method, params...)
-}
-
-// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
-//
-// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersCaller) Confirm(opts *bind.CallOpts, myIndex uint8) (*big.Int, error) {
-	var out []interface{}
-	err := _ConfirmationHelpers.contract.Call(opts, &out, "confirm", myIndex)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
-//
-// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersSession) Confirm(myIndex uint8) (*big.Int, error) {
-	return _ConfirmationHelpers.Contract.Confirm(&_ConfirmationHelpers.CallOpts, myIndex)
-}
-
-// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
-//
-// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) Confirm(myIndex uint8) (*big.Int, error) {
-	return _ConfirmationHelpers.Contract.Confirm(&_ConfirmationHelpers.CallOpts, myIndex)
-}
-
-// GetConfirmationCount is a free data retrieval call binding the contract method 0x8b51d13f.
-//
-// Solidity: function getConfirmationCount(uint256 confirmation) pure returns(uint8)
-func (_ConfirmationHelpers *ConfirmationHelpersCaller) GetConfirmationCount(opts *bind.CallOpts, confirmation *big.Int) (uint8, error) {
-	var out []interface{}
-	err := _ConfirmationHelpers.contract.Call(opts, &out, "getConfirmationCount", confirmation)
-
-	if err != nil {
-		return *new(uint8), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
-
-	return out0, err
-
-}
-
-// GetConfirmationCount is a free data retrieval call binding the contract method 0x8b51d13f.
-//
-// Solidity: function getConfirmationCount(uint256 confirmation) pure returns(uint8)
-func (_ConfirmationHelpers *ConfirmationHelpersSession) GetConfirmationCount(confirmation *big.Int) (uint8, error) {
-	return _ConfirmationHelpers.Contract.GetConfirmationCount(&_ConfirmationHelpers.CallOpts, confirmation)
-}
-
-// GetConfirmationCount is a free data retrieval call binding the contract method 0x8b51d13f.
-//
-// Solidity: function getConfirmationCount(uint256 confirmation) pure returns(uint8)
-func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) GetConfirmationCount(confirmation *big.Int) (uint8, error) {
-	return _ConfirmationHelpers.Contract.GetConfirmationCount(&_ConfirmationHelpers.CallOpts, confirmation)
-}
-
-// GetIndices is a free data retrieval call binding the contract method 0x00b3acc2.
-//
-// Solidity: function getIndices(uint256 confirmation) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersCaller) GetIndices(opts *bind.CallOpts, confirmation *big.Int) (*big.Int, error) {
-	var out []interface{}
-	err := _ConfirmationHelpers.contract.Call(opts, &out, "getIndices", confirmation)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetIndices is a free data retrieval call binding the contract method 0x00b3acc2.
-//
-// Solidity: function getIndices(uint256 confirmation) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersSession) GetIndices(confirmation *big.Int) (*big.Int, error) {
-	return _ConfirmationHelpers.Contract.GetIndices(&_ConfirmationHelpers.CallOpts, confirmation)
-}
-
-// GetIndices is a free data retrieval call binding the contract method 0x00b3acc2.
-//
-// Solidity: function getIndices(uint256 confirmation) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) GetIndices(confirmation *big.Int) (*big.Int, error) {
-	return _ConfirmationHelpers.Contract.GetIndices(&_ConfirmationHelpers.CallOpts, confirmation)
-}
-
-// MakeConfirmation is a free data retrieval call binding the contract method 0x9b5861a3.
-//
-// Solidity: function makeConfirmation(uint256 indices, uint8 confirmationCount) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersCaller) MakeConfirmation(opts *bind.CallOpts, indices *big.Int, confirmationCount uint8) (*big.Int, error) {
-	var out []interface{}
-	err := _ConfirmationHelpers.contract.Call(opts, &out, "makeConfirmation", indices, confirmationCount)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// MakeConfirmation is a free data retrieval call binding the contract method 0x9b5861a3.
-//
-// Solidity: function makeConfirmation(uint256 indices, uint8 confirmationCount) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersSession) MakeConfirmation(indices *big.Int, confirmationCount uint8) (*big.Int, error) {
-	return _ConfirmationHelpers.Contract.MakeConfirmation(&_ConfirmationHelpers.CallOpts, indices, confirmationCount)
-}
-
-// MakeConfirmation is a free data retrieval call binding the contract method 0x9b5861a3.
-//
-// Solidity: function makeConfirmation(uint256 indices, uint8 confirmationCount) pure returns(uint256)
-func (_ConfirmationHelpers *ConfirmationHelpersCallerSession) MakeConfirmation(indices *big.Int, confirmationCount uint8) (*big.Int, error) {
-	return _ConfirmationHelpers.Contract.MakeConfirmation(&_ConfirmationHelpers.CallOpts, indices, confirmationCount)
-}
-
 // ContextMetaData contains all meta data concerning the Context contract.
 var ContextMetaData = &bind.MetaData{
 	ABI: "[]",
@@ -5730,9 +5455,160 @@ func (_KeygenStatusHelpers *KeygenStatusHelpersCallerSession) MakeKeygenRequest(
 	return _KeygenStatusHelpers.Contract.MakeKeygenRequest(&_KeygenStatusHelpers.CallOpts, groupId, keygenStatus)
 }
 
+// MathMetaData contains all meta data concerning the Math contract.
+var MathMetaData = &bind.MetaData{
+	ABI: "[]",
+}
+
+// MathABI is the input ABI used to generate the binding from.
+// Deprecated: Use MathMetaData.ABI instead.
+var MathABI = MathMetaData.ABI
+
+// Math is an auto generated Go binding around an Ethereum contract.
+type Math struct {
+	MathCaller     // Read-only binding to the contract
+	MathTransactor // Write-only binding to the contract
+	MathFilterer   // Log filterer for contract events
+}
+
+// MathCaller is an auto generated read-only Go binding around an Ethereum contract.
+type MathCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// MathTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type MathTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// MathFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type MathFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// MathSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type MathSession struct {
+	Contract     *Math             // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts     // Call options to use throughout this session
+	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
+}
+
+// MathCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type MathCallerSession struct {
+	Contract *MathCaller   // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts // Call options to use throughout this session
+}
+
+// MathTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type MathTransactorSession struct {
+	Contract     *MathTransactor   // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
+}
+
+// MathRaw is an auto generated low-level Go binding around an Ethereum contract.
+type MathRaw struct {
+	Contract *Math // Generic contract binding to access the raw methods on
+}
+
+// MathCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type MathCallerRaw struct {
+	Contract *MathCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// MathTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type MathTransactorRaw struct {
+	Contract *MathTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewMath creates a new instance of Math, bound to a specific deployed contract.
+func NewMath(address common.Address, backend bind.ContractBackend) (*Math, error) {
+	contract, err := bindMath(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &Math{MathCaller: MathCaller{contract: contract}, MathTransactor: MathTransactor{contract: contract}, MathFilterer: MathFilterer{contract: contract}}, nil
+}
+
+// NewMathCaller creates a new read-only instance of Math, bound to a specific deployed contract.
+func NewMathCaller(address common.Address, caller bind.ContractCaller) (*MathCaller, error) {
+	contract, err := bindMath(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &MathCaller{contract: contract}, nil
+}
+
+// NewMathTransactor creates a new write-only instance of Math, bound to a specific deployed contract.
+func NewMathTransactor(address common.Address, transactor bind.ContractTransactor) (*MathTransactor, error) {
+	contract, err := bindMath(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &MathTransactor{contract: contract}, nil
+}
+
+// NewMathFilterer creates a new log filterer instance of Math, bound to a specific deployed contract.
+func NewMathFilterer(address common.Address, filterer bind.ContractFilterer) (*MathFilterer, error) {
+	contract, err := bindMath(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &MathFilterer{contract: contract}, nil
+}
+
+// bindMath binds a generic wrapper to an already deployed contract.
+func bindMath(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(MathABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_Math *MathRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _Math.Contract.MathCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_Math *MathRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Math.Contract.MathTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_Math *MathRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Math.Contract.MathTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_Math *MathCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _Math.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_Math *MathTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Math.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_Math *MathTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Math.Contract.contract.Transact(opts, method, params...)
+}
+
 // MpcManagerMetaData contains all meta data concerning the MpcManager contract.
 var MpcManagerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"name\":\"AttemptToReaddGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToReconfirmKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToRejoin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AvaLidoOnly\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GotPendingKeygenRequest\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GroupNotFound\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupMembership\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupSize\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPublicKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidThreshold\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeyNotGenerated\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeygenNotRequested\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInAuthorizedGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PublicKeysNotSorted\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"QuorumAlreadyReached\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TransferFailed\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"KeyGenerated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"}],\"name\":\"KeygenRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"}],\"name\":\"KeygenRequestCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"ParticipantAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"participantIndices\",\"type\":\"uint256\"}],\"name\":\"RequestStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"StakeRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"avaLidoAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"publicKeys\",\"type\":\"bytes[]\"},{\"internalType\":\"uint8\",\"name\":\"threshold\",\"type\":\"uint8\"}],\"name\":\"createGroup\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"getGroup\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"getGroupIdByKey\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"groupParticipants\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"ethAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_roleMpcAdmin\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rolePauseManager\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_avaLidoAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_principalTreasuryAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rewardTreasuryAddress\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"}],\"name\":\"joinRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"keyConfirmations\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"keyGroupIds\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenPubKey\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastKeygenRequest\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastKeygenRequestNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastStakeRequestNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"principalTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"generatedPublicKey\",\"type\":\"bytes\"}],\"name\":\"reportGeneratedKey\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"requestConfirmations\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"requestKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"requestStake\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"resume\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"name\":\"AttemptToReaddGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToReconfirmKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AttemptToRejoin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"AvaLidoOnly\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GotPendingKeygenRequest\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"GroupNotFound\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidAmount\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupMembership\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidGroupSize\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidPublicKey\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"InvalidThreshold\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeyNotGenerated\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"KeygenNotRequested\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInAuthorizedGroup\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"NotInQuorum\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PublicKeysNotSorted\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"QuorumAlreadyReached\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"QuorumNotReached\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TransferFailed\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"KeyGenerated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"}],\"name\":\"KeygenRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"}],\"name\":\"KeygenRequestCanceled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"ParticipantAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"RequestFailed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"participantIndices\",\"type\":\"uint256\"}],\"name\":\"RequestStarted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"requestNumber\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"StakeRequestAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"avaLidoAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cancelKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"publicKeys\",\"type\":\"bytes[]\"},{\"internalType\":\"uint8\",\"name\":\"threshold\",\"type\":\"uint8\"}],\"name\":\"createGroup\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"getGroup\",\"outputs\":[{\"internalType\":\"bytes[]\",\"name\":\"\",\"type\":\"bytes[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"}],\"name\":\"getGroupIdByKey\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"groupParticipants\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"publicKey\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"ethAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_roleMpcAdmin\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rolePauseManager\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_avaLidoAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_principalTreasuryAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_rewardTreasuryAddress\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"}],\"name\":\"joinRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"keyGroupIds\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"keyRecords\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastGenPubKey\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastKeygenRequest\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastKeygenRequestNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastStakeRequestNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"principalTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"generatedPublicKey\",\"type\":\"bytes\"}],\"name\":\"reportGeneratedKey\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"participantId\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"requestHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"reportRequestFailed\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"groupId\",\"type\":\"bytes32\"}],\"name\":\"requestKeygen\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"requestRecords\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"nodeID\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"endTime\",\"type\":\"uint256\"}],\"name\":\"requestStake\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"resume\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"rewardTreasuryAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // MpcManagerABI is the input ABI used to generate the binding from.
@@ -6174,37 +6050,6 @@ func (_MpcManager *MpcManagerCallerSession) HasRole(role [32]byte, account commo
 	return _MpcManager.Contract.HasRole(&_MpcManager.CallOpts, role, account)
 }
 
-// KeyConfirmations is a free data retrieval call binding the contract method 0x0f02c407.
-//
-// Solidity: function keyConfirmations(uint256 , bytes ) view returns(uint256)
-func (_MpcManager *MpcManagerCaller) KeyConfirmations(opts *bind.CallOpts, arg0 *big.Int, arg1 []byte) (*big.Int, error) {
-	var out []interface{}
-	err := _MpcManager.contract.Call(opts, &out, "keyConfirmations", arg0, arg1)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// KeyConfirmations is a free data retrieval call binding the contract method 0x0f02c407.
-//
-// Solidity: function keyConfirmations(uint256 , bytes ) view returns(uint256)
-func (_MpcManager *MpcManagerSession) KeyConfirmations(arg0 *big.Int, arg1 []byte) (*big.Int, error) {
-	return _MpcManager.Contract.KeyConfirmations(&_MpcManager.CallOpts, arg0, arg1)
-}
-
-// KeyConfirmations is a free data retrieval call binding the contract method 0x0f02c407.
-//
-// Solidity: function keyConfirmations(uint256 , bytes ) view returns(uint256)
-func (_MpcManager *MpcManagerCallerSession) KeyConfirmations(arg0 *big.Int, arg1 []byte) (*big.Int, error) {
-	return _MpcManager.Contract.KeyConfirmations(&_MpcManager.CallOpts, arg0, arg1)
-}
-
 // KeyGroupIds is a free data retrieval call binding the contract method 0x516d042a.
 //
 // Solidity: function keyGroupIds(bytes ) view returns(bytes32)
@@ -6234,6 +6079,37 @@ func (_MpcManager *MpcManagerSession) KeyGroupIds(arg0 []byte) ([32]byte, error)
 // Solidity: function keyGroupIds(bytes ) view returns(bytes32)
 func (_MpcManager *MpcManagerCallerSession) KeyGroupIds(arg0 []byte) ([32]byte, error) {
 	return _MpcManager.Contract.KeyGroupIds(&_MpcManager.CallOpts, arg0)
+}
+
+// KeyRecords is a free data retrieval call binding the contract method 0xecd81a44.
+//
+// Solidity: function keyRecords(uint256 , bytes ) view returns(uint256)
+func (_MpcManager *MpcManagerCaller) KeyRecords(opts *bind.CallOpts, arg0 *big.Int, arg1 []byte) (*big.Int, error) {
+	var out []interface{}
+	err := _MpcManager.contract.Call(opts, &out, "keyRecords", arg0, arg1)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// KeyRecords is a free data retrieval call binding the contract method 0xecd81a44.
+//
+// Solidity: function keyRecords(uint256 , bytes ) view returns(uint256)
+func (_MpcManager *MpcManagerSession) KeyRecords(arg0 *big.Int, arg1 []byte) (*big.Int, error) {
+	return _MpcManager.Contract.KeyRecords(&_MpcManager.CallOpts, arg0, arg1)
+}
+
+// KeyRecords is a free data retrieval call binding the contract method 0xecd81a44.
+//
+// Solidity: function keyRecords(uint256 , bytes ) view returns(uint256)
+func (_MpcManager *MpcManagerCallerSession) KeyRecords(arg0 *big.Int, arg1 []byte) (*big.Int, error) {
+	return _MpcManager.Contract.KeyRecords(&_MpcManager.CallOpts, arg0, arg1)
 }
 
 // LastGenAddress is a free data retrieval call binding the contract method 0xee34ad00.
@@ -6453,12 +6329,12 @@ func (_MpcManager *MpcManagerCallerSession) PrincipalTreasuryAddress() (common.A
 	return _MpcManager.Contract.PrincipalTreasuryAddress(&_MpcManager.CallOpts)
 }
 
-// RequestConfirmations is a free data retrieval call binding the contract method 0xa7a3c594.
+// RequestRecords is a free data retrieval call binding the contract method 0x4143cffc.
 //
-// Solidity: function requestConfirmations(bytes32 , bytes32 ) view returns(uint256)
-func (_MpcManager *MpcManagerCaller) RequestConfirmations(opts *bind.CallOpts, arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
+// Solidity: function requestRecords(bytes32 , bytes32 ) view returns(uint256)
+func (_MpcManager *MpcManagerCaller) RequestRecords(opts *bind.CallOpts, arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
 	var out []interface{}
-	err := _MpcManager.contract.Call(opts, &out, "requestConfirmations", arg0, arg1)
+	err := _MpcManager.contract.Call(opts, &out, "requestRecords", arg0, arg1)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -6470,18 +6346,18 @@ func (_MpcManager *MpcManagerCaller) RequestConfirmations(opts *bind.CallOpts, a
 
 }
 
-// RequestConfirmations is a free data retrieval call binding the contract method 0xa7a3c594.
+// RequestRecords is a free data retrieval call binding the contract method 0x4143cffc.
 //
-// Solidity: function requestConfirmations(bytes32 , bytes32 ) view returns(uint256)
-func (_MpcManager *MpcManagerSession) RequestConfirmations(arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
-	return _MpcManager.Contract.RequestConfirmations(&_MpcManager.CallOpts, arg0, arg1)
+// Solidity: function requestRecords(bytes32 , bytes32 ) view returns(uint256)
+func (_MpcManager *MpcManagerSession) RequestRecords(arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
+	return _MpcManager.Contract.RequestRecords(&_MpcManager.CallOpts, arg0, arg1)
 }
 
-// RequestConfirmations is a free data retrieval call binding the contract method 0xa7a3c594.
+// RequestRecords is a free data retrieval call binding the contract method 0x4143cffc.
 //
-// Solidity: function requestConfirmations(bytes32 , bytes32 ) view returns(uint256)
-func (_MpcManager *MpcManagerCallerSession) RequestConfirmations(arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
-	return _MpcManager.Contract.RequestConfirmations(&_MpcManager.CallOpts, arg0, arg1)
+// Solidity: function requestRecords(bytes32 , bytes32 ) view returns(uint256)
+func (_MpcManager *MpcManagerCallerSession) RequestRecords(arg0 [32]byte, arg1 [32]byte) (*big.Int, error) {
+	return _MpcManager.Contract.RequestRecords(&_MpcManager.CallOpts, arg0, arg1)
 }
 
 // RewardTreasuryAddress is a free data retrieval call binding the contract method 0xfa914882.
@@ -6712,6 +6588,27 @@ func (_MpcManager *MpcManagerSession) ReportGeneratedKey(participantId [32]byte,
 // Solidity: function reportGeneratedKey(bytes32 participantId, bytes generatedPublicKey) returns()
 func (_MpcManager *MpcManagerTransactorSession) ReportGeneratedKey(participantId [32]byte, generatedPublicKey []byte) (*types.Transaction, error) {
 	return _MpcManager.Contract.ReportGeneratedKey(&_MpcManager.TransactOpts, participantId, generatedPublicKey)
+}
+
+// ReportRequestFailed is a paid mutator transaction binding the contract method 0xcdd5828f.
+//
+// Solidity: function reportRequestFailed(bytes32 participantId, bytes32 requestHash, bytes data) returns()
+func (_MpcManager *MpcManagerTransactor) ReportRequestFailed(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte, data []byte) (*types.Transaction, error) {
+	return _MpcManager.contract.Transact(opts, "reportRequestFailed", participantId, requestHash, data)
+}
+
+// ReportRequestFailed is a paid mutator transaction binding the contract method 0xcdd5828f.
+//
+// Solidity: function reportRequestFailed(bytes32 participantId, bytes32 requestHash, bytes data) returns()
+func (_MpcManager *MpcManagerSession) ReportRequestFailed(participantId [32]byte, requestHash [32]byte, data []byte) (*types.Transaction, error) {
+	return _MpcManager.Contract.ReportRequestFailed(&_MpcManager.TransactOpts, participantId, requestHash, data)
+}
+
+// ReportRequestFailed is a paid mutator transaction binding the contract method 0xcdd5828f.
+//
+// Solidity: function reportRequestFailed(bytes32 participantId, bytes32 requestHash, bytes data) returns()
+func (_MpcManager *MpcManagerTransactorSession) ReportRequestFailed(participantId [32]byte, requestHash [32]byte, data []byte) (*types.Transaction, error) {
+	return _MpcManager.Contract.ReportRequestFailed(&_MpcManager.TransactOpts, participantId, requestHash, data)
 }
 
 // RequestKeygen is a paid mutator transaction binding the contract method 0xe661d90d.
@@ -7641,6 +7538,141 @@ func (_MpcManager *MpcManagerFilterer) WatchPaused(opts *bind.WatchOpts, sink ch
 func (_MpcManager *MpcManagerFilterer) ParsePaused(log types.Log) (*MpcManagerPaused, error) {
 	event := new(MpcManagerPaused)
 	if err := _MpcManager.contract.UnpackLog(event, "Paused", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// MpcManagerRequestFailedIterator is returned from FilterRequestFailed and is used to iterate over the raw logs and unpacked data for RequestFailed events raised by the MpcManager contract.
+type MpcManagerRequestFailedIterator struct {
+	Event *MpcManagerRequestFailed // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *MpcManagerRequestFailedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(MpcManagerRequestFailed)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(MpcManagerRequestFailed)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *MpcManagerRequestFailedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *MpcManagerRequestFailedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// MpcManagerRequestFailed represents a RequestFailed event raised by the MpcManager contract.
+type MpcManagerRequestFailed struct {
+	RequestHash [32]byte
+	Data        []byte
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterRequestFailed is a free log retrieval operation binding the contract event 0x61982c98cbc49d11759a948f460b92bca26bdf12ceee12c310f117eb2ca9a9cb.
+//
+// Solidity: event RequestFailed(bytes32 requestHash, bytes data)
+func (_MpcManager *MpcManagerFilterer) FilterRequestFailed(opts *bind.FilterOpts) (*MpcManagerRequestFailedIterator, error) {
+
+	logs, sub, err := _MpcManager.contract.FilterLogs(opts, "RequestFailed")
+	if err != nil {
+		return nil, err
+	}
+	return &MpcManagerRequestFailedIterator{contract: _MpcManager.contract, event: "RequestFailed", logs: logs, sub: sub}, nil
+}
+
+// WatchRequestFailed is a free log subscription operation binding the contract event 0x61982c98cbc49d11759a948f460b92bca26bdf12ceee12c310f117eb2ca9a9cb.
+//
+// Solidity: event RequestFailed(bytes32 requestHash, bytes data)
+func (_MpcManager *MpcManagerFilterer) WatchRequestFailed(opts *bind.WatchOpts, sink chan<- *MpcManagerRequestFailed) (event.Subscription, error) {
+
+	logs, sub, err := _MpcManager.contract.WatchLogs(opts, "RequestFailed")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(MpcManagerRequestFailed)
+				if err := _MpcManager.contract.UnpackLog(event, "RequestFailed", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseRequestFailed is a log parse operation binding the contract event 0x61982c98cbc49d11759a948f460b92bca26bdf12ceee12c310f117eb2ca9a9cb.
+//
+// Solidity: event RequestFailed(bytes32 requestHash, bytes data)
+func (_MpcManager *MpcManagerFilterer) ParseRequestFailed(log types.Log) (*MpcManagerRequestFailed, error) {
+	event := new(MpcManagerRequestFailed)
+	if err := _MpcManager.contract.UnpackLog(event, "RequestFailed", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -8999,6 +9031,556 @@ func (_Pausable *PausableFilterer) ParseUnpaused(log types.Log) (*PausableUnpaus
 	}
 	event.Raw = log
 	return event, nil
+}
+
+// RequestRecordHelpersMetaData contains all meta data concerning the RequestRecordHelpers contract.
+var RequestRecordHelpersMetaData = &bind.MetaData{
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"myIndex\",\"type\":\"uint8\"}],\"name\":\"confirm\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"record\",\"type\":\"uint256\"}],\"name\":\"getConfirmationCount\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"record\",\"type\":\"uint256\"}],\"name\":\"getIndices\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"record\",\"type\":\"uint256\"}],\"name\":\"isFailed\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"record\",\"type\":\"uint256\"}],\"name\":\"isQuorumReached\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"indices\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"confirmationCount\",\"type\":\"uint8\"}],\"name\":\"makeRecord\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"record\",\"type\":\"uint256\"}],\"name\":\"setFailed\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"record\",\"type\":\"uint256\"}],\"name\":\"setQuorumReached\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
+}
+
+// RequestRecordHelpersABI is the input ABI used to generate the binding from.
+// Deprecated: Use RequestRecordHelpersMetaData.ABI instead.
+var RequestRecordHelpersABI = RequestRecordHelpersMetaData.ABI
+
+// RequestRecordHelpers is an auto generated Go binding around an Ethereum contract.
+type RequestRecordHelpers struct {
+	RequestRecordHelpersCaller     // Read-only binding to the contract
+	RequestRecordHelpersTransactor // Write-only binding to the contract
+	RequestRecordHelpersFilterer   // Log filterer for contract events
+}
+
+// RequestRecordHelpersCaller is an auto generated read-only Go binding around an Ethereum contract.
+type RequestRecordHelpersCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// RequestRecordHelpersTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type RequestRecordHelpersTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// RequestRecordHelpersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type RequestRecordHelpersFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// RequestRecordHelpersSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type RequestRecordHelpersSession struct {
+	Contract     *RequestRecordHelpers // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts         // Call options to use throughout this session
+	TransactOpts bind.TransactOpts     // Transaction auth options to use throughout this session
+}
+
+// RequestRecordHelpersCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type RequestRecordHelpersCallerSession struct {
+	Contract *RequestRecordHelpersCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts               // Call options to use throughout this session
+}
+
+// RequestRecordHelpersTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type RequestRecordHelpersTransactorSession struct {
+	Contract     *RequestRecordHelpersTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts               // Transaction auth options to use throughout this session
+}
+
+// RequestRecordHelpersRaw is an auto generated low-level Go binding around an Ethereum contract.
+type RequestRecordHelpersRaw struct {
+	Contract *RequestRecordHelpers // Generic contract binding to access the raw methods on
+}
+
+// RequestRecordHelpersCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type RequestRecordHelpersCallerRaw struct {
+	Contract *RequestRecordHelpersCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// RequestRecordHelpersTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type RequestRecordHelpersTransactorRaw struct {
+	Contract *RequestRecordHelpersTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewRequestRecordHelpers creates a new instance of RequestRecordHelpers, bound to a specific deployed contract.
+func NewRequestRecordHelpers(address common.Address, backend bind.ContractBackend) (*RequestRecordHelpers, error) {
+	contract, err := bindRequestRecordHelpers(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &RequestRecordHelpers{RequestRecordHelpersCaller: RequestRecordHelpersCaller{contract: contract}, RequestRecordHelpersTransactor: RequestRecordHelpersTransactor{contract: contract}, RequestRecordHelpersFilterer: RequestRecordHelpersFilterer{contract: contract}}, nil
+}
+
+// NewRequestRecordHelpersCaller creates a new read-only instance of RequestRecordHelpers, bound to a specific deployed contract.
+func NewRequestRecordHelpersCaller(address common.Address, caller bind.ContractCaller) (*RequestRecordHelpersCaller, error) {
+	contract, err := bindRequestRecordHelpers(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &RequestRecordHelpersCaller{contract: contract}, nil
+}
+
+// NewRequestRecordHelpersTransactor creates a new write-only instance of RequestRecordHelpers, bound to a specific deployed contract.
+func NewRequestRecordHelpersTransactor(address common.Address, transactor bind.ContractTransactor) (*RequestRecordHelpersTransactor, error) {
+	contract, err := bindRequestRecordHelpers(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &RequestRecordHelpersTransactor{contract: contract}, nil
+}
+
+// NewRequestRecordHelpersFilterer creates a new log filterer instance of RequestRecordHelpers, bound to a specific deployed contract.
+func NewRequestRecordHelpersFilterer(address common.Address, filterer bind.ContractFilterer) (*RequestRecordHelpersFilterer, error) {
+	contract, err := bindRequestRecordHelpers(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &RequestRecordHelpersFilterer{contract: contract}, nil
+}
+
+// bindRequestRecordHelpers binds a generic wrapper to an already deployed contract.
+func bindRequestRecordHelpers(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(RequestRecordHelpersABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_RequestRecordHelpers *RequestRecordHelpersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _RequestRecordHelpers.Contract.RequestRecordHelpersCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_RequestRecordHelpers *RequestRecordHelpersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _RequestRecordHelpers.Contract.RequestRecordHelpersTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_RequestRecordHelpers *RequestRecordHelpersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _RequestRecordHelpers.Contract.RequestRecordHelpersTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_RequestRecordHelpers *RequestRecordHelpersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _RequestRecordHelpers.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_RequestRecordHelpers *RequestRecordHelpersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _RequestRecordHelpers.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_RequestRecordHelpers *RequestRecordHelpersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _RequestRecordHelpers.Contract.contract.Transact(opts, method, params...)
+}
+
+// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
+//
+// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) Confirm(opts *bind.CallOpts, myIndex uint8) (*big.Int, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "confirm", myIndex)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
+//
+// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) Confirm(myIndex uint8) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.Confirm(&_RequestRecordHelpers.CallOpts, myIndex)
+}
+
+// Confirm is a free data retrieval call binding the contract method 0x09b1599a.
+//
+// Solidity: function confirm(uint8 myIndex) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) Confirm(myIndex uint8) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.Confirm(&_RequestRecordHelpers.CallOpts, myIndex)
+}
+
+// GetConfirmationCount is a free data retrieval call binding the contract method 0x8b51d13f.
+//
+// Solidity: function getConfirmationCount(uint256 record) pure returns(uint8)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) GetConfirmationCount(opts *bind.CallOpts, record *big.Int) (uint8, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "getConfirmationCount", record)
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// GetConfirmationCount is a free data retrieval call binding the contract method 0x8b51d13f.
+//
+// Solidity: function getConfirmationCount(uint256 record) pure returns(uint8)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) GetConfirmationCount(record *big.Int) (uint8, error) {
+	return _RequestRecordHelpers.Contract.GetConfirmationCount(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// GetConfirmationCount is a free data retrieval call binding the contract method 0x8b51d13f.
+//
+// Solidity: function getConfirmationCount(uint256 record) pure returns(uint8)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) GetConfirmationCount(record *big.Int) (uint8, error) {
+	return _RequestRecordHelpers.Contract.GetConfirmationCount(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// GetIndices is a free data retrieval call binding the contract method 0x00b3acc2.
+//
+// Solidity: function getIndices(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) GetIndices(opts *bind.CallOpts, record *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "getIndices", record)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetIndices is a free data retrieval call binding the contract method 0x00b3acc2.
+//
+// Solidity: function getIndices(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) GetIndices(record *big.Int) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.GetIndices(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// GetIndices is a free data retrieval call binding the contract method 0x00b3acc2.
+//
+// Solidity: function getIndices(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) GetIndices(record *big.Int) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.GetIndices(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// IsFailed is a free data retrieval call binding the contract method 0x1dbb209c.
+//
+// Solidity: function isFailed(uint256 record) pure returns(bool)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) IsFailed(opts *bind.CallOpts, record *big.Int) (bool, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "isFailed", record)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsFailed is a free data retrieval call binding the contract method 0x1dbb209c.
+//
+// Solidity: function isFailed(uint256 record) pure returns(bool)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) IsFailed(record *big.Int) (bool, error) {
+	return _RequestRecordHelpers.Contract.IsFailed(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// IsFailed is a free data retrieval call binding the contract method 0x1dbb209c.
+//
+// Solidity: function isFailed(uint256 record) pure returns(bool)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) IsFailed(record *big.Int) (bool, error) {
+	return _RequestRecordHelpers.Contract.IsFailed(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// IsQuorumReached is a free data retrieval call binding the contract method 0x9079991f.
+//
+// Solidity: function isQuorumReached(uint256 record) pure returns(bool)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) IsQuorumReached(opts *bind.CallOpts, record *big.Int) (bool, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "isQuorumReached", record)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsQuorumReached is a free data retrieval call binding the contract method 0x9079991f.
+//
+// Solidity: function isQuorumReached(uint256 record) pure returns(bool)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) IsQuorumReached(record *big.Int) (bool, error) {
+	return _RequestRecordHelpers.Contract.IsQuorumReached(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// IsQuorumReached is a free data retrieval call binding the contract method 0x9079991f.
+//
+// Solidity: function isQuorumReached(uint256 record) pure returns(bool)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) IsQuorumReached(record *big.Int) (bool, error) {
+	return _RequestRecordHelpers.Contract.IsQuorumReached(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// MakeRecord is a free data retrieval call binding the contract method 0x7fab9898.
+//
+// Solidity: function makeRecord(uint256 indices, uint8 confirmationCount) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) MakeRecord(opts *bind.CallOpts, indices *big.Int, confirmationCount uint8) (*big.Int, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "makeRecord", indices, confirmationCount)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// MakeRecord is a free data retrieval call binding the contract method 0x7fab9898.
+//
+// Solidity: function makeRecord(uint256 indices, uint8 confirmationCount) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) MakeRecord(indices *big.Int, confirmationCount uint8) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.MakeRecord(&_RequestRecordHelpers.CallOpts, indices, confirmationCount)
+}
+
+// MakeRecord is a free data retrieval call binding the contract method 0x7fab9898.
+//
+// Solidity: function makeRecord(uint256 indices, uint8 confirmationCount) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) MakeRecord(indices *big.Int, confirmationCount uint8) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.MakeRecord(&_RequestRecordHelpers.CallOpts, indices, confirmationCount)
+}
+
+// SetFailed is a free data retrieval call binding the contract method 0x7ecf1131.
+//
+// Solidity: function setFailed(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) SetFailed(opts *bind.CallOpts, record *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "setFailed", record)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// SetFailed is a free data retrieval call binding the contract method 0x7ecf1131.
+//
+// Solidity: function setFailed(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) SetFailed(record *big.Int) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.SetFailed(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// SetFailed is a free data retrieval call binding the contract method 0x7ecf1131.
+//
+// Solidity: function setFailed(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) SetFailed(record *big.Int) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.SetFailed(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// SetQuorumReached is a free data retrieval call binding the contract method 0x925eb0ec.
+//
+// Solidity: function setQuorumReached(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCaller) SetQuorumReached(opts *bind.CallOpts, record *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _RequestRecordHelpers.contract.Call(opts, &out, "setQuorumReached", record)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// SetQuorumReached is a free data retrieval call binding the contract method 0x925eb0ec.
+//
+// Solidity: function setQuorumReached(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersSession) SetQuorumReached(record *big.Int) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.SetQuorumReached(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// SetQuorumReached is a free data retrieval call binding the contract method 0x925eb0ec.
+//
+// Solidity: function setQuorumReached(uint256 record) pure returns(uint256)
+func (_RequestRecordHelpers *RequestRecordHelpersCallerSession) SetQuorumReached(record *big.Int) (*big.Int, error) {
+	return _RequestRecordHelpers.Contract.SetQuorumReached(&_RequestRecordHelpers.CallOpts, record)
+}
+
+// SignedMathMetaData contains all meta data concerning the SignedMath contract.
+var SignedMathMetaData = &bind.MetaData{
+	ABI: "[]",
+}
+
+// SignedMathABI is the input ABI used to generate the binding from.
+// Deprecated: Use SignedMathMetaData.ABI instead.
+var SignedMathABI = SignedMathMetaData.ABI
+
+// SignedMath is an auto generated Go binding around an Ethereum contract.
+type SignedMath struct {
+	SignedMathCaller     // Read-only binding to the contract
+	SignedMathTransactor // Write-only binding to the contract
+	SignedMathFilterer   // Log filterer for contract events
+}
+
+// SignedMathCaller is an auto generated read-only Go binding around an Ethereum contract.
+type SignedMathCaller struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// SignedMathTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type SignedMathTransactor struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// SignedMathFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type SignedMathFilterer struct {
+	contract *bind.BoundContract // Generic contract wrapper for the low level calls
+}
+
+// SignedMathSession is an auto generated Go binding around an Ethereum contract,
+// with pre-set call and transact options.
+type SignedMathSession struct {
+	Contract     *SignedMath       // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts     // Call options to use throughout this session
+	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
+}
+
+// SignedMathCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// with pre-set call options.
+type SignedMathCallerSession struct {
+	Contract *SignedMathCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts     // Call options to use throughout this session
+}
+
+// SignedMathTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// with pre-set transact options.
+type SignedMathTransactorSession struct {
+	Contract     *SignedMathTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts     // Transaction auth options to use throughout this session
+}
+
+// SignedMathRaw is an auto generated low-level Go binding around an Ethereum contract.
+type SignedMathRaw struct {
+	Contract *SignedMath // Generic contract binding to access the raw methods on
+}
+
+// SignedMathCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type SignedMathCallerRaw struct {
+	Contract *SignedMathCaller // Generic read-only contract binding to access the raw methods on
+}
+
+// SignedMathTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type SignedMathTransactorRaw struct {
+	Contract *SignedMathTransactor // Generic write-only contract binding to access the raw methods on
+}
+
+// NewSignedMath creates a new instance of SignedMath, bound to a specific deployed contract.
+func NewSignedMath(address common.Address, backend bind.ContractBackend) (*SignedMath, error) {
+	contract, err := bindSignedMath(address, backend, backend, backend)
+	if err != nil {
+		return nil, err
+	}
+	return &SignedMath{SignedMathCaller: SignedMathCaller{contract: contract}, SignedMathTransactor: SignedMathTransactor{contract: contract}, SignedMathFilterer: SignedMathFilterer{contract: contract}}, nil
+}
+
+// NewSignedMathCaller creates a new read-only instance of SignedMath, bound to a specific deployed contract.
+func NewSignedMathCaller(address common.Address, caller bind.ContractCaller) (*SignedMathCaller, error) {
+	contract, err := bindSignedMath(address, caller, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &SignedMathCaller{contract: contract}, nil
+}
+
+// NewSignedMathTransactor creates a new write-only instance of SignedMath, bound to a specific deployed contract.
+func NewSignedMathTransactor(address common.Address, transactor bind.ContractTransactor) (*SignedMathTransactor, error) {
+	contract, err := bindSignedMath(address, nil, transactor, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &SignedMathTransactor{contract: contract}, nil
+}
+
+// NewSignedMathFilterer creates a new log filterer instance of SignedMath, bound to a specific deployed contract.
+func NewSignedMathFilterer(address common.Address, filterer bind.ContractFilterer) (*SignedMathFilterer, error) {
+	contract, err := bindSignedMath(address, nil, nil, filterer)
+	if err != nil {
+		return nil, err
+	}
+	return &SignedMathFilterer{contract: contract}, nil
+}
+
+// bindSignedMath binds a generic wrapper to an already deployed contract.
+func bindSignedMath(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(SignedMathABI))
+	if err != nil {
+		return nil, err
+	}
+	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_SignedMath *SignedMathRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _SignedMath.Contract.SignedMathCaller.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_SignedMath *SignedMathRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _SignedMath.Contract.SignedMathTransactor.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_SignedMath *SignedMathRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _SignedMath.Contract.SignedMathTransactor.contract.Transact(opts, method, params...)
+}
+
+// Call invokes the (constant) contract method with params as input values and
+// sets the output to result. The result type might be a single field for simple
+// returns, a slice of interfaces for anonymous returns and a struct for named
+// returns.
+func (_SignedMath *SignedMathCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _SignedMath.Contract.contract.Call(opts, result, method, params...)
+}
+
+// Transfer initiates a plain transaction to move funds to the contract, calling
+// its default method if one is available.
+func (_SignedMath *SignedMathTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _SignedMath.Contract.contract.Transfer(opts)
+}
+
+// Transact invokes the (paid) contract method with params as input values.
+func (_SignedMath *SignedMathTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _SignedMath.Contract.contract.Transact(opts, method, params...)
 }
 
 // StringsMetaData contains all meta data concerning the Strings contract.
