@@ -93,6 +93,7 @@ func (t *ImportIntoPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return nil, nil
 	}
 	if time.Now().Sub(*t.StartTime) >= timeout {
+		prom.TaskTimeout.With(prometheus.Labels{"flow": "initialStake", "task": taskTypeImport}).Inc()
 		return nil, errors.New(ErrMsgTimedOut)
 	}
 	defer func() {

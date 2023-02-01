@@ -219,6 +219,13 @@ var (
 		Name: prefix + "add_delegator_tx_committed_total",
 		Help: "The total number of AddDelegatorTx committed",
 	})
+
+	// Task timeout metric
+
+	TaskTimeout = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "mpc_task_timeout_total",
+		Help: "The total number of task timeout",
+	}, []string{"flow", "task"})
 )
 
 // Reference: https://github.com/alitto/pond
