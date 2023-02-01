@@ -183,6 +183,7 @@ func (t *JoinAndStake) joinAndWaitUntilQuorumReached(ctx core.TaskContext) error
 		select {
 		case <-timer.C:
 			if time.Now().Sub(*t.StartTime) >= timeout {
+				prom.TaskTimeout.With(prometheus.Labels{"flow": "", "task": "joinAndStake"}).Inc()
 				return errors.New(ErrMsgTimedOut)
 			}
 

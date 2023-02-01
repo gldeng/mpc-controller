@@ -5,10 +5,12 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
+	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/taskcontext"
 	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
 
@@ -76,6 +78,7 @@ func (t *Join) Next(ctx core.TaskContext) ([]core.Task, error) {
 				return next, errors.WithStack(err)
 			}
 			if time.Now().Sub(*t.StartTime) >= timeout {
+				prom.TaskTimeout.With(prometheus.Labels{"flow": "", "task": "join"}).Inc()
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 

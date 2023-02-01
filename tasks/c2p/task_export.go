@@ -97,6 +97,7 @@ func (t *ExportFromCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 				return next, errors.Wrap(err, "failed to export from C-Chain")
 			}
 			if time.Now().Sub(*t.StartTime) >= timeout {
+				prom.TaskTimeout.With(prometheus.Labels{"flow": "initialStake", "task": taskTypeExport}).Inc()
 				return nil, errors.New(ErrMsgTimedOut)
 			}
 
