@@ -38,7 +38,10 @@ type InMemoryTxIndex struct {
 }
 
 func NewInMemoryTxIndex() *InMemoryTxIndex {
-	return &InMemoryTxIndex{index: map[[32]byte]map[string]IDRecord{}}
+	return &InMemoryTxIndex{
+		index:      map[[32]byte]map[string]IDRecord{},
+		knownTxIds: map[ids.ID]struct{}{},
+	}
 }
 
 func (i *InMemoryTxIndex) GetTxByType(requestHash [32]byte, typ string) (ids.ID, error) {

@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"context"
+	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm"
@@ -9,6 +10,7 @@ import (
 	"github.com/avalido/mpc-controller/common"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
@@ -34,7 +36,6 @@ func (i *Indexer) Start() error {
 	client := i.services.Config.CreatePClient()
 
 	go func() {
-		nextRun := time.Now().Add(60 * time.Minute)
 
 		timer := time.NewTimer(1 * time.Minute) // First run after 1 minute
 		defer timer.Stop()
@@ -42,10 +43,21 @@ func (i *Indexer) Start() error {
 		for {
 			select {
 			case <-timer.C:
-				i.scanDelegators(client)
-				i.scanUTXOs(client)
+				nextRun := time.Now().Add(60 * time.Minute)
+				err := i.scanDelegators(client)
+				if err != nil {
+					i.services.Logger.Error(err.Error())
+				} else {
+					i.services.Logger.Debug("finished scanning delegators")
+				}
+				err = i.scanUTXOs(client)
+				if err != nil {
+					i.services.Logger.Error(err.Error())
+				} else {
+					i.services.Logger.Debug("finished scanning utxos")
+				}
 				i.services.TxIndex.PurgeOlderThan(time.Now().Add(-720 * time.Hour)) // Purge older than 30 days
-				interval := time.Now().Sub(nextRun)
+				interval := nextRun.Sub(time.Now())
 				timer.Reset(interval)
 			}
 		}
@@ -62,6 +74,7 @@ func (i *Indexer) Close() error {
 }
 
 func (i *Indexer) scanDelegators(client platformvm.Client) error {
+	i.services.Logger.Debug("scanning delegators")
 	validators, err := client.GetCurrentValidators(context.Background(), ids.Empty, nil) // TODO: give proper context
 	if err != nil {
 		return err
@@ -105,26 +118,39 @@ func (i *Indexer) scanDelegators(client platformvm.Client) error {
 }
 
 func (i *Indexer) scanUTXOs(client platformvm.Client) error {
-
+	i.services.Logger.Debug("scanning utxos")
 	addresses, err := common.LoadAllAddresses(i.services.Db)
 	if err != nil {
 		return err
 	}
 
 	var utxosAll [][]byte
-	startAddr := ids.ShortEmpty
-	startUtxoID := ids.Empty
+	nextStartAddr := ids.ShortEmpty
+	nextStartUtxoID := ids.Empty
 
+	runCount := 1
+	maxEntries := uint32(1024)
 	for {
 		var utxos [][]byte
-		utxos, startAddr, startUtxoID, err = client.GetUTXOs(context.Background(), addresses.List(), 1024, startAddr, startUtxoID) // TODO: give proper context
+		utxos, endAddr, endUtxoID, err := client.GetUTXOs(context.Background(), addresses.List(), maxEntries, nextStartAddr, nextStartUtxoID) // TODO: give proper context
 		if err != nil {
 			return err
 		}
-		if utxos == nil {
+		utxosAll = append(utxosAll, utxos...)
+		if len(utxos) < int(maxEntries) {
 			break
 		}
-		utxosAll = append(utxosAll, utxos...)
+		if runCount == 1 {
+			i.services.Logger.Debugf("utxos %v", utxos)
+			i.services.Logger.Debugf("endAddr %v", endAddr)
+			i.services.Logger.Debugf("endUtxoID %v", endUtxoID)
+		}
+
+		//i.services.Logger.Debugf("run %v found %v utxos", runCount, len(utxosAll))
+
+		runCount++
+		nextStartAddr = endAddr
+		nextStartUtxoID = endUtxoID
 	}
 
 	var txIDs []ids.ID
@@ -134,13 +160,16 @@ func (i *Indexer) scanUTXOs(client platformvm.Client) error {
 		if err != nil {
 			return err
 		}
-		txIDs = append(txIDs, utxo.TxID)
+		if utxo.TxID != ids.Empty {
+			// Some utxos have empty TxID. Why?
+			txIDs = append(txIDs, utxo.TxID)
+		}
 	}
 
 	for _, txId := range txIDs {
 		txBytes, err := client.GetTx(context.Background(), txId)
 		if err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf("get tx error %v", txId.String()))
 		}
 		tx, err := txs.Parse(txs.Codec, txBytes)
 		if err != nil {
