@@ -42,6 +42,8 @@ func (i *Indexer) Start() error {
 
 		for {
 			select {
+			case <-i.onCloseCtx.Done():
+				return
 			case <-timer.C:
 				nextRun := time.Now().Add(60 * time.Minute)
 				err := i.scanDelegators(client)
