@@ -6,6 +6,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/utils/crypto"
 	ids2 "github.com/avalido/mpc-controller/utils/ids"
 	"github.com/pkg/errors"
 )
@@ -78,7 +79,7 @@ func LoadAllPubKeys(db core.Store) ([]types.MpcPublicKey, error) {
 	}
 	bytes, err := db.Get(context.Background(), []byte(DbKeyAllPubKeys))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load all mpc public keys")
+		return nil, nil
 	}
 
 	if bytes == nil {
@@ -143,7 +144,11 @@ func refreshCache(pubKeys []types.MpcPublicKey) error {
 func refreshAddresses() error {
 	shortSet := &ids.ShortSet{}
 	for _, pubKey := range cachedAllPubKeys {
-		id, err := ids2.ShortIDFromPubKeyBytes(pubKey.GenPubKey)
+		genPK, err := crypto.NormalizePubKeyBytes(pubKey.GenPubKey)
+		if err != nil {
+			return err
+		}
+		id, err := ids2.ShortIDFromPubKeyBytes(genPK)
 		if err != nil {
 			return err
 		}
