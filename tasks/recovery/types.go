@@ -9,10 +9,8 @@ import (
 
 const (
 	StatusInit Status = iota
-	StatusSignReqSent
-	StatusSignedTxReady
-	StatusTxSent
-	StatusNotNeeded
+	StatusRunningImport
+	StatusRunningP2C
 	StatusDone
 )
 

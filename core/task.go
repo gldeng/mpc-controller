@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
@@ -27,6 +28,8 @@ type MpcManager interface {
 	GetGroupIdByKey(opts *bind.CallOpts, publicKey []byte) ([32]byte, error)
 	RequestRecords(opts *bind.CallOpts, groupId [32]byte, requestHash [32]byte) (*big.Int, error)
 	LastGenPubKey(opts *bind.CallOpts) ([]byte, error)
+	PrincipalTreasuryAddress(opts *bind.CallOpts) (common.Address, error)
+	RewardTreasuryAddress(opts *bind.CallOpts) (common.Address, error)
 }
 
 type TaskContext interface {
@@ -40,6 +43,7 @@ type TaskContext interface {
 	CheckEthTx(txHash common.Hash) (TxStatus, error)
 	CheckCChainTx(id ids.ID) (TxStatus, error)
 	CheckPChainTx(id ids.ID) (Status, error)
+	GetCChainTx(txID ids.ID) (*evm.Tx, error)
 	GetPChainTx(txID ids.ID) (*txs.Tx, error)
 	NonceAt(account common.Address) (uint64, error)
 	Emit(event interface{})

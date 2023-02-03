@@ -31,6 +31,7 @@ type P2C struct {
 	SubTaskHasError error
 }
 
+// TODO: Support multiple UTXO
 func NewP2C(flowId core.FlowId, quorum types.QuorumInfo, utxo avax.UTXO, to common.Address) (*P2C, error) {
 	exportTask, err := NewExportFromPChain(flowId, quorum, utxo)
 	if err != nil {

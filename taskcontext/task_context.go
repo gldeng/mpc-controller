@@ -135,6 +135,22 @@ func (t *TaskContextImp) RequestRecords(opts *bind.CallOpts, groupId [32]byte, r
 	return caller.RequestRecords(opts, groupId, requestHash)
 }
 
+func (t *TaskContextImp) PrincipalTreasuryAddress(opts *bind.CallOpts) (common.Address, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "failed to create MpcManagerCaller")
+	}
+	return caller.PrincipalTreasuryAddress(opts)
+}
+
+func (t *TaskContextImp) RewardTreasuryAddress(opts *bind.CallOpts) (common.Address, error) {
+	caller, err := contract.NewMpcManagerCaller(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "failed to create MpcManagerCaller")
+	}
+	return caller.RewardTreasuryAddress(opts)
+}
+
 func NewTaskContextImp(services *core.ServicePack) (*TaskContextImp, error) {
 	ethClient := services.Config.CreateEthClient()
 	cClient := services.Config.CreateCClient()
@@ -255,6 +271,19 @@ func (t *TaskContextImp) CheckPChainTx(id ids.ID) (core.Status, error) {
 	default:
 		return core.Status{core.TxStatusInvalid, resp.Reason}, nil
 	}
+}
+
+func (t *TaskContextImp) GetCChainTx(txID ids.ID) (*evm.Tx, error) {
+	txBytes, err := t.CChainClient.GetAtomicTx(context.Background(), txID)
+	if err != nil {
+		return nil, err
+	}
+	tx := &evm.Tx{}
+	_, err = evm.Codec.Unmarshal(txBytes, tx)
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
 }
 
 func (t *TaskContextImp) GetPChainTx(txID ids.ID) (*txs.Tx, error) {
