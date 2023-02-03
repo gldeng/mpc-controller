@@ -189,6 +189,15 @@ var (
 	}, []string{"flow", "chain", "tx"})
 
 	// Mpc tx issued metrics
+	P2CExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "p2c_export_tx_issued_total",
+		Help: "The total number of p2c ExportTx issued",
+	})
+
+	P2CExportTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "p2c_export_tx_committed_total",
+		Help: "The total number of p2c ExportTx committed",
+	})
 
 	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "c2p_export_tx_issued_total",
