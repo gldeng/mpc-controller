@@ -12,7 +12,12 @@ const (
 )
 
 var (
-	// Contract event subscription error metric
+	// Contract event subscription metric
+
+	ContractEvtSub = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "contract_evt_subscription_total",
+		Help: "The total number of contract event subscriptions",
+	})
 
 	ContractEvtSubErr = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "contract_evt_subscription_error_total",
@@ -214,6 +219,13 @@ var (
 		Name: prefix + "add_delegator_tx_committed_total",
 		Help: "The total number of AddDelegatorTx committed",
 	})
+
+	// Task timeout metric
+
+	TaskTimeout = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "mpc_task_timeout_total",
+		Help: "The total number of task timeout",
+	}, []string{"flow", "task"})
 )
 
 // Reference: https://github.com/alitto/pond

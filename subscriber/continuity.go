@@ -22,49 +22,59 @@ func (s *Subscriber) checkStakeReqNoContinuity(log types.Log) error {
 
 		newStakeReqNo := event.RequestNumber
 
-		found, err := s.foundStakeReqNo()
+		found, err := s.foundStakeReq()
 		if err != nil {
-			return errors.Wrap(err, "failed to check the existence of stake request number")
+			return errors.Wrap(err, "failed to check the existence of stake request")
 		}
 
 		if !found {
-			s.logger.Debug("stake request number not found")
-			err := s.saveStakeReqNo(stakeReqNo(newStakeReqNo.String()))
+			s.logger.Debug("stake request not found")
+			err := s.saveStakeReq(&stakeReq{newStakeReqNo.String(), log.BlockNumber, log.Index})
 			if err != nil {
 				prom.DBOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
-				return errors.Wrapf(err, "failed to insert stake request number %v", newStakeReqNo.String())
+				return errors.Wrapf(err, "failed to insert stake request %v", newStakeReqNo.String())
 			}
 			prom.DBOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
-			s.logger.Debug("inserted stake request number", []logger.Field{{"stakeReqNo", newStakeReqNo.String()}}...)
+			s.logger.Debug("inserted stake request", []logger.Field{
+				{"reqNo", newStakeReqNo.String()},
+				{"logBlockNumber", log.BlockNumber},
+				{"logIndex", log.Index}}...)
 			return nil
 		}
 
-		storeStakeReqNo, err := s.loadStakeReqNo()
+		storeStakeReq, err := s.loadStakeReq()
 		if err != nil {
 			prom.DBOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "load"}).Inc()
-			return errors.Wrap(err, "failed to load stake request number")
+			return errors.Wrap(err, "failed to load stake request")
 		}
 		prom.DBOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "load"}).Inc()
-		s.logger.Debug("loaded stake request number", []logger.Field{{"stakeReqNo", storeStakeReqNo}}...)
+		s.logger.Debug("loaded stake request number", []logger.Field{
+			{"reqNo", storeStakeReq.ReqNo},
+			{"logBlockNumber", storeStakeReq.LogBlockNumber},
+			{"logIndex", storeStakeReq.LogIndex}}...)
 
-		lastStakeReqNo, _ := new(big.Int).SetString(string(storeStakeReqNo), 10)
+		lastStakeReqNo, _ := new(big.Int).SetString(storeStakeReq.ReqNo, 10)
 		one := big.NewInt(1)
 		plusOne := new(big.Int).Add(lastStakeReqNo, one)
 		if plusOne.Cmp(newStakeReqNo) != 0 {
 			prom.DiscontinuousValue.With(prometheus.Labels{"checker": "subscriber", "field": "stakeReqNo"}).Inc()
-			s.logger.Warn("got discontinuous stake request number", []logger.Field{
+			s.logger.Warn("got discontinuous stake request", []logger.Field{
 				{"expectedStakeReqNo", plusOne},
 				{"gotStakeReqNo", newStakeReqNo},
-				{"blockNumber", log.BlockNumber},
-				{"txHash", log.TxHash}}...)
+				{"logBlockNumber", log.BlockNumber},
+				{"logIndex", log.Index},
+				{"logTxHash", log.TxHash}}...)
 		}
-		err = s.saveStakeReqNo(stakeReqNo(newStakeReqNo.String()))
+		err = s.saveStakeReq(&stakeReq{newStakeReqNo.String(), log.BlockNumber, log.Index})
 		if err != nil {
 			prom.DBOperationError.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
-			return errors.Wrapf(err, "failed to update stake request number %v", newStakeReqNo.String())
+			return errors.Wrapf(err, "failed to update stake request %v", newStakeReqNo.String())
 		}
 		prom.DBOperation.With(prometheus.Labels{"pkg": "subscriber", "operation": "save"}).Inc()
-		s.logger.Debug("updated stake request number", []logger.Field{{"stakeReqNo", newStakeReqNo.String()}}...)
+		s.logger.Debug("updated stake request", []logger.Field{
+			{"reqNo", newStakeReqNo.String()},
+			{"logBlockNumber", log.BlockNumber},
+			{"logIndex", log.Index}}...)
 		return nil
 	default:
 		return nil

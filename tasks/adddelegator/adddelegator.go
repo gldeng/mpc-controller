@@ -22,7 +22,7 @@ import (
 // todo: use ErrMsg
 
 const (
-	taskTypeExport = "addDelegator"
+	taskTypeAddDelegator = "addDelegator"
 )
 
 var (
@@ -50,7 +50,7 @@ type AddDelegator struct {
 func NewAddDelegator(flowId core.FlowId, quorum types.QuorumInfo, param *StakeParam) (*AddDelegator, error) {
 	return &AddDelegator{
 		FlowId:   flowId,
-		TaskType: taskTypeExport,
+		TaskType: taskTypeAddDelegator,
 		Quorum:   quorum,
 		Param:    param,
 		TxID:     nil,
@@ -90,6 +90,7 @@ func (t *AddDelegator) Next(ctx core.TaskContext) ([]core.Task, error) {
 		return nil, nil
 	}
 	if time.Now().Sub(*t.StartTime) >= timeout {
+		prom.TaskTimeout.With(prometheus.Labels{"flow": "initialStake", "task": taskTypeAddDelegator}).Inc()
 		return nil, errors.New(ErrMsgTimedOut)
 	}
 	defer func() {

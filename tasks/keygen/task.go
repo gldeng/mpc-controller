@@ -15,6 +15,7 @@ import (
 	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
 
@@ -70,6 +71,7 @@ loop:
 				break loop
 			}
 			if time.Now().Sub(startTime) >= timeout {
+				prom.TaskTimeout.With(prometheus.Labels{"flow": "", "task": "keygen"}).Inc()
 				return nil, errors.New("task timeout")
 			}
 
