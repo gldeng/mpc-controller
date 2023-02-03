@@ -111,7 +111,7 @@ func (i *Indexer) scanDelegators(client platformvm.Client) error {
 		uTx := tx.Unsigned.(*txs.AddDelegatorTx)
 		reqHash := types.RequestHash{}
 		copy(reqHash[:], uTx.Memo)
-		err = i.services.TxIndex.SetTxByType(reqHash, "AddDelegator", txId)
+		err = i.services.TxIndex.SetTxByType(reqHash, core.TxTypeAddDelegator, txId)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (i *Indexer) scanUTXOs(client platformvm.Client) error {
 		uTx := tx.Unsigned.(*txs.ImportTx)
 		reqHash := types.RequestHash{}
 		copy(reqHash[:], uTx.Memo)
-		err = i.services.TxIndex.SetTxByType(reqHash, "Import", txId)
+		err = i.services.TxIndex.SetTxByType(reqHash, core.TxTypeImportP, txId)
 		if err != nil {
 			return err
 		}

@@ -7,6 +7,8 @@ import (
 	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/prom"
+	"github.com/avalido/mpc-controller/tasks/c2p"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"math/big"
 	"time"
 
@@ -16,13 +18,12 @@ import (
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/logger"
-	"github.com/avalido/mpc-controller/utils/bytes"
 	utilstime "github.com/avalido/mpc-controller/utils/time"
 	"github.com/pkg/errors"
 )
 
 const (
-	taskTypeExport = "export"
+	taskTypeRecovery = "recovery"
 )
 
 var (
@@ -30,9 +31,14 @@ var (
 )
 
 type Recovery struct {
-	Status      Status
-	FlowId      string
-	TaskType    string
+	FlowId   core.FlowId
+	Status   Status
+	TaskType string
+
+	request *Request
+
+	Import *c2p.ImportIntoPChain // Complete atomic tx if not already
+
 	Amount      big.Int
 	Quorum      types.QuorumInfo
 	Tx          *evm.UnsignedExportTx
@@ -60,49 +66,47 @@ func (t *Recovery) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewRecovery(flowId string, quorum types.QuorumInfo, amount big.Int) (*Recovery, error) {
+func NewRecovery(request *Request, quorum types.QuorumInfo) (*Recovery, error) {
+	id, err := request.Hash()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed get StakeRequest hash")
+	}
+
+	flowID := core.FlowId{
+		Tag:         "recovery" + "_" + request.OriginalRequestHash.String(),
+		RequestHash: id,
+	}
+
 	return &Recovery{
-		Status:      StatusInit,
-		FlowId:      flowId,
-		TaskType:    taskTypeExport,
-		Amount:      amount,
-		Quorum:      quorum,
-		Tx:          nil,
-		TxHash:      nil,
-		TxCred:      nil,
-		TxID:        nil,
-		SignRequest: nil,
-		Failed:      false,
+		FlowId:   flowID,
+		TaskType: taskTypeRecovery,
+		Quorum:   quorum,
+		request:  request,
 	}, nil
 }
 
+//func NewRecovery(flowId string, quorum types.QuorumInfo, amount big.Int) (*Recovery, error) {
+//	return &Recovery{
+//		Status:      StatusInit,
+//		FlowId:      flowId,
+//		TaskType:    taskTypeExport,
+//		Amount:      amount,
+//		Quorum:      quorum,
+//		Tx:          nil,
+//		TxHash:      nil,
+//		TxCred:      nil,
+//		TxID:        nil,
+//		SignRequest: nil,
+//		Failed:      false,
+//	}, nil
+//}
+
 func (t *Recovery) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if t.StartTime == nil {
-		now := time.Now()
-		t.StartTime = &now
+	txId, _ := ctx.GetTxIndex().GetTxByType(t.request.OriginalRequestHash, core.TxTypeAddDelegator)
+	if txId == ids.Empty {
+		t.Status = StatusNotNeeded
 	}
-
-	timeout := 60 * time.Minute
-	interval := 2 * time.Second
-	timer := time.NewTimer(interval)
-	defer timer.Stop()
-	var next []core.Task
-	var err error
-
-	for {
-		select {
-		case <-timer.C:
-			next, err = t.run(ctx)
-			if t.IsDone() || t.Failed {
-				return next, errors.Wrap(err, "failed to export from C-Chain")
-			}
-			if time.Now().Sub(*t.StartTime) >= timeout {
-				return nil, errors.New(ErrMsgTimedOut)
-			}
-
-			timer.Reset(interval)
-		}
-	}
+	txId, _ := ctx.GetTxIndex().GetTxByType(t.request.OriginalRequestHash, core.TxTypeImportP)
 }
 
 func (t *Recovery) SignedTx() (*evm.Tx, error) {

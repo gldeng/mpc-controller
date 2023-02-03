@@ -34,6 +34,7 @@ type TaskContext interface {
 	GetLogger() logger.Logger
 	GetNetwork() *NetworkContext
 	GetMpcClient() mpc.MpcClient
+	GetTxIndex() TxIndexReader
 	IssueCChainTx(txBytes []byte) (ids.ID, error)
 	IssuePChainTx(txBytes []byte) (ids.ID, error)
 	CheckEthTx(txHash common.Hash) (TxStatus, error)
