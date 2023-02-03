@@ -7,6 +7,7 @@ import (
 	"github.com/ava-labs/avalanchego/vms/components/verify"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/pkg/errors"
 )
@@ -62,6 +63,43 @@ func PackSignedExportTx(unsigned *txs.ExportTx, cred *secp256k1fx.Credential) (*
 		},
 	}
 	err := tx.Sign(txs.Codec, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare signed tx")
+	}
+	return &tx, nil
+}
+
+func ImportTxHash(importTx *evm.UnsignedImportTx) ([]byte, error) {
+	tx := evm.Tx{
+		UnsignedAtomicTx: importTx,
+	}
+	unsignedBytes, err := evm.Codec.Marshal(uint16(0), &tx.UnsignedAtomicTx)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	hash := hashing.ComputeHash256(unsignedBytes)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return hash, nil
+}
+
+func PackSignedImportTx(unsigned *evm.UnsignedImportTx, cred *secp256k1fx.Credential) (*evm.Tx, error) {
+	if unsigned == nil {
+		return nil, errors.New("missing unsigned tx")
+	}
+	if cred == nil {
+		return nil, errors.New(ErrMsgMissingCredential)
+	}
+
+	tx := evm.Tx{
+		UnsignedAtomicTx: unsigned,
+		Creds: []verify.Verifiable{
+			cred,
+		},
+	}
+	err := tx.Sign(evm.Codec, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare signed tx")
 	}

@@ -3,14 +3,16 @@ package p2c
 import (
 	"context"
 	"fmt"
-	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
-	"github.com/avalido/mpc-controller/core/mpc"
+	"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/ethereum/go-ethereum/common"
 	"time"
+
+	"github.com/avalido/mpc-controller/core/mpc"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -22,97 +24,92 @@ import (
 )
 
 const (
-	taskTypeExport = "exportP"
+	taskTypeImport = "importC"
 )
 
 var (
-	_ core.Task = (*ExportFromPChain)(nil)
+	_ core.Task = (*ImportIntoCChain)(nil)
 )
 
-type ExportFromPChain struct {
+type ImportIntoCChain struct {
 	Status   Status
 	FlowId   core.FlowId
 	TaskType string
+	Quorum   types.QuorumInfo
 
-	Utxo avax.UTXO
-
-	Quorum      types.QuorumInfo
-	Tx          *txs.ExportTx
-	TxHash      []byte
-	TxCred      *secp256k1fx.Credential
-	TxID        *ids.ID
-	SignRequest *mpc.SignRequest
-	Failed      bool
-	StartTime   *time.Time
+	SignedExportTx *txs.Tx
+	To             common.Address
+	Tx             *evm.UnsignedImportTx
+	TxHash         []byte
+	TxCred         *secp256k1fx.Credential
+	TxID           *ids.ID
+	SignRequest    *mpc.SignRequest
+	Failed         bool
+	StartTime      *time.Time
+	LastStepTime   *time.Time
+	issuedByOthers bool
 }
 
-func (t *ExportFromPChain) GetId() string {
-	return fmt.Sprintf("%v-exportP", t.FlowId)
+func (t *ImportIntoCChain) GetId() string {
+	return fmt.Sprintf("%v-importC", t.FlowId)
 }
 
-func (t *ExportFromPChain) FailedPermanently() bool {
+func (t *ImportIntoCChain) FailedPermanently() bool {
 	return t.Failed
 }
 
-func (t *ExportFromPChain) IsSequential() bool {
-	return true
+func (t *ImportIntoCChain) IsSequential() bool {
+	return false
 }
 
-func (t *ExportFromPChain) IsDone() bool {
+func (t *ImportIntoCChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewExportFromPChain(flowId core.FlowId, quorum types.QuorumInfo, utxo avax.UTXO) (*ExportFromPChain, error) {
-	return &ExportFromPChain{
-		Status:      StatusInit,
-		FlowId:      flowId,
-		TaskType:    taskTypeExport,
-		Utxo:        utxo,
-		Quorum:      quorum,
-		Tx:          nil,
-		TxHash:      nil,
-		TxCred:      nil,
-		TxID:        nil,
-		SignRequest: nil,
-		Failed:      false,
+func NewImportIntoCChain(flowId core.FlowId, quorum types.QuorumInfo, signedExportTx *txs.Tx, to common.Address) (*ImportIntoCChain, error) {
+	return &ImportIntoCChain{
+		Status:         StatusInit,
+		FlowId:         flowId,
+		TaskType:       taskTypeImport,
+		Quorum:         quorum,
+		SignedExportTx: signedExportTx,
+		To:             to,
+		Tx:             nil,
+		TxHash:         nil,
+		TxCred:         nil,
+		TxID:           nil,
+		SignRequest:    nil,
+		Failed:         false,
+		StartTime:      nil,
+		LastStepTime:   nil,
+		issuedByOthers: false,
 	}, nil
 }
 
-func (t *ExportFromPChain) Next(ctx core.TaskContext) ([]core.Task, error) {
+func (t *ImportIntoCChain) Next(ctx core.TaskContext) ([]core.Task, error) {
 	if t.StartTime == nil {
 		now := time.Now()
 		t.StartTime = &now
+		t.LastStepTime = &now
 	}
 
 	timeout := 60 * time.Minute
-	interval := 2 * time.Second
-	timer := time.NewTimer(interval)
-	defer timer.Stop()
-	var next []core.Task
-	var err error
-
-	for {
-		select {
-		case <-timer.C:
-			next, err = t.run(ctx)
-			if t.IsDone() || t.Failed {
-				return next, errors.Wrap(err, "failed to export from P-Chain")
-			}
-			if time.Now().Sub(*t.StartTime) >= timeout {
-				prom.TaskTimeout.With(prometheus.Labels{"flow": "initialStake", "task": taskTypeExport}).Inc()
-				return nil, errors.New(ErrMsgTimedOut)
-			}
-
-			timer.Reset(interval)
-		}
+	interval := 2 * time.Second // Min delay between steps
+	if time.Now().Sub(*t.LastStepTime) < interval {
+		return nil, nil
 	}
+	if time.Now().Sub(*t.StartTime) >= timeout {
+		prom.TaskTimeout.With(prometheus.Labels{"flow": "initialStake", "task": taskTypeImport}).Inc()
+		return nil, errors.New(ErrMsgTimedOut)
+	}
+	defer func() {
+		now := time.Now()
+		t.LastStepTime = &now
+	}()
+	return t.run(ctx)
 }
 
-func (t *ExportFromPChain) SignedTx() (*txs.Tx, error) {
-	return PackSignedExportTx(t.Tx, t.TxCred)
-}
-
-func (t *ExportFromPChain) run(ctx core.TaskContext) ([]core.Task, error) {
+func (t *ImportIntoCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	switch t.Status {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
@@ -135,16 +132,22 @@ func (t *ExportFromPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 
 		t.logDebug(ctx, "checked tx status", []logger.Field{
 			{"txId", t.TxID},
-			{"status", status.String()}}...)
+			{"status", status.String()},
+		}...)
 	}
 	return nil, nil
 }
 
-func (t *ExportFromPChain) buildSignReq(id string, hash []byte) (*mpc.SignRequest, error) {
+func (t *ImportIntoCChain) SignedTx() (*evm.Tx, error) {
+	return PackSignedImportTx(t.Tx, t.TxCred)
+}
+
+func (t *ImportIntoCChain) buildSignReq(id string, hash []byte) (*mpc.SignRequest, error) {
 	partiPubKeys, genPubKey, err := t.Quorum.CompressKeys()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compress public keys")
 	}
+
 	s := &mpc.SignRequest{}
 	s.RequestId = id
 	s.ParticipantPublicKeys = partiPubKeys
@@ -153,66 +156,54 @@ func (t *ExportFromPChain) buildSignReq(id string, hash []byte) (*mpc.SignReques
 	return s, nil
 }
 
-func (t *ExportFromPChain) buildAndSignTx(ctx core.TaskContext) error {
+func (t *ImportIntoCChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
-
-	tx, err := builder.ExportFromPChain(t.Utxo)
+	tx, err := builder.ImportIntoCChain(t.To, t.SignedExportTx, t.FlowId.RequestHash[:])
 	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToBuildTx)
+		return t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 	}
 	t.Tx = tx
-	txHash, err := ExportTxHash(tx)
+	txHash, err := ImportTxHash(tx)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToGetTxHash)
 	}
 	t.TxHash = txHash
-
-	prom.MpcTxBuilt.With(prometheus.Labels{"flow": "initialStake", "chain": "pChain", "tx": "exportTx"}).Inc()
-
 	req, err := t.buildSignReq(t.GetId(), txHash)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSignRequest)
 	}
+
 	t.SignRequest = req
 
-	t.logDebug(ctx, "Built sign request", []logger.Field{
-		{"signReq", types.SignRequest{
-			ReqID:                  req.RequestId,
-			Hash:                   req.Hash,
-			CompressedGenPubKeyHex: req.PublicKey,
-			CompressedPartiPubKeys: req.ParticipantPublicKeys}}}...)
+	prom.MpcTxBuilt.With(prometheus.Labels{"flow": "initialStake", "chain": "cChain", "tx": "importTx"}).Inc()
 
 	_, err = ctx.GetMpcClient().Sign(context.Background(), req)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToSendSignRequest)
 	}
-	prom.MpcSignPostedForP2CExportTx.Inc()
+	prom.MpcSignPostedForP2CImportTx.Inc()
 	t.logDebug(ctx, "sent signing request", logger.Field{"signReq", req.RequestId})
 	return nil
 }
 
-func (t *ExportFromPChain) getSignature(ctx core.TaskContext) error {
+func (t *ImportIntoCChain) getSignature(ctx core.TaskContext) error {
 	res, err := ctx.GetMpcClient().CheckResult(context.Background(), &mpc.CheckResultRequest{RequestId: t.SignRequest.RequestId})
-	// TODO: Handle 404
-	if err != nil {
-		return t.failIfErrorf(err, ErrMsgFailedToCheckSignRequest)
-	}
 	if res.RequestStatus == mpc.CheckResultResponse_ERROR {
-		return t.failIfErrorf(err, "failed to sign ExportTx from C-Chain, status:%v", res.RequestStatus.String())
+		return t.failIfErrorf(err, "failed to sign ImportTx from P-Chain, status:%v", res.RequestStatus.String())
 	}
 
 	if res.RequestStatus != mpc.CheckResultResponse_DONE {
 		t.logDebug(ctx, "signing not done", []logger.Field{{"signReq", t.SignRequest.RequestId}, {"status", res.RequestStatus.String()}}...)
 		return nil
 	}
-	prom.MpcSignDoneForP2CExportTx.Inc()
+
+	prom.MpcSignDoneForP2CImportTx.Inc()
 	t.logInfo(ctx, "signing done", []logger.Field{{"signReq", t.SignRequest.RequestId}}...)
 	txCred, err := ValidateAndGetCred(t.TxHash, *new(types.Signature).FromHex(res.Result), t.Quorum.PChainAddress())
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToValidateCredential)
 	}
 	t.TxCred = txCred
-
 	signed, err := t.SignedTx()
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgPrepareSignedTx)
@@ -231,7 +222,7 @@ func (t *ExportFromPChain) getSignature(ctx core.TaskContext) error {
 //     avalanche network already before sending tx
 //  3. check tx status again after sending failed which may be caused by another participant sending the same tx
 //     at the same time
-func (t *ExportFromPChain) sendTx(ctx core.TaskContext) error {
+func (t *ImportIntoCChain) sendTx(ctx core.TaskContext) error {
 	// waits for arbitrary duration to elapse to reduce race condition.
 	utilstime.RandomDelay(5000)
 
@@ -245,19 +236,19 @@ func (t *ExportFromPChain) sendTx(ctx core.TaskContext) error {
 	}
 
 	signed, _ := t.SignedTx()
-	_, err = ctx.IssuePChainTx(signed.Bytes())
+	_, err = ctx.IssueCChainTx(signed.SignedBytes())
 	if err != nil {
-		_, err := t.checkIfTxIssued(ctx)
+		//_, err := t.checkIfTxIssued(ctx) // TODO: Fix this
 		return errors.WithStack(err)
 	}
 
 	t.Status = StatusTxSent
-	prom.P2CExportTxIssued.Inc()
+	prom.P2CImportTxIssued.Inc()
 	t.logDebug(ctx, "tx issued", []logger.Field{{Key: "txId", Value: t.TxID}}...)
 	return nil
 }
 
-func (t *ExportFromPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
+func (t *ImportIntoCChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	status, err := t.checkTxStatus(ctx)
 	if err != nil {
 		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
@@ -266,12 +257,13 @@ func (t *ExportFromPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 
 	t.logDebug(ctx, "checked tx status", []logger.Field{
 		{"txId", t.TxID},
-		{"status", status.String()}}...)
+		{"status", status.String()},
+	}...)
 
 	defer func() {
 		if status == core.TxStatusProcessing {
 			t.Status = StatusTxSent
-			prom.P2CExportTxIssued.Inc()
+			prom.P2CImportTxIssued.Inc()
 		}
 	}()
 
@@ -285,32 +277,32 @@ func (t *ExportFromPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	}
 }
 
-func (t *ExportFromPChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
-	status, err := ctx.CheckPChainTx(*t.TxID)
+func (t *ImportIntoCChain) checkTxStatus(ctx core.TaskContext) (core.TxStatus, error) {
+	status, err := ctx.CheckCChainTx(*t.TxID)
 	if err != nil {
-		return status.Code, errors.WithStack(err)
+		return status, errors.WithStack(err)
 	}
 
 	defer func() {
-		if status.Code == core.TxStatusCommitted {
+		if status == core.TxStatusCommitted {
 			t.Status = StatusDone
-			prom.P2CExportTxCommitted.Inc()
+			prom.P2CImportTxCommitted.Inc()
 		}
 	}()
 
-	switch status.Code {
+	switch status {
 	case core.TxStatusUnknown:
-		return status.Code, nil
+		return status, nil
 	case core.TxStatusCommitted:
-		return status.Code, nil
+		return status, nil
 	case core.TxStatusProcessing:
-		return status.Code, nil
+		return status, nil
 	default:
-		return status.Code, t.failIfErrorf(errors.New(status.String()), ErrMsgTxFail)
+		return status, t.failIfErrorf(errors.New(status.String()), ErrMsgTxFail)
 	}
 }
 
-func (t *ExportFromPChain) failIfErrorf(err error, format string, a ...any) error {
+func (t *ImportIntoCChain) failIfErrorf(err error, format string, a ...any) error {
 	if err == nil {
 		return nil
 	}
@@ -318,7 +310,7 @@ func (t *ExportFromPChain) failIfErrorf(err error, format string, a ...any) erro
 	return errors.Wrap(err, fmt.Sprintf(format, a...))
 }
 
-func (t *ExportFromPChain) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field) {
+func (t *ImportIntoCChain) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field) {
 	allFields := make([]logger.Field, 0, len(fields)+2)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
@@ -326,7 +318,7 @@ func (t *ExportFromPChain) logDebug(ctx core.TaskContext, msg string, fields ...
 	ctx.GetLogger().Debug(msg, allFields...)
 }
 
-func (t *ExportFromPChain) logInfo(ctx core.TaskContext, msg string, fields ...logger.Field) {
+func (t *ImportIntoCChain) logInfo(ctx core.TaskContext, msg string, fields ...logger.Field) {
 	allFields := make([]logger.Field, 0, len(fields)+2)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
@@ -334,7 +326,7 @@ func (t *ExportFromPChain) logInfo(ctx core.TaskContext, msg string, fields ...l
 	ctx.GetLogger().Info(msg, allFields...)
 }
 
-func (t *ExportFromPChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+func (t *ImportIntoCChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
 	allFields := make([]logger.Field, 0, len(fields)+3)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
 	allFields = append(allFields, logger.Field{"taskType", t.TaskType})

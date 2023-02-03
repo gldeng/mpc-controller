@@ -6,14 +6,14 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/utils/formatting"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
-	"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/taskcontext"
-	"github.com/avalido/mpc-controller/tasks/c2p"
+	"github.com/avalido/mpc-controller/tasks/p2c"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -35,8 +35,9 @@ func idFromString(str string) ids.ID {
 func main() {
 
 	// CHANGE ME -->
-	host := "172.18.0.1"
-	hexTx := "0x00000000000100000539d41e6504141f003a4f1689073f198dbc128e5d4692f72b7e48a29728a42653b50000000000000000000000000000000000000000000000000000000000000000000000018db97c7cece249c2b98bdc0226cc4c2a57bf52fc0000000000419d4517cc8b1578ba383544d163958822d8abd3849bb9dfabe39fcbc3e7ee8811fe2f00000000000000140000000117cc8b1578ba383544d163958822d8abd3849bb9dfabe39fcbc3e7ee8811fe2f0000000700000000000f42a5000000000000000000000001000000013cb7d3842e8cee6a0ebd09f1fe884f6861e1b29c0000000100000009000000010d5df82990304d0cd176dec8de28cb8fea0925667495005d8d490c591b67c0a9327331724b8648fe39e7bdca34104b108c2b39cf880eb043b81f0a097a775d39001135610a"
+	host := "172.21.128.1"
+	hexTx := "0x0000000000120000053900000000000000000000000000000000000000000000000000000000000000000000000000000001f3ad10ac70eb938deb2044be72746e4de581ad87eb69d6a5a2286e2da2a5aaa80000000017cc8b1578ba383544d163958822d8abd3849bb9dfabe39fcbc3e7ee8811fe2f00000005000000003b9aca00000000010000000000000000d41e6504141f003a4f1689073f198dbc128e5d4692f72b7e48a29728a42653b50000000117cc8b1578ba383544d163958822d8abd3849bb9dfabe39fcbc3e7ee8811fe2f00000007000000003b8b87c0000000000000000000000001000000013cb7d3842e8cee6a0ebd09f1fe884f6861e1b29c0000000100000009000000012b5606a457d7e53438a5b008f38a4f01174024bc064d2d5c599e70ad11e0acb06a510821e8c11376a5a40511a3e61d2612c0b3ace3f4498da405db19123184560171347840"
+	toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
 	// <--
 
 	mpcClient, err := mpcclient.NewSimulatingClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
@@ -75,17 +76,15 @@ func main() {
 	}
 
 	bytesTx, err := formatting.Decode(formatting.Hex, hexTx)
+	panicIfError(err)
 
-	tx := &evm.Tx{}
-	evm.Codec.Unmarshal(bytesTx, tx)
+	tx, err := txs.Parse(txs.Codec, bytesTx)
+	panicIfError(err)
 
-	ubytesTx, err := evm.Codec.Marshal(0, tx.UnsignedAtomicTx)
-	tx.Initialize(ubytesTx, bytesTx)
-
-	task, err := c2p.NewImportIntoPChain(core.FlowId{
+	task, err := p2c.NewImportIntoCChain(core.FlowId{
 		Tag:         "abc",
 		RequestHash: types.RequestHash{},
-	}, quorum, tx)
+	}, quorum, tx, toAddress)
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
@@ -95,7 +94,7 @@ func main() {
 	backoff.RetryFnExponential10Times(logger.Default(), context.Background(), 1*time.Second, 120*time.Second, func() (retry bool, err error) {
 		nextTasks, err = task.Next(ctx)
 		if err != nil {
-			return false, err
+			panic(err)
 		}
 		if !task.IsDone() && !task.FailedPermanently() {
 			return true, nil

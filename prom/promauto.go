@@ -138,6 +138,25 @@ var (
 	}, []string{"flow"})
 
 	// Mpc sign metrics
+	MpcSignPostedForP2CExportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total_for_p2c_export_tx",
+		Help: "The total number of mpc sign posted for c2p ExportTx",
+	})
+
+	MpcSignDoneForP2CExportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total_for_p2c_export_tx",
+		Help: "The total number of mpc sign done for c2p ExportTx",
+	})
+
+	MpcSignPostedForP2CImportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_posted_total_for_p2c_import_tx",
+		Help: "The total number of mpc sign posted for c2p ImportTx",
+	})
+
+	MpcSignDoneForP2CImportTx = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_sign_done_total_for_p2c_import_tx",
+		Help: "The total number of mpc sign done for c2p ImportTx",
+	})
 
 	MpcSignPostedForC2PExportTx = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "mpc_sign_posted_total_for_c2p_export_tx",
@@ -199,6 +218,16 @@ var (
 		Help: "The total number of p2c ExportTx committed",
 	})
 
+	P2CImportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "p2c_import_tx_issued_total",
+		Help: "The total number of cp2 ImportTx issued",
+	})
+
+	P2CImportTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "p2c_import_tx_committed_total",
+		Help: "The total number of cp2 ImportTx committed",
+	})
+
 	C2PExportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "c2p_export_tx_issued_total",
 		Help: "The total number of c2p ExportTx issued",
@@ -210,12 +239,12 @@ var (
 	})
 
 	C2PImportTxIssued = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "cp2_import_tx_issued_total",
+		Name: prefix + "c2p_import_tx_issued_total",
 		Help: "The total number of cp2 ImportTx issued",
 	})
 
 	C2PImportTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "cp2_import_tx_committed_total",
+		Name: prefix + "c2p_import_tx_committed_total",
 		Help: "The total number of cp2 ImportTx committed",
 	})
 
