@@ -55,7 +55,7 @@ func (t *ExportFromPChain) FailedPermanently() bool {
 }
 
 func (t *ExportFromPChain) IsSequential() bool {
-	return true
+	return false
 }
 
 func (t *ExportFromPChain) IsDone() bool {

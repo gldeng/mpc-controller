@@ -89,7 +89,7 @@ func main() {
 		if err != nil {
 			return false, err
 		}
-		if len(nextTasks) > 0 {
+		if !task.IsDone() && !task.FailedPermanently() {
 			return true, nil
 		}
 		fmt.Printf("Task IsDone: %v\n", task.IsDone())

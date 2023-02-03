@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/ava-labs/avalanchego/utils/formatting"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/storage"
 	"github.com/avalido/mpc-controller/taskcontext"
-	"github.com/avalido/mpc-controller/tasks/c2p"
+	"github.com/avalido/mpc-controller/tasks/p2c"
 	"github.com/avalido/mpc-controller/utils/backoff"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"time"
 )
@@ -35,6 +36,8 @@ func main() {
 
 	// CHANGE ME -->
 	host := "172.21.128.1"
+	utxoHex := "0x0000f017f8b4f679b54cb490d4bb42bdd00f960629b74b2574d9cfbbf176bc7efc210000000017cc8b1578ba383544d163958822d8abd3849bb9dfabe39fcbc3e7ee8811fe2f00000007000000003b9aca00000000000000000000000001000000013cb7d3842e8cee6a0ebd09f1fe884f6861e1b29ca04c263f"
+	toAddress := common.HexToAddress("0x1111111111111111111111111111111111111111")
 	// <--
 
 	mpcClient, err := mpcclient.NewSimulatingClient("56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027")
@@ -71,16 +74,17 @@ func main() {
 		ParticipantPubKeys: nil,
 		PubKey:             mpcClient.UncompressedPublicKeyBytes(),
 	}
-	task, err := c2p.NewC2P(core.FlowId{
+	task, err := p2c.NewP2C(core.FlowId{
 		Tag:         "abc",
 		RequestHash: types.RequestHash{},
-	}, quorum, *big.NewInt(1 * params.Ether))
+	}, quorum, *parseUtxo(utxoHex), toAddress)
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)
 	nextTasks, err = task.Next(ctx)
 	panicIfError(err)
 	time.Sleep(5 * time.Second)
+
 	backoff.RetryFnExponential10Times(logger.Default(), context.Background(), 1*time.Second, 120*time.Second, func() (retry bool, err error) {
 		nextTasks, err = task.Next(ctx)
 		if err != nil {
@@ -106,4 +110,14 @@ func main() {
 	})
 	fmt.Printf("Import TxID is %v\n", task.ImportTask.TxID.String())
 	fmt.Printf("next is %v\n", nextTasks)
+}
+
+func parseUtxo(hexRep string) *avax.UTXO {
+	bUtxo, err := formatting.Decode(formatting.Hex, hexRep)
+	panicIfError(err)
+
+	utxo := &avax.UTXO{}
+	_, err = txs.Codec.Unmarshal(bUtxo, utxo)
+	panicIfError(err)
+	return utxo
 }
