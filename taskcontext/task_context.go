@@ -171,6 +171,10 @@ func (t *TaskContextImp) GetMpcClient() mpc.MpcClient {
 	return t.MpcClient
 }
 
+func (t *TaskContextImp) GetTxIndex() core.TxIndexReader {
+	return t.Services.TxIndex
+}
+
 func (t *TaskContextImp) IssueCChainTx(txBytes []byte) (ids.ID, error) {
 	id, err := t.CChainClient.IssueTx(context.Background(), txBytes)
 	if err != nil { // reference: https://github.com/ava-labs/coreth/blob/v0.8.13/plugin/evm/vm.go#L147
