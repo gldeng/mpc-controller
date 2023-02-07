@@ -5,6 +5,7 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
 	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/mpc"
 	types2 "github.com/avalido/mpc-controller/core/types"
@@ -29,6 +30,36 @@ type TaskContextWrapper struct {
 	participantId [32]byte
 	group         types2.Group
 	lastGenPubKey []byte
+}
+
+func (t *TaskContextWrapper) PrincipalTreasuryAddress(opts *bind.CallOpts) (common.Address, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) RewardTreasuryAddress(opts *bind.CallOpts) (common.Address, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) ReportRequestFailed(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte, data []byte) (*common.Hash, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) GetTxIndex() core.TxIndexReader {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) GetCChainTx(txID ids.ID) (*evm.Tx, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *TaskContextWrapper) LoadAllPubKeys() ([]types2.MpcPublicKey, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (t *TaskContextWrapper) LastGenPubKey(opts *bind.CallOpts) ([]byte, error) {

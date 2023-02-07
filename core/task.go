@@ -30,6 +30,7 @@ type MpcManager interface {
 	LastGenPubKey(opts *bind.CallOpts) ([]byte, error)
 	PrincipalTreasuryAddress(opts *bind.CallOpts) (common.Address, error)
 	RewardTreasuryAddress(opts *bind.CallOpts) (common.Address, error)
+	ReportRequestFailed(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte, data []byte) (*common.Hash, error)
 }
 
 type TaskContext interface {
@@ -53,6 +54,7 @@ type TaskContext interface {
 	GetMyTransactSigner() *bind.TransactOpts
 	LoadGroup(groupID [32]byte) (*types.Group, error)
 	LoadGroupByLatestMpcPubKey() (*types.Group, error)
+	LoadAllPubKeys() ([]types.MpcPublicKey, error)
 	GetParticipantID() types.ParticipantId
 }
 

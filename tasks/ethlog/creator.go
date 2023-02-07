@@ -6,6 +6,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/keygen"
+	"github.com/avalido/mpc-controller/tasks/recovery"
 	"github.com/avalido/mpc-controller/tasks/stake"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -77,6 +78,18 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 		}
 		c.checkStakeReqNoContinuity(ctx, event.RequestNumber, log.BlockNumber, log.TxHash)
 		task, err := stake.NewStakeJoinAndStake(*event)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create task")
+		}
+		return []core.Task{task}, nil
+	}
+	if log.Topics[0] == ctx.GetEventID(core.EvtRequestFailed) {
+		event := new(binding.MpcManagerRequestFailed)
+		err := ctx.GetContract().UnpackLog(event, core.EvtStakeRequestAdded, log)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to unpack log")
+		}
+		task, err := recovery.NewJoinAndRecover(*event)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create task")
 		}

@@ -84,6 +84,25 @@ func (t *TaskContextImp) ReportGeneratedKey(opts *bind.TransactOpts, participant
 	return &hash, nil
 }
 
+func (t *TaskContextImp) ReportRequestFailed(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte, data []byte) (*common.Hash, error) {
+	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
+	if err != nil {
+		return nil, errors.WithStack(&ErrTypContractBindFail{Pre: err})
+	}
+
+	var hash common.Hash
+	tx, err := transactor.ReportRequestFailed(opts, participantId, requestHash, data)
+	if err != nil { // reference: https://github.com/ava-labs/coreth/blob/v0.8.13/core/vm/errors.go
+		if strings.Contains(err.Error(), vm.ErrExecutionReverted.Error()) { // TODO: find and find more errors: https://github.com/AvaLido/mpc-controller/issues/156
+			return nil, errors.WithStack(&ErrTypTxReverted{Pre: err})
+		}
+		return nil, errors.WithStack(&ErrTypContractCallFail{Pre: err})
+	}
+
+	hash = tx.Hash()
+	return &hash, nil
+}
+
 func (t *TaskContextImp) JoinRequest(opts *bind.TransactOpts, participantId [32]byte, requestHash [32]byte) (*common.Hash, error) {
 	transactor, err := contract.NewMpcManagerTransactor(t.Services.Config.MpcManagerAddress, t.EthClient)
 	if err != nil {
@@ -317,6 +336,10 @@ func (t *TaskContextImp) LoadGroup(groupID [32]byte) (*types.Group, error) {
 
 func (t *TaskContextImp) LoadGroupByLatestMpcPubKey() (*types.Group, error) {
 	return c.LoadGroupByLatestMpcPubKey(t.Db)
+}
+
+func (t *TaskContextImp) LoadAllPubKeys() ([]types.MpcPublicKey, error) {
+	return c.LoadAllPubKeys(t.Db)
 }
 
 func (t *TaskContextImp) GetParticipantID() types.ParticipantId {

@@ -13,6 +13,7 @@ const (
 	EvtKeyGenerated       = "KeyGenerated"
 	EvtStakeRequestAdded  = "StakeRequestAdded"
 	EvtRequestStarted     = "RequestStarted"
+	EvtRequestFailed      = "RequestFailed"
 )
 
 type LogEventHandler interface {

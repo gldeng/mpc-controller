@@ -1,6 +1,7 @@
 package stake
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
@@ -11,10 +12,12 @@ import (
 	"github.com/pkg/errors"
 	"math/big"
 	"strconv"
+	"time"
 )
 
 const (
 	taskTypeInitialStake = "initialStake"
+	timeOutDuration      = 5 * time.Hour
 )
 
 var (
@@ -33,8 +36,10 @@ type InitialStake struct {
 
 	request *Request
 
+	StartTime       *time.Time
 	SubTaskHasError error
 	Failed          bool
+	IsFailReported  bool // Is this considered Done?
 }
 
 func (t *InitialStake) GetId() string {
@@ -63,15 +68,24 @@ func NewInitialStake(request *Request, quorum types.QuorumInfo) (*InitialStake, 
 	}
 
 	return &InitialStake{
-		FlowId:   flowID,
-		TaskType: taskTypeInitialStake,
-		Quorum:   quorum,
-		C2P:      c2pInstance,
-		request:  request,
+		FlowId:          flowID,
+		TaskType:        taskTypeInitialStake,
+		Quorum:          quorum,
+		C2P:             c2pInstance,
+		AddDelegator:    nil,
+		request:         request,
+		StartTime:       nil,
+		SubTaskHasError: nil,
+		Failed:          false,
+		IsFailReported:  false,
 	}, nil
 }
 
 func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
+	if t.StartTime == nil {
+		now := time.Now()
+		t.StartTime = &now
+	}
 	tasks, err := t.run(ctx)
 	if err != nil {
 		t.SubTaskHasError = err
@@ -80,7 +94,7 @@ func (t *InitialStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *InitialStake) IsDone() bool {
-	return t.AddDelegator != nil && t.AddDelegator.IsDone()
+	return t.IsFailReported || (t.AddDelegator != nil && t.AddDelegator.IsDone())
 }
 
 func (t *InitialStake) IsSequential() bool {
@@ -109,6 +123,12 @@ func (t *InitialStake) startAddDelegator() error {
 }
 
 func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
+	if t.isTimedOut() {
+		if !t.IsFailReported {
+			t.reportFailed(ctx) // TODO: Handle retry?
+		}
+	}
+
 	if !t.C2P.IsDone() {
 		next, err := t.C2P.Next(ctx)
 		if t.C2P.IsDone() {
@@ -135,6 +155,53 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		return next, t.failIfErrorf(err, "add delegator failed")
 	}
 	return nil, t.failIfErrorf(errors.New("invalid state"), "invalid state of composite task")
+}
+
+func (t *InitialStake) isTimedOut() bool {
+	return time.Now().Sub(*t.StartTime) > timeOutDuration
+
+}
+
+func (t *InitialStake) reportFailed(ctx core.TaskContext) error {
+	if t.AddDelegator != nil && t.AddDelegator.IsDone() {
+		return nil
+	}
+	group, err := t.getGroup(ctx)
+	if err != nil {
+		return err
+	}
+	var data []byte
+	if t.C2P != nil && t.C2P.ExportTask != nil && t.C2P.ExportTask.TxID != nil {
+		data = t.C2P.ExportTask.TxID[:]
+	}
+	_, err = ctx.ReportRequestFailed(ctx.GetMyTransactSigner(), group.ParticipantID(), t.FlowId.RequestHash, data)
+	// TODO: Do we need to check the tx status after sending?
+	if err != nil {
+		return err
+	}
+	t.IsFailReported = true
+	return nil
+}
+
+func (t *InitialStake) getGroup(ctx core.TaskContext) (*types.Group, error) {
+
+	pubkeys, err := ctx.LoadAllPubKeys()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load public keys")
+	}
+	var groupId [32]byte
+	for _, pubkey := range pubkeys {
+		if bytes.Equal(pubkey.GenPubKey, t.Quorum.PubKey) {
+			copy(groupId[:], pubkey.GroupId[:])
+		}
+	}
+
+	group, err := ctx.LoadGroup(groupId)
+	if err != nil {
+		ctx.GetLogger().Error(ErrMsgLoadGroup)
+		return nil, t.failIfErrorf(err, ErrMsgLoadGroup)
+	}
+	return group, nil
 }
 
 func (t *InitialStake) failIfErrorf(err error, format string, a ...any) error {
