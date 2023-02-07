@@ -5,6 +5,7 @@ const (
 	ErrMsgFailedToRetrieveTx                  = "failed to retrieve tx"
 	ErrMsgFailedToGetPrincipalTreasuryAddress = "failed to get principal treasury address"
 	ErrMsgFailedToCreateSubTask               = "failed to create sub task"
+	ErrMsgFailedToDecidePubKey                = "failed to decide the public key"
 	ErrMsgSignatureAlreadySet                 = "signature already set"
 	ErrMsgPubKeyCannotRecover                 = "public key cannot recover"
 	ErrMsgSignatureInvalid                    = "invalid signature"
