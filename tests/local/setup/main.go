@@ -23,6 +23,7 @@ var (
 	fnPort                 = "port"
 	fnAvalidoAddress       = "avalidoAddress"
 	fnOracleManagerAddress = "oracleManagerAddress"
+	fnOracleAddress        = "oracleAddress"
 )
 
 var (
@@ -67,6 +68,11 @@ func main() {
 				Required: true,
 				Usage:    "The oracle manager address.",
 			},
+			&cli.StringFlag{
+				Name:     fnOracleAddress,
+				Required: true,
+				Usage:    "The oracle address.",
+			},
 		},
 		Action: runSetup,
 	}
@@ -81,13 +87,16 @@ func main() {
 }
 
 func runSetup(c *cli.Context) error {
-	config := NewConfig(c.String(fnHost), int16(c.Int(fnPort)), common.HexToAddress(c.String(fnAvalidoAddress)), common.HexToAddress(c.String(fnOracleManagerAddress)))
+	config := NewConfig(c.String(fnHost), int16(c.Int(fnPort)),
+		common.HexToAddress(c.String(fnAvalidoAddress)), common.HexToAddress(c.String(fnOracleManagerAddress)),
+		common.HexToAddress(c.String(fnOracleAddress)))
 	signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
 	panicIfError(err)
 	config.GetMpcManager().RequestKeygen(signer, mpcGroupId)
 	step1FundAccounts(&config)
-	step2SetupOracle(&config)
-	step3SetupMpc(&config)
+	step2InitOracle(&config)
+	step3SetupOracle(&config)
+	step4SetupMpc(&config)
 	return nil
 }
 
@@ -101,7 +110,12 @@ func step1FundAccounts(config *Config) {
 	}
 }
 
-func step2SetupOracle(config *Config) {
+func step2InitOracle(config *Config) {
+	doSetOracleAddress(config, oracleAndMpcAdmin, config.OracleAddress)
+	doSetEpochDuration(config, oracleAndMpcAdmin)
+}
+
+func step3SetupOracle(config *Config) {
 	client := config.CreatePClient()
 	val, err := client.GetCurrentValidators(context.Background(), ids.Empty, nil)
 	panicIfError(err)
@@ -109,15 +123,26 @@ func step2SetupOracle(config *Config) {
 	for _, validator := range val {
 		nodeIds = append(nodeIds, validator.NodeID.String())
 	}
-	signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
+	valCount, err := config.GetOracle().ValidatorCount(nil)
 	panicIfError(err)
-	config.GetOracle().StartNodeIDUpdate(signer)
-	config.GetOracle().AppendNodeIDs(signer, nodeIds)
-	config.GetOracle().EndNodeIDUpdate(signer)
+	if valCount.Int64() == 0 {
+		signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
+		panicIfError(err)
+		tx, err := config.GetOracle().StartNodeIDUpdate(signer)
+		panicIfError(err)
+		waitForTx(config, tx.Hash())
+		tx, err = config.GetOracle().AppendNodeIDs(signer, nodeIds)
+		panicIfError(err)
+		waitForTx(config, tx.Hash())
+		tx, err = config.GetOracle().EndNodeIDUpdate(signer)
+		panicIfError(err)
+		waitForTx(config, tx.Hash())
+	}
+
 	setupOracleReport(config)
 }
 
-func step3SetupMpc(config *Config) {
+func step4SetupMpc(config *Config) {
 	signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
 	panicIfError(err)
 	var pubKeyBytes [][]byte
@@ -154,12 +179,7 @@ func doFund(c *Config, privKey *ecdsa.PrivateKey) {
 	err = c.GetEthClient().SendTransaction(context.Background(), signedTx)
 	panicIfError(err)
 	txHash := signedTx.Hash()
-	err = backoff.RetryFnConstant(defaultLogger, context.Background(), 100, 1*time.Second, func() (bool, error) {
-		receipt, _ := c.GetEthClient().TransactionReceipt(context.Background(), txHash)
-		retry := receipt == nil
-		return retry, nil
-	})
-	panicIfError(err)
+	waitForTx(c, txHash)
 }
 
 func fundAddrTx(c *Config, address common.Address) *types.Transaction {
@@ -180,6 +200,22 @@ func fundAddrTx(c *Config, address common.Address) *types.Transaction {
 	signedTx, err := signer.Signer(signer.From, rawTx)
 	panicIfError(err)
 	return signedTx
+}
+
+func doSetOracleAddress(config *Config, privKey *ecdsa.PrivateKey, address common.Address) {
+	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
+	panicIfError(err)
+	tx, err := config.GetOracleManager().SetOracleAddress(signer, address)
+	panicIfError(err)
+	waitForTx(config, tx.Hash())
+}
+
+func doSetEpochDuration(config *Config, privKey *ecdsa.PrivateKey) {
+	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
+	panicIfError(err)
+	tx, err := config.GetOracle().SetEpochDuration(signer, big.NewInt(17))
+	panicIfError(err)
+	waitForTx(config, tx.Hash())
 }
 
 func doReportKeygen(config *Config, ind byte, privKey *ecdsa.PrivateKey, pubKey []byte) {
@@ -225,6 +261,19 @@ func prepareReport(config *Config) []*big.Int {
 func doOracleReport(config *Config, epoch *big.Int, report []*big.Int, privKey *ecdsa.PrivateKey) {
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
 	panicIfError(err)
-	_, err = config.GetOracleManager().ReceiveMemberReport(signer, epoch, report)
+	signer.GasPrice = big.NewInt(25000000000)
+	signer.GasLimit = 900000
+	fmt.Printf("sent from %x\n", signer.From)
+	tx, err := config.GetOracleManager().ReceiveMemberReport(signer, epoch, report)
+	panicIfError(err)
+	waitForTx(config, tx.Hash())
+}
+
+func waitForTx(config *Config, txHash common.Hash) {
+	err := backoff.RetryFnConstant(defaultLogger, context.Background(), 100, 1*time.Second, func() (bool, error) {
+		receipt, _ := config.GetEthClient().TransactionReceipt(context.Background(), txHash)
+		retry := receipt == nil
+		return retry, nil
+	})
 	panicIfError(err)
 }

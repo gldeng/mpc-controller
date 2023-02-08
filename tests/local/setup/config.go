@@ -72,6 +72,7 @@ type Config struct {
 	Port                 int16
 	AvalidoAddress       common.Address
 	OracleManagerAddress common.Address
+	OracleAddress        common.Address
 	ethClient            *ethclient.Client
 	avalido              *avalido.AvaLido
 	oracleManager        *oraclemanager.OracleManager
@@ -80,13 +81,19 @@ type Config struct {
 	chainId              *big.Int
 }
 
-func NewConfig(host string, port int16, avalidoAddress, oracleManagerAddress common.Address) Config {
+func NewConfig(host string, port int16, avalidoAddress, oracleManagerAddress common.Address, oracleAddress common.Address) Config {
 	return Config{
 		Host:                 host,
 		Port:                 port,
 		AvalidoAddress:       avalidoAddress,
 		OracleManagerAddress: oracleManagerAddress,
+		OracleAddress:        oracleAddress,
+		ethClient:            nil,
 		avalido:              nil,
+		oracleManager:        nil,
+		oracle:               nil,
+		mpcManager:           nil,
+		chainId:              nil,
 	}
 }
 
@@ -164,10 +171,7 @@ func (c Config) GetMpcManager() *contract.MpcManager {
 }
 
 func (c Config) GetOracleAddress() common.Address {
-	a := c.GetOracleManager()
-	addr, err := a.GetOracleAddress(nil)
-	panicIfError(err)
-	return addr
+	return c.OracleAddress
 }
 
 func (c Config) GetOracle() *oracle.Oracle {
