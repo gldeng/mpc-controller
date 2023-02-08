@@ -3,7 +3,7 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 NUM_PARTIES=7
-SECKEYS=("353fb105bbf9c29cbf46d4c93a69587ac478138b7715f0786d7ae1cc05230878" "7084300e7059ea4b308ec5b965ef581d3f9c9cd63714082ccf9b9d1fb34d658b" "5431ed99fbcc291f2ed8906d7d46fdf45afbb1b95da65fecd4707d16a6b3301b" "156177364ae1ca503767382c1b910463af75371856e90202cb0d706cdce53c33" "59d1c6956f08477262c9e827239457584299cf583027a27c1d472087e8c35f21" "6c326909bee727d5fc434e2c75a3e0126df2ec4f49ad02cdd6209cf19f91da33" "b17eac91d7aa2bd5fa72916b6c8a35ab06e8f0c325c98067bbc9645b85ce789f")
+PUBKEYS=("033217bb0e66dda25bcd50e2ccebabbe599312ae69c76076dd174e2fc5fdae73d8" "0272eab231c150b42e86cbe7398139432d2cad04289a820a922fe17b9d4ba577f4" "0373ee5cd601a19cd9bb95fe7be8b1566b73c51d3e7e375359c129b1d77bb4b3e6" "038196e06c3e803d0af06693a504ad14317550b4be4396ef57cf5f520c0f84833d" "03c20e0c088bb20027a77b1d23ad75058df5349c7a2bfafff7516c44c6f69aa66d" "03d0639e479fa1ca8ee13fd966c216e662408ff00349068bdc9c6966c4ea10fe3e" "02df7fb5bf5b3f97dffc98ecf8d660f604cad76f804a23e1b6cc76c11b5c92f345")
 
 kill_process(){
   IND=$1
@@ -19,9 +19,16 @@ start_mpc_controller(){
   DIR=tmp/party${IND}
   mkdir -p $DIR
   echo "Starting MPC controller ${i}"
-  go run ./cmd/mpc-controller/main.go --host 34.172.25.188 --port 9650 \
-  --mpc-manager-address 0x3fc3Ea6Bf83A467Da8FA5Db54659fEa760BB9222 \
-  --private-key ${SECKEYS[$((IND-1))]} > ${DIR}/log.txt 2>&1 &
+  go run ./cmd/mpc-controller \
+        --host localhost \
+        --port 9650 \
+        --simulationMpcPrivateKey 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 \
+        --metricsServeAddr ":7006" \
+        --publicKey  ${PUBKEYS[$((IND-1))]} \
+        --dbPath tmp/db \
+        --keystoreDir /home/gldeng/local/avalido/internal-testnet/docker/mpc-controller/keystore/ \
+        --passwordFile /home/gldeng/local/avalido/internal-testnet/docker/mpc-controller/password/password \
+        --mpc-manager-address 0x97c0fe6ab595cbfd50ad3860da5b2017d8b35c2e > ${DIR}/log.txt 2>&1 &
   echo $! > ${DIR}/pid
 }
 
