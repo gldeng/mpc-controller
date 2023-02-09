@@ -51,6 +51,13 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
+	// Handle eth log error metric
+
+	HandleEthLogErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "handle_eth_log_error_total",
+		Help: "The total error number of handling eth log",
+	})
+
 	// Event compensation metrics
 
 	EventCompensation = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -218,6 +225,13 @@ var (
 	AddDelegatorTxCommitted = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "add_delegator_tx_committed_total",
 		Help: "The total number of AddDelegatorTx committed",
+	})
+
+	// Submit task error
+
+	SubmitTaskErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "submit_task_error_total",
+		Help: "The total error number of submitting task",
 	})
 
 	// Task timeout metric
