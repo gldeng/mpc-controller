@@ -10,8 +10,6 @@ import (
 	"net"
 )
 
-const port = ":9000"
-
 type server struct {
 	Log logger.Logger
 	K   *services.KeyGenerator
@@ -85,6 +83,7 @@ func typ(t services.RequestType) mpc.CheckResultResponse_REQUEST_TYPE {
 }
 
 func main() {
+	var listenAddr = flag.String("addr", ":9000", "address to listen")
 	var participants = flag.Int("p", 7, "number of participants in the group")
 	var threshold = flag.Int("t", 4, "number of the group threshold")
 	flag.Parse()
@@ -93,13 +92,13 @@ func main() {
 	logger.UseConsoleEncoder = true
 	myLogger := logger.Default()
 
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", *listenAddr)
 	if err != nil {
 		myLogger.Fatal("failed to listen", []logger.Field{{"error", err}}...)
 	}
 	s := grpc.NewServer()
 	mpc.RegisterMpcServer(s, &server{Log: myLogger, K: &services.KeyGenerator{myLogger, *participants}, S: &services.Signer{myLogger, *threshold}, P: &services.Provider{}})
-	myLogger.Info("server listening", []logger.Field{{"port", port}}...)
+	myLogger.Info("server listening", []logger.Field{{"address", *listenAddr}}...)
 	if err := s.Serve(lis); err != nil {
 		myLogger.Fatal("failed to serve", []logger.Field{{"error", err}}...)
 	}
