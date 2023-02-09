@@ -55,8 +55,16 @@ func (r *Router) Start() error {
 			default:
 				event, err := r.incomingQueue.Dequeue()
 				if err != nil {
-					r.logger.Error("dequeue error", []logger.Field{{"error", err}}...)
-					prom.QueueOperationError.With(prometheus.Labels{"pkg": "router", "operation": "dequeue"}).Inc()
+					// Here we take the following assumptions:
+					// 1. The incomingQueue is a FIFO queue from https://github.com/enriquebris/goconcurrentqueue#fifo;
+					// 2. The given FIFO queue will never get locked;
+					// 3. It's a normal condition for the queue to stay at empty status;
+					// 4. The error string must be empty or "The queue is locked" or "empty queue" (according to https://github.com/enriquebris/goconcurrentqueue/blob/master/fifo_queue.go#L82).
+					// With the above assumptions in mind we don't need to take extra measures other than sleep for some time.
+					// It's also not meaningful either to give error log or to update error metric,
+
+					//r.logger.Error("dequeue error", []logger.Field{{"error", err}}...)
+					//prom.QueueOperationError.With(prometheus.Labels{"pkg": "router", "operation": "dequeue"}).Inc()
 					time.Sleep(time.Second)
 					continue
 				}
