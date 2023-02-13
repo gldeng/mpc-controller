@@ -82,8 +82,8 @@ func (r *Router) Start() error {
 						for _, task := range tasks {
 							err := r.submitter.Submit(task)
 							if err != nil {
-								prom.SubmitTaskErr.Inc()
-								r.logger.Error("submit task error", []logger.Field{
+								prom.TaskSubmissionErr.Inc()
+								r.logger.Error("task submission error", []logger.Field{
 									{"id", task.GetId()},
 									{"isDone", task.IsDone()},
 									{"failedPermanently", task.FailedPermanently()},

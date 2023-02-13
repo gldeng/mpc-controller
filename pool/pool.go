@@ -97,8 +97,8 @@ func (e *ExtendedWorkerPool) getContextAndExecuteTask(task core.Task) []core.Tas
 func (e *ExtendedWorkerPool) executeTaskWithContext(task core.Task, ctx core.TaskContext) (continuation []core.Task) {
 	next, err := task.Next(ctx)
 	if err != nil {
-		prom.ExecuteTaskErr.Inc()
-		e.logger.Error("execute task error", []logger.Field{
+		prom.TaskExecutionErr.Inc()
+		e.logger.Error("task execution error", []logger.Field{
 			{"id", task.GetId()},
 			{"isDone", task.IsDone()},
 			{"failedPermanently", task.FailedPermanently()},

@@ -227,33 +227,33 @@ var (
 		Help: "The total number of AddDelegatorTx committed",
 	})
 
+	// Task submit error
+
+	TaskSubmissionErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "task_submission_error_total",
+		Help: "The total number of task submission error",
+	})
+
+	// Task execution error
+
+	TaskExecutionErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "task_execution_error_total",
+		Help: "The total number of task execution error",
+	})
+
+	// Task timeout metric
+
+	TaskTimeout = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prefix + "task_timeout_total",
+		Help: "The total number of task timeout",
+	}, []string{"flow", "task"})
+
 	// Task done
 
 	TaskDone = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "task_done_total",
 		Help: "The total number of task done",
 	})
-
-	// Submit task error
-
-	SubmitTaskErr = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "submit_task_error_total",
-		Help: "The total error number of submitting task",
-	})
-
-	// Execute task error
-
-	ExecuteTaskErr = promauto.NewCounter(prometheus.CounterOpts{
-		Name: prefix + "execute_task_error_total",
-		Help: "The total error number of executing task",
-	})
-
-	// Task timeout metric
-
-	TaskTimeout = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: prefix + "mpc_task_timeout_total",
-		Help: "The total number of task timeout",
-	}, []string{"flow", "task"})
 )
 
 // Reference: https://github.com/alitto/pond
