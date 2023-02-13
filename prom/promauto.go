@@ -227,11 +227,25 @@ var (
 		Help: "The total number of AddDelegatorTx committed",
 	})
 
+	// Task done
+
+	TaskDone = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "task_done_total",
+		Help: "The total number of task done",
+	})
+
 	// Submit task error
 
 	SubmitTaskErr = promauto.NewCounter(prometheus.CounterOpts{
 		Name: prefix + "submit_task_error_total",
 		Help: "The total error number of submitting task",
+	})
+
+	// Execute task error
+
+	ExecuteTaskErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "execute_task_error_total",
+		Help: "The total error number of executing task",
 	})
 
 	// Task timeout metric

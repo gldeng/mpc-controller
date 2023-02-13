@@ -91,19 +91,24 @@ func (e *ExtendedWorkerPool) getContextAndExecuteTask(task core.Task) []core.Tas
 		}
 		prom.QueueOperation.With(prometheus.Labels{"pkg": "pool", "operation": "enqueue"}).Inc()
 	}()
-	return executeTaskWithContext(task, ctx.(core.TaskContext))
+	return e.executeTaskWithContext(task, ctx.(core.TaskContext))
 }
 
-func executeTaskWithContext(task core.Task, ctx core.TaskContext) (continuation []core.Task) {
-	next, err := task.Next(ctx) // TODO: Handle error
+func (e *ExtendedWorkerPool) executeTaskWithContext(task core.Task, ctx core.TaskContext) (continuation []core.Task) {
+	next, err := task.Next(ctx)
 	if err != nil {
-		ctx.GetLogger().Debug("task got error", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+		prom.ExecuteTaskErr.Inc()
+		e.logger.Error("execute task error", []logger.Field{
+			{"id", task.GetId()},
+			{"isDone", task.IsDone()},
+			{"failedPermanently", task.FailedPermanently()},
+			{"isSequential", task.IsSequential()},
+			{"error", err}}...)
 	}
-	if task.FailedPermanently() {
-		ctx.GetLogger().Debug("task failed permanently", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
-	}
+
 	if task.IsDone() {
-		ctx.GetLogger().Debug("task done", []logger.Field{{"task", task.GetId()}}...)
+		prom.TaskDone.Inc()
+		ctx.GetLogger().Info("task done", []logger.Field{{"task", task.GetId()}}...)
 	}
 	continuation = append(continuation, next...)
 	if !task.IsDone() && !task.FailedPermanently() {
