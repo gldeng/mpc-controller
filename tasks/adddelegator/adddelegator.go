@@ -61,7 +61,7 @@ func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) 
 }
 
 func (t *AddDelegator) GetId() string {
-	return fmt.Sprintf("%v-addDelegator", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *AddDelegator) FailedPermanently() bool {
@@ -104,7 +104,6 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgFailedToBuildAndSignTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		}
 		t.status = StatusSignReqSent
@@ -115,7 +114,6 @@ func (t *AddDelegator) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 			return nil, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 		}
 
@@ -253,7 +251,6 @@ func (t *AddDelegator) buildSignReqs(id string, hash []byte) (*mpc.SignRequest, 
 func (t *AddDelegator) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	status, err := t.checkTxStatus(ctx)
 	if err != nil {
-		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 		return false, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 	}
 
@@ -328,11 +325,12 @@ func (t *AddDelegator) logInfo(ctx core.TaskContext, msg string, fields ...logge
 	ctx.GetLogger().Info(msg, allFields...)
 }
 
-func (t *AddDelegator) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
-	allFields := make([]logger.Field, 0, len(fields)+3)
-	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
-	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
-	allFields = append(allFields, fields...)
-	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
-	ctx.GetLogger().Error(msg, allFields...)
-}
+// TODO: clear up the below comment on second thought
+//func (t *AddDelegator) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+//	allFields := make([]logger.Field, 0, len(fields)+3)
+//	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+//	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+//	allFields = append(allFields, fields...)
+//	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+//	ctx.GetLogger().Error(msg, allFields...)
+//}

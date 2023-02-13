@@ -106,13 +106,9 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 			var errCreateTransactor *taskcontext.ErrTypContractBindFail
 			var errExecutionReverted *taskcontext.ErrTypTxReverted
 			if errors.As(err, &errCreateTransactor) || errors.As(err, &errExecutionReverted) {
-				ctx.GetLogger().Error(ErrMsgJoinRequest, []logger.Field{{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
-					{"error", err.Error()}}...)
-				return nil, t.failIfErrorf(err, ErrMsgJoinRequest)
+				return nil, t.failIfErrorf(err, ErrMsgJoinRequest, "reqHash:%x", t.RequestHash)
 			}
-			ctx.GetLogger().Debug(ErrMsgJoinRequest, []logger.Field{{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
-				{"error", err.Error()}}...)
-			return nil, errors.Wrap(err, ErrMsgJoinRequest)
+			return nil, errors.Wrapf(err, "%v, reqHash:%x", ErrMsgJoinRequest, t.RequestHash)
 		}
 		t.TxHash = *txHash
 		t.Status = StatusTxSent
@@ -120,20 +116,13 @@ func (t *Join) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusTxSent:
 		_, err := ctx.CheckEthTx(t.TxHash)
 		if err != nil {
-			ctx.GetLogger().Error(ErrMsgCheckTxStatus, []logger.Field{{"tx", t.TxHash.Hex()},
-				{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
-				{"group", fmt.Sprintf("%x", t.group.GroupId)},
-				{"error", err.Error()}}...)
 			// TODO: Figure out why sometimes join mysteriously fail and replace this workaround
 			//		// https://github.com/AvaLido/mpc-controller/issues/98
 			if errors.Is(err, taskcontext.ErrTxStatusAborted) {
-				ctx.GetLogger().Debug("tx aborted", []logger.Field{{"tx", t.TxHash.Hex()},
-					{"reqHash", fmt.Sprintf("%x", t.RequestHash)},
-					{"group", fmt.Sprintf("%x", t.group.GroupId)},
-					{"error", err.Error()}}...)
+				err = errors.Wrap(err, "tx aborted")
 				t.Status = StatusInit
 			}
-			return nil, errors.Wrapf(err, ErrMsgCheckTxStatus)
+			return nil, errors.Wrapf(err, "%v, tx:%v, reqHash:%v, group:%v", ErrMsgCheckTxStatus, t.TxHash.Hex(), t.RequestHash, t.group.GroupId)
 		}
 
 		t.Status = StatusDone

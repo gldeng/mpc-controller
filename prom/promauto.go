@@ -51,6 +51,13 @@ var (
 		Help: "The total number of contract event RequestStarted",
 	})
 
+	// Handle eth log error metric
+
+	HandleEthLogErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "handle_eth_log_error_total",
+		Help: "The total error number of handling eth log",
+	})
+
 	// Event compensation metrics
 
 	EventCompensation = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -220,12 +227,33 @@ var (
 		Help: "The total number of AddDelegatorTx committed",
 	})
 
+	// Task submit error
+
+	TaskSubmissionErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "task_submission_error_total",
+		Help: "The total number of task submission error",
+	})
+
+	// Task execution error
+
+	TaskExecutionErr = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "task_execution_error_total",
+		Help: "The total number of task execution error",
+	})
+
 	// Task timeout metric
 
 	TaskTimeout = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: prefix + "mpc_task_timeout_total",
+		Name: prefix + "task_timeout_total",
 		Help: "The total number of task timeout",
 	}, []string{"flow", "task"})
+
+	// Task done
+
+	TaskDone = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "task_done_total",
+		Help: "The total number of task done",
+	})
 )
 
 // Reference: https://github.com/alitto/pond

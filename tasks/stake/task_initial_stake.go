@@ -39,7 +39,7 @@ type InitialStake struct {
 }
 
 func (t *InitialStake) GetId() string {
-	return fmt.Sprintf("%v-initialStake", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *InitialStake) FailedPermanently() bool {
@@ -112,11 +112,11 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 			err = t.startAddDelegator()
 			t.logDebug(ctx, "C2P done")
 			if err != nil {
-				t.logError(ctx, "Failed to start AddDelegator", err)
+				err = errors.Wrap(err, "failed to start AddDelegator")
 			}
 		}
 		if err != nil {
-			t.logError(ctx, "Failed to run C2P", err)
+			err = errors.Wrap(err, "failed to run C2P")
 		}
 		return next, t.failIfErrorf(err, "c2p failed")
 	}
@@ -125,11 +125,8 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 		next, err := t.AddDelegator.Next(ctx)
 		if t.AddDelegator.IsDone() {
 			t.logDebug(ctx, "AddDelegator task done")
-			if err != nil {
-				t.logError(ctx, "AddDelegator got error", err)
-			}
 		}
-		return next, t.failIfErrorf(err, "add delegator failed")
+		return next, t.failIfErrorf(err, "AddDelegator failed")
 	}
 	return nil, t.failIfErrorf(errors.New("invalid state"), "invalid state of composite task")
 }
@@ -150,11 +147,12 @@ func (t *InitialStake) logDebug(ctx core.TaskContext, msg string, fields ...logg
 	ctx.GetLogger().Debug(msg, allFields...)
 }
 
-func (t *InitialStake) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
-	allFields := make([]logger.Field, 0, len(fields)+3)
-	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
-	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
-	allFields = append(allFields, fields...)
-	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
-	ctx.GetLogger().Error(msg, allFields...)
-}
+// TODO: clear up the below comment on second thought
+//func (t *InitialStake) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+//	allFields := make([]logger.Field, 0, len(fields)+3)
+//	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+//	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+//	allFields = append(allFields, fields...)
+//	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+//	ctx.GetLogger().Error(msg, allFields...)
+//}

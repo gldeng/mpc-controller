@@ -74,10 +74,22 @@ func (r *Router) Start() error {
 				}
 				if evt, ok := event.(types.Log); ok {
 					for _, handler := range r.logEventHandlers {
-						tasks, _ := handler.Handle(r.eventHandlerContext, evt) // TODO: Handle error
+						tasks, err := handler.Handle(r.eventHandlerContext, evt)
+						if err != nil {
+							r.logger.Error("handle eth log error", []logger.Field{{"error", err}}...)
+							prom.HandleEthLogErr.Inc()
+						}
 						for _, task := range tasks {
 							err := r.submitter.Submit(task)
-							_ = err // TODO: handle error
+							if err != nil {
+								prom.TaskSubmissionErr.Inc()
+								r.logger.Error("task submission error", []logger.Field{
+									{"id", task.GetId()},
+									{"isDone", task.IsDone()},
+									{"failedPermanently", task.FailedPermanently()},
+									{"isSequential", task.IsSequential()},
+									{"error", err}}...)
+							}
 						}
 					}
 				}
