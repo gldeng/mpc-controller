@@ -45,7 +45,7 @@ type ExportFromCChain struct {
 }
 
 func (t *ExportFromCChain) GetId() string {
-	return fmt.Sprintf("%v-export", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *ExportFromCChain) FailedPermanently() bool {

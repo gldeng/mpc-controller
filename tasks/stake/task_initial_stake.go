@@ -39,7 +39,7 @@ type InitialStake struct {
 }
 
 func (t *InitialStake) GetId() string {
-	return fmt.Sprintf("%v-initialStake", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *InitialStake) FailedPermanently() bool {

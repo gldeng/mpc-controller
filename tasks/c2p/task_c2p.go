@@ -44,7 +44,7 @@ func NewC2P(FlowId string, quorum types.QuorumInfo, amount big.Int) (*C2P, error
 }
 
 func (t *C2P) GetId() string {
-	return fmt.Sprintf("%v-c2p", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *C2P) FailedPermanently() bool {

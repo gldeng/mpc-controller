@@ -49,7 +49,7 @@ type ImportIntoPChain struct {
 }
 
 func (t *ImportIntoPChain) GetId() string {
-	return fmt.Sprintf("%v-import", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *ImportIntoPChain) FailedPermanently() bool {

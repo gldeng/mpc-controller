@@ -61,7 +61,7 @@ func NewAddDelegator(flowId string, quorum types.QuorumInfo, param *StakeParam) 
 }
 
 func (t *AddDelegator) GetId() string {
-	return fmt.Sprintf("%v-addDelegator", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *AddDelegator) FailedPermanently() bool {
