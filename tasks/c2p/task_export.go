@@ -115,7 +115,6 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgFailedToBuildAndSignTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		} else {
 			t.Status = StatusSignReqSent
@@ -127,7 +126,6 @@ func (t *ExportFromCChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 			return nil, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 		}
 
@@ -267,7 +265,6 @@ func (t *ExportFromCChain) sendTx(ctx core.TaskContext) error {
 func (t *ExportFromCChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	status, err := t.checkTxStatus(ctx)
 	if err != nil {
-		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 		return false, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 	}
 
@@ -341,11 +338,12 @@ func (t *ExportFromCChain) logInfo(ctx core.TaskContext, msg string, fields ...l
 	ctx.GetLogger().Info(msg, allFields...)
 }
 
-func (t *ExportFromCChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
-	allFields := make([]logger.Field, 0, len(fields)+3)
-	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
-	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
-	allFields = append(allFields, fields...)
-	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
-	ctx.GetLogger().Error(msg, allFields...)
-}
+// TODO: clear up the below comment on second thought
+//func (t *ExportFromCChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+//	allFields := make([]logger.Field, 0, len(fields)+3)
+//	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+//	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+//	allFields = append(allFields, fields...)
+//	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+//	ctx.GetLogger().Error(msg, allFields...)
+//}
