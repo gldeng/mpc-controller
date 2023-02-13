@@ -68,7 +68,13 @@ func (e *ExtendedWorkerPool) Submit(task core.Task) error {
 		for _, t := range continuation {
 			err := e.Submit(t) // Note: This has to be after other task logics complete.
 			if err != nil {
-				e.logger.Debug("failed to submit task", []logger.Field{{"task", task.GetId()}, {"error", err}}...)
+				prom.TaskSubmissionErr.Inc()
+				e.logger.Error("task submission error", []logger.Field{
+					{"id", task.GetId()},
+					{"isDone", task.IsDone()},
+					{"failedPermanently", task.FailedPermanently()},
+					{"isSequential", task.IsSequential()},
+					{"error", err}}...)
 			}
 		}
 	}
