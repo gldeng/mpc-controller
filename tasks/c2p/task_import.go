@@ -49,7 +49,7 @@ type ImportIntoPChain struct {
 }
 
 func (t *ImportIntoPChain) GetId() string {
-	return fmt.Sprintf("%v-import", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *ImportIntoPChain) FailedPermanently() bool {
@@ -108,7 +108,6 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusInit:
 		err := t.buildAndSignTx(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgFailedToBuildAndSignTx, err)
 			return nil, t.failIfErrorf(err, ErrMsgFailedToBuildAndSignTx)
 		} else {
 			t.Status = StatusSignReqSent
@@ -120,7 +119,6 @@ func (t *ImportIntoPChain) run(ctx core.TaskContext) ([]core.Task, error) {
 	case StatusTxSent:
 		status, err := t.checkTxStatus(ctx)
 		if err != nil {
-			t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 			return nil, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 		}
 
@@ -245,7 +243,6 @@ func (t *ImportIntoPChain) sendTx(ctx core.TaskContext) error {
 func (t *ImportIntoPChain) checkIfTxIssued(ctx core.TaskContext) (bool, error) {
 	status, err := t.checkTxStatus(ctx)
 	if err != nil {
-		t.logError(ctx, ErrMsgCheckTxStatusFail, err, []logger.Field{{"txId", t.TxID}}...)
 		return false, errors.Wrapf(err, "%v, txId: %v", ErrMsgCheckTxStatusFail, t.TxID)
 	}
 
@@ -320,11 +317,12 @@ func (t *ImportIntoPChain) logInfo(ctx core.TaskContext, msg string, fields ...l
 	ctx.GetLogger().Info(msg, allFields...)
 }
 
-func (t *ImportIntoPChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
-	allFields := make([]logger.Field, 0, len(fields)+3)
-	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
-	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
-	allFields = append(allFields, fields...)
-	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
-	ctx.GetLogger().Error(msg, allFields...)
-}
+// TODO: clear up the below comment on second thought
+//func (t *ImportIntoPChain) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
+//	allFields := make([]logger.Field, 0, len(fields)+3)
+//	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
+//	allFields = append(allFields, logger.Field{"taskType", t.TaskType})
+//	allFields = append(allFields, fields...)
+//	allFields = append(allFields, logger.Field{"error", fmt.Sprintf("%+v", err)})
+//	ctx.GetLogger().Error(msg, allFields...)
+//}

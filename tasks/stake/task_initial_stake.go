@@ -3,6 +3,10 @@ package stake
 import (
 	"bytes"
 	"fmt"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -11,9 +15,6 @@ import (
 	"github.com/avalido/mpc-controller/tasks/c2p"
 	"github.com/avalido/mpc-controller/tasks/failure"
 	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 const (
@@ -44,7 +45,7 @@ type InitialStake struct {
 }
 
 func (t *InitialStake) GetId() string {
-	return fmt.Sprintf("%v-initialStake", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *InitialStake) FailedPermanently() bool {
@@ -149,9 +150,12 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 			err = t.startAddDelegator()
 			t.logDebug(ctx, "C2P done")
 			if err != nil {
-				t.logError(ctx, "Failed to start AddDelegator", err)
+				err = errors.Wrap(err, "failed to start AddDelegator")
 				return t.reportFailed(ctx)
 			}
+		}
+		if err != nil {
+			err = errors.Wrap(err, "failed to run C2P")
 		}
 		return next, t.failIfErrorf(err, "c2p failed")
 	}
@@ -165,7 +169,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 				return t.reportFailed(ctx)
 			}
 		}
-		return next, t.failIfErrorf(err, "add delegator failed")
+		return next, t.failIfErrorf(err, "AddDelegator failed")
 	}
 	return nil, t.failIfErrorf(errors.New("invalid state"), "invalid state of composite task")
 }

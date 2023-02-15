@@ -44,7 +44,7 @@ func NewC2P(flowId core.FlowId, quorum types.QuorumInfo, amount big.Int) (*C2P, 
 }
 
 func (t *C2P) GetId() string {
-	return fmt.Sprintf("%v-c2p", t.FlowId)
+	return fmt.Sprintf("%v-%v", t.FlowId, t.TaskType)
 }
 
 func (t *C2P) FailedPermanently() bool {
@@ -113,6 +113,7 @@ func (t *C2P) logDebug(ctx core.TaskContext, msg string, fields ...logger.Field)
 	ctx.GetLogger().Debug(msg, allFields...)
 }
 
+// TODO: clear up the below content on second thought
 func (t *C2P) logError(ctx core.TaskContext, msg string, err error, fields ...logger.Field) {
 	allFields := make([]logger.Field, 0, len(fields)+3)
 	allFields = append(allFields, logger.Field{"flowId", t.FlowId})
