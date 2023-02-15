@@ -177,6 +177,7 @@ func (i *Indexer) scanUTXOs(client platformvm.Client) error {
 		if err != nil {
 			return err
 		}
+		tx.Sign(txs.Codec, nil)
 		uTx := tx.Unsigned.(*txs.ImportTx)
 		reqHash := types.RequestHash{}
 		copy(reqHash[:], uTx.Memo)

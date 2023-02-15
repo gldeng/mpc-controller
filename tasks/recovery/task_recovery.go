@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -43,9 +44,7 @@ func (t *Recovery) GetId() string {
 }
 
 func (t *Recovery) FailedPermanently() bool {
-	return t.Failed || (
-		t.Import != nil && t.Import.FailedPermanently()) || (
-		t.P2C != nil && t.P2C.FailedPermanently())
+	return t.Failed || (t.Import != nil && t.Import.FailedPermanently()) || (t.P2C != nil && t.P2C.FailedPermanently())
 }
 
 func (t *Recovery) IsSequential() bool {
@@ -122,22 +121,33 @@ func (t *Recovery) initialize(ctx core.TaskContext) error {
 		t.Status = StatusDone
 		return nil
 	}
-	txId, _ = ctx.GetTxIndex().GetTxByType(t.request.OriginalRequestHash, core.TxTypeImportP)
+	txId, err := ctx.GetTxIndex().GetTxByType(t.request.OriginalRequestHash, core.TxTypeImportP)
+	if err != nil {
+		ctx.GetLogger().Errorf("error finding tx: %v", err)
+	}
 	if txId != ids.Empty {
 		tx, err := ctx.GetPChainTx(txId)
 		if err != nil {
 			return t.failIfErrorf(err, ErrMsgFailedToRetrieveTx)
 		}
-		t.createP2C(ctx, *tx.UTXOs()[0])
+		err = tx.Sign(txs.Codec, nil)
+		if err != nil {
+			return t.failIfErrorf(err, "")
+		}
+		return t.createP2C(ctx, *tx.UTXOs()[0])
 	}
 	if t.request.ExportTxID != ids.Empty {
 		originalExportTx, err := ctx.GetCChainTx(t.request.ExportTxID)
 		if err != nil {
 			return t.failIfErrorf(err, ErrMsgFailedToRetrieveTx)
 		}
+		err = originalExportTx.Sign(evm.Codec, nil)
+		if err != nil {
+			return t.failIfErrorf(err, "")
+		}
 		return t.createImport(ctx, originalExportTx)
 	}
-	err := errors.New("invalid task")
+	err = errors.New("invalid task")
 	return t.failIfErrorf(err, ErrMsgInvalidTaskk)
 }
 

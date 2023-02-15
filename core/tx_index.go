@@ -2,7 +2,9 @@ package core
 
 import (
 	"github.com/ava-labs/avalanchego/ids"
+	"github.com/avalido/mpc-controller/utils/bytes"
 	"github.com/pkg/errors"
+	"sync"
 	"time"
 )
 
@@ -17,8 +19,6 @@ type TxIndex interface {
 	SetTxByType(requestHash [32]byte, typ string, txID ids.ID) error
 	// PurgeOlderThan removes all records older than the given time
 	PurgeOlderThan(time time.Time) error
-	// DeleteTxs deletes all txs for the request, used to purge info not needed
-	DeleteTxs(requestHash [32]byte) error
 	// IsKnownTx tells whether the txID is known to the index
 	IsKnownTx(txID ids.ID) bool
 }
@@ -28,24 +28,28 @@ var (
 )
 
 type IDRecord struct {
-	ID   ids.ID
-	Time time.Time
+	ID   ids.ID    `json:"id"`
+	Time time.Time `json:"time"`
 }
 
 type InMemoryTxIndex struct {
-	index      map[[32]byte]map[string]IDRecord
-	knownTxIds map[ids.ID]struct{}
+	index      map[string]map[string]IDRecord
+	knownTxIds map[string]struct{}
+	mutex      sync.Mutex
 }
 
 func NewInMemoryTxIndex() *InMemoryTxIndex {
 	return &InMemoryTxIndex{
-		index:      map[[32]byte]map[string]IDRecord{},
-		knownTxIds: map[ids.ID]struct{}{},
+		index:      map[string]map[string]IDRecord{},
+		knownTxIds: map[string]struct{}{},
+		mutex:      sync.Mutex{},
 	}
 }
 
 func (i *InMemoryTxIndex) GetTxByType(requestHash [32]byte, typ string) (ids.ID, error) {
-	byType, ok := i.index[requestHash]
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	byType, ok := i.index[bytes.Bytes32ToHex(requestHash)]
 	if !ok {
 		return ids.Empty, errors.New("no tx is found for the request hash")
 	}
@@ -57,19 +61,22 @@ func (i *InMemoryTxIndex) GetTxByType(requestHash [32]byte, typ string) (ids.ID,
 }
 
 func (i *InMemoryTxIndex) SetTxByType(requestHash [32]byte, typ string, txID ids.ID) error {
-	_, ok := i.index[requestHash]
+	reqHash := bytes.Bytes32ToHex(requestHash)
+	_, ok := i.index[reqHash]
 	if !ok {
-		i.index[requestHash] = map[string]IDRecord{}
+		i.index[reqHash] = map[string]IDRecord{}
 	}
-	i.index[requestHash][typ] = IDRecord{
+	i.index[reqHash][typ] = IDRecord{
 		ID:   txID,
 		Time: time.Now(),
 	}
-	i.knownTxIds[txID] = struct{}{}
+	i.knownTxIds[txID.String()] = struct{}{}
 	return nil
 }
 
 func (i *InMemoryTxIndex) PurgeOlderThan(time time.Time) error {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
 	for reqHash, m := range i.index {
 		purgeAll := true
 		for _, record := range m {
@@ -77,9 +84,9 @@ func (i *InMemoryTxIndex) PurgeOlderThan(time time.Time) error {
 		}
 		if purgeAll {
 			for _, record := range m {
-				delete(i.knownTxIds, record.ID)
+				delete(i.knownTxIds, record.ID.String())
 			}
-			err := i.DeleteTxs(reqHash)
+			err := i.deleteTxs(reqHash)
 			if err != nil {
 				return err
 			}
@@ -88,12 +95,14 @@ func (i *InMemoryTxIndex) PurgeOlderThan(time time.Time) error {
 	return nil
 }
 
-func (i *InMemoryTxIndex) DeleteTxs(requestHash [32]byte) error {
+func (i *InMemoryTxIndex) deleteTxs(requestHash string) error {
 	delete(i.index, requestHash)
 	return nil
 }
 
 func (i *InMemoryTxIndex) IsKnownTx(txID ids.ID) bool {
-	_, ok := i.knownTxIds[txID]
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
+	_, ok := i.knownTxIds[txID.String()]
 	return ok
 }

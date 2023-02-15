@@ -95,6 +95,10 @@ func DenormalizePubKeysFromHexs(pubKeys []string) ([][]byte, error) {
 	return results, nil
 }
 
+func DenormalizePubKeyBytes(pubKeyBytes []byte) ([]byte, error) {
+	return DenormalizePubKeyFromHex(common.Bytes2Hex(pubKeyBytes))
+}
+
 func DenormalizePubKeyFromHex(pubKeyHex string) ([]byte, error) {
 	pubKey, err := UnmarshalPubKeyHex(pubKeyHex)
 	if err != nil {

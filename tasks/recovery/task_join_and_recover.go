@@ -6,7 +6,9 @@ import (
 	"github.com/ava-labs/avalanchego/ids"
 	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
 	"github.com/ava-labs/avalanchego/utils/hashing"
+	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
 	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -14,6 +16,7 @@ import (
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/avalido/mpc-controller/tasks/join"
 	"github.com/avalido/mpc-controller/utils/bytes"
+	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"math/big"
@@ -98,15 +101,19 @@ func (t *JoinAndRecover) Next(ctx core.TaskContext) ([]core.Task, error) {
 			t.NoNeedToRun = true
 			return nil, nil
 		}
+
+		err := t.createRequest(ctx)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "failed to create request")
+		}
 		pubkey, err := t.getPubKey(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to get public key")
 		}
-		t.PublicKey = pubkey
-		err = t.createRequest(ctx)
-		if err != nil {
-			return nil, t.failIfErrorf(err, "failed to create request")
+		if pubkey == nil {
+			return nil, nil // Retry (if the txn hasn't been indexed yet, we can't recover the public key)
 		}
+		t.PublicKey = pubkey
 		err = t.loadGroupInfo(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to load group info")
@@ -320,31 +327,59 @@ func (t *JoinAndRecover) failIfErrorf(err error, format string, a ...any) error 
 }
 
 func (t *JoinAndRecover) getPubKey(ctx core.TaskContext) ([]byte, error) {
-	txId, _ := ctx.GetTxIndex().GetTxByType(t.Request.OriginalRequestHash, core.TxTypeImportP)
+	txId, err := ctx.GetTxIndex().GetTxByType(t.Request.OriginalRequestHash, core.TxTypeImportP)
+	if err != nil {
+		ctx.GetLogger().Errorf("error finding tx: %v", err)
+	}
+
 	if txId != ids.Empty {
 		tx, err := ctx.GetPChainTx(txId)
 		if err != nil {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToRetrieveTx)
 		}
 
-		unsignedBytes := tx.Bytes()
+		err = tx.Sign(txs.Codec, nil)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "")
+		}
+		unsignedBytes := tx.Unsigned.Bytes()
 		hash := hashing.ComputeHash256(unsignedBytes)
 		cred := tx.Creds[0].(*secp256k1fx.Credential)
 		pk, err := new(avaCrypto.FactorySECP256K1R).RecoverHashPublicKey(hash, cred.Sigs[0][:])
-		return pk.Bytes(), nil
+		if err != nil {
+			return nil, t.failIfErrorf(err, "")
+		}
+		compressed := pk.Bytes()
+		bytes, err := myCrypto.DenormalizePubKeyBytes(compressed)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "")
+		}
+		return bytes, nil
 	}
 	if t.Request.ExportTxID != ids.Empty {
 		tx, err := ctx.GetCChainTx(t.Request.ExportTxID)
 		if err != nil {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToRetrieveTx)
 		}
+		err = tx.Sign(evm.Codec, nil)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "")
+		}
 		unsignedBytes := tx.Bytes()
 		hash := hashing.ComputeHash256(unsignedBytes)
 		cred := tx.Creds[0].(*secp256k1fx.Credential)
 		pk, err := new(avaCrypto.FactorySECP256K1R).RecoverHashPublicKey(hash, cred.Sigs[0][:])
-		return pk.Bytes(), nil
+		if err != nil {
+			return nil, t.failIfErrorf(err, "")
+		}
+		compressed := pk.Bytes()
+		bytes, err := myCrypto.DenormalizePubKeyBytes(compressed)
+		if err != nil {
+			return nil, t.failIfErrorf(err, "")
+		}
+		return bytes, nil
 	}
-	err := errors.New(ErrMsgFailedToDecidePubKey)
+	err = errors.New(ErrMsgFailedToDecidePubKey)
 	return nil, t.failIfErrorf(err, "")
 }
 

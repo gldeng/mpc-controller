@@ -23,8 +23,10 @@ var (
 	oracleAndMpcAdmin *ecdsa.PrivateKey
 	oracleOperators   []*ecdsa.PrivateKey
 	mpcOperators      []*ecdsa.PrivateKey
-	mpcThreshold      = 4
-	mpcGroupId        [32]byte
+	mpcThreshold3     = 1
+	mpcThreshold7     = 4
+	mpcGroupId3       [32]byte
+	mpcGroupId7       [32]byte
 	simMpcPrivKey     *ecdsa.PrivateKey
 )
 
@@ -37,8 +39,11 @@ func init() {
 	panicIfError(err)
 	oracleAndMpcAdmin = sk
 
-	mpcGroupIdBytes := bytes.HexTo32Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
-	copy(mpcGroupId[:], mpcGroupIdBytes[:])
+	mpcGroupIdBytes := bytes.HexTo32Bytes("24622fe46c7cdf828d93c0f1808651a5e41f13a0952857308f21a97f42030100")
+	copy(mpcGroupId3[:], mpcGroupIdBytes[:])
+
+	mpcGroupIdBytes = bytes.HexTo32Bytes("c9dfdfccdc1a33434ea6494da21cc1e2b03477740c606f0311d1f90665070400")
+	copy(mpcGroupId7[:], mpcGroupIdBytes[:])
 	mpcGroup := []string{
 		"353fb105bbf9c29cbf46d4c93a69587ac478138b7715f0786d7ae1cc05230878",
 		"7084300e7059ea4b308ec5b965ef581d3f9c9cd63714082ccf9b9d1fb34d658b",

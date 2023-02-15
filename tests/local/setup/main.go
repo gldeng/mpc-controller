@@ -90,13 +90,11 @@ func runSetup(c *cli.Context) error {
 	config := NewConfig(c.String(fnHost), int16(c.Int(fnPort)),
 		common.HexToAddress(c.String(fnAvalidoAddress)), common.HexToAddress(c.String(fnOracleManagerAddress)),
 		common.HexToAddress(c.String(fnOracleAddress)))
-	signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
-	panicIfError(err)
-	config.GetMpcManager().RequestKeygen(signer, mpcGroupId)
 	step1FundAccounts(&config)
-	step2InitOracle(&config)
-	step3SetupOracle(&config)
-	step4SetupMpc(&config)
+	step2SetupAvaLido(&config)
+	step3InitOracle(&config)
+	step4SetupOracle(&config)
+	step5SetupMpc(&config)
 	return nil
 }
 
@@ -110,12 +108,16 @@ func step1FundAccounts(config *Config) {
 	}
 }
 
-func step2InitOracle(config *Config) {
+func step2SetupAvaLido(config *Config) {
+	doSetMaxStaked(config, deployer)
+}
+
+func step3InitOracle(config *Config) {
 	doSetOracleAddress(config, oracleAndMpcAdmin, config.OracleAddress)
 	doSetEpochDuration(config, oracleAndMpcAdmin)
 }
 
-func step3SetupOracle(config *Config) {
+func step4SetupOracle(config *Config) {
 	client := config.CreatePClient()
 	val, err := client.GetCurrentValidators(context.Background(), ids.Empty, nil)
 	panicIfError(err)
@@ -126,8 +128,7 @@ func step3SetupOracle(config *Config) {
 	valCount, err := config.GetOracle().ValidatorCount(nil)
 	panicIfError(err)
 	if valCount.Int64() == 0 {
-		signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
-		panicIfError(err)
+		signer := getSigner(config, oracleAndMpcAdmin)
 		tx, err := config.GetOracle().StartNodeIDUpdate(signer)
 		panicIfError(err)
 		waitForTx(config, tx.Hash())
@@ -142,18 +143,24 @@ func step3SetupOracle(config *Config) {
 	setupOracleReport(config)
 }
 
-func step4SetupMpc(config *Config) {
-	signer, err := bind.NewKeyedTransactorWithChainID(oracleAndMpcAdmin, config.GetChainId())
-	panicIfError(err)
+func step5SetupMpc(config *Config) {
 	var pubKeyBytes [][]byte
-	for _, operator := range mpcOperators {
+	for _, operator := range mpcOperators[:3] {
 		bytes := crypto.FromECDSAPub(&operator.PublicKey)
 		pubKeyBytes = append(pubKeyBytes, bytes[1:])
 	}
-	config.GetMpcManager().CreateGroup(signer, pubKeyBytes, uint8(mpcThreshold))
-	config.GetMpcManager().RequestKeygen(signer, mpcGroupId)
+	signer := getSigner(config, oracleAndMpcAdmin)
+	tx, err := config.GetMpcManager().CreateGroup(signer, pubKeyBytes, uint8(mpcThreshold3))
+	panicIfError(err)
+	txHash := tx.Hash()
+	waitForTx(config, txHash)
+	tx, err = config.GetMpcManager().RequestKeygen(signer, mpcGroupId3)
+	panicIfError(err)
+	txHash = tx.Hash()
+	waitForTx(config, txHash)
+
 	genPubKey := crypto.FromECDSAPub(&simMpcPrivKey.PublicKey)
-	for i, operator := range mpcOperators {
+	for i, operator := range mpcOperators[:3] {
 		doReportKeygen(config, byte(i+1), operator, genPubKey[1:])
 	}
 }
@@ -202,6 +209,16 @@ func fundAddrTx(c *Config, address common.Address) *types.Transaction {
 	return signedTx
 }
 
+func doSetMaxStaked(config *Config, privKey *ecdsa.PrivateKey) {
+	signer := getSigner(config, privKey)
+	oneBillion := big.NewInt(1_000_000_000)
+	ether := big.NewInt(params.Ether)
+	oneBillion = oneBillion.Mul(oneBillion, ether)
+	tx, err := config.GetAvaLido().SetMaxProtocolControlledAVAX(signer, oneBillion)
+	panicIfError(err)
+	waitForTx(config, tx.Hash())
+}
+
 func doSetOracleAddress(config *Config, privKey *ecdsa.PrivateKey, address common.Address) {
 	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
 	panicIfError(err)
@@ -219,13 +236,13 @@ func doSetEpochDuration(config *Config, privKey *ecdsa.PrivateKey) {
 }
 
 func doReportKeygen(config *Config, ind byte, privKey *ecdsa.PrivateKey, pubKey []byte) {
-	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
-	panicIfError(err)
+	signer := getSigner(config, privKey)
 	var participantId [32]byte
-	copy(participantId[:31], mpcGroupId[:31])
+	copy(participantId[:31], mpcGroupId3[:31])
 	participantId[31] = ind
-	_, err = config.GetMpcManager().ReportGeneratedKey(signer, participantId, pubKey)
+	tx, err := config.GetMpcManager().ReportGeneratedKey(signer, participantId, pubKey)
 	panicIfError(err)
+	waitForTx(config, tx.Hash())
 }
 
 func setupOracleReport(config *Config) {
@@ -259,14 +276,19 @@ func prepareReport(config *Config) []*big.Int {
 }
 
 func doOracleReport(config *Config, epoch *big.Int, report []*big.Int, privKey *ecdsa.PrivateKey) {
-	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
-	panicIfError(err)
-	signer.GasPrice = big.NewInt(25000000000)
-	signer.GasLimit = 900000
+	signer := getSigner(config, privKey)
 	fmt.Printf("sent from %x\n", signer.From)
 	tx, err := config.GetOracleManager().ReceiveMemberReport(signer, epoch, report)
 	panicIfError(err)
 	waitForTx(config, tx.Hash())
+}
+
+func getSigner(config *Config, privKey *ecdsa.PrivateKey) *bind.TransactOpts {
+	signer, err := bind.NewKeyedTransactorWithChainID(privKey, config.GetChainId())
+	panicIfError(err)
+	signer.GasPrice = big.NewInt(25000000000)
+	signer.GasLimit = 900000
+	return signer
 }
 
 func waitForTx(config *Config, txHash common.Hash) {

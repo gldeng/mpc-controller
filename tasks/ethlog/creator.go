@@ -85,7 +85,7 @@ func (c *RequestCreator) Handle(ctx core.EventHandlerContext, log types.Log) ([]
 	}
 	if log.Topics[0] == ctx.GetEventID(core.EvtRequestFailed) {
 		event := new(binding.MpcManagerRequestFailed)
-		err := ctx.GetContract().UnpackLog(event, core.EvtStakeRequestAdded, log)
+		err := ctx.GetContract().UnpackLog(event, core.EvtRequestFailed, log)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to unpack log")
 		}
