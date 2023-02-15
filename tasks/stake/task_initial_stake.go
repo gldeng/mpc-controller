@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/logger"
 	addDelegator "github.com/avalido/mpc-controller/tasks/adddelegator"
 	"github.com/avalido/mpc-controller/tasks/c2p"
+	"github.com/avalido/mpc-controller/tasks/failure"
 	"github.com/pkg/errors"
 	"math/big"
 	"strconv"
@@ -125,21 +126,32 @@ func (t *InitialStake) startAddDelegator() error {
 func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 	if t.isTimedOut() {
 		if !t.IsFailReported {
-			t.reportFailed(ctx) // TODO: Handle retry?
+			return t.reportFailed(ctx) // TODO: Handle retry?
 		}
 	}
 
+	//for testing
+	//if t.C2P.IsDone() {
+	//	if !t.IsFailReported {
+	//		return t.reportFailed(ctx) // TODO: Handle retry?
+	//	}
+	//}
+
 	if !t.C2P.IsDone() {
 		next, err := t.C2P.Next(ctx)
+		if err != nil {
+			t.logError(ctx, "Failed to run C2P", err)
+		}
+		if t.C2P.FailedPermanently() {
+			return t.reportFailed(ctx)
+		}
 		if t.C2P.IsDone() {
 			err = t.startAddDelegator()
 			t.logDebug(ctx, "C2P done")
 			if err != nil {
 				t.logError(ctx, "Failed to start AddDelegator", err)
+				return t.reportFailed(ctx)
 			}
-		}
-		if err != nil {
-			t.logError(ctx, "Failed to run C2P", err)
 		}
 		return next, t.failIfErrorf(err, "c2p failed")
 	}
@@ -150,6 +162,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 			t.logDebug(ctx, "AddDelegator task done")
 			if err != nil {
 				t.logError(ctx, "AddDelegator got error", err)
+				return t.reportFailed(ctx)
 			}
 		}
 		return next, t.failIfErrorf(err, "add delegator failed")
@@ -162,25 +175,30 @@ func (t *InitialStake) isTimedOut() bool {
 
 }
 
-func (t *InitialStake) reportFailed(ctx core.TaskContext) error {
+func (t *InitialStake) reportFailed(ctx core.TaskContext) ([]core.Task, error) {
 	if t.AddDelegator != nil && t.AddDelegator.IsDone() {
-		return nil
+		return nil, nil
 	}
 	group, err := t.getGroup(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	var data []byte
 	if t.C2P != nil && t.C2P.ExportTask != nil && t.C2P.ExportTask.TxID != nil {
 		data = t.C2P.ExportTask.TxID[:]
 	}
-	_, err = ctx.ReportRequestFailed(ctx.GetMyTransactSigner(), group.ParticipantID(), t.FlowId.RequestHash, data)
-	// TODO: Do we need to check the tx status after sending?
+	id := ids.ID{}
+	copy(id[:], data)
+
+	task := failure.NewFailureReport(t.FlowId, group.ParticipantID(), t.FlowId.RequestHash, data)
+
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	t.IsFailReported = true
-	return nil
+	return []core.Task{task}, nil
 }
 
 func (t *InitialStake) getGroup(ctx core.TaskContext) (*types.Group, error) {

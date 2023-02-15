@@ -129,14 +129,18 @@ func (t *JoinAndStake) Next(ctx core.TaskContext) ([]core.Task, error) {
 		}
 		t.InitialStake = initStake
 		prom.FlowInit.With(prometheus.Labels{"flow": "initialStake"}).Inc()
-		_, err = t.InitialStake.Next(ctx)
+		next, err := t.InitialStake.Next(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to run InitialStake")
+		} else {
+			return next, nil
 		}
 	} else {
-		_, err := t.InitialStake.Next(ctx)
+		next, err := t.InitialStake.Next(ctx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "failed to run InitialStake")
+		} else {
+			return next, nil
 		}
 	}
 
