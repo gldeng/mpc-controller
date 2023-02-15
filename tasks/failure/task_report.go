@@ -12,8 +12,9 @@ import (
 
 const (
 	taskTypeFailureReport = "FailureReport"
-	reportDelay           = 2 * time.Minute //60 * time.Minute
-	checkTxDelay          = 30 * time.Second
+	// This has to be longer than TxIndex time so that we won't miss any tx when checking
+	reportDelay  = 120 * time.Minute
+	checkTxDelay = 30 * time.Second
 )
 
 var (
