@@ -76,7 +76,7 @@ func main() {
 	task, err := p2c.NewExportFromPChain(core.FlowId{
 		Tag:         "abc",
 		RequestHash: types.RequestHash{},
-	}, quorum, *parseUtxo(utxoHex))
+	}, quorum, []*avax.UTXO{parseUtxo(utxoHex)})
 	panicIfError(err)
 	nextTasks, err := task.Next(ctx)
 	panicIfError(err)

@@ -19,16 +19,18 @@ func NewTxBuilder(net *core.NetworkContext) *TxBuilder {
 	return &TxBuilder{net: net}
 }
 
-func (t *TxBuilder) ExportFromPChain(utxo avax.UTXO) (*txs.ExportTx, error) {
-	inputs := myAvax.TransferableInputsrFromUTXOs([]*avax.UTXO{&utxo}) // The inputs to this transaction
-	out := utxo.Out.(*secp256k1fx.TransferOutput)
+func (t *TxBuilder) ExportFromPChain(utxos []*avax.UTXO) (*txs.ExportTx, error) {
+	inputs := myAvax.TransferableInputsrFromUTXOs(utxos) // The inputs to this transaction
+	utxoFirst := utxos[0]
+	outFirst := utxoFirst.Out.(*secp256k1fx.TransferOutput)
+	amount := myAvax.TotalAmount(utxos)
 	feeAmount := uint64(1000000)
-	netAmount := out.Amount() - feeAmount
+	netAmount := amount - feeAmount
 	outputs := []*avax.TransferableOutput{{ // Outputs that are exported to the destination chain
-		Asset: utxo.Asset,
+		Asset: utxoFirst.Asset,
 		Out: &secp256k1fx.TransferOutput{
 			Amt:          netAmount,
-			OutputOwners: out.OutputOwners,
+			OutputOwners: outFirst.OutputOwners,
 		},
 	}}
 	utx := &txs.ExportTx{

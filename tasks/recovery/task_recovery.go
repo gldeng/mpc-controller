@@ -166,7 +166,7 @@ func (t *Recovery) createP2C(ctx core.TaskContext, utxo avax.UTXO) error {
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToGetPrincipalTreasuryAddress)
 	}
-	p2cTask, err := p2c.NewP2C(t.FlowId, t.Quorum, utxo, toAddress)
+	p2cTask, err := p2c.NewP2C(t.FlowId, t.Quorum, []*avax.UTXO{&utxo}, toAddress)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToCreateSubTask)
 	}

@@ -207,6 +207,16 @@ var (
 		Help: "The total number of mpc join stake quorum reached",
 	})
 
+	MpcJoinMoveBucket = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_move_bucket_total",
+		Help: "The total number of mpc join MoveBucket task",
+	})
+
+	MpcJoinMoveBucketQuorumReached = promauto.NewCounter(prometheus.CounterOpts{
+		Name: prefix + "mpc_join_move_bucket_quorum_reached_total",
+		Help: "The total number of mpc join MoveBucket quorum reached",
+	})
+
 	// Mpc tx built metrics
 
 	MpcTxBuilt = promauto.NewCounterVec(prometheus.CounterOpts{

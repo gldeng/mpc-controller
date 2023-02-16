@@ -56,11 +56,15 @@ func PackSignedExportTx(unsigned *txs.ExportTx, cred *secp256k1fx.Credential) (*
 		return nil, errors.New(ErrMsgMissingCredential)
 	}
 
+	// Credential count should match input count
+	var creds []verify.Verifiable
+	for i := 0; i < len(unsigned.Ins); i++ {
+		creds = append(creds, cred)
+	}
+
 	tx := txs.Tx{
 		Unsigned: unsigned,
-		Creds: []verify.Verifiable{
-			cred,
-		},
+		Creds:    creds,
 	}
 	err := tx.Sign(txs.Codec, nil)
 	if err != nil {

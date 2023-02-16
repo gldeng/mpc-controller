@@ -104,3 +104,12 @@ func ParseUTXO(utxoBytes []byte) (*avax.UTXO, error) {
 	}
 	return &utxo, nil
 }
+
+func TotalAmount(utxos []*avax.UTXO) uint64 {
+	amount := uint64(0)
+	for _, utxo := range utxos {
+		out := utxo.Out.(*secp256k1fx.TransferOutput)
+		amount += out.Amount()
+	}
+	return amount
+}

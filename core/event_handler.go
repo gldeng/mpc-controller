@@ -1,6 +1,7 @@
 package core
 
 import (
+	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,6 +16,10 @@ const (
 	EvtRequestStarted     = "RequestStarted"
 	EvtRequestFailed      = "RequestFailed"
 )
+
+type PChainEventHandler interface {
+	Handle(ctx EventHandlerContext, utxoBucket types2.UtxoBucket) ([]Task, error)
+}
 
 type LogEventHandler interface {
 	Handle(ctx EventHandlerContext, log types.Log) ([]Task, error)

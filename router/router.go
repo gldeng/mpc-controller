@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"github.com/avalido/mpc-controller/core"
+	types2 "github.com/avalido/mpc-controller/core/types"
 	"github.com/avalido/mpc-controller/logger"
 	"github.com/avalido/mpc-controller/prom"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -26,6 +27,7 @@ type Router struct {
 	incomingQueue       Queue
 	handlers            []EventHandler
 	logEventHandlers    []core.LogEventHandler
+	pChainEventHandlers []core.PChainEventHandler
 	eventHandlerContext core.EventHandlerContext
 	submitter           core.TaskSubmitter
 }
@@ -41,6 +43,7 @@ func NewRouter(logger logger.Logger, incomingQueue Queue, eventHandlerContext co
 		incomingQueue:       incomingQueue,
 		handlers:            make([]EventHandler, 0),
 		logEventHandlers:    make([]core.LogEventHandler, 0),
+		pChainEventHandlers: make([]core.PChainEventHandler, 0),
 		eventHandlerContext: eventHandlerContext,
 		submitter:           submitter,
 	}, nil
@@ -79,18 +82,18 @@ func (r *Router) Start() error {
 							r.logger.Error("handle eth log error", []logger.Field{{"error", err}}...)
 							prom.HandleEthLogErr.Inc()
 						}
-						for _, task := range tasks {
-							err := r.submitter.Submit(task)
-							if err != nil {
-								prom.TaskSubmissionErr.Inc()
-								r.logger.Error("task submission error", []logger.Field{
-									{"id", task.GetId()},
-									{"isDone", task.IsDone()},
-									{"failedPermanently", task.FailedPermanently()},
-									{"isSequential", task.IsSequential()},
-									{"error", err}}...)
-							}
+						r.submitTasks(tasks)
+					}
+				}
+				if evt, ok := event.(types2.UtxoBucket); ok {
+					r.logger.Debugf("utxoBucket Event %v", evt)
+					for _, handler := range r.pChainEventHandlers {
+						tasks, err := handler.Handle(r.eventHandlerContext, evt)
+						if err != nil {
+							r.logger.Error("handle eth log error", []logger.Field{{"error", err}}...)
+							prom.HandleEthLogErr.Inc()
 						}
+						r.submitTasks(tasks)
 					}
 				}
 			}
@@ -107,10 +110,29 @@ func (r *Router) AddLogEventHandler(handler core.LogEventHandler) {
 	r.logEventHandlers = append(r.logEventHandlers, handler)
 }
 
+func (r *Router) AddPChainEventHandler(handler core.PChainEventHandler) {
+	r.pChainEventHandlers = append(r.pChainEventHandlers, handler)
+}
+
 func (r *Router) Close() error {
 	r.closeOnce.Do(func() {
 		r.unsub <- struct{}{}
 		r.onCloseCtxCancel()
 	})
 	return nil
+}
+
+func (r *Router) submitTasks(tasks []core.Task) {
+	for _, task := range tasks {
+		err := r.submitter.Submit(task)
+		if err != nil {
+			prom.TaskSubmissionErr.Inc()
+			r.logger.Error("task submission error", []logger.Field{
+				{"id", task.GetId()},
+				{"isDone", task.IsDone()},
+				{"failedPermanently", task.FailedPermanently()},
+				{"isSequential", task.IsSequential()},
+				{"error", err}}...)
+		}
+	}
 }

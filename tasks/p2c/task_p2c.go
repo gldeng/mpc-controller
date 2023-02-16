@@ -32,8 +32,8 @@ type P2C struct {
 }
 
 // TODO: Support multiple UTXO
-func NewP2C(flowId core.FlowId, quorum types.QuorumInfo, utxo avax.UTXO, to common.Address) (*P2C, error) {
-	exportTask, err := NewExportFromPChain(flowId, quorum, utxo)
+func NewP2C(flowId core.FlowId, quorum types.QuorumInfo, utxos []*avax.UTXO, to common.Address) (*P2C, error) {
+	exportTask, err := NewExportFromPChain(flowId, quorum, utxos)
 	if err != nil {
 		return nil, err
 	}

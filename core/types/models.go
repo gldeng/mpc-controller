@@ -189,6 +189,7 @@ const (
 	TaskTypUnknown TaskType = iota
 	TaskTypStake
 	TaskTypRecover
+	TaskTypP2C
 )
 
 const (

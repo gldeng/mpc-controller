@@ -34,7 +34,7 @@ type ExportFromPChain struct {
 	FlowId   core.FlowId
 	TaskType string
 
-	Utxo avax.UTXO
+	Utxos []*avax.UTXO
 
 	Quorum      types.QuorumInfo
 	Tx          *txs.ExportTx
@@ -62,12 +62,12 @@ func (t *ExportFromPChain) IsDone() bool {
 	return t.Status == StatusDone
 }
 
-func NewExportFromPChain(flowId core.FlowId, quorum types.QuorumInfo, utxo avax.UTXO) (*ExportFromPChain, error) {
+func NewExportFromPChain(flowId core.FlowId, quorum types.QuorumInfo, utxos []*avax.UTXO) (*ExportFromPChain, error) {
 	return &ExportFromPChain{
 		Status:      StatusInit,
 		FlowId:      flowId,
 		TaskType:    taskTypeExport,
-		Utxo:        utxo,
+		Utxos:       utxos,
 		Quorum:      quorum,
 		Tx:          nil,
 		TxHash:      nil,
@@ -156,7 +156,7 @@ func (t *ExportFromPChain) buildSignReq(id string, hash []byte) (*mpc.SignReques
 func (t *ExportFromPChain) buildAndSignTx(ctx core.TaskContext) error {
 	builder := NewTxBuilder(ctx.GetNetwork())
 
-	tx, err := builder.ExportFromPChain(t.Utxo)
+	tx, err := builder.ExportFromPChain(t.Utxos)
 	if err != nil {
 		return t.failIfErrorf(err, ErrMsgFailedToBuildTx)
 	}

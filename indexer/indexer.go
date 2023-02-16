@@ -10,25 +10,41 @@ import (
 	"github.com/avalido/mpc-controller/common"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
+	"github.com/avalido/mpc-controller/utils/bytes"
+	myCrypto "github.com/avalido/mpc-controller/utils/crypto"
 	"github.com/pkg/errors"
+	"github.com/status-im/keycard-go/hexutils"
+	"sort"
 	"sync"
 	"time"
 )
 
+const (
+	bucketSize = 2 * 60 * 60 // 2 Hours
+)
+
+type Queue interface {
+	Enqueue(value interface{}) error
+}
+
 type Indexer struct {
 	services         *core.ServicePack
+	eventQueue       Queue
 	closeOnce        sync.Once
 	onCloseCtx       context.Context
 	onCloseCtxCancel func()
+	bucketsSent      map[int64]struct{}
 }
 
-func NewIndexer(services *core.ServicePack) *Indexer {
+func NewIndexer(services *core.ServicePack, eventQueue Queue) *Indexer {
 	onCloseCtx, cancel := context.WithCancel(context.Background())
 	return &Indexer{
 		services:         services,
+		eventQueue:       eventQueue,
 		closeOnce:        sync.Once{},
 		onCloseCtx:       onCloseCtx,
 		onCloseCtxCancel: cancel,
+		bucketsSent:      map[int64]struct{}{},
 	}
 }
 
@@ -45,7 +61,7 @@ func (i *Indexer) Start() error {
 			case <-i.onCloseCtx.Done():
 				return
 			case <-timer.C:
-				nextRun := time.Now().Add(60 * time.Minute)
+				nextRun := time.Now().Add(1 * time.Minute)
 				err := i.scanDelegators(client)
 				if err != nil {
 					i.services.Logger.Error(err.Error())
@@ -155,37 +171,203 @@ func (i *Indexer) scanUTXOs(client platformvm.Client) error {
 		nextStartUtxoID = endUtxoID
 	}
 
-	var txIDs []ids.ID
+	utxosByTxId, err := GroupUtxosByTxId(utxosAll)
+	if err != nil {
+		return err
+	}
+
+	addDelegatorTxs, err := i.getRequestHashAndUpdateIndex(client, utxosByTxId)
+	if err != nil {
+		return err
+	}
+
+	bucket := getCurrentBucket()
+	if _, ok := i.bucketsSent[bucket.EndTimestamp]; ok {
+		return nil
+	}
+
+	inBuckeTxs := findTxsInTargetBucket(addDelegatorTxs, bucket)
+	byPubKey, err := groupByPubKey(inBuckeTxs)
+	if err != nil {
+		return err
+	}
+
+	principals, rewards, err := splitUtxosByType(utxosByTxId, *byPubKey)
+	if err != nil {
+		return err
+	}
+
+	var events []types.UtxoBucket
+	for pkStr, utxos := range principals {
+		events = append(events, types.UtxoBucket{
+			StartTimestamp: uint64(bucket.StartTimestamp),
+			EndTimestamp:   uint64(bucket.EndTimestamp),
+			PublicKey:      hexutils.HexToBytes(pkStr),
+			Utxos:          utxos,
+			UtxoType:       types.Principal,
+		})
+	}
+	for pkStr, utxos := range rewards {
+		events = append(events, types.UtxoBucket{
+			StartTimestamp: uint64(bucket.StartTimestamp),
+			EndTimestamp:   uint64(bucket.EndTimestamp),
+			PublicKey:      hexutils.HexToBytes(pkStr),
+			Utxos:          utxos,
+			UtxoType:       types.Reward,
+		})
+	}
+	for _, event := range events {
+		i.eventQueue.Enqueue(event)
+	}
+	i.bucketsSent[bucket.EndTimestamp] = struct{}{}
+
+	return nil
+}
+
+func (i *Indexer) getRequestHashAndUpdateIndex(client platformvm.Client, container UtxosByTxId) ([]*txs.Tx, error) {
+	var allAddDelegatorTxs []*txs.Tx
+	for txId, _ := range container {
+		txBytes, err := client.GetTx(context.Background(), txId)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("get tx error %v", txId.String()))
+		}
+		tx, err := txs.Parse(txs.Codec, txBytes)
+		if err != nil {
+			return nil, err
+		}
+		tx.Sign(txs.Codec, nil)
+		if uTx, ok := tx.Unsigned.(*txs.ImportTx); ok {
+			reqHash := types.RequestHash{}
+			copy(reqHash[:], uTx.Memo)
+			err = i.services.TxIndex.SetTxByType(reqHash, core.TxTypeImportP, txId)
+			if err != nil {
+				return nil, err
+			}
+		} else if uTx, ok := tx.Unsigned.(*txs.AddDelegatorTx); ok {
+			reqHash := types.RequestHash{}
+			copy(reqHash[:], uTx.Memo)
+			err = i.services.TxIndex.SetTxByType(reqHash, core.TxTypeAddDelegator, txId)
+			if err != nil {
+				return nil, err
+			}
+			allAddDelegatorTxs = append(allAddDelegatorTxs, tx)
+		}
+	}
+	return allAddDelegatorTxs, nil
+}
+
+func findTxsInTargetBucket(transactions []*txs.Tx, bucket Bucket) []*txs.Tx {
+	var inBucketTxs []*txs.Tx
+	for _, tx := range transactions {
+		uTx, _ := tx.Unsigned.(*txs.AddDelegatorTx)
+		if bucket.isInBucket(uTx.EndTime()) {
+			inBucketTxs = append(inBucketTxs, tx)
+		}
+	}
+	return inBucketTxs
+}
+
+func getCurrentBucket() Bucket {
+	now := time.Now().Unix()
+	endTimestamp := (now / bucketSize) * bucketSize
+	startTimestamp := endTimestamp - bucketSize
+	return Bucket{
+		StartTimestamp: startTimestamp,
+		EndTimestamp:   endTimestamp,
+	}
+}
+
+func groupByPubKey(transactions []*txs.Tx) (*ByPubKey, error) {
+	byPubKey := ByPubKey{}
+	for _, tx := range transactions {
+		uTx, _ := tx.Unsigned.(*txs.AddDelegatorTx)
+		pk, err := myCrypto.RecoverPChainTxPublicKey(tx)
+		if err != nil {
+			return nil, err
+		}
+		pkStr := bytes.BytesToHex(pk)
+		byPubKey[pkStr] = append(byPubKey[pkStr], AddDelegatorTxRecord{
+			TxID:    tx.ID(),
+			EndTime: uTx.EndTime().Unix(),
+		})
+	}
+
+	for _, records := range byPubKey {
+		sort.Sort(records)
+	}
+	return &byPubKey, nil
+}
+
+func splitUtxosByType(utxosByTxId UtxosByTxId, byPubKey ByPubKey) (principals UtxosByPubKey, rewards UtxosByPubKey, err error) {
+	principals = map[string][]*avax.UTXO{}
+	rewards = map[string][]*avax.UTXO{}
+	for pkStr, records := range byPubKey {
+		for _, rec := range records {
+			utxos, ok := utxosByTxId[rec.TxID]
+			if !ok {
+				return nil, nil, errors.New(fmt.Sprintf("failed to find utxo for txID %v", rec.TxID.String()))
+			}
+			sort.Sort(SortUtxos(utxos))
+			principals[pkStr] = append(principals[pkStr], utxos[0])
+			rewards[pkStr] = append(rewards[pkStr], utxos[1:]...)
+		}
+	}
+	return principals, rewards, nil
+}
+
+func GroupUtxosByTxId(utxosAll [][]byte) (UtxosByTxId, error) {
+	utxosByTxId := UtxosByTxId{}
+
 	for _, bytes := range utxosAll {
 		utxo := &avax.UTXO{}
 		_, err := txs.Codec.Unmarshal(bytes, utxo)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if utxo.TxID != ids.Empty {
-			// Some utxos have empty TxID. Why?
-			txIDs = append(txIDs, utxo.TxID)
+			if _, ok := utxosByTxId[utxo.TxID]; !ok {
+				utxosByTxId[utxo.TxID] = nil
+			}
+			utxosByTxId[utxo.TxID] = append(utxosByTxId[utxo.TxID], utxo)
 		}
 	}
-
-	for _, txId := range txIDs {
-		txBytes, err := client.GetTx(context.Background(), txId)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("get tx error %v", txId.String()))
-		}
-		tx, err := txs.Parse(txs.Codec, txBytes)
-		if err != nil {
-			return err
-		}
-		tx.Sign(txs.Codec, nil)
-		uTx := tx.Unsigned.(*txs.ImportTx)
-		reqHash := types.RequestHash{}
-		copy(reqHash[:], uTx.Memo)
-		err = i.services.TxIndex.SetTxByType(reqHash, core.TxTypeImportP, txId)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return utxosByTxId, nil
 }
+
+type UtxosByTxId map[ids.ID][]*avax.UTXO
+type SortUtxos []*avax.UTXO
+
+func (a SortUtxos) Len() int      { return len(a) }
+func (a SortUtxos) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a SortUtxos) Less(i, j int) bool {
+	return a[i].OutputIndex < a[j].OutputIndex
+}
+
+type Bucket struct {
+	StartTimestamp int64
+	EndTimestamp   int64
+}
+
+func (b *Bucket) isInBucket(ti time.Time) bool {
+	ts := ti.Unix()
+	return ts >= b.StartTimestamp && ts < b.EndTimestamp
+}
+
+type AddDelegatorTxRecord struct {
+	TxID    ids.ID
+	EndTime int64
+}
+
+type SortAddDelegatorTxRecord []AddDelegatorTxRecord
+
+func (a SortAddDelegatorTxRecord) Len() int      { return len(a) }
+func (a SortAddDelegatorTxRecord) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a SortAddDelegatorTxRecord) Less(i, j int) bool {
+	if a[i].EndTime < a[j].EndTime {
+		return true
+	}
+	return a[i].TxID.Hex() < a[j].TxID.Hex()
+}
+
+type ByPubKey = map[string]SortAddDelegatorTxRecord
+type UtxosByPubKey = map[string][]*avax.UTXO

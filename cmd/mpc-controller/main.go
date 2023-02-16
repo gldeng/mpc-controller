@@ -8,6 +8,7 @@ import (
 	"github.com/avalido/mpc-controller/logger/adapter"
 	"github.com/avalido/mpc-controller/mpcclient"
 	"github.com/avalido/mpc-controller/storage/badgerDB"
+	"github.com/avalido/mpc-controller/tasks/pchainevent"
 	"github.com/avalido/mpc-controller/utils/crypto/keystore"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -266,6 +267,10 @@ func runController(c *cli.Context) error {
 
 	rc := &ethlog.RequestCreator{}
 	rt.AddLogEventHandler(rc)
+
+	rc1 := pchainevent.RequestCreator{}
+	rt.AddPChainEventHandler(rc1)
+
 	err = wp.Start()
 	if err != nil {
 		return err
@@ -279,7 +284,7 @@ func runController(c *cli.Context) error {
 		return err
 	}
 
-	idx := indexer.NewIndexer(services)
+	idx := indexer.NewIndexer(services, q)
 	err = idx.Start()
 	if err != nil {
 		return err
