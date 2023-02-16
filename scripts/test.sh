@@ -29,7 +29,7 @@ start_mpc_controller(){
         --dbPath ${DIR}/db \
         --keystoreDir /home/gldeng/local/avalido/internal-testnet/docker/mpc-controller/keystore/ \
         --passwordFile /home/gldeng/local/avalido/internal-testnet/docker/mpc-controller/password/password \
-        --mpc-manager-address 0x549A3D41C0626ea686F8F208DE58761D8Dc61361 > ${DIR}/log.txt 2>&1 &
+        --mpc-manager-address 0x8904C0f99AAf578801E0549aa6aD614992800F78 > ${DIR}/log.txt 2>&1 &
   echo $! > ${DIR}/pid
 }
 

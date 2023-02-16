@@ -4,11 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/ava-labs/avalanchego/ids"
-	avaCrypto "github.com/ava-labs/avalanchego/utils/crypto"
-	"github.com/ava-labs/avalanchego/utils/hashing"
-	"github.com/ava-labs/avalanchego/vms/platformvm/txs"
-	"github.com/ava-labs/avalanchego/vms/secp256k1fx"
-	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/avalido/mpc-controller/contract"
 	"github.com/avalido/mpc-controller/core"
 	"github.com/avalido/mpc-controller/core/types"
@@ -337,47 +332,22 @@ func (t *JoinAndRecover) getPubKey(ctx core.TaskContext) ([]byte, error) {
 		if err != nil {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToRetrieveTx)
 		}
-
-		err = tx.Sign(txs.Codec, nil)
+		pkBytes, err := myCrypto.RecoverPChainTxPublicKey(tx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "")
 		}
-		unsignedBytes := tx.Unsigned.Bytes()
-		hash := hashing.ComputeHash256(unsignedBytes)
-		cred := tx.Creds[0].(*secp256k1fx.Credential)
-		pk, err := new(avaCrypto.FactorySECP256K1R).RecoverHashPublicKey(hash, cred.Sigs[0][:])
-		if err != nil {
-			return nil, t.failIfErrorf(err, "")
-		}
-		compressed := pk.Bytes()
-		bytes, err := myCrypto.DenormalizePubKeyBytes(compressed)
-		if err != nil {
-			return nil, t.failIfErrorf(err, "")
-		}
-		return bytes, nil
+		return pkBytes, nil
 	}
 	if t.Request.ExportTxID != ids.Empty {
 		tx, err := ctx.GetCChainTx(t.Request.ExportTxID)
 		if err != nil {
 			return nil, t.failIfErrorf(err, ErrMsgFailedToRetrieveTx)
 		}
-		err = tx.Sign(evm.Codec, nil)
+		pkBytes, err := myCrypto.RecoverEvmTxPublicKey(tx)
 		if err != nil {
 			return nil, t.failIfErrorf(err, "")
 		}
-		unsignedBytes := tx.Bytes()
-		hash := hashing.ComputeHash256(unsignedBytes)
-		cred := tx.Creds[0].(*secp256k1fx.Credential)
-		pk, err := new(avaCrypto.FactorySECP256K1R).RecoverHashPublicKey(hash, cred.Sigs[0][:])
-		if err != nil {
-			return nil, t.failIfErrorf(err, "")
-		}
-		compressed := pk.Bytes()
-		bytes, err := myCrypto.DenormalizePubKeyBytes(compressed)
-		if err != nil {
-			return nil, t.failIfErrorf(err, "")
-		}
-		return bytes, nil
+		return pkBytes, nil
 	}
 	err = errors.New(ErrMsgFailedToDecidePubKey)
 	return nil, t.failIfErrorf(err, "")
