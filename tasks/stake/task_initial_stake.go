@@ -19,7 +19,6 @@ import (
 
 const (
 	taskTypeInitialStake = "initialStake"
-	timeOutDuration      = 5 * time.Hour
 )
 
 var (
@@ -175,7 +174,7 @@ func (t *InitialStake) run(ctx core.TaskContext) ([]core.Task, error) {
 }
 
 func (t *InitialStake) isTimedOut() bool {
-	return time.Now().Sub(*t.StartTime) > timeOutDuration
+	return time.Now().Sub(*t.StartTime) > core.DefaultParameters.StakeTaskTimeoutDuration
 
 }
 

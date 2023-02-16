@@ -12,9 +12,7 @@ import (
 
 const (
 	taskTypeFailureReport = "FailureReport"
-	// This has to be longer than TxIndex time so that we won't miss any tx when checking
-	reportDelay  = 120 * time.Minute
-	checkTxDelay = 30 * time.Second
+	checkTxDelay          = 30 * time.Second
 )
 
 var (
@@ -58,7 +56,7 @@ func NewFailureReport(flowId core.FlowId, participantId types.ParticipantId, req
 }
 
 func (t *Report) Next(ctx core.TaskContext) ([]core.Task, error) {
-	if time.Now().Sub(t.StartTime) < reportDelay {
+	if time.Now().Sub(t.StartTime) < core.DefaultParameters.ReportFailureDelay {
 		return nil, nil
 	}
 	switch t.Status {

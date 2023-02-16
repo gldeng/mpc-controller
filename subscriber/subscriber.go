@@ -15,12 +15,6 @@ import (
 	"time"
 )
 
-// TODO: make it configurable?
-const (
-	eventLogChanCapacity    = 1024
-	queueBufferChanCapacity = 2048
-)
-
 type Subscriber struct {
 	ctx           context.Context
 	logger        logger.Logger
@@ -60,7 +54,7 @@ func NewSubscriber(ctx context.Context, logger logger.Logger, config core.Config
 		filter:        ethereum.FilterQuery{Addresses: []common.Address{config.MpcManagerAddress}},
 		backoffMax:    time.Second * 5,
 		logUnpacker:   unpacker,
-		queueBufferCh: make(chan types.Log, queueBufferChanCapacity),
+		queueBufferCh: make(chan types.Log, core.DefaultParameters.QueueBufferChanCapacity),
 		db:            db,
 	}, nil
 }
@@ -83,7 +77,7 @@ func (s *Subscriber) Start() error {
 			return nil, err
 		}
 
-		eventLogs := make(chan types.Log, eventLogChanCapacity)
+		eventLogs := make(chan types.Log, core.DefaultParameters.EventLogChanCapacity)
 		sub, err := s.client.SubscribeFilterLogs(s.ctx, s.filter, eventLogs)
 		if err != nil {
 			prom.ContractEvtSubErr.Inc()

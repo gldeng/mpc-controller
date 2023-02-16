@@ -19,10 +19,6 @@ import (
 	"time"
 )
 
-const (
-	bucketSize = 2 * 60 * 60 // 2 Hours
-)
-
 type Queue interface {
 	Enqueue(value interface{}) error
 }
@@ -53,7 +49,7 @@ func (i *Indexer) Start() error {
 
 	go func() {
 
-		timer := time.NewTimer(1 * time.Minute) // First run after 1 minute
+		timer := time.NewTimer(core.DefaultParameters.IndexerStartDelay)
 		defer timer.Stop()
 
 		for {
@@ -61,7 +57,7 @@ func (i *Indexer) Start() error {
 			case <-i.onCloseCtx.Done():
 				return
 			case <-timer.C:
-				nextRun := time.Now().Add(1 * time.Minute)
+				nextRun := time.Now().Add(core.DefaultParameters.IndexerLoopDuration)
 				err := i.scanDelegators(client)
 				if err != nil {
 					i.services.Logger.Error(err.Error())
@@ -74,7 +70,7 @@ func (i *Indexer) Start() error {
 				} else {
 					i.services.Logger.Debug("finished scanning utxos")
 				}
-				i.services.TxIndex.PurgeOlderThan(time.Now().Add(-720 * time.Hour)) // Purge older than 30 days
+				i.services.TxIndex.PurgeOlderThan(time.Now().Add(-core.DefaultParameters.TxIndexPurgueAge))
 				interval := nextRun.Sub(time.Now())
 				timer.Reset(interval)
 			}
@@ -269,8 +265,8 @@ func findTxsInTargetBucket(transactions []*txs.Tx, bucket Bucket) []*txs.Tx {
 
 func getCurrentBucket() Bucket {
 	now := time.Now().Unix()
-	endTimestamp := (now / bucketSize) * bucketSize
-	startTimestamp := endTimestamp - bucketSize
+	endTimestamp := (now / core.DefaultParameters.UtxoBucketSeconds) * core.DefaultParameters.UtxoBucketSeconds
+	startTimestamp := endTimestamp - core.DefaultParameters.UtxoBucketSeconds
 	return Bucket{
 		StartTimestamp: startTimestamp,
 		EndTimestamp:   endTimestamp,
