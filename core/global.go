@@ -1,6 +1,11 @@
 package core
 
-import "time"
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+)
 
 const (
 	TxTypeAddDelegator = "AddDelegator"
@@ -8,16 +13,24 @@ const (
 	TxTypeImportP      = "ImportP"
 )
 
+// Parameters of the backend. Not configurable at node level so that all nodes share the same setting.
 type Parameters struct {
-	IndexerStartDelay   time.Duration
+	// After IndexerStartDelay period, the indexer will start to poll UTXOs.
+	IndexerStartDelay time.Duration
+	// IndexerLoopDuration indicates how frequently the indexer will poll UTXOs.
 	IndexerLoopDuration time.Duration
 	// ReportFailureDelay has to be longer than IndexerLoopDuration so that we won't miss any tx when checking
-	ReportFailureDelay       time.Duration
-	TxIndexPurgueAge         time.Duration
+	ReportFailureDelay time.Duration
+	// TxIndexPurgueAge indicates the threshold where older tx records in the index will be purged to free up memory.
+	TxIndexPurgueAge time.Duration
+	// StakeTaskTimeoutDuration indicates the timeout duration of stake task.
 	StakeTaskTimeoutDuration time.Duration
-	UtxoBucketSeconds        int64
-	EventLogChanCapacity     int
-	QueueBufferChanCapacity  int
+	// UTXOs are grouped into buckets of UtxoBucketSeconds based the stake endTime so that all the principals / rewards
+	// received in the same time window can be moved at one go. All nodes have  the same bucket definition to have
+	// deterministic request definition.
+	UtxoBucketSeconds       int64
+	EventLogChanCapacity    int
+	QueueBufferChanCapacity int
 }
 
 var (
@@ -26,7 +39,11 @@ var (
 
 func init() {
 	setDefaultParameters()
-	//setDefaultParametersInTestingMode() // Usage Note: only enable this during testing
+	devMode := os.Getenv("DEV_MODE")
+	if strings.Contains("YES_TRUE", strings.ToUpper(strings.TrimSpace(devMode))) {
+		fmt.Println("devmode")
+		setDefaultParametersInTestingMode() // Note: for testing locally, we loop faster
+	}
 }
 
 func setDefaultParameters() {

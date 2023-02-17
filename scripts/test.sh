@@ -20,7 +20,7 @@ start_mpc_controller(){
   DIR=tmp/party${IND}
   mkdir -p $DIR
   echo "Starting MPC controller ${i}"
-  ./mpc-controller \
+  DEV_MODE=YES ./mpc-controller \
         --host localhost \
         --port 9650 \
         --simulationMpcPrivateKey 56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027 \

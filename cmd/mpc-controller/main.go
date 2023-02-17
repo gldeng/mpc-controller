@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/avalido/mpc-controller/core/mpc"
 	"github.com/avalido/mpc-controller/indexer"
@@ -155,6 +156,8 @@ func runController(c *cli.Context) error {
 	logger.DevMode = true
 	logger.UseConsoleEncoder = false // temporally for easier debug only
 	myLogger := logger.Default()
+	paramsStr, _ := json.Marshal(core.DefaultParameters)
+	myLogger.Infof("Parameters are: %v", string(paramsStr))
 
 	shutdownCtx, shutdown := context.WithCancel(context.Background())
 	q := goconcurrentqueue.NewFIFO()

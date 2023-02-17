@@ -9,6 +9,7 @@ import (
 	"github.com/avalido/mpc-controller/core"
 	myAvax "github.com/avalido/mpc-controller/utils/txs/avax"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 )
 
 type TxBuilder struct {
@@ -21,10 +22,14 @@ func NewTxBuilder(net *core.NetworkContext) *TxBuilder {
 
 func (t *TxBuilder) ExportFromPChain(utxos []*avax.UTXO) (*txs.ExportTx, error) {
 	inputs := myAvax.TransferableInputsrFromUTXOs(utxos) // The inputs to this transaction
+	avax.SortTransferableInputs(inputs)
 	utxoFirst := utxos[0]
 	outFirst := utxoFirst.Out.(*secp256k1fx.TransferOutput)
 	amount := myAvax.TotalAmount(utxos)
 	feeAmount := uint64(1000000)
+	if amount < feeAmount {
+		return nil, errors.New("inputs are insufficient to pay transaction fee")
+	}
 	netAmount := amount - feeAmount
 	outputs := []*avax.TransferableOutput{{ // Outputs that are exported to the destination chain
 		Asset: utxoFirst.Asset,
@@ -48,6 +53,7 @@ func (t *TxBuilder) ExportFromPChain(utxos []*avax.UTXO) (*txs.ExportTx, error) 
 func (t *TxBuilder) ImportIntoCChain(to common.Address, signedExportTx *txs.Tx, memo []byte) (*evm.UnsignedImportTx, error) {
 	utxos := myAvax.UTXOsFromTransferableOutputs(signedExportTx.ID(), signedExportTx.Unsigned.(*txs.ExportTx).ExportedOutputs)
 	inputs := myAvax.TransferableInputsrFromUTXOs(utxos)
+	avax.SortTransferableInputs(inputs)
 
 	feeAmount := uint64(1000000)
 

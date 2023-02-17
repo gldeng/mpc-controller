@@ -304,9 +304,20 @@ func splitUtxosByType(utxosByTxId UtxosByTxId, byPubKey ByPubKey) (principals Ut
 				return nil, nil, errors.New(fmt.Sprintf("failed to find utxo for txID %v", rec.TxID.String()))
 			}
 			sort.Sort(SortUtxos(utxos))
-			principals[pkStr] = append(principals[pkStr], utxos[0])
-			rewards[pkStr] = append(rewards[pkStr], utxos[1:]...)
+			for _, utxo := range utxos {
+				if utxo.OutputIndex == 0 {
+					principals[pkStr] = append(principals[pkStr], utxo)
+				} else {
+					rewards[pkStr] = append(rewards[pkStr], utxo)
+				}
+			}
 		}
+	}
+	for _, utxos := range principals {
+		sort.Sort(SortUtxos(utxos))
+	}
+	for _, utxos := range rewards {
+		sort.Sort(SortUtxos(utxos))
 	}
 	return principals, rewards, nil
 }
