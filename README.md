@@ -3,9 +3,10 @@
 [![Test workflow](https://github.com/AvaLido/mpc-controller/actions/workflows/test.yml/badge.svg)](https://github.com/AvaLido/mpc-controller/actions?workflow=test)
 
 # MPC Controller
-**This project is under active development**
+
 ## Architecture
 ![artchitecture](/docs/architecture.png)
+
 This MPC controller is a component of the AvaLido liquid staking project which contains mainly three components:
 1. A set of smart contract deployed on the Avalanche C-Chain. The two main smart contract instances are:
   * the main `AvaLido` contract which contains the main liquid staking logics. Users will deposit their AVAX to this
